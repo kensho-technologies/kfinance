@@ -1,0 +1,116 @@
+[tool.poetry]
+name = "kfinance"
+version = "1.0.0"
+description = "Python CLI for kFinance"
+readme = "README.md"
+authors = [
+  "Luke Brown <luke.brown@kensho.com>",
+  "Michelle Keoy <michelle.keoy@kensho.com>",
+  "Keith Page <keith.page@kensho.com>",
+  "Matthew Rosen <matthew.rosen@kensho.com>",
+  "Nick Roshdieh <nick.roshdieh@kensho.com>",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<4"
+langchain-core = ">=0.3.15"
+numpy = ">=1.22.4"
+pandas = ">=2.0.0"
+pillow = ">=10"
+pyjwt = ">=2.8.0"
+python-dateutil = ">=2.8.2,<2.9"
+requests = ">=2.22.0,<3"
+strenum = ">=0.4.15"
+types-requests = ">=2.22.0,<3"
+urllib3 = ">=2.3.0"
+
+[tool.poetry.group.dev.dependencies]
+coverage = ">=7.6.10,<8"
+mypy = "^1.15.0"
+pytest = ">=6.1.2,<7"
+pytest-cov = "^6.0.0"
+ruff = "^0.9.4"
+
+[tool.ruff]
+line-length = 100
+extend-exclude = ["alembic_schema", "migrations", ".venv", "venv", "*_pb2*"]
+output-format = "grouped"
+unsafe-fixes = true  # Default in ruff < 0.1.1
+
+[tool.ruff.lint]
+select = [
+    "E",  # Flake8 errors
+    "F",  # Pyflakes errors
+    "W",  # Codestyle warnings
+    "I",  # isort
+    "D102",  # docstrings for public methods
+    "D103",  # docstrings for public functions
+    "D107",  # docstrings for __init__
+    "D2",  # docstring formatting (autofixable)
+    "D3",  # docstring formatting quotes
+    "A001",  # redefined builtin
+    "B002",  # nonexistent operator
+    "B006",  # mutable default argument
+    "B014",  # duplicate except handler (autofixable)
+    "B018",  # expression not assigned
+    "C402",  # consider using dict comprehension (autofixable)
+    "BLE",  # Blind except
+    "G",  # logger string formatting
+    "G004",  # no f-strings in log messages
+    "N805",  # no self argument
+    "PLE",  # pylint errors
+    "PLR1722",  # consider using sys exit (autofixable)
+    "PLW",  # pylint warnings
+    "Q",  # flake8-quotes
+    "S102",  # no exec
+    "S307",  # no eval
+    "SLF",  # flake8 private member access (_foo)
+    "T20",  # flake8-print
+    "UP004",  # useless object inheritance
+    "UP032",  # use f-string instead of format
+]
+ignore = [
+    "E501",  # Line too long (handled by black)
+    "E713",  # membership test should be not in (autofixable, ignored for parity)
+    "E741",  # ambigious variable name (parity with kensho-lint)
+    "F541",  # f-string without any placeholders (autofixable, parity with kensho-lint)
+    "D202",  # docstyle no-blank-lines-allowed (autofixable, ignored for parity with kensho-lint < 4.2)
+    "D203",  # docstyle one-blank-line-before-class (incompatible with D211)
+    "D213",  # docstyle multi-line-summary-second-line (incompatible with D212)
+    "G010",  # use logging.warning instead of .warn (autofixable, ignored for parity)
+    "G201",  # use logging.exception instead of .error(..., exc_info=True)
+    "PLE1205",  # too many arguments to logger (ignored for parity with kensho-lint < 4.2)
+    "PLW0602",  # global variable not assigned (ignored for parity)
+    "PLW1508",  # invalid envvar type (ignored for parity)
+    "PLW2901",  # redefine loop variable (ignored for parity)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/test*/**" = ["D"]  # Ignore pydocstyle checks on tests
+# When fast lint runs ruff from ci dirctory, the rule "**/test*/**" is not working
+# Issue link: https://github.com/astral-sh/ruff/issues/6480
+"/**/test*/**" = ["D"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+lines-after-imports = 2
+force-sort-within-sections = true
+known-third-party = ["wandb"]
+
+[tool.mypy]
+ignore_missing_imports = true
+# `normal` would emit errors for type issues in imported modules, which is unnecessary
+# since we pass files by name when linting.
+follow_imports = "silent"
+# Since we have `disallow_untyped_defs` set, errors from this rule are from external packages
+# outside of the maintainer's control.
+disallow_untyped_calls = false
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+strict_optional = true
+strict_equality = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unreachable = true
+exclude = "tests"
