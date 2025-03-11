@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kfinance"
-version = "1.0.0"
+version = "0.99.0"
 description = "Python CLI for kFinance"
 readme = "README.md"
 authors = [

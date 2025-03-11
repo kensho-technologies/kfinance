@@ -6,12 +6,12 @@ from distutils.core import setup  # pylint: disable=deprecated-module
 setup(
     name="kfinance",
     packages=["kfinance"],
-    version="1.0.0",
+    version="0.99.0",
     description="",
     author="Luke Brown",
     author_email="luke.brown@kensho.com",
     url="https://github.com/kensho-technologies/kfinance",
-    download_url="https://github.com/kensho-technologies/kfinance/archive/refs/tags/v_1_0_0.tar.gz",  # noqa:E501
+    download_url="https://github.com/kensho-technologies/kfinance/archive/refs/tags/v_0_99_0.tar.gz",  # noqa:E501
     keywords=["kFinance", "Python Toolkit"],
     install_requires=[
         "langchain-core",
@@ -21,6 +21,7 @@ setup(
         "pyjwt",
         "python-dateutil",
         "requests",
+        "strenum",
         "types-requests",
         "urllib3",
     ],

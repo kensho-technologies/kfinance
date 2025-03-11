@@ -16,9 +16,14 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
-
+  pypi-publish:
+    name: upload release to PyPI
     runs-on: ubuntu-latest
+    # Specifying a GitHub environment is optional, but strongly encouraged
+    environment: pypi
+    permissions:
+      # IMPORTANT: this permission is mandatory for Trusted Publishing
+      id-token: write
 
     steps:
     - uses: actions/checkout@v4
@@ -32,8 +37,7 @@ jobs:
         pip install build
     - name: Build package
       run: python -m build
-    - name: Publish package
-      uses: pypa/gh-action-pypi-publish@<lorem ipsum>
+    - name: Publish package distributions to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        user: __token__
-        password: <lorem ipsum>
+        repository-url: https://test.pypi.org/legacy/
