@@ -8,27 +8,15 @@ Any questions or suggestions can be sent to the [kFinance Maintainers](kfinance-
 
 # Setup
 
-## Option 1: PyPI (Recommended)
-
 You can install kFinance on [PyPI](https://pypi.org/project/kfinance/) via 
 
 `pip install kfinance`
 
-## Option 2: From Repo
+# Getting started
 
-For setup from the repo itself, we recommend using [Poetry](https://python-poetry.org/). Within the cloned repo, simply run in the terminal:
+To receive access, please email [S&P Global Market Intelligence](market.intelligence@spglobal.com) for information on free trials and pricing.
 
-```poetry install```
-
-You can now activate the environment within the terminal with
-
-```poetry shell```
-
-It will also print out the path where Poetry installed the virtual environment.
-
-# Usage
-
-For more detailed information on how to use the kFinance Python library, follow the LLM-ready API [Usage Guide](https://docs.kensho.com/llmreadyapi/usage#Usage-Guide).
+Once access is obtained, get started using the [Authentication Guide](https://docs.kensho.com/llmreadyapi/kf-authentication) and [Usage Guide](https://docs.kensho.com/llmreadyapi/usage).
 
 # License
 

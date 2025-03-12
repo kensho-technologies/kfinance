@@ -1,4 +1,4 @@
 # Changelog
 
-## v0.99.0
+## v1.0.0
 - Initial KFinance Client
