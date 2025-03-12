@@ -43,11 +43,11 @@ requires = ["setuptools>=61.0", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-version_file = "kfinance/_version.py"
+version_file = "kfinance/version.py"
 
 [tool.ruff]
 line-length = 100
-extend-exclude = ["alembic_schema", "migrations", ".venv", "venv", "*_pb2*"]
+extend-exclude = ["alembic_schema", "migrations", ".venv", "venv", "*_pb2*", "version.py"]
 output-format = "grouped"
 unsafe-fixes = true  # Default in ruff < 0.1.1
 
