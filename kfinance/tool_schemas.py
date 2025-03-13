@@ -15,40 +15,52 @@ class GetNQuartersAgoInput(BaseModel):
     n: int = Field(description="number of quarters before the current quarter")
 
 
-class GetCompanyIdFromTickerInput(BaseModel):
+class GetCompanyIdFromIdentifier(BaseModel):
     ticker_str: str = Field(description="The ticker")
 
 
-class GetSecurityIdFromTickerInput(BaseModel):
+class GetSecurityIdFromIdentifier(BaseModel):
+    identifier: str = Field(
+        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
+    )
+
+
+class GetTradingItemIdFromIdentifier(BaseModel):
+    identifier: str = Field(
+        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
+    )
+
+
+class GetIsinFromTicker(BaseModel):
     ticker_str: str = Field(description="The ticker")
 
 
-class GetTradingItemIdFromTickerInput(BaseModel):
+class GetCusipFromTicker(BaseModel):
     ticker_str: str = Field(description="The ticker")
 
 
-class GetIsinFromTickerInput(BaseModel):
-    ticker_str: str = Field(description="The ticker")
+class GetInfoFromIdentifier(BaseModel):
+    identifier: str = Field(
+        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
+    )
 
 
-class GetCusipFromTickerInput(BaseModel):
-    ticker_str: str = Field(description="The ticker")
+class GetEarningsCallDatetimesFromIdentifier(BaseModel):
+    identifier: str = Field(
+        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
+    )
 
 
-class GetInfoFromTickerInput(BaseModel):
-    ticker_str: str = Field(description="The ticker")
+class GetHistoryMetadataFromIdentifier(BaseModel):
+    identifier: str = Field(
+        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
+    )
 
 
-class GetEarningsCallDatetimesFromTickerInput(BaseModel):
-    ticker_str: str = Field(description="The ticker")
-
-
-class GetHistoryMetadataFromTickerInput(BaseModel):
-    ticker_str: str = Field(description="The ticker")
-
-
-class GetPricesFromTickerInput(BaseModel):
-    ticker_str: str = Field(description="The ticker")
+class GetPricesFromIdentifier(BaseModel):
+    identifier: str = Field(
+        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
+    )
     periodicity: Literal["day", "week", "month", "year"] = Field(
         default="day",
         description="The frequency or interval at which the historical data points are sampled or aggregated. Periodicity is not the same as the date range. The date range specifies the time span over which the data is retrieved, while periodicity determines how the data within that date range is aggregated, valid inputs are ['day', 'week', 'month', 'year'].",
@@ -65,8 +77,10 @@ class GetPricesFromTickerInput(BaseModel):
     )
 
 
-class GetFinancialStatementFromTicker(BaseModel):
-    ticker_str: str = Field(description="The ticker")
+class GetFinancialStatementFromIdentifier(BaseModel):
+    identifier: str = Field(
+        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
+    )
     statement: Literal["balance_sheet", "income_statement", "cashflow"] = Field(
         description="The type of financial statement, valid inputs are ['balance_sheet', 'income_statement', 'cashflow']"
     )
@@ -86,8 +100,10 @@ class GetFinancialStatementFromTicker(BaseModel):
     )
 
 
-class GetFinancialLineItemFromTicker(BaseModel):
-    ticker_str: str = Field(description="The ticker")
+class GetFinancialLineItemFromIdentifier(BaseModel):
+    identifier: str = Field(
+        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
+    )
     line_item: Literal[tuple(LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore
         description="The type of financial line_item requested"
     )
@@ -107,8 +123,10 @@ class GetFinancialLineItemFromTicker(BaseModel):
     )
 
 
-class GetBusinessRelationshipFromTicker(BaseModel):
-    ticker_str: str = Field(description="The ticker")
+class GetBusinessRelationshipFromIdentifier(BaseModel):
+    identifier: str = Field(
+        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
+    )
     business_relationship: BusinessRelationshipType = Field(
         description="The type of business relationship requested"
     )

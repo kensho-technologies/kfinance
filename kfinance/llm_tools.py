@@ -112,38 +112,38 @@ def get_n_quarters_ago(n: int) -> YearAndQuarter:
     return year_quarter_n_quarters_ago
 
 
-def get_company_id_from_ticker(self: Client, ticker_str: str) -> int:
-    """Get the company id associated with a ticker, can also be an ISIN or CUSIP.
+def get_company_id_from_identifier(self: Client, identifier: str) -> int:
+    """Get the company id associated with an identifier, where the identifier can be a ticker, ISIN or CUSIP.
 
     Args:
-        ticket_str: The ticker
+        identifier: A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.
     """
-    return self.ticker(ticker_str).company_id
+    return self.ticker(identifier).company_id
 
 
-def get_security_id_from_ticker(self: Client, ticker_str: str) -> int:
-    """Get the security id associated with a ticker, can also be an ISIN or CUSIP.
+def get_security_id_from_identifier(self: Client, identifier: str) -> int:
+    """Get the security id associated with an identifier, where the identifier can be a ticker, ISIN or CUSIP.
 
     Args:
-        ticket_str: The ticker
+        identifier: A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.
     """
-    return self.ticker(ticker_str).security_id
+    return self.ticker(identifier).security_id
 
 
-def get_trading_item_id_from_ticker(self: Client, ticker_str: str) -> int:
-    """Get the trading item id associated with a ticker, can also be an ISIN or CUSIP.
+def get_trading_item_id_from_identifier(self: Client, identifier: str) -> int:
+    """Get the trading item id associated with an identifier, where the identifier can be a ticker, ISIN or CUSIP.
 
     Args:
-        ticket_str: The ticker
+        identifier: A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.
     """
-    return self.ticker(ticker_str).trading_item_id
+    return self.ticker(identifier).trading_item_id
 
 
 def get_isin_from_ticker(self: Client, ticker_str: str) -> str:
     """Get the ISIN associated with a ticker, can also be CUSIP.
 
     Args:
-        ticket_str: The ticker
+        ticker_str: The ticker
     """
     return self.ticker(ticker_str).isin
 
@@ -152,67 +152,67 @@ def get_cusip_from_ticker(self: Client, ticker_str: str) -> str:
     """Get the CUSIP associated with a ticker, can also be an ISIN.
 
     Args:
-        ticket_str: The ticker
+        ticker_str: The ticker
     """
     return self.ticker(ticker_str).cusip
 
 
-def get_info_from_ticker(self: Client, ticker_str: str) -> str:
-    """Get info associated with a ticker, can also be an ISIN or CUSIP.
+def get_info_from_identifier(self: Client, identifier: str) -> str:
+    """Get the information associated with an identifier, where the identifier can be a ticker, ISIN or CUSIP.
 
     Info includes company name, status, type, simple industry, number of employees, founding date, webpage, HQ address, HQ city, HQ zip code, HQ state, HQ country, and HQ country iso code
 
     Args:
-        ticket_str: The ticker
+        identifier: A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.
     """
-    return str(self.ticker(ticker_str).info)
+    return str(self.ticker(identifier).info)
 
 
-def get_earnings_call_datetimes_from_ticker(self: Client, ticker_str: str) -> str:
-    """Get earnings call datetimes associated with a ticker, can also be an ISIN or CUSIP.
+def get_earnings_call_datetimes_from_identifier(self: Client, identifier: str) -> str:
+    """Get earnings call datetimes associated with an identifier, where the identifier can be a ticker, ISIN or CUSIP.
 
     Args:
-        ticket_str: The ticker
+        identifier: A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.
     """
-    return str(self.ticker(ticker_str).earnings_call_datetimes)
+    return str(self.ticker(identifier).earnings_call_datetimes)
 
 
-def get_history_metadata_from_ticker(self: Client, ticker_str: str) -> HistoryMetadata:
-    """Get the history metadata associated with a ticker, can also be an ISIN or CUSIP.
+def get_history_metadata_from_identifier(self: Client, identifier: str) -> HistoryMetadata:
+    """Get the history metadata associated with an identifier, where the identifier can be a ticker, ISIN or CUSIP.
 
     History metadata includes currency, symbol, exchange name, instrument type, and first trade date
 
     Args:
-        ticket_str: The ticker
+        identifier: A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.
     """
-    return self.ticker(ticker_str).history_metadata
+    return self.ticker(identifier).history_metadata
 
 
-def get_prices_from_ticker(
+def get_prices_from_identifier(
     self: Client,
-    ticker_str: str,
+    identifier: str,
     periodicity: str = "day",
     adjusted: bool = True,
     start_date: str | None = None,
     end_date: str | None = None,
 ) -> str:
-    """Get the historical open, high, low, and close prices, and volume of a ticker, ISIN, or CUSIP between inclusive start_date and inclusive end date.
+    """Get the historical open, high, low, and close prices, and volume of an identifier, where the identifier can be a ticker, ISIN or CUSIP, between inclusive start_date and inclusive end date.
 
     Args:
-        ticker_str: The ticker
+        identifier: A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.
         start_date: The start date for historical price retrieval in format YYYY-MM-DD
         end_date: The end date for historical price retrieval in format YYYY-MM-DD
         periodicity: The frequency or interval at which the historical data points are sampled or aggregated. Periodicity is not the same as the date range. The date range specifies the time span over which the data is retrieved, while periodicity determines how the data within that date range is aggregated, valid inputs are ["day", "week", "month", "year"].
         adjusted: Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits.
     """
     return (
-        self.ticker(ticker_str).history(periodicity, adjusted, start_date, end_date).to_markdown()
+        self.ticker(identifier).history(periodicity, adjusted, start_date, end_date).to_markdown()
     )
 
 
-def get_financial_statement_from_ticker(
+def get_financial_statement_from_identifier(
     self: Client,
-    ticker_str: str,
+    identifier: str,
     statement: str,
     period_type: str | None = None,
     start_year: int | None = None,
@@ -220,10 +220,10 @@ def get_financial_statement_from_ticker(
     start_quarter: int | None = None,
     end_quarter: int | None = None,
 ) -> str:
-    """Get the financial statement associated with a ticker, can also be an ISIN or CUSIP.
+    """Get the financial statement associated with an identifier, where the identifier can be a ticker, ISIN or CUSIP.
 
     Args:
-        ticker_str: The ticker
+        identifier: A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.
         statement: The type of financial statement, valid inputs are ["balance_sheet", "income_statement", "cashflow"]
         period_type: time period type, valid inputs are ["annual", "quarterly", "ltm", "ytd"].
         start_quarter: starting quarter, valid inputs are [1, 2, 3, 4]
@@ -231,14 +231,14 @@ def get_financial_statement_from_ticker(
         start_year: The starting year for the data range.
         end_year: The ending year for the data range.
     """
-    return getattr(self.ticker(ticker_str), statement)(
+    return getattr(self.ticker(identifier), statement)(
         period_type, start_year, end_year, start_quarter, end_quarter
     ).to_markdown()
 
 
-def get_financial_line_item_from_ticker(
+def get_financial_line_item_from_identifier(
     self: Client,
-    ticker_str: str,
+    identifier: str,
     line_item: str,
     period_type: str | None = None,
     start_year: int | None = None,
@@ -246,10 +246,10 @@ def get_financial_line_item_from_ticker(
     start_quarter: int | None = None,
     end_quarter: int | None = None,
 ) -> str:
-    """Get the financial line item associated with a ticker, can also be an ISIN or CUSIP.
+    """Get the financial line item associated with an identifier, where the identifier can be a ticker, ISIN or CUSIP.
 
     Args:
-        ticker_str: The ticker
+        identifier: A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.
         line_item: The type of financial line_item requested
         period_type: time period type, valid inputs are ["annual", "quarterly", "ltm", "ytd"]
         start_quarter: starting quarter, valid inputs are [1, 2, 3, 4]
@@ -257,22 +257,22 @@ def get_financial_line_item_from_ticker(
         start_year: The starting year for the data range.
         end_year: The ending year for the data range.
     """
-    return getattr(self.ticker(ticker_str), line_item)(
+    return getattr(self.ticker(identifier), line_item)(
         period_type, start_year, end_year, start_quarter, end_quarter
     ).to_markdown()
 
 
-def get_business_relationship_from_ticker(
-    self: Client, ticker_str: str, business_relationship: str
+def get_business_relationship_from_identifier(
+    self: Client, identifier: str, business_relationship: str
 ) -> dict:
-    """Get the current and previous company IDs having a business relationship with a ticker.
+    """Get the current and previous company IDs having a business relationship with an identifier, where the identifier can be a ticker, ISIN or CUSIP.
 
     Args:
-        ticker_str: the ticker
+        identifier: A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.
         business_relationship: the type of business relationship requested
     """
     business_relationship_obj: "BusinessRelationships" = getattr(
-        self.ticker(ticker_str), business_relationship
+        self.ticker(identifier), business_relationship
     )
     return {
         "current": [company.company_id for company in business_relationship_obj.current],
@@ -286,21 +286,25 @@ def _llm_tools(self: Client) -> dict[str, Callable]:
     return {
         "get_latest": get_latest,
         "get_n_quarters_ago": get_n_quarters_ago,
-        "get_company_id_from_ticker": partial(get_company_id_from_ticker, self),
-        "get_security_id_from_ticker": partial(get_security_id_from_ticker, self),
-        "get_trading_item_id_from_ticker": partial(get_trading_item_id_from_ticker, self),
+        "get_company_id_from_identifier": partial(get_company_id_from_identifier, self),
+        "get_security_id_from_identifier": partial(get_security_id_from_identifier, self),
+        "get_trading_item_id_from_identifier": partial(get_trading_item_id_from_identifier, self),
         "get_isin_from_ticker": partial(get_isin_from_ticker, self),
         "get_cusip_from_ticker": partial(get_cusip_from_ticker, self),
-        "get_info_from_ticker": partial(get_info_from_ticker, self),
-        "get_earnings_call_datetimes_from_ticker": partial(
-            get_earnings_call_datetimes_from_ticker, self
+        "get_info_from_identifier": partial(get_info_from_identifier, self),
+        "get_earnings_call_datetimes_from_identifier": partial(
+            get_earnings_call_datetimes_from_identifier, self
         ),
-        "get_history_metadata_from_ticker": partial(get_history_metadata_from_ticker, self),
-        "get_prices_from_ticker": partial(get_prices_from_ticker, self),
-        "get_financial_statement_from_ticker": partial(get_financial_statement_from_ticker, self),
-        "get_financial_line_item_from_ticker": partial(get_financial_line_item_from_ticker, self),
-        "get_business_relationship_from_ticker": partial(
-            get_business_relationship_from_ticker, self
+        "get_history_metadata_from_identifier": partial(get_history_metadata_from_identifier, self),
+        "get_prices_from_identifier": partial(get_prices_from_identifier, self),
+        "get_financial_statement_from_identifier": partial(
+            get_financial_statement_from_identifier, self
+        ),
+        "get_financial_line_item_from_identifier": partial(
+            get_financial_line_item_from_identifier, self
+        ),
+        "get_business_relationship_from_identifier": partial(
+            get_business_relationship_from_identifier, self
         ),
     }
 
@@ -310,18 +314,18 @@ def _llm_tool_metadata() -> dict:
     return {
         "get_latest": tool_schemas.GetLatestInput,
         "get_n_quarters_ago": tool_schemas.GetNQuartersAgoInput,
-        "get_company_id_from_ticker": tool_schemas.GetCompanyIdFromTickerInput,
-        "get_security_id_from_ticker": tool_schemas.GetSecurityIdFromTickerInput,
-        "get_trading_item_id_from_ticker": tool_schemas.GetTradingItemIdFromTickerInput,
-        "get_isin_from_ticker": tool_schemas.GetIsinFromTickerInput,
-        "get_cusip_from_ticker": tool_schemas.GetCusipFromTickerInput,
-        "get_info_from_ticker": tool_schemas.GetInfoFromTickerInput,
-        "get_earnings_call_datetimes_from_ticker": tool_schemas.GetEarningsCallDatetimesFromTickerInput,
-        "get_history_metadata_from_ticker": tool_schemas.GetHistoryMetadataFromTickerInput,
-        "get_prices_from_ticker": tool_schemas.GetPricesFromTickerInput,
-        "get_financial_statement_from_ticker": tool_schemas.GetFinancialStatementFromTicker,
-        "get_financial_line_item_from_ticker": tool_schemas.GetFinancialLineItemFromTicker,
-        "get_business_relationship_from_ticker": tool_schemas.GetBusinessRelationshipFromTicker,
+        "get_company_id_from_identifier": tool_schemas.GetCompanyIdFromIdentifier,
+        "get_security_id_from_identifier": tool_schemas.GetSecurityIdFromIdentifier,
+        "get_trading_item_id_from_identifier": tool_schemas.GetTradingItemIdFromIdentifier,
+        "get_isin_from_ticker": tool_schemas.GetIsinFromTicker,
+        "get_cusip_from_ticker": tool_schemas.GetCusipFromTicker,
+        "get_info_from_identifier": tool_schemas.GetInfoFromIdentifier,
+        "get_earnings_call_datetimes_from_identifier": tool_schemas.GetEarningsCallDatetimesFromIdentifier,
+        "get_history_metadata_from_identifier": tool_schemas.GetHistoryMetadataFromIdentifier,
+        "get_prices_from_identifier": tool_schemas.GetPricesFromIdentifier,
+        "get_financial_statement_from_identifier": tool_schemas.GetFinancialStatementFromIdentifier,
+        "get_financial_line_item_from_identifier": tool_schemas.GetFinancialLineItemFromIdentifier,
+        "get_business_relationship_from_identifier": tool_schemas.GetBusinessRelationshipFromIdentifier,
     }
 
 
@@ -367,47 +371,47 @@ _base_tool_descriptions = [
         },
     },
     {
-        "name": "get_company_id_from_ticker",
-        "description": "Get the company id associated with a ticker",
+        "name": "get_company_id_from_identifier",
+        "description": "Get the company id associated with an identifier",
         "input_schema": {
             "type": "object",
             "properties": {
-                "ticker_str": {
+                "identifier": {
                     "type": "string",
-                    "description": "The ticker",
+                    "description": "A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.",
                 },
             },
-            "required": ["ticker_str"],
+            "required": ["identifier"],
             "additionalProperties": False,
         },
     },
     {
         "name": "get_security_id_from_ticker",
-        "description": "Get the security id associated with a ticker",
+        "description": "Get the security id associated with an identifier",
         "input_schema": {
             "type": "object",
             "properties": {
-                "ticker_str": {
+                "identifier": {
                     "type": "string",
-                    "description": "The ticker",
+                    "description": "A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.",
                 },
             },
-            "required": ["ticker_str"],
+            "required": ["identifier"],
             "additionalProperties": False,
         },
     },
     {
         "name": "get_trading_item_id_from_ticker",
-        "description": "Get the trading item id associated with a ticker",
+        "description": "Get the trading item id associated with an identifier",
         "input_schema": {
             "type": "object",
             "properties": {
-                "ticker_str": {
+                "identifier": {
                     "type": "string",
-                    "description": "The ticker",
+                    "description": "A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.",
                 },
             },
-            "required": ["ticker_str"],
+            "required": ["identifier"],
             "additionalProperties": False,
         },
     },
@@ -436,48 +440,60 @@ _base_tool_descriptions = [
         },
     },
     {
-        "name": "get_info_from_ticker",
-        "description": "Get info associated with a ticker. Info includes company name, status, type, simple industry, number of employees, founding date, webpage, HQ address, HQ city, HQ zip code, HQ state, HQ country, and HQ country iso code",
+        "name": "get_info_from_identifier",
+        "description": "Get the information associated with an identifier. Info includes company name, status, type, simple industry, number of employees, founding date, webpage, HQ address, HQ city, HQ zip code, HQ state, HQ country, and HQ country iso code",
         "input_schema": {
             "type": "object",
             "properties": {
-                "ticker_str": {"type": "string", "description": "The ticker"},
+                "identifier": {
+                    "type": "string",
+                    "description": "A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.",
+                },
             },
-            "required": ["ticker_str"],
+            "required": ["identifier"],
             "additionalProperties": False,
         },
     },
     {
-        "name": "get_earnings_call_datetimes_from_ticker",
-        "description": "Get earnings call datetimes associated with a ticker",
+        "name": "get_earnings_call_datetimes_from_identifier",
+        "description": "Get the earnings call datetimes of an identifier.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "ticker_str": {"type": "string", "description": "The ticker"},
+                "identifier": {
+                    "type": "string",
+                    "description": "A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.",
+                },
             },
-            "required": ["ticker_str"],
+            "required": ["identifier"],
             "additionalProperties": False,
         },
     },
     {
-        "name": "get_history_metdata_from_ticker",
-        "description": "Get the history metadata associated with a ticker. History metadata includes currency, symbol, exchange name, instrument type, and first trade date",
+        "name": "get_history_metdata_from_identifier",
+        "description": "Get the history metadata associated with an identifier. History metadata includes currency, symbol, exchange name, instrument type, and first trade date",
         "input_schema": {
             "type": "object",
             "properties": {
-                "ticker_str": {"type": "string", "description": "The ticker"},
+                "identifier": {
+                    "type": "string",
+                    "description": "A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.",
+                },
             },
-            "required": ["ticker_str"],
+            "required": ["identifier"],
             "additionalProperties": False,
         },
     },
     {
-        "name": "get_prices_from_ticker",
-        "description": "Get the historical open, high, low, and close prices, and volume of a ticker between inclusive start_date and inclusive end date",
+        "name": "get_prices_from_identifier",
+        "description": "Get the historical open, high, low, and close prices, and volume of an identifier, where the identifier can be a ticker, ISIN or CUSIP, between inclusive start_date and inclusive end date.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "ticker_str": {"type": "string", "description": "The ticker"},
+                "identifier": {
+                    "type": "string",
+                    "description": "A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.",
+                },
                 "start_date": {
                     "type": "string",
                     "description": "The start date for historical price retrieval in format YYYY-MM-DD",
@@ -496,17 +512,20 @@ _base_tool_descriptions = [
                     "description": "Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits.",
                 },
             },
-            "required": ["ticker_str"],
+            "required": ["identifier"],
             "additionalProperties": False,
         },
     },
     {
-        "name": "get_financial_statement_from_ticker",
-        "description": "Get the financial statement associated with a ticker",
+        "name": "get_financial_statement_from_identifier",
+        "description": "Get the financial statement associated with an identifier",
         "input_schema": {
             "type": "object",
             "properties": {
-                "ticker_str": {"type": "string", "description": "The ticker"},
+                "identifier": {
+                    "type": "string",
+                    "description": "A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.",
+                },
                 "statement": {
                     "type": "string",
                     "description": "The type of financial statement",
@@ -527,17 +546,20 @@ _base_tool_descriptions = [
                     "description": "The ending year for the data range.",
                 },
             },
-            "required": ["ticker_str", "statement"],
+            "required": ["identifier", "statement"],
             "additionalProperties": False,
         },
     },
     {
-        "name": "get_financial_line_item_from_ticker",
-        "description": 'Get the financial line item associated with a ticker, Used to answer questions about specific line items. For example, "Honda\'s finance division other non-current assets at the year-end 2021." or "Builders FirstSource\'s repayments of long-term debt in 2022 and impact on debt-to-equity" ',
+        "name": "get_financial_line_item_from_identifier",
+        "description": 'Get the financial line item associated with an identifier. Used to answer questions about specific line items. For example, "Honda\'s finance division other non-current assets at the year-end 2021." or "Builders FirstSource\'s repayments of long-term debt in 2022 and impact on debt-to-equity" ',
         "input_schema": {
             "type": "object",
             "properties": {
-                "ticker_str": {"type": "string", "description": "The ticker"},
+                "identifier": {
+                    "type": "string",
+                    "description": "A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.",
+                },
                 "line_item": {
                     "type": "string",
                     "description": "The type of financial line_item requested",
@@ -558,24 +580,27 @@ _base_tool_descriptions = [
                     "description": "The ending year for the data range.",
                 },
             },
-            "required": ["ticker_str", "line_item"],
+            "required": ["identifier", "line_item"],
             "additionalProperties": False,
         },
     },
     {
-        "name": "get_business_relationship_from_ticker",
-        "description": 'Get the current and previous company IDs that are relationship_type of a given company_id. For example, "What are the current distributors of SPGI?" or "What are the previous borrowers of JPM?" ',
+        "name": "get_business_relationship_from_identifier",
+        "description": 'Get the current and previous company IDs that are relationship_type of a given identifier. For example, "What are the current distributors of SPGI?" or "What are the previous borrowers of JPM?" ',
         "input_schema": {
             "type": "object",
             "properties": {
-                "ticker_str": {"type": "string", "description": "The ticker"},
+                "identifier": {
+                    "type": "string",
+                    "description": "A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.",
+                },
                 "business_relationship": {
                     "type": "string",
                     "description": "The type of business relationship requested",
                     "enum": list(BusinessRelationshipType.__members__.keys()),
                 },
             },
-            "required": ["ticker_str", "business_relationship"],
+            "required": ["identifier", "business_relationship"],
             "additionalProperties": False,
         },
     },
