@@ -1,5 +1,5 @@
 [project]
-name = "kfinance"
+name = "kensho-kfinance"
 dynamic = ["version"]
 authors = [
   { name="Luke Brown", email="luke.brown@kensho.com" },
