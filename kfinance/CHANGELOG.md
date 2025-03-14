@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.1
+- Correct installation instructions in README.
+
 ## v1.0.0
 - Initial public release
 

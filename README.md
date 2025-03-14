@@ -10,7 +10,7 @@ Any questions or suggestions can be sent to the [kFinance Maintainers](kfinance-
 
 You can install kFinance on [PyPI](https://pypi.org/project/kfinance/) via 
 
-`pip install kfinance`
+`pip install kensho-kfinance`
 
 # Getting started
 
