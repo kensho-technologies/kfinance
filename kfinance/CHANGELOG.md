@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.2
+- Relaxing requirements for urllib3 dependency.
+
 ## v1.0.1
 - Correct installation instructions in README.
 
