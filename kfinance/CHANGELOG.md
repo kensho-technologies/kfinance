@@ -1,4 +1,6 @@
 # Changelog
+## v1.0.3
+- Fix typo for get_history_metadata_from_identifier.
 
 ## v1.0.2
 - Relaxing requirements for urllib3 dependency.
