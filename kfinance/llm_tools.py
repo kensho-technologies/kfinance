@@ -470,7 +470,7 @@ _base_tool_descriptions = [
         },
     },
     {
-        "name": "get_history_metdata_from_identifier",
+        "name": "get_history_metadata_from_identifier",
         "description": "Get the history metadata associated with an identifier. History metadata includes currency, symbol, exchange name, instrument type, and first trade date",
         "input_schema": {
             "type": "object",
