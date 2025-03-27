@@ -13,7 +13,11 @@ done
 python -m mypy --config-file pyproject.toml kfinance
 
 if [ "$fix" = "--fix" ]; then
+  # The ruff linters (check) and formatters (format) are separate.
+  # See https://docs.astral.sh/ruff/formatter/#sorting-imports
   python -m ruff --config pyproject.toml check kfinance --fix
+  python -m ruff --config pyproject.toml format kfinance
 else
   python -m ruff --config pyproject.toml check kfinance
+  python -m ruff --config pyproject.toml format kfinance --check
 fi

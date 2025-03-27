@@ -1,14 +1,22 @@
 from unittest import TestCase
 from unittest.mock import Mock
 
+import pytest
+
 from kfinance.fetch import KFinanceApiClient
+
+
+def build_mock_api_client() -> KFinanceApiClient:
+    """Create a KFinanceApiClient with mocked-out fetch function."""
+    kfinance_api_client = KFinanceApiClient(refresh_token="fake_refresh_token")
+    kfinance_api_client.fetch = Mock()
+    return kfinance_api_client
 
 
 class TestFetchItem(TestCase):
     def setUp(self):
         """Create a KFinanceApiClient with mocked-out fetch function."""
-        self.kfinance_api_client = KFinanceApiClient(refresh_token="fake_refresh_token")
-        self.kfinance_api_client.fetch = Mock()
+        self.kfinance_api_client = build_mock_api_client()
 
     def test_fetch_id_triple(self) -> None:
         identifier = "SPGI"
@@ -239,3 +247,25 @@ class TestFetchItem(TestCase):
             exchange_code=exchange_code,
         )
         self.kfinance_api_client.fetch.assert_called_once_with(expected_fetch_url)
+
+
+class TestMarketCap:
+    @pytest.mark.parametrize(
+        "start_date, start_date_url", [(None, "none"), ("2025-01-01", "2025-01-01")]
+    )
+    @pytest.mark.parametrize(
+        "end_date, end_date_url", [(None, "none"), ("2025-01-01", "2025-01-01")]
+    )
+    def test_fetch_market_cap(
+        self, start_date: str | None, start_date_url: str, end_date: str | None, end_date_url: str
+    ) -> None:
+        company_id = 12345
+        client = build_mock_api_client()
+
+        expected_fetch_url = (
+            f"{client.url_base}market_cap/{company_id}/{start_date_url}/{end_date_url}"
+        )
+        client.fetch_market_caps_tevs_and_shares_outstanding(
+            company_id=company_id, start_date=start_date, end_date=end_date
+        )
+        client.fetch.assert_called_with(expected_fetch_url)

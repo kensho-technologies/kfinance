@@ -1,7 +1,7 @@
 from datetime import datetime
 from functools import cache, cached_property
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -18,9 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class CompanyFunctionsMetaClass:
-    def __init__(self) -> None:
-        """Init company functions"""
-        self.kfinance_api_client: KFinanceApiClient
+    kfinance_api_client: KFinanceApiClient
 
     @cached_property
     def company_id(self) -> Any:
@@ -238,6 +236,78 @@ class CompanyFunctionsMetaClass:
             Companies(self.kfinance_api_client, companies["current"]),
             Companies(self.kfinance_api_client, companies["previous"]),
         )
+
+    def market_cap(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """Retrieves market caps for a company between start and end date.
+
+        :param start_date: The start date in format "YYYY-MM-DD", default to None
+        :type start_date: str, optional
+        :param end_date: The end date in format "YYYY-MM-DD", default to None
+        :type end_date: str, optional
+        :return: A DataFrame with a `market_cap` column. The dates are the index.
+        :rtype: pd.DataFrame
+        """
+
+        return self._fetch_market_cap_tev_or_shares_outstanding(
+            column_to_extract="market_cap", start_date=start_date, end_date=end_date
+        )
+
+    def tev(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """Retrieves TEV (total enterprise value) for a company between start and end date.
+
+        :param start_date: The start date in format "YYYY-MM-DD", default to None
+        :type start_date: str, optional
+        :param end_date: The end date in format "YYYY-MM-DD", default to None
+        :type end_date: str, optional
+        :return: A DataFrame with a `tev` column. The dates are the index.
+        :rtype: pd.DataFrame
+        """
+
+        return self._fetch_market_cap_tev_or_shares_outstanding(
+            column_to_extract="market_cap", start_date=start_date, end_date=end_date
+        )
+
+    def shares_outstanding(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """Retrieves shares outstanding for a company between start and end date.
+
+        :param start_date: The start date in format "YYYY-MM-DD", default to None
+        :type start_date: str, optional
+        :param end_date: The end date in format "YYYY-MM-DD", default to None
+        :type end_date: str, optional
+        :return: A DataFrame with a `shares_outstanding` column. The dates are the index.
+        :rtype: pd.DataFrame
+        """
+
+        return self._fetch_market_cap_tev_or_shares_outstanding(
+            column_to_extract="market_cap", start_date=start_date, end_date=end_date
+        )
+
+    def _fetch_market_cap_tev_or_shares_outstanding(
+        self,
+        column_to_extract: Literal["market_cap", "tev", "shares_outstanding"],
+        start_date: str | None,
+        end_date: str | None,
+    ) -> pd.DataFrame:
+        """Helper function to fetch market cap, TEV, and shares outstanding."""
+
+        df = pd.DataFrame(
+            self.kfinance_api_client.fetch_market_caps_tevs_and_shares_outstanding(
+                company_id=self.company_id, start_date=start_date, end_date=end_date
+            )["market_caps"]
+        )
+        return df.set_index("date")[[column_to_extract]].apply(pd.to_numeric).replace(np.nan, None)
 
 
 for line_item in LINE_ITEMS:

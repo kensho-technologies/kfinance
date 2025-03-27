@@ -166,6 +166,29 @@ class MockKFinanceApiClient:
         """Get a statement"""
         return MOCK_COMPANY_DB[company_id]["line_items"][line_item]
 
+    def fetch_market_caps_tevs_and_shares_outstanding(
+        self,
+        company_id: int,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> dict:
+        return {
+            "market_caps": [
+                {
+                    "date": "2025-01-01",
+                    "market_cap": "3133802247084.000000",
+                    "tev": "3152211247084.000000",
+                    "shares_outstanding": 7434880776,
+                },
+                {
+                    "date": "2025-01-02",
+                    "market_cap": "3112092395218.000000",
+                    "tev": "3130501395218.000000",
+                    "shares_outstanding": 7434880776,
+                },
+            ]
+        }
+
 
 class TestTradingItem(TestCase):
     def setUp(self):
@@ -549,3 +572,17 @@ class TestTicker(TestCase):
         self.assertEqual(expected_ticker_symbol, self.msft_ticker_from_isin.ticker)
         self.assertEqual(expected_ticker_symbol, self.msft_ticker_from_cusip.ticker)
         self.assertEqual(expected_ticker_symbol, self.msft_ticker_from_id_triple.ticker)
+
+    def test_market_cap(self):
+        """
+        GIVEN a mock client
+        WHEN the mock client receives a mock market cap response dict
+        THEN the Ticker object can correctly extract market caps from the dict.
+        """
+
+        expected_dataframe = pd.DataFrame(
+            {"market_cap": {"2025-01-01": 3133802247084.0, "2025-01-02": 3112092395218.0}}
+        )
+        expected_dataframe.index.name = "date"
+        market_caps = self.msft_ticker_from_ticker.market_cap()
+        pd.testing.assert_frame_equal(expected_dataframe, market_caps)

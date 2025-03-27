@@ -1,4 +1,7 @@
 # Changelog
+## v1.1.0
+- Add market cap, TEV, and shares outstanding
+
 ## v1.0.3
 - Fix typo for get_history_metadata_from_identifier.
 

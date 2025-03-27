@@ -20,7 +20,10 @@ alias l := lint
 # Lint the app directory (both lint and l work). For verbose, use `just lint --verbose`
 lint *args:
     python -m mypy --config-file pyproject.toml kfinance {{args}}
+    # The ruff linters (check) and formatters (format) are separate.
+    # See https://docs.astral.sh/ruff/formatter/#sorting-imports
     python -m ruff --config pyproject.toml check kfinance --fix {{args}}
+    python -m ruff --config pyproject.toml format kfinance {{args}}
 
 alias t := unit-test
 # Run unit tests. Use args for optional settings
