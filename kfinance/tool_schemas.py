@@ -77,6 +77,22 @@ class GetPricesFromIdentifier(BaseModel):
     )
 
 
+class GetCapitalizationFromIdentifier(BaseModel):
+    identifier: str = Field(
+        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
+    )
+    capitalization: Literal["market_cap", "tev", "shares_outstanding"] = Field(
+        description="The capitalization to retrieve"
+    )
+    start_date: str | None = Field(
+        default=None,
+        description="The start date for historical price retrieval in format YYYY-MM-DD",
+    )
+    end_date: str | None = Field(
+        default=None, description="The end date for historical price retrieval in format YYYY-MM-DD"
+    )
+
+
 class GetFinancialStatementFromIdentifier(BaseModel):
     identifier: str = Field(
         description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
