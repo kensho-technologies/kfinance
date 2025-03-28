@@ -254,7 +254,7 @@ class TestMarketCap:
         "start_date, start_date_url", [(None, "none"), ("2025-01-01", "2025-01-01")]
     )
     @pytest.mark.parametrize(
-        "end_date, end_date_url", [(None, "none"), ("2025-01-01", "2025-01-01")]
+        "end_date, end_date_url", [(None, "none"), ("2025-01-02", "2025-01-02")]
     )
     def test_fetch_market_cap(
         self, start_date: str | None, start_date_url: str, end_date: str | None, end_date_url: str

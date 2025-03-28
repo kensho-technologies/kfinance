@@ -272,7 +272,7 @@ class CompanyFunctionsMetaClass:
         """
 
         return self._fetch_market_cap_tev_or_shares_outstanding(
-            column_to_extract="market_cap", start_date=start_date, end_date=end_date
+            column_to_extract="tev", start_date=start_date, end_date=end_date
         )
 
     def shares_outstanding(
@@ -291,7 +291,7 @@ class CompanyFunctionsMetaClass:
         """
 
         return self._fetch_market_cap_tev_or_shares_outstanding(
-            column_to_extract="market_cap", start_date=start_date, end_date=end_date
+            column_to_extract="shares_outstanding", start_date=start_date, end_date=end_date
         )
 
     def _fetch_market_cap_tev_or_shares_outstanding(
