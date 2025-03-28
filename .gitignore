@@ -98,3 +98,5 @@ dmypy.json
 .idea/*
 .vscode/
 
+
+kfinance/version.py

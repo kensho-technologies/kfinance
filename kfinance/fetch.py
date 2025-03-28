@@ -182,6 +182,20 @@ class KFinanceApiClient:
         url = f"{self.url_base}pricing/{trading_item_id}/metadata"
         return self.fetch(url)
 
+    def fetch_market_caps_tevs_and_shares_outstanding(
+        self,
+        company_id: int,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> dict:
+        """Get the market cap, TEV, and shares outstanding for a company."""
+        url = (
+            f"{self.url_base}market_cap/{company_id}/"
+            f"{start_date if start_date is not None else 'none'}/"
+            f"{end_date if end_date is not None else 'none'}"
+        )
+        return self.fetch(url)
+
     def fetch_price_chart(
         self,
         trading_item_id: int,

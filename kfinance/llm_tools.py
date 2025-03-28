@@ -4,7 +4,7 @@ import copy
 import datetime
 from enum import Enum
 from functools import partial
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Literal
 
 from langchain_core.tools import StructuredTool
 
@@ -210,6 +210,31 @@ def get_prices_from_identifier(
     )
 
 
+def get_capitalization_from_identifier(
+    self: Client,
+    identifier: str,
+    capitalization: Literal["market_cap", "tev", "shares_outstanding"],
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> str:
+    """Get the historical market cap, tev (Total Enterprise Value), or shares outstanding of an identifier, where the identifier can be a ticker, ISIN or CUSIP, between inclusive start_date and inclusive end date.
+
+    Args:
+        identifier: A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.
+        capitalization: The capitalization to retrieve (market_cap, tev, or shares_outstanding)
+        start_date: The start date for historical price retrieval in format YYYY-MM-DD
+        end_date: The end date for historical price retrieval in format YYYY-MM-DD
+    """
+    ticker = self.ticker(identifier)
+    capitalization_to_func: dict[Literal["market_cap", "tev", "shares_outstanding"], Callable] = {
+        "market_cap": ticker.market_cap,
+        "tev": ticker.tev,
+        "shares_outstanding": ticker.shares_outstanding,
+    }
+    func = capitalization_to_func[capitalization]
+    return func(start_date=start_date, end_date=end_date).to_markdown()
+
+
 def get_financial_statement_from_identifier(
     self: Client,
     identifier: str,
@@ -297,6 +322,7 @@ def _llm_tools(self: Client) -> dict[str, Callable]:
         ),
         "get_history_metadata_from_identifier": partial(get_history_metadata_from_identifier, self),
         "get_prices_from_identifier": partial(get_prices_from_identifier, self),
+        "get_capitalization_from_identifier": partial(get_capitalization_from_identifier, self),
         "get_financial_statement_from_identifier": partial(
             get_financial_statement_from_identifier, self
         ),
@@ -323,6 +349,7 @@ def _llm_tool_metadata() -> dict:
         "get_earnings_call_datetimes_from_identifier": tool_schemas.GetEarningsCallDatetimesFromIdentifier,
         "get_history_metadata_from_identifier": tool_schemas.GetHistoryMetadataFromIdentifier,
         "get_prices_from_identifier": tool_schemas.GetPricesFromIdentifier,
+        "get_capitalization_from_identifier": tool_schemas.GetCapitalizationFromIdentifier,
         "get_financial_statement_from_identifier": tool_schemas.GetFinancialStatementFromIdentifier,
         "get_financial_line_item_from_identifier": tool_schemas.GetFinancialLineItemFromIdentifier,
         "get_business_relationship_from_identifier": tool_schemas.GetBusinessRelationshipFromIdentifier,
@@ -513,6 +540,34 @@ _base_tool_descriptions = [
                 },
             },
             "required": ["identifier"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "get_capitalization_from_identifier",
+        "description": "Get the historical market cap, tev (Total Enterprise Value), or shares outstanding of an identifier, where the identifier can be a ticker, ISIN or CUSIP, between inclusive start_date and inclusive end date.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "identifier": {
+                    "type": "string",
+                    "description": "A unique identifier, which can be a ticker symbol, ISIN, or CUSIP.",
+                },
+                "capitalization": {
+                    "type": "string",
+                    "description": "The capitalization to retrieve (market_cap, tev, or shares_outstanding).",
+                    "enum": ["market_cap", "tev", "shares_outstanding"],
+                },
+                "start_date": {
+                    "type": "string",
+                    "description": "The start date for historical price retrieval in format YYYY-MM-DD",
+                },
+                "end_date": {
+                    "type": "string",
+                    "description": "The end date for historical price retrieval in format YYYY-MM-DD",
+                },
+            },
+            "required": ["identifier", "capitalization"],
             "additionalProperties": False,
         },
     },
