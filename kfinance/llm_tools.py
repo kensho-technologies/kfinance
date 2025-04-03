@@ -31,8 +31,9 @@ class Model(Enum):
 
 
 def get_latest(use_local_timezone: bool = True) -> LatestPeriods:
-    """
-    Get the latest annual reporting year, latest quarterly reporting quarter and year, and current date. The output is a dictionary with the following schema::
+    """Get the latest annual reporting year, latest quarterly reporting quarter and year, and current date.
+
+    The output is a dictionary with the following schema::
 
         {
             "annual": {
@@ -87,8 +88,9 @@ def get_latest(use_local_timezone: bool = True) -> LatestPeriods:
 
 
 def get_n_quarters_ago(n: int) -> YearAndQuarter:
-    """
-    Get the year and quarter corresponding to [n] quarters before the current quarter. The output is a dictionary with the following schema::
+    """Get the year and quarter corresponding to [n] quarters before the current quarter.
+
+    The output is a dictionary with the following schema::
 
         {
             "year": int,
