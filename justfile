@@ -29,3 +29,9 @@ alias t := unit-test
 # Run unit tests. Use args for optional settings
 unit-test *args:
     python -m pytest {{args}}
+
+# Build the sphinx documents locally
+# First, copy the dependencies in docs/requirements.txt into pyproject.toml and install in a venv.
+# Don't merge changes to pyproject and docs/output into the remote repo!
+sphinx *args:
+    sphinx-build docs docs/output

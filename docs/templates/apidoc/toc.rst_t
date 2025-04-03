@@ -1,0 +1,10 @@
+{% raw %}
+Index Tree
+==========
+
+.. toctree::
+   :maxdepth: {{ maxdepth }}
+{% for docname in docnames %}
+   {{ docname }}
+{%- endfor %}
+{% endraw %}
