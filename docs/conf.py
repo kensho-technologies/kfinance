@@ -11,6 +11,8 @@ project = 'kensho-kfinance'
 copyright = '2025, Kensho Technologies'
 author = 'Kensho Technologies'
 
+# borrowed from here:
+# https://setuptools-scm.readthedocs.io/en/latest/usage/#usage-from-sphinx
 release: str = get_version("kensho-kfinance")
 # for example take major/minor
 version: str = ".".join(release.split('.')[:2])
@@ -18,6 +20,7 @@ version: str = ".".join(release.split('.')[:2])
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
+# borrowed from internal Kensho Sphinx configuration
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",

@@ -5,6 +5,8 @@ build:
     python: "3.10"
     # You can also specify other tool versions:
     # nodejs: "16"
+  # borrowed from here:
+  # https://docs.readthedocs.com/platform/stable/build-customization.html#avoid-having-a-dirty-git-index
   jobs:
     pre_install:
       - git update-index --assume-unchanged kfinance/version.py docs/conf.py
@@ -12,3 +14,7 @@ build:
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
    configuration: docs/conf.py
+
+python:
+  install:
+    - requirements: docs/requirements.txt
