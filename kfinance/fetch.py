@@ -1,5 +1,7 @@
+from contextlib import contextmanager
 from time import time
-from typing import Callable, Optional
+from typing import Callable, Generator, Optional
+from uuid import uuid4
 
 import jwt
 import requests
@@ -52,6 +54,22 @@ class KFinanceApiClient:
         self._access_token_expiry = 0
         self._access_token: str | None = None
         self.user_agent_source = "object_oriented"
+        self._batch_id: str | None = None
+        self._batch_size: str | None = None
+
+    @contextmanager
+    def batch_request_header(self, batch_size: int) -> Generator:
+        """Set batch id and batch size for batch request request headers"""
+        batch_id = str(uuid4())
+
+        self._batch_id = batch_id
+        self._batch_size = str(batch_size)
+
+        try:
+            yield
+        finally:
+            self._batch_id = None
+            self._batch_size = None
 
     @property
     def access_token(self) -> str:
@@ -110,13 +128,19 @@ class KFinanceApiClient:
 
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
+            "User-Agent": f"kfinance/{kfinance_version} {self.user_agent_source}",
+        }
+        if self._batch_id is not None:
+            assert self._batch_size is not None
+            headers.update({"Batch-Id": self._batch_id, "Batch-Size": self._batch_size})
+
         response = requests.get(
             url,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.access_token}",
-                "User-Agent": f"kfinance/{kfinance_version} {self.user_agent_source}",
-            },
+            headers=headers,
             timeout=60,
         )
         response.raise_for_status()
