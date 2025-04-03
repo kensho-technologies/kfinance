@@ -1,4 +1,7 @@
 # Changelog
+## v1.2.0
+- Add batch requests for iterable classes
+
 ## v1.1.0
 - Add market cap, TEV, and shares outstanding
 

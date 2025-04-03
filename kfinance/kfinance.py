@@ -31,7 +31,11 @@ from .llm_tools import (
     langchain_tools,
     openai_tool_descriptions,
 )
-from .meta_classes import CompanyFunctionsMetaClass, DelegatedCompanyFunctionsMetaClass
+from .meta_classes import (
+    CompanyFunctionsMetaClass,
+    DelegatedCompanyFunctionsMetaClass,
+    add_methods_of_singular_class_to_iterable_class,
+)
 from .prompt import PROMPT
 from .server_thread import ServerThread
 
@@ -917,7 +921,8 @@ class BusinessRelationships(NamedTuple):
         return f"{type(self).__module__}.{type(self).__qualname__} of {str(dictionary)}"
 
 
-class Companies(set):
+@add_methods_of_singular_class_to_iterable_class(Company)
+class Companies(list):
     """Base class for representing a set of Companies"""
 
     def __init__(self, kfinance_api_client: KFinanceApiClient, company_ids: Iterable[int]) -> None:
@@ -928,10 +933,12 @@ class Companies(set):
         :param company_ids: An iterable of S&P CIQ Company ids
         :type company_ids: Iterable[int]
         """
+        self.kfinance_api_client = kfinance_api_client
         super().__init__(Company(kfinance_api_client, company_id) for company_id in company_ids)
 
 
-class Securities(set):
+@add_methods_of_singular_class_to_iterable_class(Security)
+class Securities(list):
     """Base class for representing a set of Securities"""
 
     def __init__(self, kfinance_api_client: KFinanceApiClient, security_ids: Iterable[int]) -> None:
@@ -945,7 +952,8 @@ class Securities(set):
         super().__init__(Security(kfinance_api_client, security_id) for security_id in security_ids)
 
 
-class TradingItems(set):
+@add_methods_of_singular_class_to_iterable_class(TradingItem)
+class TradingItems(list):
     """Base class for representing a set of Trading Items"""
 
     def __init__(
@@ -958,13 +966,15 @@ class TradingItems(set):
         :param company_ids: An iterable of S&P CIQ Company ids
         :type company_ids: Iterable[int]
         """
+        self.kfinance_api_client = kfinance_api_client
         super().__init__(
             TradingItem(kfinance_api_client, trading_item_id)
             for trading_item_id in trading_item_ids
         )
 
 
-class Tickers(set):
+@add_methods_of_singular_class_to_iterable_class(Ticker)
+class Tickers(list):
     """Base TickerSet class for representing a set of Tickers"""
 
     def __init__(
