@@ -462,11 +462,11 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type) -> Calla
             method: Callable, self: ApiClientUser, *args: Any, **kwargs: Any
         ) -> dict:
             results = {}
-            for i in range(0, len(self), MAX_BATCH_SIZE):
-                batch = self[i : i + MAX_BATCH_SIZE]
-                with ThreadPoolExecutor() as pool:
-                    kfinance_api_client = self.kfinance_api_client
-                    with kfinance_api_client.batch_request_header(batch_size=len(batch)):
+            kfinance_api_client = self.kfinance_api_client
+            with kfinance_api_client.batch_request_header(batch_size=len(self)):
+                for i in range(0, len(self), MAX_BATCH_SIZE):
+                    batch = self[i : i + MAX_BATCH_SIZE]
+                    with ThreadPoolExecutor() as pool:
                         future_to_obj = {
                             pool.submit(method, obj, *args, **kwargs): obj for obj in batch
                         }
