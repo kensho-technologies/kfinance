@@ -1,9 +1,18 @@
 Index
 #####################
 
-Documentation page for Kensho Finance library.
+Documentation page for kensho-kinance library.
 
 .. toctree::
+   :maxdepth: 5
+   :caption: Contents:
 
-    kfinance
-    llm_tools
+.. automodule:: kfinance.kfinance
+   :members:
+   :undoc-members:
+   :inherited-members:
+
+.. automodule:: kfinance.llm_tools
+   :members:
+   :undoc-members:
+   :inherited-members:
