@@ -15,6 +15,7 @@ build:
 sphinx:
    configuration: docs/conf.py
 
+# Dependencies required to build your docs
 python:
   install:
     - requirements: docs/requirements.txt
