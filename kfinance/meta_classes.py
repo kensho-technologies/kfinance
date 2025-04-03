@@ -1,9 +1,10 @@
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 import functools
 from functools import cache, cached_property
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Literal, Optional, Type
+from typing import TYPE_CHECKING, Any, Callable, Literal, Optional, Protocol, Type
 
 import numpy as np
 import pandas as pd
@@ -21,9 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class CompanyFunctionsMetaClass:
-    def __init__(self) -> None:
-        """Init company functions"""
-        self.kfinance_api_client: KFinanceApiClient
+    kfinance_api_client: KFinanceApiClient
 
     @cached_property
     def company_id(self) -> Any:
@@ -452,20 +451,26 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type) -> Calla
     Requires the decorated class to be an iterable of [singular_cls].
     """
 
-    class ApiClientUser(list):
+    class IterableKfinanceClass(Protocol, Iterable):
+        """A protocol to represent a iterable Kfinance classes like Tickers and Companies.
+
+        Each of these classes has a kfinance_api_client attribute.
+        """
+
         kfinance_api_client: KFinanceApiClient
 
-    def decorator(iterable_cls: Type[ApiClientUser]) -> Type:
+    def decorator(iterable_cls: Type[IterableKfinanceClass]) -> Type:
         assert hasattr(iterable_cls, "__iter__")
 
         def process_in_batches(
-            method: Callable, self: ApiClientUser, *args: Any, **kwargs: Any
+            method: Callable, self: IterableKfinanceClass, *args: Any, **kwargs: Any
         ) -> dict:
             results = {}
             kfinance_api_client = self.kfinance_api_client
-            with kfinance_api_client.batch_request_header(batch_size=len(self)):
-                for i in range(0, len(self), MAX_BATCH_SIZE):
-                    batch = self[i : i + MAX_BATCH_SIZE]
+            instances = list(self)
+            with kfinance_api_client.batch_request_header(batch_size=len(instances)):
+                for i in range(0, len(instances), MAX_BATCH_SIZE):
+                    batch = instances[i : i + MAX_BATCH_SIZE]
                     with ThreadPoolExecutor() as pool:
                         future_to_obj = {
                             pool.submit(method, obj, *args, **kwargs): obj for obj in batch
@@ -491,7 +496,9 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type) -> Calla
 
                 def create_method_wrapper(method: Callable) -> Callable:
                     @functools.wraps(method)
-                    def method_wrapper(self: ApiClientUser, *args: Any, **kwargs: Any) -> dict:
+                    def method_wrapper(
+                        self: IterableKfinanceClass, *args: Any, **kwargs: Any
+                    ) -> dict:
                         return process_in_batches(method, self, *args, **kwargs)
 
                     return method_wrapper
@@ -504,7 +511,7 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type) -> Calla
                     assert method.fget is not None
 
                     @functools.wraps(method.fget)
-                    def prop_wrapper(self: ApiClientUser) -> Any:
+                    def prop_wrapper(self: IterableKfinanceClass) -> Any:
                         assert method.fget is not None
                         return process_in_batches(method.fget, self)
 
@@ -516,7 +523,7 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type) -> Calla
 
                 def create_cached_prop_wrapper(method: cached_property) -> cached_property:
                     @functools.wraps(method.func)
-                    def cached_prop_wrapper(self: ApiClientUser) -> Any:
+                    def cached_prop_wrapper(self: IterableKfinanceClass) -> Any:
                         return process_in_batches(method.func, self)
 
                     wrapped_cached_property = cached_property(cached_prop_wrapper)

@@ -922,8 +922,8 @@ class BusinessRelationships(NamedTuple):
 
 
 @add_methods_of_singular_class_to_iterable_class(Company)
-class Companies(list):
-    """Base class for representing a list of Companies"""
+class Companies(set):
+    """Base class for representing a set of Companies"""
 
     def __init__(self, kfinance_api_client: KFinanceApiClient, company_ids: Iterable[int]) -> None:
         """Initialize the Companies object
@@ -938,8 +938,8 @@ class Companies(list):
 
 
 @add_methods_of_singular_class_to_iterable_class(Security)
-class Securities(list):
-    """Base class for representing a list of Securities"""
+class Securities(set):
+    """Base class for representing a set of Securities"""
 
     def __init__(self, kfinance_api_client: KFinanceApiClient, security_ids: Iterable[int]) -> None:
         """Initialize the Securities
@@ -953,8 +953,8 @@ class Securities(list):
 
 
 @add_methods_of_singular_class_to_iterable_class(TradingItem)
-class TradingItems(list):
-    """Base class for representing a list of Trading Items"""
+class TradingItems(set):
+    """Base class for representing a set of Trading Items"""
 
     def __init__(
         self, kfinance_api_client: KFinanceApiClient, trading_item_ids: Iterable[int]
@@ -974,8 +974,8 @@ class TradingItems(list):
 
 
 @add_methods_of_singular_class_to_iterable_class(Ticker)
-class Tickers(list):
-    """Base class for representing a list of Tickers"""
+class Tickers(set):
+    """Base class for representing a set of Tickers"""
 
     def __init__(
         self,

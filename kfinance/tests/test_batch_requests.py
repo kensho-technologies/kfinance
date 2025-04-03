@@ -70,9 +70,13 @@ class TestTradingItem(TestCase):
 
         formatted_result = self.company_object_keys_as_company_id(result)
         for k, v in formatted_result.items():
-            formatted_result[k] = list(map(lambda s: s.security_id, v))
+            formatted_result[k] = set(map(lambda s: s.security_id, v))
 
-        expected_result = {1001: [101, 102, 103], 1002: [104, 105, 106, 107], 1005: [108, 109]}
+        expected_result = {
+            1001: set([101, 102, 103]),
+            1002: set([104, 105, 106, 107]),
+            1005: set([108, 109]),
+        }
 
         self.assertDictEqual(formatted_result, expected_result)
 
@@ -172,9 +176,11 @@ class TestTradingItem(TestCase):
         )
         m.get("https://kfinance.kensho.com/api/v1/info/1002", status_code=400)
 
-        with self.assertRaises(requests.exceptions.HTTPError):
+        with self.assertRaises(requests.exceptions.HTTPError) as e:
             companies = Companies(self.kfinance_api_client, [1001, 1002])
             _ = companies.city
+
+        self.assertEqual(e.exception.response.status_code, 400)
 
     @requests_mock.Mocker()
     def test_batch_request_500(self, m):
@@ -188,6 +194,8 @@ class TestTradingItem(TestCase):
         )
         m.get("https://kfinance.kensho.com/api/v1/info/1002", status_code=500)
 
-        with self.assertRaises(requests.exceptions.HTTPError):
+        with self.assertRaises(requests.exceptions.HTTPError) as e:
             companies = Companies(self.kfinance_api_client, [1001, 1002])
             _ = companies.city
+
+        self.assertEqual(e.exception.response.status_code, 500)
