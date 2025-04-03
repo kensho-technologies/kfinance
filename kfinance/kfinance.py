@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from PIL.Image import Image, open as image_open
 
+from .batch_request_handling import add_methods_of_singular_class_to_iterable_class
 from .constants import HistoryMetadata, IdentificationTriple, LatestPeriods, YearAndQuarter
 from .fetch import (
     DEFAULT_API_HOST,
@@ -34,7 +35,6 @@ from .llm_tools import (
 from .meta_classes import (
     CompanyFunctionsMetaClass,
     DelegatedCompanyFunctionsMetaClass,
-    add_methods_of_singular_class_to_iterable_class,
 )
 from .prompt import PROMPT
 from .server_thread import ServerThread
