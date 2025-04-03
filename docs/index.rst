@@ -4,15 +4,15 @@ Index
 Documentation page for kensho-kfinance library.
 
 .. toctree::
-   :maxdepth: 5
-   :caption: Contents:
+   :hidden:
+   :glob:
+   :maxdepth: 1
 
-.. automodule:: kfinance.kfinance
-   :members:
-   :undoc-members:
-   :inherited-members:
+   Introduction <readme>
+   Auto Generated Documentation <modules>
 
-.. automodule:: kfinance.llm_tools
-   :members:
-   :undoc-members:
-   :inherited-members:
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`

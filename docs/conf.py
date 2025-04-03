@@ -34,6 +34,8 @@ extensions = [
     # m2r2 is to add support to .md files specifically to include README.md files.
     # See this discussion: https://github.com/sphinx-doc/sphinx/issues/7000
     "m2r2",
+    # A ReadTheDocs theme for Sphinx
+    "sphinx_rtd_theme",
 ]
 
 napoleon_google_docstring = True
