@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import functools
 from functools import cached_property
-from typing import Any, Callable, Iterable, Protocol, Type
+from typing import Any, Callable, Iterable, Protocol, Type, TypeVar
 
 from requests.exceptions import HTTPError
 
@@ -10,15 +10,14 @@ from .fetch import KFinanceApiClient
 
 MAX_BATCH_SIZE = 10
 
+T = TypeVar("T")
 
-def add_methods_of_singular_class_to_iterable_class(singular_cls: Type) -> Callable:
-    """Add each method of [singular_cls] to the decorated class.
 
-    When the method is called, the result is dictionary mapping each object in the decorated class to the result of the method called on that object.
-    Requires the decorated class to be an iterable of [singular_cls].
-    """
+def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Callable:
+    """Returns a decorator that sets each method, property, and cached_property of"""
+    "[singular_cls] as an attribute of the decorated class."
 
-    class IterableKfinanceClass(Protocol, Iterable):
+    class IterableKfinanceClass(Protocol, Iterable[T]):
         """A protocol to represent a iterable Kfinance classes like Tickers and Companies.
 
         Each of these classes has a kfinance_api_client attribute.
@@ -26,7 +25,35 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type) -> Calla
 
         kfinance_api_client: KFinanceApiClient
 
-    def decorator(iterable_cls: Type[IterableKfinanceClass]) -> Type:
+    def decorator(iterable_cls: Type[IterableKfinanceClass]) -> Type[IterableKfinanceClass]:
+        """Decorator that adds methods, properties, and cached properties from"""
+        """[singular_cls] as attributes to [iterable_cls].
+
+        This decorator modifies the [iterable_cls] so that when an attribute
+        (method, property, or cached property) added by the decorator is accessed,
+        it returns a dictionary. This dictionary maps each object in [iterable_cls]
+        to the result of invoking the attribute on that specific object.
+
+        For example, consider a `Company` class with a `city` property and a
+        `Companies` class that is an iterable of `Company` instances. When the
+        `Companies` class is decorated, it gains a `city` property. Accessing this
+        property will yield a dictionary where each key is a `Company` instance
+        and the corresponding value is the city of that instance. The resulting
+        dictionary might look like:
+
+            {<kfinance.kfinance.Company object>: 'Some City'}
+
+        Error Handling:
+            - If invoking an attribute results in a 400 or 500 HTTP error,
+            the error is raised and bubbles up.
+            - If the result is a 404 HTTP error, the corresponding value
+            for that object in the dictionary will be set to None.
+
+        Note:
+            This decorator requires [iterable_cls] to be an iterable of
+            instances of [singular_cls].
+        """
+
         def process_in_batches(
             method: Callable, self: IterableKfinanceClass, *args: Any, **kwargs: Any
         ) -> dict:
