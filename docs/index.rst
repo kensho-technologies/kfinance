@@ -1,7 +1,7 @@
 Index
 #####################
 
-Documentation page for kensho-kinance library.
+Documentation page for kensho-kfinance library.
 
 .. toctree::
    :maxdepth: 5
