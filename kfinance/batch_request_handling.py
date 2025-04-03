@@ -8,6 +8,8 @@ from requests.exceptions import HTTPError
 from .fetch import KFinanceApiClient
 
 
+pool = ThreadPoolExecutor()
+
 MAX_BATCH_SIZE = 10
 
 T = TypeVar("T")
@@ -63,21 +65,20 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
             with kfinance_api_client.batch_request_header(batch_size=len(instances)):
                 for i in range(0, len(instances), MAX_BATCH_SIZE):
                     batch = instances[i : i + MAX_BATCH_SIZE]
-                    with ThreadPoolExecutor() as pool:
-                        future_to_obj = {
-                            pool.submit(method, obj, *args, **kwargs): obj for obj in batch
-                        }
-                        for future in as_completed(future_to_obj):
-                            obj = future_to_obj[future]
-                            try:
-                                result = future.result()
-                                results[obj] = result
-                            except HTTPError as http_err:
-                                error_code = http_err.response.status_code
-                                if error_code == 404:
-                                    results[obj] = None
-                                else:
-                                    raise http_err
+                    future_to_obj = {
+                        pool.submit(method, obj, *args, **kwargs): obj for obj in batch
+                    }
+                    for future in as_completed(future_to_obj):
+                        obj = future_to_obj[future]
+                        try:
+                            result = future.result()
+                            results[obj] = result
+                        except HTTPError as http_err:
+                            error_code = http_err.response.status_code
+                            if error_code == 404:
+                                results[obj] = None
+                            else:
+                                raise http_err
             return results
 
         for method_name in dir(singular_cls):
