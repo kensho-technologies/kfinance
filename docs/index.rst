@@ -8,8 +8,8 @@ Documentation page for kensho-kfinance library.
    :glob:
    :maxdepth: 1
 
-   Introduction <readme>
-   Auto Generated Documentation <modules>
+   kfinance <kfinance>
+   llm_tools <llm_tools>
 
 Indices and tables
 ==================

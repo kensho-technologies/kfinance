@@ -13,7 +13,7 @@ author = 'Kensho Technologies'
 
 # borrowed from here:
 # https://setuptools-scm.readthedocs.io/en/latest/usage/#usage-from-sphinx
-release: str = get_version("kensho-kfinance")
+release: str = get_version(project)
 # for example take major/minor
 version: str = ".".join(release.split('.')[:2])
 
