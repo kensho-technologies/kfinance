@@ -16,8 +16,9 @@ class GetNQuartersAgoInput(BaseModel):
 
 
 class GetCompanyIdFromIdentifier(BaseModel):
-    ticker_str: str = Field(description="The ticker")
-
+    identifier: str = Field(
+        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
+    )
 
 class GetSecurityIdFromIdentifier(BaseModel):
     identifier: str = Field(
