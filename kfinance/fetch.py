@@ -395,8 +395,11 @@ class KFinanceApiClient:
         return self.fetch(url)
 
     def fetch_from_gics_code(
-        self, gics_code: str, fetch_ticker: bool = True,
+        self,
+        gics_code: str,
+        fetch_ticker: bool = True,
     ) -> dict[str, list]:
+        """Fetches a list of companies or identification triples that are classified in the given gics_code."""
         url = f"{self.url_base}{'ticker_groups' if fetch_ticker else 'company_groups'}/industry/gics/{gics_code}"
         return self.fetch(url)
 
@@ -428,35 +431,49 @@ class KFinanceApiClient:
         industry_classification: IndustryClassification,
         fetch_ticker: bool = True,
     ) -> dict[str, list]:
+        """Fetches a list of companies or identification triples that are classified in the given industry_code and industry_classification."""
+
         url = f"{self.url_base}{'ticker_groups' if fetch_ticker else 'company_groups'}/industry/{industry_classification}/{industry_code}"
         return self.fetch(url)
 
     def fetch_ticker_from_industry_code(
-        self, industry_code: str, industry_classification: IndustryClassification,
+        self,
+        industry_code: str,
+        industry_classification: IndustryClassification,
     ) -> dict[str, list[IdentificationTriple]]:
         """Fetches a list of identification triples that are classified in the given industry_code and industry_classification.
 
         Returns a dictionary of shape {"tickers": List[{“company_id”: <company_id>, “security_id”: <security_id>, “trading_item_id”: <trading_item_id>}]}.
-        :param industry_code: The industry_code to filter on. 
+        :param industry_code: The industry_code to filter on.
         :type industry_code: str
         :param industry_classification: The type of industry_classification to filter on, eg "SIC", "NAICS", "NACE", "ANZSIC", "SPCAPIQETF", "SPRATINGS".
         :type industry_classification: IndustryClassification
         :return: A dictionary containing the list of identification triple [company_id, security_id, trading_item_id] that are classified in the given industry_code and industry_classification.
         :rtype: dict[str, list[IdentificationTriple]]
         """
-        return self.fetch_from_industry_code(industry_code=industry_code, industry_classification=industry_classification, fetch_ticker=True)
+        return self.fetch_from_industry_code(
+            industry_code=industry_code,
+            industry_classification=industry_classification,
+            fetch_ticker=True,
+        )
 
     def fetch_company_from_industry_code(
-        self, industry_code: str, industry_classification: IndustryClassification,
+        self,
+        industry_code: str,
+        industry_classification: IndustryClassification,
     ) -> dict[str, list[int]]:
         """Fetches a list of companies that are classified in the given industry_code and industry_classification.
 
         Returns a dictionary of shape {"companies": List[<company_id>]}.
-        :param industry_code: The industry_code to filter on. 
+        :param industry_code: The industry_code to filter on.
         :type industry_code: str
         :param industry_classification: The type of industry_classification to filter on, eg "SIC", "NAICS", "NACE", "ANZSIC", "SPCAPIQETF", "SPRATINGS".
         :type industry_classification: IndustryClassification
         :return: A dictionary containing the list of companies that are classified in the given industry_code and industry_classification.
         :rtype: dict[str, list[int]]
         """
-        return self.fetch_from_industry_code(industry_code=industry_code, industry_classification=industry_classification, fetch_ticker=False)
+        return self.fetch_from_industry_code(
+            industry_code=industry_code,
+            industry_classification=industry_classification,
+            fetch_ticker=False,
+        )

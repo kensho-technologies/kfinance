@@ -75,6 +75,7 @@ class LatestPeriods(TypedDict):
     quarterly: LatestQuarterlyPeriod
     now: CurrentPeriod
 
+
 class IndustryClassification(StrEnum):
     sic = "SIC"
     naics = "NAICS"
@@ -82,6 +83,7 @@ class IndustryClassification(StrEnum):
     anzsic = "ANZSIC"
     spcapiqetf = "SPCAPIQETF"
     spratings = "SPRATINGS"
+
 
 # all of these values must be lower case keys
 LINE_ITEMS: list[LineItemType] = [
