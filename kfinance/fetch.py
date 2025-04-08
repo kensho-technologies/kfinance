@@ -37,7 +37,26 @@ class KFinanceApiClient:
         okta_host: str = DEFAULT_OKTA_HOST,
         okta_auth_server: str = DEFAULT_OKTA_AUTH_SERVER,
     ):
-        """Configuration of KFinance Client."""
+        """Configuration of KFinance Client.
+        
+        :param refresh_token: users refresh token
+        :type refresh_token: str, Optional
+        :param client_id: users client id will be provided by support@kensho.com
+        :type client_id: str, Optional
+        :param private_key: users private key that corresponds to the registered public sent to support@kensho.com
+        :type private_key: str, Optional
+        :param thread_pool: the thread pool used to execute batch requests. The number of concurrent requests is
+        capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when batch 
+        requests are made.
+        :type thread_pool: ThreadPoolExecutor, optional
+        :param api_host: the api host URL
+        :type api_host: str
+        :param api_version: the api version number
+        :type api_version: int
+        :param okta_host: the okta host URL
+        :type okta_host: str
+        :param okta_auth_server: the okta route for authentication
+        :type okta_auth_server: str"""
         if refresh_token is not None:
             self.refresh_token = refresh_token
             self._access_token_refresh_func: Callable[..., str] = (

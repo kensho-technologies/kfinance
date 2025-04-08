@@ -1066,6 +1066,10 @@ class Client:
         :type client_id: str, Optional
         :param private_key: users private key that corresponds to the registered public sent to support@kensho.com
         :type private_key: str, Optional
+        :param thread_pool: the thread pool used to execute batch requests. The number of concurrent requests is
+        capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when batch 
+        requests are made.
+        :type thread_pool: ThreadPoolExecutor, optional
         :param api_host: the api host URL
         :type api_host: str
         :param api_version: the api version number
@@ -1074,10 +1078,6 @@ class Client:
         :type okta_host: str
         :param okta_auth_server: the okta route for authentication
         :type okta_auth_server: str
-        :param thread_pool: the thread pool used to execute batch requests. The number of concurrent requests will
-        be capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when
-        batch requests are made.
-        :type thread_pool: ThreadPoolExecutor, optional
         """
 
         # method 1 refresh token
