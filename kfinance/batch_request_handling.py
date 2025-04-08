@@ -11,6 +11,7 @@ from .fetch import KFinanceApiClient
 
 MAX_WORKERS_CAP: int = 10
 
+throttle = asyncio.BoundedSemaphore(MAX_WORKERS_CAP)
 
 T = TypeVar("T")
 
@@ -76,7 +77,6 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
             kfinance_api_client = self.kfinance_api_client
             with kfinance_api_client.batch_request_header(batch_size=len(self)):
                 with kfinance_api_client.thread_pool as executor:
-                    throttle = asyncio.BoundedSemaphore(MAX_WORKERS_CAP)
 
                     async def do_throttle(coro: Awaitable) -> Any:
                         async with throttle:
