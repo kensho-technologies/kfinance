@@ -173,7 +173,9 @@ class KFinanceApiClient:
         }
         if self._batch_id is not None:
             assert self._batch_size is not None
-            headers.update({"Batch-Id": self._batch_id, "Batch-Size": self._batch_size})
+            headers.update(
+                {"Kfinance-Batch-Id": self._batch_id, "Kfinance-Batch-Size": self._batch_size}
+            )
 
         response = requests.get(
             url,
