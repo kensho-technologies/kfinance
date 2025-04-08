@@ -1,8 +1,8 @@
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import functools
 from functools import cached_property
-from typing import Any, Awaitable, Callable, Iterable, Protocol, Sized, Type, TypeVar
+import threading
+from typing import Any, Callable, Iterable, Protocol, Sized, Type, TypeVar
 
 from requests.exceptions import HTTPError
 
@@ -13,12 +13,7 @@ T = TypeVar("T")
 
 MAX_WORKERS_CAP: int = 10
 
-throttle = asyncio.BoundedSemaphore(MAX_WORKERS_CAP)
-
-
-async def _do_throttle(coro: Awaitable) -> Any:
-    async with throttle:
-        return await coro
+throttle = threading.Semaphore(MAX_WORKERS_CAP)
 
 
 def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Callable:
@@ -62,20 +57,21 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
             instances of [singular_cls].
         """
 
-        async def process_in_thread_pool(
+        def process_in_thread_pool(
             executor: ThreadPoolExecutor, method: Callable, obj: T, *args: Any, **kwargs: Any
         ) -> Any:
-            future = executor.submit(method, obj, *args, **kwargs)
-            try:
-                return future.result()
-            except HTTPError as http_err:
-                error_code = http_err.response.status_code
-                if error_code == 404:
-                    return None
-                else:
-                    raise http_err
+            with throttle:
+                future = executor.submit(method, obj, *args, **kwargs)
+                try:
+                    return future.result()
+                except HTTPError as http_err:
+                    error_code = http_err.response.status_code
+                    if error_code == 404:
+                        return None
+                    else:
+                        raise http_err
 
-        async def process_in_batch(
+        def process_in_batch(
             method: Callable, self: IterableKfinanceClass, *args: Any, **kwargs: Any
         ) -> dict:
             results = {}
@@ -85,16 +81,10 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
                     results = dict(
                         zip(
                             self,
-                            await asyncio.gather(
-                                *[
-                                    _do_throttle(
-                                        process_in_thread_pool(
-                                            executor, method, obj, *args, **kwargs
-                                        )
-                                    )
-                                    for obj in self
-                                ]
-                            ),
+                            [
+                                process_in_thread_pool(executor, method, obj, *args, **kwargs)
+                                for obj in self
+                            ],
                         )
                     )
 
@@ -111,7 +101,7 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
                     def method_wrapper(
                         self: IterableKfinanceClass, *args: Any, **kwargs: Any
                     ) -> dict:
-                        return asyncio.run(process_in_batch(method, self, *args, **kwargs))
+                        return process_in_batch(method, self, *args, **kwargs)
 
                     return method_wrapper
 
@@ -125,7 +115,7 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
                     @functools.wraps(method.fget)
                     def prop_wrapper(self: IterableKfinanceClass) -> Any:
                         assert method.fget is not None
-                        return asyncio.run(process_in_batch(method.fget, self))
+                        return process_in_batch(method.fget, self)
 
                     return prop_wrapper
 
@@ -136,7 +126,7 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
                 def create_cached_prop_wrapper(method: cached_property) -> cached_property:
                     @functools.wraps(method.func)
                     def cached_prop_wrapper(self: IterableKfinanceClass) -> Any:
-                        return asyncio.run(process_in_batch(method.func, self))
+                        return process_in_batch(method.func, self)
 
                     wrapped_cached_property = cached_property(cached_prop_wrapper)
                     wrapped_cached_property.__set_name__(iterable_cls, method_name)
