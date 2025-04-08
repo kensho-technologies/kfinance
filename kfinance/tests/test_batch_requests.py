@@ -22,7 +22,9 @@ def mock_method():
 class TestTradingItem(TestCase):
     def setUp(self):
         self.kfinance_api_client = KFinanceApiClient(refresh_token="fake_refresh_token")
-        self.kfinance_api_client_with_thread_pool = KFinanceApiClient(refresh_token="fake_refresh_token", thread_pool=ThreadPoolExecutor(100))
+        self.kfinance_api_client_with_thread_pool = KFinanceApiClient(
+            refresh_token="fake_refresh_token", thread_pool=ThreadPoolExecutor(100)
+        )
         self.test_ticker = Ticker(self.kfinance_api_client, "test")
 
     def company_object_keys_as_company_id(self, company_dict: Dict[Company, Any]):
