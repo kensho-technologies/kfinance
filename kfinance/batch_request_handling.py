@@ -69,7 +69,7 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
                 else:
                     raise http_err
 
-        async def process_in_batches(
+        async def process_in_batch(
             method: Callable, self: IterableKfinanceClass, *args: Any, **kwargs: Any
         ) -> dict:
             results = {}
@@ -111,7 +111,7 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
                     def method_wrapper(
                         self: IterableKfinanceClass, *args: Any, **kwargs: Any
                     ) -> dict:
-                        return asyncio.run(process_in_batches(method, self, *args, **kwargs))
+                        return asyncio.run(process_in_batch(method, self, *args, **kwargs))
 
                     return method_wrapper
 
@@ -125,7 +125,7 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
                     @functools.wraps(method.fget)
                     def prop_wrapper(self: IterableKfinanceClass) -> Any:
                         assert method.fget is not None
-                        return asyncio.run(process_in_batches(method.fget, self))
+                        return asyncio.run(process_in_batch(method.fget, self))
 
                     return prop_wrapper
 
@@ -136,7 +136,7 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
                 def create_cached_prop_wrapper(method: cached_property) -> cached_property:
                     @functools.wraps(method.func)
                     def cached_prop_wrapper(self: IterableKfinanceClass) -> Any:
-                        return asyncio.run(process_in_batches(method.func, self))
+                        return asyncio.run(process_in_batch(method.func, self))
 
                     wrapped_cached_property = cached_property(cached_prop_wrapper)
                     wrapped_cached_property.__set_name__(iterable_cls, method_name)
