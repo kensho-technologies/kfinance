@@ -219,6 +219,5 @@ class TestTradingItem(TestCase):
         result = companies.city
         formatted_result = self.company_object_keys_as_company_id(result)
 
-        # company with company id 1005 raises a 404 error on the info route, so its corresponding value should be None
         expected_result = {1001: "Mock City A"}
         self.assertDictEqual(formatted_result, expected_result)
