@@ -47,10 +47,9 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
             {<kfinance.kfinance.Company object>: 'Some City'}
 
         Error Handling:
-            - If invoking an attribute results in a 400 or 500 HTTP error,
-            the error is raised and bubbles up.
             - If the result is a 404 HTTP error, the corresponding value
             for that object in the dictionary will be set to None.
+            - For any other HTTP error, the error is raised and bubbles up.
 
         Note:
             This decorator requires [iterable_cls] to be an iterable of
