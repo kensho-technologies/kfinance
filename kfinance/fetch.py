@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from time import time
 from typing import Callable, Generator, Optional
@@ -21,6 +22,7 @@ DEFAULT_API_HOST: str = "https://kfinance.kensho.com"
 DEFAULT_API_VERSION: int = 1
 DEFAULT_OKTA_HOST: str = "https://kensho.okta.com"
 DEFAULT_OKTA_AUTH_SERVER: str = "default"
+DEFAULT_MAX_WORKERS: int = 10
 
 
 class KFinanceApiClient:
@@ -29,6 +31,7 @@ class KFinanceApiClient:
         refresh_token: Optional[str] = None,
         client_id: Optional[str] = None,
         private_key: Optional[str] = None,
+        thread_pool: Optional[ThreadPoolExecutor] = None,
         api_host: str = DEFAULT_API_HOST,
         api_version: int = DEFAULT_API_VERSION,
         okta_host: str = DEFAULT_OKTA_HOST,
@@ -50,6 +53,7 @@ class KFinanceApiClient:
         self.api_version = api_version
         self.okta_host = okta_host
         self.okta_auth_server = okta_auth_server
+        self._thread_pool = thread_pool
         self.url_base = f"{self.api_host}/api/v{self.api_version}/"
         self._access_token_expiry = 0
         self._access_token: str | None = None
@@ -70,6 +74,19 @@ class KFinanceApiClient:
         finally:
             self._batch_id = None
             self._batch_size = None
+
+    @property
+    def thread_pool(self) -> ThreadPoolExecutor:
+        """Returns the thread pool used to execute batch requests.
+
+        If the thread pool is not set, a thread pool with 10 max workers will be created
+         and returned.
+        """
+
+        if self._thread_pool is None:
+            self._thread_pool = ThreadPoolExecutor(max_workers=DEFAULT_MAX_WORKERS)
+
+        return self._thread_pool
 
     @property
     def access_token(self) -> str:

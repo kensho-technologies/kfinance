@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timezone
 from functools import cached_property
 from io import BytesIO
@@ -1051,6 +1052,7 @@ class Client:
         refresh_token: Optional[str] = None,
         client_id: Optional[str] = None,
         private_key: Optional[str] = None,
+        thread_pool: Optional[ThreadPoolExecutor] = None,
         api_host: str = DEFAULT_API_HOST,
         api_version: int = DEFAULT_API_VERSION,
         okta_host: str = DEFAULT_OKTA_HOST,
@@ -1072,6 +1074,10 @@ class Client:
         :type okta_host: str
         :param okta_auth_server: the okta route for authentication
         :type okta_auth_server: str
+        :param thread_pool: the thread pool used to execute batch requests. The number of concurrent requests will
+        be capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when
+        batch requests are made.
+        :type thread_pool: ThreadPoolExecutor, optional
         """
 
         # method 1 refresh token
@@ -1081,6 +1087,7 @@ class Client:
                 api_host=api_host,
                 api_version=api_version,
                 okta_host=okta_host,
+                thread_pool=thread_pool,
             )
         # method 2 keypair
         elif client_id is not None and private_key is not None:
@@ -1091,6 +1098,7 @@ class Client:
                 api_version=api_version,
                 okta_host=okta_host,
                 okta_auth_server=okta_auth_server,
+                thread_pool=thread_pool,
             )
         # method 3 automatic login getting a refresh token
         else:
@@ -1109,6 +1117,7 @@ class Client:
                 api_host=api_host,
                 api_version=api_version,
                 okta_host=okta_host,
+                thread_pool=thread_pool,
             )
             stdout.write("Login credentials received.\n")
 

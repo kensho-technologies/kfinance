@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict
 from unittest import TestCase
 from unittest.mock import patch
@@ -21,6 +22,7 @@ def mock_method():
 class TestTradingItem(TestCase):
     def setUp(self):
         self.kfinance_api_client = KFinanceApiClient(refresh_token="fake_refresh_token")
+        self.kfinance_api_client_with_thread_pool = KFinanceApiClient(refresh_token="fake_refresh_token", thread_pool=ThreadPoolExecutor(100))
         self.test_ticker = Ticker(self.kfinance_api_client, "test")
 
     def company_object_keys_as_company_id(self, company_dict: Dict[Company, Any]):
@@ -199,3 +201,22 @@ class TestTradingItem(TestCase):
             _ = companies.city
 
         self.assertEqual(e.exception.response.status_code, 500)
+
+    @requests_mock.Mocker()
+    def test_batch_request_property_with_thread_pool(self, m):
+        """Test batch request property and 404"""
+        m.get(
+            "https://kfinance.kensho.com/api/v1/info/1001",
+            json={
+                "name": "Mock Company A, Inc.",
+                "city": "Mock City A",
+            },
+        )
+
+        companies = Companies(self.kfinance_api_client_with_thread_pool, [1001])
+        result = companies.city
+        formatted_result = self.company_object_keys_as_company_id(result)
+
+        # company with company id 1005 raises a 404 error on the info route, so its corresponding value should be None
+        expected_result = {1001: "Mock City A"}
+        self.assertDictEqual(formatted_result, expected_result)
