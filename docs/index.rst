@@ -1,9 +1,18 @@
 Index
 #####################
 
-Documentation page for Kensho Finance library.
+Documentation page for kensho-kfinance library.
 
 .. toctree::
+   :hidden:
+   :glob:
+   :maxdepth: 1
 
-    kfinance
-    llm_tools
+   kfinance <kfinance>
+   llm_tools <llm_tools>
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
