@@ -9,11 +9,16 @@ from requests.exceptions import HTTPError
 from .fetch import KFinanceApiClient
 
 
+T = TypeVar("T")
+
 MAX_WORKERS_CAP: int = 10
 
 throttle = asyncio.BoundedSemaphore(MAX_WORKERS_CAP)
 
-T = TypeVar("T")
+
+async def _do_throttle(coro: Awaitable) -> Any:
+    async with throttle:
+        return await coro
 
 
 def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Callable:
@@ -77,17 +82,12 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
             kfinance_api_client = self.kfinance_api_client
             with kfinance_api_client.batch_request_header(batch_size=len(self)):
                 with kfinance_api_client.thread_pool as executor:
-
-                    async def do_throttle(coro: Awaitable) -> Any:
-                        async with throttle:
-                            return await coro
-
                     results = dict(
                         zip(
                             self,
                             await asyncio.gather(
                                 *[
-                                    do_throttle(
+                                    _do_throttle(
                                         process_in_thread_pool(
                                             executor, method, obj, *args, **kwargs
                                         )
