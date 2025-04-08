@@ -20,6 +20,7 @@ class GetCompanyIdFromIdentifier(BaseModel):
         description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
     )
 
+
 class GetSecurityIdFromIdentifier(BaseModel):
     identifier: str = Field(
         description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
