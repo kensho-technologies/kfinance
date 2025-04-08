@@ -1067,7 +1067,7 @@ class Client:
         :param private_key: users private key that corresponds to the registered public sent to support@kensho.com
         :type private_key: str, Optional
         :param thread_pool: the thread pool used to execute batch requests. The number of concurrent requests is
-        capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when batch 
+        capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when batch
         requests are made.
         :type thread_pool: ThreadPoolExecutor, optional
         :param api_host: the api host URL
