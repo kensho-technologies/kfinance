@@ -50,11 +50,11 @@ class TestTradingItem(TestCase):
 
         companies = Companies(self.kfinance_api_client, [1001, 1002])
         result = companies.city
-        formatted_result = self.company_object_keys_as_company_id(result)
+        id_based_result = self.company_object_keys_as_company_id(result)
 
         # company with company id 1005 raises a 404 error on the info route, so its corresponding value should be None
-        expected_result = {1001: "Mock City A", 1002: "Mock City B"}
-        self.assertDictEqual(formatted_result, expected_result)
+        expected_id_based_result = {1001: "Mock City A", 1002: "Mock City B"}
+        self.assertDictEqual(id_based_result, expected_id_based_result)
 
     @requests_mock.Mocker()
     def test_batch_request_cached_properties(self, m):
@@ -72,17 +72,17 @@ class TestTradingItem(TestCase):
         companies = Companies(self.kfinance_api_client, [1001, 1002, 1005])
         result = companies.securities
 
-        formatted_result = self.company_object_keys_as_company_id(result)
-        for k, v in formatted_result.items():
-            formatted_result[k] = set(map(lambda s: s.security_id, v))
+        id_based_result = self.company_object_keys_as_company_id(result)
+        for k, v in id_based_result.items():
+            id_based_result[k] = set(map(lambda s: s.security_id, v))
 
-        expected_result = {
+        expected_id_based_result = {
             1001: set([101, 102, 103]),
             1002: set([104, 105, 106, 107]),
             1005: set([108, 109]),
         }
 
-        self.assertDictEqual(formatted_result, expected_result)
+        self.assertDictEqual(id_based_result, expected_id_based_result)
 
     @requests_mock.Mocker()
     def test_batch_request_function(self, m):
@@ -109,7 +109,7 @@ class TestTradingItem(TestCase):
         trading_items = TradingItems(self.kfinance_api_client, [2, 3])
 
         result = trading_items.history()
-        expected_result = {
+        expected_dictionary_based_result = {
             2: [
                 {"date": "2024-01-01", "close": "100.000000"},
                 {"date": "2024-01-02", "close": "101.000000"},
@@ -119,13 +119,13 @@ class TestTradingItem(TestCase):
                 {"date": "2024-01-02", "close": "201.000000"},
             ],
         }
-        self.assertEqual(len(result), len(expected_result))
+        self.assertEqual(len(result), len(expected_dictionary_based_result))
 
         for k, v in result.items():
             trading_item_id = k.trading_item_id
             pd.testing.assert_frame_equal(
                 v,
-                pd.DataFrame(expected_result[trading_item_id])
+                pd.DataFrame(expected_dictionary_based_result[trading_item_id])
                 .set_index("date")
                 .apply(pd.to_numeric)
                 .replace(np.nan, None),
@@ -162,11 +162,11 @@ class TestTradingItem(TestCase):
 
         companies = Companies(self.kfinance_api_client, [1001, 1002])
         result = companies.city
-        formatted_result = self.company_object_keys_as_company_id(result)
+        id_based_result = self.company_object_keys_as_company_id(result)
 
         # the company with company id 1002 raises a 404 error on the info route, so its corresponding value should be None
-        expected_result = {1001: "Mock City A", 1002: None}
-        self.assertDictEqual(formatted_result, expected_result)
+        expected_id_based_result = {1001: "Mock City A", 1002: None}
+        self.assertDictEqual(id_based_result, expected_id_based_result)
 
     @requests_mock.Mocker()
     def test_batch_request_400(self, m):
@@ -217,7 +217,7 @@ class TestTradingItem(TestCase):
 
         companies = Companies(self.kfinance_api_client_with_thread_pool, [1001])
         result = companies.city
-        formatted_result = self.company_object_keys_as_company_id(result)
+        id_based_result = self.company_object_keys_as_company_id(result)
 
-        expected_result = {1001: "Mock City A"}
-        self.assertDictEqual(formatted_result, expected_result)
+        expected_id_based_result = {1001: "Mock City A"}
+        self.assertDictEqual(id_based_result, expected_id_based_result)

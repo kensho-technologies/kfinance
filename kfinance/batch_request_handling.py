@@ -29,8 +29,7 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
         kfinance_api_client: KFinanceApiClient
 
     def decorator(iterable_cls: Type[IterableKfinanceClass]) -> Type[IterableKfinanceClass]:
-        """Decorator that adds methods, properties, and cached properties from"""
-        """[singular_cls] as attributes to [iterable_cls].
+        """Adds functions from a singular class to an iterable class.
 
         This decorator modifies the [iterable_cls] so that when an attribute
         (method, property, or cached property) added by the decorator is accessed,

@@ -1069,7 +1069,7 @@ class Client:
         :param thread_pool: the thread pool used to execute batch requests. The number of concurrent requests is
         capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when batch
         requests are made.
-        :type thread_pool: ThreadPoolExecutor, optional
+        :type thread_pool: ThreadPoolExecutor, Optional
         :param api_host: the api host URL
         :type api_host: str
         :param api_version: the api version number
