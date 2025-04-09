@@ -32,7 +32,11 @@ class TestTradingItem(TestCase):
 
     @requests_mock.Mocker()
     def test_batch_request_property(self, m):
-        """Test batch request property and 404"""
+        """GIVEN a kfinance group object like Companies
+        WHEN we batch request a property for each object in the group
+        THEN the batch request completes successfully and we get back a mapping of
+        company objects to the corresponding values."""
+
         m.get(
             "https://kfinance.kensho.com/api/v1/info/1001",
             json={
@@ -52,13 +56,16 @@ class TestTradingItem(TestCase):
         result = companies.city
         id_based_result = self.company_object_keys_as_company_id(result)
 
-        # company with company id 1005 raises a 404 error on the info route, so its corresponding value should be None
         expected_id_based_result = {1001: "Mock City A", 1002: "Mock City B"}
         self.assertDictEqual(id_based_result, expected_id_based_result)
 
     @requests_mock.Mocker()
     def test_batch_request_cached_properties(self, m):
-        """Test batch request cached property."""
+        """GIVEN a kfinance group object like Companies
+        WHEN we batch request a cached property for each object in the group
+        THEN the batch request completes successfully and we get back a mapping of
+        company objects to the corresponding values."""
+
         m.get(
             "https://kfinance.kensho.com/api/v1/securities/1001",
             json={"securities": [101, 102, 103]},
@@ -86,7 +93,11 @@ class TestTradingItem(TestCase):
 
     @requests_mock.Mocker()
     def test_batch_request_function(self, m):
-        """Test batch request history function."""
+        """GIVEN a kfinance group object like TradingItems
+        WHEN we batch request a function for each object in the group
+        THEN the batch request completes successfully and we get back a mapping of
+        trading item objects to the corresponding values."""
+
         m.get(
             "https://kfinance.kensho.com/api/v1/pricing/2/none/none/day/adjusted",
             json={
@@ -133,7 +144,11 @@ class TestTradingItem(TestCase):
 
     @requests_mock.Mocker()
     def test_large_batch_request_property(self, m):
-        """test business relationship large batch request property."""
+        """GIVEN a kfinance group object like Companies with a very large size
+        WHEN we batch request a property for each object in the group
+        THEN the batch request completes successfully and we get back a mapping of
+        company objects to the corresponding values."""
+
         m.get(
             "https://kfinance.kensho.com/api/v1/info/1000",
             json={
@@ -150,7 +165,13 @@ class TestTradingItem(TestCase):
 
     @requests_mock.Mocker()
     def test_batch_request_property_404(self, m):
-        """Test batch request property and 404"""
+        """GIVEN a kfinance group object like Companies
+        WHEN we batch request a property for each object in the group and one of the
+        property requests returns a 404
+        THEN the batch request completes successfully and we get back a mapping of
+        company objects to the corresponding property value or None when the request for
+        that property returns a 404"""
+
         m.get(
             "https://kfinance.kensho.com/api/v1/info/1001",
             json={
@@ -164,13 +185,16 @@ class TestTradingItem(TestCase):
         result = companies.city
         id_based_result = self.company_object_keys_as_company_id(result)
 
-        # the company with company id 1002 raises a 404 error on the info route, so its corresponding value should be None
         expected_id_based_result = {1001: "Mock City A", 1002: None}
         self.assertDictEqual(id_based_result, expected_id_based_result)
 
     @requests_mock.Mocker()
     def test_batch_request_400(self, m):
-        """test batch request property where one instance returns a 400"""
+        """GIVEN a kfinance group object like Companies
+        WHEN we batch request a property for each object in the group and one of the
+        property requests returns a 400
+        THEN the batch request returns a 400"""
+
         m.get(
             "https://kfinance.kensho.com/api/v1/info/1001",
             json={
@@ -188,7 +212,11 @@ class TestTradingItem(TestCase):
 
     @requests_mock.Mocker()
     def test_batch_request_500(self, m):
-        """test batch request property where one instance returns a 400"""
+        """GIVEN a kfinance group object like Companies
+        WHEN we batch request a property for each object in the group and one of the
+        property requests returns a 500
+        THEN the batch request returns a 500"""
+
         m.get(
             "https://kfinance.kensho.com/api/v1/info/1001",
             json={
@@ -206,7 +234,12 @@ class TestTradingItem(TestCase):
 
     @requests_mock.Mocker()
     def test_batch_request_property_with_thread_pool(self, m):
-        """Test batch request property and 404"""
+        """GIVEN a kfinance group object like Companies and an api client instantiated
+        with a passed-in ThreadPool
+        WHEN we batch request a property for each object in the group
+        THEN the batch request completes successfully and we get back a mapping of
+        company objects to corresponding values"""
+
         m.get(
             "https://kfinance.kensho.com/api/v1/info/1001",
             json={
