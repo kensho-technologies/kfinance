@@ -77,12 +77,14 @@ class LatestPeriods(TypedDict):
 
 
 class IndustryClassification(StrEnum):
-    sic = "SIC"
-    naics = "NAICS"
-    nace = "NACE"
-    anzsic = "ANZSIC"
-    spcapiqetf = "SPCAPIQETF"
-    spratings = "SPRATINGS"
+    sic = "sic"
+    naics = "naics"
+    nace = "nace"
+    anzsic = "anzsic"
+    spcapiqetf = "spcapiqetf"
+    spratings = "spratings"
+    gics = "gics"
+    simple = "simple"
 
 
 # all of these values must be lower case keys

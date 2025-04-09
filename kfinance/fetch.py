@@ -305,26 +305,6 @@ class KFinanceApiClient:
             country_iso_code=country_iso_code, state_iso_code=state_iso_code, fetch_ticker=False
         )
 
-    def fetch_simple_industry_groups(
-        self, simple_industry: str, fetch_ticker: bool = True
-    ) -> dict[str, list]:
-        """Fetch simple industry groups"""
-        url = f"{self.url_base}{'ticker_groups' if fetch_ticker else 'company_groups'}/industry/simple/{simple_industry}"
-        return self.fetch(url)
-
-    def fetch_ticker_simple_industry_groups(
-        self, simple_industry: str
-    ) -> dict[str, list[IdentificationTriple]]:
-        """Fetch ticker simple industry groups"""
-        return self.fetch_simple_industry_groups(simple_industry=simple_industry, fetch_ticker=True)
-
-    def fetch_company_simple_industry_groups(self, simple_industry: str) -> dict[str, list[int]]:
-        """Fetch company simple industry groups"""
-        return self.fetch_simple_industry_groups(
-            simple_industry=simple_industry,
-            fetch_ticker=False,
-        )
-
     def fetch_exchange_groups(
         self, exchange_code: str, fetch_ticker: bool = True
     ) -> dict[str, list]:
@@ -394,37 +374,6 @@ class KFinanceApiClient:
         url = f"{self.url_base}relationship/{company_id}/{relationship_type}"
         return self.fetch(url)
 
-    def fetch_from_gics_code(
-        self,
-        gics_code: str,
-        fetch_ticker: bool = True,
-    ) -> dict[str, list]:
-        """Fetches a list of companies or identification triples that are classified in the given gics_code."""
-        url = f"{self.url_base}{'ticker_groups' if fetch_ticker else 'company_groups'}/industry/gics/{gics_code}"
-        return self.fetch(url)
-
-    def fetch_tickers_by_gics_code(self, gics_code: str) -> dict[str, list[IdentificationTriple]]:
-        """Fetches a list of identification triples that are classified in the given gics_code.
-
-        Returns a dictionary of shape {"tickers": List[{“company_id”: <company_id>, “security_id”: <security_id>, “trading_item_id”: <trading_item_id>}]}.
-        :param gics_code: The gics_code can be either a 2-digit Sector code, 4-digit Industry Group code, 6-digit Industry code, or 8-digit Sub-industry code.
-        :type gics_code: str
-        :return: A dictionary containing the list of identification triple [company_id, security_id, trading_item_id] that are classified in the given gics_code.
-        :rtype: dict[str, list[IdentificationTriple]]
-        """
-        return self.fetch_from_gics_code(gics_code=gics_code, fetch_ticker=True)
-
-    def fetch_companies_by_gics_code(self, gics_code: str) -> dict[str, list[int]]:
-        """Fetches a list of companies that are classified in the given gics_code.
-
-        Returns a dictionary of shape {"companies": List[<company_id>]}.
-        :param gics_code: The gics_code can be either a 2-digit Sector code, 4-digit Industry Group code, 6-digit Industry code, or 8-digit Sub-industry code.
-        :type gics_code: str
-        :return: A dictionary containing the list of companies that are classified in the given gics_code.
-        :rtype: dict[str, list[int]]
-        """
-        return self.fetch_from_gics_code(gics_code=gics_code, fetch_ticker=False)
-
     def fetch_from_industry_code(
         self,
         industry_code: str,
@@ -444,9 +393,9 @@ class KFinanceApiClient:
         """Fetches a list of identification triples that are classified in the given industry_code and industry_classification.
 
         Returns a dictionary of shape {"tickers": List[{“company_id”: <company_id>, “security_id”: <security_id>, “trading_item_id”: <trading_item_id>}]}.
-        :param industry_code: The industry_code to filter on.
+        :param industry_code: The industry_code to filter on. The industry_code is a string corresponding to the Industry classifications ontology.
         :type industry_code: str
-        :param industry_classification: The type of industry_classification to filter on, eg "SIC", "NAICS", "NACE", "ANZSIC", "SPCAPIQETF", "SPRATINGS".
+        :param industry_classification: The type of industry_classification to filter on.
         :type industry_classification: IndustryClassification
         :return: A dictionary containing the list of identification triple [company_id, security_id, trading_item_id] that are classified in the given industry_code and industry_classification.
         :rtype: dict[str, list[IdentificationTriple]]
@@ -465,9 +414,9 @@ class KFinanceApiClient:
         """Fetches a list of companies that are classified in the given industry_code and industry_classification.
 
         Returns a dictionary of shape {"companies": List[<company_id>]}.
-        :param industry_code: The industry_code to filter on.
+        :param industry_code: The industry_code to filter on. The industry_code is a string corresponding to the Industry classifications ontology.
         :type industry_code: str
-        :param industry_classification: The type of industry_classification to filter on, eg "SIC", "NAICS", "NACE", "ANZSIC", "SPCAPIQETF", "SPRATINGS".
+        :param industry_classification: The type of industry_classification to filter on.
         :type industry_classification: IndustryClassification
         :return: A dictionary containing the list of companies that are classified in the given industry_code and industry_classification.
         :rtype: dict[str, list[int]]
