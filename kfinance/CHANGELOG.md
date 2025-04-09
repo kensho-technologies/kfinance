@@ -1,6 +1,9 @@
 # Changelog
-## v1.1.1
+## v1.2.1
 - Add fetch for industry_code, industry_classification and gics_code.
+
+## v1.2.0
+- Add batch requests for iterable classes
 
 ## v1.1.0
 - Add market cap, TEV, and shares outstanding
