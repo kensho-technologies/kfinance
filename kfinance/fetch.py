@@ -1,5 +1,8 @@
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from time import time
-from typing import Callable, Optional
+from typing import Callable, Generator, Optional
+from uuid import uuid4
 
 import jwt
 import requests
@@ -19,6 +22,7 @@ DEFAULT_API_HOST: str = "https://kfinance.kensho.com"
 DEFAULT_API_VERSION: int = 1
 DEFAULT_OKTA_HOST: str = "https://kensho.okta.com"
 DEFAULT_OKTA_AUTH_SERVER: str = "default"
+DEFAULT_MAX_WORKERS: int = 10
 
 
 class KFinanceApiClient:
@@ -27,12 +31,33 @@ class KFinanceApiClient:
         refresh_token: Optional[str] = None,
         client_id: Optional[str] = None,
         private_key: Optional[str] = None,
+        thread_pool: Optional[ThreadPoolExecutor] = None,
         api_host: str = DEFAULT_API_HOST,
         api_version: int = DEFAULT_API_VERSION,
         okta_host: str = DEFAULT_OKTA_HOST,
         okta_auth_server: str = DEFAULT_OKTA_AUTH_SERVER,
     ):
-        """Configuration of KFinance Client."""
+        """Configuration of KFinance Client.
+
+        :param refresh_token: users refresh token
+        :type refresh_token: str, Optional
+        :param client_id: users client id will be provided by support@kensho.com
+        :type client_id: str, Optional
+        :param private_key: users private key that corresponds to the registered public sent to support@kensho.com
+        :type private_key: str, Optional
+        :param thread_pool: the thread pool used to execute batch requests. The number of concurrent requests is
+        capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when batch
+        requests are made.
+        :type thread_pool: ThreadPoolExecutor, Optional
+        :param api_host: the api host URL
+        :type api_host: str
+        :param api_version: the api version number
+        :type api_version: int
+        :param okta_host: the okta host URL
+        :type okta_host: str
+        :param okta_auth_server: the okta route for authentication
+        :type okta_auth_server: str
+        """
         if refresh_token is not None:
             self.refresh_token = refresh_token
             self._access_token_refresh_func: Callable[..., str] = (
@@ -48,10 +73,40 @@ class KFinanceApiClient:
         self.api_version = api_version
         self.okta_host = okta_host
         self.okta_auth_server = okta_auth_server
+        self._thread_pool = thread_pool
         self.url_base = f"{self.api_host}/api/v{self.api_version}/"
         self._access_token_expiry = 0
         self._access_token: str | None = None
         self.user_agent_source = "object_oriented"
+        self._batch_id: str | None = None
+        self._batch_size: str | None = None
+
+    @contextmanager
+    def batch_request_header(self, batch_size: int) -> Generator:
+        """Set batch id and batch size for batch request request headers"""
+        batch_id = str(uuid4())
+
+        self._batch_id = batch_id
+        self._batch_size = str(batch_size)
+
+        try:
+            yield
+        finally:
+            self._batch_id = None
+            self._batch_size = None
+
+    @property
+    def thread_pool(self) -> ThreadPoolExecutor:
+        """Returns the thread pool used to execute batch requests.
+
+        If the thread pool is not set, a thread pool with 10 max workers will be created
+         and returned.
+        """
+
+        if self._thread_pool is None:
+            self._thread_pool = ThreadPoolExecutor(max_workers=DEFAULT_MAX_WORKERS)
+
+        return self._thread_pool
 
     @property
     def access_token(self) -> str:
@@ -110,13 +165,21 @@ class KFinanceApiClient:
 
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
+            "User-Agent": f"kfinance/{kfinance_version} {self.user_agent_source}",
+        }
+        if self._batch_id is not None:
+            assert self._batch_size is not None
+            headers.update(
+                {"Kfinance-Batch-Id": self._batch_id, "Kfinance-Batch-Size": self._batch_size}
+            )
+
         response = requests.get(
             url,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.access_token}",
-                "User-Agent": f"kfinance/{kfinance_version} {self.user_agent_source}",
-            },
+            headers=headers,
             timeout=60,
         )
         response.raise_for_status()

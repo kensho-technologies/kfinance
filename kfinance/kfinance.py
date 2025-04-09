@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timezone
 from functools import cached_property
 from io import BytesIO
@@ -14,6 +15,7 @@ import numpy as np
 import pandas as pd
 from PIL.Image import Image, open as image_open
 
+from .batch_request_handling import add_methods_of_singular_class_to_iterable_class
 from .constants import HistoryMetadata, IdentificationTriple, LatestPeriods, YearAndQuarter
 from .fetch import (
     DEFAULT_API_HOST,
@@ -31,7 +33,10 @@ from .llm_tools import (
     langchain_tools,
     openai_tool_descriptions,
 )
-from .meta_classes import CompanyFunctionsMetaClass, DelegatedCompanyFunctionsMetaClass
+from .meta_classes import (
+    CompanyFunctionsMetaClass,
+    DelegatedCompanyFunctionsMetaClass,
+)
 from .prompt import PROMPT
 from .server_thread import ServerThread
 
@@ -917,6 +922,7 @@ class BusinessRelationships(NamedTuple):
         return f"{type(self).__module__}.{type(self).__qualname__} of {str(dictionary)}"
 
 
+@add_methods_of_singular_class_to_iterable_class(Company)
 class Companies(set):
     """Base class for representing a set of Companies"""
 
@@ -928,9 +934,11 @@ class Companies(set):
         :param company_ids: An iterable of S&P CIQ Company ids
         :type company_ids: Iterable[int]
         """
+        self.kfinance_api_client = kfinance_api_client
         super().__init__(Company(kfinance_api_client, company_id) for company_id in company_ids)
 
 
+@add_methods_of_singular_class_to_iterable_class(Security)
 class Securities(set):
     """Base class for representing a set of Securities"""
 
@@ -945,6 +953,7 @@ class Securities(set):
         super().__init__(Security(kfinance_api_client, security_id) for security_id in security_ids)
 
 
+@add_methods_of_singular_class_to_iterable_class(TradingItem)
 class TradingItems(set):
     """Base class for representing a set of Trading Items"""
 
@@ -958,14 +967,16 @@ class TradingItems(set):
         :param company_ids: An iterable of S&P CIQ Company ids
         :type company_ids: Iterable[int]
         """
+        self.kfinance_api_client = kfinance_api_client
         super().__init__(
             TradingItem(kfinance_api_client, trading_item_id)
             for trading_item_id in trading_item_ids
         )
 
 
+@add_methods_of_singular_class_to_iterable_class(Ticker)
 class Tickers(set):
-    """Base TickerSet class for representing a set of Tickers"""
+    """Base class for representing a set of Tickers"""
 
     def __init__(
         self,
@@ -1041,6 +1052,7 @@ class Client:
         refresh_token: Optional[str] = None,
         client_id: Optional[str] = None,
         private_key: Optional[str] = None,
+        thread_pool: Optional[ThreadPoolExecutor] = None,
         api_host: str = DEFAULT_API_HOST,
         api_version: int = DEFAULT_API_VERSION,
         okta_host: str = DEFAULT_OKTA_HOST,
@@ -1054,6 +1066,10 @@ class Client:
         :type client_id: str, Optional
         :param private_key: users private key that corresponds to the registered public sent to support@kensho.com
         :type private_key: str, Optional
+        :param thread_pool: the thread pool used to execute batch requests. The number of concurrent requests is
+        capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when batch
+        requests are made.
+        :type thread_pool: ThreadPoolExecutor, Optional
         :param api_host: the api host URL
         :type api_host: str
         :param api_version: the api version number
@@ -1071,6 +1087,7 @@ class Client:
                 api_host=api_host,
                 api_version=api_version,
                 okta_host=okta_host,
+                thread_pool=thread_pool,
             )
         # method 2 keypair
         elif client_id is not None and private_key is not None:
@@ -1081,6 +1098,7 @@ class Client:
                 api_version=api_version,
                 okta_host=okta_host,
                 okta_auth_server=okta_auth_server,
+                thread_pool=thread_pool,
             )
         # method 3 automatic login getting a refresh token
         else:
@@ -1099,6 +1117,7 @@ class Client:
                 api_host=api_host,
                 api_version=api_version,
                 okta_host=okta_host,
+                thread_pool=thread_pool,
             )
             stdout.write("Login credentials received.\n")
 
