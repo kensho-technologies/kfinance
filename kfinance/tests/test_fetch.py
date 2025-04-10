@@ -157,26 +157,6 @@ class TestFetchItem(TestCase):
         )
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
 
-    def test_fetch_ticker_industry_simple_groups(self) -> None:
-        simple_industry = "media"
-        expected_fetch_url = (
-            f"{self.kfinance_api_client.url_base}ticker_groups/industry/simple/{simple_industry}"
-        )
-        self.kfinance_api_client.fetch_ticker_simple_industry_groups(
-            simple_industry=simple_industry
-        )
-        self.kfinance_api_client.fetch.assert_called_once_with(expected_fetch_url)
-
-    def test_fetch_company_industry_simple_groups(self) -> None:
-        simple_industry = "media"
-        expected_fetch_url = (
-            f"{self.kfinance_api_client.url_base}company_groups/industry/simple/{simple_industry}"
-        )
-        self.kfinance_api_client.fetch_company_simple_industry_groups(
-            simple_industry=simple_industry
-        )
-        self.kfinance_api_client.fetch.assert_called_once_with(expected_fetch_url)
-
     def test_fetch_ticker_exchange_groups(self) -> None:
         exchange_code = "NYSE"
         expected_fetch_url = (

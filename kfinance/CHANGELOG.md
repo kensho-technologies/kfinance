@@ -1,4 +1,7 @@
 # Changelog
+## v1.2.1
+- Add fetch for industry_code, industry_classification and gics_code.
+
 ## v1.2.0
 - Add batch requests for iterable classes
 
