@@ -1,4 +1,5 @@
 from datetime import date
+from enum import Enum
 from itertools import chain
 from typing import TypedDict
 
@@ -26,7 +27,36 @@ class IdentificationTriple(TypedDict):
     company_id: int
 
 
+class Capitalization(Enum):
+    """The capitalization type"""
+
+    market_cap = "market_cap"
+    tev = "tev"
+    shares_outstanding = "shares_outstanding"
+
+
+class PeriodType(Enum):
+    """The period type"""
+
+    annual = "annual"
+    quarterly = "quarterly"
+    ltm = "ltm"
+    ytd = "ytd"
+
+
+class StatementType(Enum):
+    """The type of financial statement"""
+
+    balance_sheet = "balance_sheet"
+    bs = "balance_sheet"
+    income_statement = "income_statement"
+    cashflow = "cashflow"
+    cf = "cashflow"
+
+
 class BusinessRelationshipType(StrEnum):
+    """The type of business relationship"""
+
     supplier = "supplier"
     customer = "customer"
     distributor = "distributor"
@@ -1672,17 +1702,10 @@ LINE_ITEMS: list[LineItemType] = [
     },
 ]
 
-LINE_ITEMS_TO_DATA_ITEM_ID = {
-    line_item["name"]: line_item["dataitemid"] for line_item in LINE_ITEMS
-}
 
-LINE_ITEM_NAMES_AND_ALIASES = list(
+LINE_ITEM_NAMES_AND_ALIASES: list[str] = list(
     chain(*[[line_item["name"]] + list(line_item["aliases"]) for line_item in LINE_ITEMS])
 )
-
-LINE_ITEM_SYNONYMS = {
-    alias: line_item["dataitemid"] for line_item in LINE_ITEMS for alias in line_item["aliases"]
-}
 
 
 FINANCIAL_STATEMENTS: dict[str, int] = {

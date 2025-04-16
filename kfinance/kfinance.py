@@ -7,10 +7,11 @@ from io import BytesIO
 import logging
 import re
 from sys import stdout
-from typing import Iterable, NamedTuple, Optional
+from typing import TYPE_CHECKING, Any, Callable, Iterable, NamedTuple, Optional
 from urllib.parse import urljoin
 import webbrowser
 
+from langchain_core.utils.function_calling import convert_to_openai_tool
 import numpy as np
 import pandas as pd
 from PIL.Image import Image, open as image_open
@@ -24,15 +25,6 @@ from .fetch import (
     DEFAULT_OKTA_HOST,
     KFinanceApiClient,
 )
-from .llm_tools import (
-    _llm_tools,
-    anthropic_tool_descriptions,
-    gemini_tool_descriptions,
-    get_latest,
-    get_n_quarters_ago,
-    langchain_tools,
-    openai_tool_descriptions,
-)
 from .meta_classes import (
     CompanyFunctionsMetaClass,
     DelegatedCompanyFunctionsMetaClass,
@@ -40,6 +32,9 @@ from .meta_classes import (
 from .prompt import PROMPT
 from .server_thread import ServerThread
 
+
+if TYPE_CHECKING:
+    from kfinance.tool_calling.shared_models import KfinanceTool
 
 logger = logging.getLogger(__name__)
 
@@ -1121,11 +1116,59 @@ class Client:
             )
             stdout.write("Login credentials received.\n")
 
-        self.tools = _llm_tools(self)
-        self.langchain_tools = langchain_tools(self.tools)
-        self.anthropic_tool_descriptions = anthropic_tool_descriptions
-        self.gemini_tool_descriptions = gemini_tool_descriptions
-        self.openai_tool_descriptions = openai_tool_descriptions
+        self._tools: list[KfinanceTool] | None = None
+
+    @property
+    def langchain_tools(self) -> list["KfinanceTool"]:
+        """Return a list of all Kfinance tools for tool calling."""
+        if self._tools is None:
+            from kfinance.tool_calling import ALL_TOOLS
+
+            self._tools = [t(kfinance_client=self) for t in ALL_TOOLS]  # type: ignore[call-arg]
+        return self._tools
+
+    @property
+    def tools(self) -> dict[str, Callable]:
+        """Return a mapping of tool calling function names to the corresponding functions.
+
+        `tools` is intended for running without langchain. When running with langchain,
+        use `langchain_tools`.
+        """
+        return {t.name: t.run_without_langchain for t in self.langchain_tools}
+
+    @property
+    def anthropic_tool_descriptions(self) -> list[dict[str, Any]]:
+        """Return tool descriptions for anthropic"""
+
+        anthropic_tool_descriptions = []
+
+        for tool in self.langchain_tools:
+            # Copied from https://python.langchain.com/api_reference/_modules/langchain_anthropic/chat_models.html#convert_to_anthropic_tool
+            # to avoid adding a langchain-anthropic dependency.
+            oai_formatted = convert_to_openai_tool(tool)["function"]
+            anthropic_tool_descriptions.append(
+                dict(
+                    name=oai_formatted["name"],
+                    description=oai_formatted["description"],
+                    input_schema=oai_formatted["parameters"],
+                )
+            )
+
+        return anthropic_tool_descriptions
+
+    @property
+    def gemini_tool_descriptions(self) -> list[dict[str, Any]]:
+        """Return tool descriptions for gemini"""
+        gemini_tool_descriptions = [
+            convert_to_openai_tool(t)["function"] for t in self.langchain_tools
+        ]
+        return [{"function_declarations": gemini_tool_descriptions}]
+
+    @property
+    def openai_tool_descriptions(self) -> list[dict[str, Any]]:
+        """Return tool descriptions for gemini"""
+        openai_tool_descriptions = [convert_to_openai_tool(t) for t in self.langchain_tools]
+        return openai_tool_descriptions
 
     @property
     def access_token(self) -> str:
@@ -1154,7 +1197,7 @@ class Client:
         :rtype: Ticker
         """
         if function_called:
-            self.kfinance_api_client.user_agent_source = "function_calling"
+            self.kfinance_api_client.user_agent_source = "tool_calling"
         return Ticker(self.kfinance_api_client, str(identifier), exchange_code)
 
     def tickers(
@@ -1222,14 +1265,42 @@ class Client:
         )
 
     @staticmethod
-    def get_latest() -> LatestPeriods:
+    def get_latest(use_local_timezone: bool = True) -> LatestPeriods:
         """Get the latest annual reporting year, latest quarterly reporting quarter and year, and current date.
 
+        :param use_local_timezone: whether to use the local timezone of the user
+        :type use_local_timezone: bool
         :return: A dict in the form of {"annual": {"latest_year": int}, "quarterly": {"latest_quarter": int, "latest_year": int}, "now": {"current_year": int, "current_quarter": int, "current_month": int, "current_date": str of Y-m-d}}
         :rtype: Latest
         """
 
-        return get_latest()
+        datetime_now = datetime.now() if use_local_timezone else datetime.now(timezone.utc)
+        current_year = datetime_now.year
+        current_qtr = (datetime_now.month - 1) // 3 + 1
+
+        # Quarterly data. Get most recent year and quarter
+        if current_qtr == 1:
+            most_recent_year_qtrly = current_year - 1
+            most_recent_qtr = 4
+        else:
+            most_recent_year_qtrly = current_year
+            most_recent_qtr = current_qtr - 1
+
+        # Annual data. Get most recent year
+        most_recent_year_annual = current_year - 1
+
+        current_month = datetime_now.month
+        latest: LatestPeriods = {
+            "annual": {"latest_year": most_recent_year_annual},
+            "quarterly": {"latest_quarter": most_recent_qtr, "latest_year": most_recent_year_qtrly},
+            "now": {
+                "current_year": current_year,
+                "current_quarter": current_qtr,
+                "current_month": current_month,
+                "current_date": datetime_now.date().isoformat(),
+            },
+        }
+        return latest
 
     @staticmethod
     def get_n_quarters_ago(n: int) -> YearAndQuarter:
@@ -1240,4 +1311,17 @@ class Client:
         :rtype: YearAndQuarter
         """
 
-        return get_n_quarters_ago(n)
+        datetime_now = datetime.now()
+        current_qtr = (datetime_now.month - 1) // 3 + 1
+        total_quarters_completed = datetime_now.year * 4 + current_qtr - 1
+        total_quarters_completed_n_quarters_ago = total_quarters_completed - n
+
+        year_n_quarters_ago = total_quarters_completed_n_quarters_ago // 4
+        quarter_n_quarters_ago = total_quarters_completed_n_quarters_ago % 4 + 1
+
+        year_quarter_n_quarters_ago: YearAndQuarter = {
+            "year": year_n_quarters_ago,
+            "quarter": quarter_n_quarters_ago,
+        }
+
+        return year_quarter_n_quarters_ago
