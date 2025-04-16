@@ -1,4 +1,8 @@
 # Changelog
+
+## v1.2.2
+- Add tabulate and pydantic as dependencies
+
 ## v1.2.1
 - Add fetch for industry_code, industry_classification and gics_code.
 
