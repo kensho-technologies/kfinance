@@ -11,7 +11,9 @@ from typing import TYPE_CHECKING, Any, Callable, Iterable, NamedTuple, Optional
 from urllib.parse import urljoin
 import webbrowser
 
+import google.ai.generativelanguage_v1beta.types as gapic
 from langchain_core.utils.function_calling import convert_to_openai_tool
+from langchain_google_genai._function_utils import convert_to_genai_function_declarations
 import numpy as np
 import pandas as pd
 from PIL.Image import Image, open as image_open
@@ -1157,12 +1159,16 @@ class Client:
         return anthropic_tool_descriptions
 
     @property
-    def gemini_tool_descriptions(self) -> list[dict[str, Any]]:
-        """Return tool descriptions for gemini"""
-        gemini_tool_descriptions = [
+    def gemini_tool_descriptions(self) -> gapic.Tool:
+        """Return tool descriptions for gemini.
+
+        The conversion from BaseTool -> openai tool description -> google tool mirrors the
+        langchain implementation.
+        """
+        openai_tool_descriptions = [
             convert_to_openai_tool(t)["function"] for t in self.langchain_tools
         ]
-        return [{"function_declarations": gemini_tool_descriptions}]
+        return convert_to_genai_function_declarations(openai_tool_descriptions)
 
     @property
     def openai_tool_descriptions(self) -> list[dict[str, Any]]:
