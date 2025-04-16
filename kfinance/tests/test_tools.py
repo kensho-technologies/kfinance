@@ -329,7 +329,7 @@ class TestGetIsinFromTicker:
 
 
 class TestGetLatest:
-    @time_machine.travel(date(2025, 1, 1))
+    @time_machine.travel(datetime(2025, 1, 1, 12, tzinfo=datetime.now().astimezone().tzinfo))
     def test_get_latest(self, mock_client: Client):
         """
         GIVEN the GetLatest tool
@@ -338,14 +338,14 @@ class TestGetLatest:
         """
 
         expected_resp = {
-            "annual": {"latest_year": 2023},
+            "annual": {"latest_year": 2024},
             "now": {
-                "current_date": "2024-12-31",
-                "current_month": 12,
-                "current_quarter": 4,
-                "current_year": 2024,
+                "current_date": "2025-01-01",
+                "current_month": 1,
+                "current_quarter": 1,
+                "current_year": 2025,
             },
-            "quarterly": {"latest_quarter": 3, "latest_year": 2024},
+            "quarterly": {"latest_quarter": 4, "latest_year": 2024},
         }
         tool = GetLatest(kfinance_client=mock_client)
         resp = tool.run(GetLatestArgs().model_dump(mode="json"))
@@ -353,7 +353,7 @@ class TestGetLatest:
 
 
 class TestGetNQuartersAgo:
-    @time_machine.travel(date(2025, 1, 1))
+    @time_machine.travel(datetime(2025, 1, 1, 12, tzinfo=datetime.now().astimezone().tzinfo))
     def test_get_n_quarters_ago(self, mock_client: Client):
         """
         GIVEN the GetNQuartersAgo tool
@@ -361,7 +361,7 @@ class TestGetNQuartersAgo:
         THEN we get back 3 quarters ago
         """
 
-        expected_resp = {"quarter": 1, "year": 2024}
+        expected_resp = {"quarter": 2, "year": 2024}
         tool = GetNQuartersAgo(kfinance_client=mock_client)
         resp = tool.run(GetNQuartersAgoArgs(n=3).model_dump(mode="json"))
         assert resp == expected_resp
