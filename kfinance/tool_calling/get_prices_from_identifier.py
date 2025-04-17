@@ -1,19 +1,10 @@
 from datetime import date
-from enum import Enum
 from typing import Type
 
 from pydantic import BaseModel, Field
 
+from constants import Periodicity
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
-
-
-class Periodicity(Enum):
-    """The frequency or interval at which the historical data points are sampled or aggregated. Periodicity is not the same as the date range. The date range specifies the time span over which the data is retrieved, while periodicity determines how the data within that date range is aggregated."""
-
-    day = "day"
-    week = "week"
-    month = "month"
-    year = "year"
 
 
 class GetPricesFromIdentifierArgs(ToolArgsWithIdentifier):

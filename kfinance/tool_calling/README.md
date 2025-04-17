@@ -9,7 +9,7 @@ into LLM-specific tool descriptions.
 ### KfinanceTool
 Each `KfinanceTool` requires the following attributes to be defined:
 - name: the function name
-- description the description of the function passed to an LLM. This should not include a description 
+- description: the description of the function passed to an LLM. This should not include a description 
 of the arguments.
 - args_schema: A pydantic model defining the input schema for the function (more on that below)
 - _run: the source code for the tool.
