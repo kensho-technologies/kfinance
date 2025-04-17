@@ -1,9 +1,9 @@
 from datetime import date
 from typing import Type
 
+from constants import Periodicity
 from pydantic import BaseModel, Field
 
-from constants import Periodicity
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
