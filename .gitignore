@@ -100,3 +100,6 @@ dmypy.json
 
 
 kfinance/version.py
+kfinance/tool_calling/wrappers/
+
+docs/output/
