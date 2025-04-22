@@ -8,7 +8,7 @@ from kfinance.tool_calling.shared_models import KfinanceTool
 
 class GetLatestArgs(BaseModel):
     use_local_timezone: bool = Field(
-        description="whether to use the local timezone of the user", default=True
+        description="Whether to use the local timezone of the user", default=True
     )
 
 

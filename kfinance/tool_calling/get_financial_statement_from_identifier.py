@@ -9,7 +9,7 @@ from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdenti
 class GetFinancialStatementFromIdentifierArgs(ToolArgsWithIdentifier):
     # no description because the description for enum fields comes from the enum docstring.
     statement: StatementType
-    period_type: PeriodType | None = Field(default=None)
+    period_type: PeriodType | None = Field(default=None, description="The period type")
     start_year: int | None = Field(default=None, description="The starting year for the data range")
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Starting quarter")

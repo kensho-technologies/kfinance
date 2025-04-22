@@ -19,7 +19,13 @@ import pandas as pd
 from PIL.Image import Image, open as image_open
 
 from .batch_request_handling import add_methods_of_singular_class_to_iterable_class
-from .constants import HistoryMetadata, IdentificationTriple, LatestPeriods, YearAndQuarter
+from .constants import (
+    HistoryMetadata,
+    IdentificationTriple,
+    LatestPeriods,
+    Periodicity,
+    YearAndQuarter,
+)
 from .fetch import (
     DEFAULT_API_HOST,
     DEFAULT_API_VERSION,
@@ -121,23 +127,20 @@ class TradingItem:
 
     def history(
         self,
-        periodicity: str = "day",
+        periodicity: Periodicity = Periodicity.day,
         adjusted: bool = True,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> pd.DataFrame:
         """Retrieves the historical price data for a given asset over a specified date range.
 
-        :param str periodicity: Determines the frequency of the historical data returned. Options are "day", "week", "month" and "year". This default to "day"
+        :param periodicity: Determines the frequency of the historical data returned. Defaults to Periodicity.day.
         :param Optional[bool] adjusted: Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits, it defaults True
         :param Optional[str] start_date: The start date for historical price retrieval in format "YYYY-MM-DD", default to None
         :param Optional[str] end_date: The end date for historical price retrieval in format "YYYY-MM-DD", default to None
-        :return: A pd.DataFrame containing historical price data with columns corresponding to the specified periodicity, with Date as the index, and columns "open", "high", "low", "close", "volume" in type decimal. The Date index is a string that depends on the periodicity. If periodicity="day", the Date index is the day in format "YYYY-MM-DD", eg "2024-05-13" If periodicity="week", the Date index is the week number of the year in format "YYYY Week ##", eg "2024 Week 2" If periodicity="month", the Date index is the month name of the year in format "<Month> YYYY", eg "January 2024". If periodicity="year", the Date index is the year in format "YYYY", eg "2024".
+        :return: A pd.DataFrame containing historical price data with columns corresponding to the specified periodicity, with Date as the index, and columns "open", "high", "low", "close", "volume" in type decimal. The Date index is a string that depends on the periodicity. If Periodicity.day, the Date index is the day in format "YYYY-MM-DD", eg "2024-05-13" If Periodicity.week, the Date index is the week number of the year in format "YYYY Week ##", eg "2024 Week 2" If Periodicity.month, the Date index is the month name of the year in format "<Month> YYYY", eg "January 2024". If Periodicity.year, the Date index is the year in format "YYYY", eg "2024".
         :rtype: pd.DataFrame
         """
-        if periodicity not in {"day", "week", "month", "year"}:
-            raise RuntimeError(f"Periodicity type {periodicity} is not valid.")
-
         if start_date and end_date:
             if (
                 datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -162,23 +165,20 @@ class TradingItem:
 
     def price_chart(
         self,
-        periodicity: str = "day",
+        periodicity: Periodicity = Periodicity.day,
         adjusted: bool = True,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> Image:
         """Get the price chart.
 
-        :param str periodicity: Determines the frequency of the historical data returned. Options are "day", "week", "month" and "year". This default to "day"
+        :param str periodicity: Determines the frequency of the historical data returned. Defaults to Periodicity.day.
         :param Optional[bool] adjusted: Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits, it defaults True
         :param Optional[str] start_date: The start date for historical price retrieval in format "YYYY-MM-DD", default to None
         :param Optional[str] end_date: The end date for historical price retrieval in format "YYYY-MM-DD", default to None
         :return: An image showing the price chart of the trading item
         :rtype: Image
         """
-
-        if periodicity not in {"day", "week", "month", "year"}:
-            raise RuntimeError(f"Periodicity type {periodicity} is not valid.")
 
         if start_date and end_date:
             if (
@@ -852,22 +852,22 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
 
     def history(
         self,
-        periodicity: str = "day",
+        periodicity: Periodicity = Periodicity.day,
         adjusted: bool = True,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> pd.DataFrame:
         """Retrieves the historical price data for a given asset over a specified date range.
 
-        :param periodicity: Determines the frequency of the historical data returned. Options are "day", "week", "month" and "year". This default to "day"
-        :type periodicity: str
+        :param periodicity: Determines the frequency of the historical data returned. Defaults to Periodicity.day.
+        :type periodicity: Periodicity
         :param adjusted: Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits, it defaults True
         :type adjusted: bool, optional
         :param start_date: The start date for historical price retrieval in format "YYYY-MM-DD", default to None
         :type start_date: str, optional
         :param end_date: The end date for historical price retrieval in format "YYYY-MM-DD", default to None
         :type end_date: str, optional
-        :return: A pd.DataFrame containing historical price data with columns corresponding to the specified periodicity, with Date as the index, and columns "open", "high", "low", "close", "volume" in type decimal. The Date index is a string that depends on the periodicity. If periodicity="day", the Date index is the day in format "YYYY-MM-DD", eg "2024-05-13" If periodicity="week", the Date index is the week number of the year in format "YYYY Week ##", eg "2024 Week 2" If periodicity="month", the Date index is the month name of the year in format "<Month> YYYY", eg "January 2024". If periodicity="year", the Date index is the year in format "YYYY", eg "2024".
+        :return: A pd.DataFrame containing historical price data with columns corresponding to the specified periodicity, with Date as the index, and columns "open", "high", "low", "close", "volume" in type decimal. The Date index is a string that depends on the periodicity. If Periodicity.day, the Date index is the day in format "YYYY-MM-DD", eg "2024-05-13" If Periodicity.week, the Date index is the week number of the year in format "YYYY Week ##", eg "2024 Week 2" If Periodicity.month, the Date index is the month name of the year in format "<Month> YYYY", eg "January 2024". If Periodicity.year, the Date index is the year in format "YYYY", eg "2024".
         :rtype: pd.DataFrame
         """
         return self.primary_trading_item.history(
@@ -879,15 +879,15 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
 
     def price_chart(
         self,
-        periodicity: str = "day",
+        periodicity: Periodicity = Periodicity.day,
         adjusted: bool = True,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> Image:
         """Get the price chart.
 
-        :param periodicity: Determines the frequency of the historical data returned. Options are "day", "week", "month" and "year". This default to "day"
-        :type periodicity: str
+        :param str periodicity: Determines the frequency of the historical data returned. Defaults to Periodicity.day.
+        :type periodicity: Periodicity
         :param adjusted: Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits, it defaults True
         :type adjusted: bool, optional
         :param start_date: The start date for historical price retrieval in format "YYYY-MM-DD", default to None

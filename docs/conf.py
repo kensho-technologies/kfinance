@@ -7,15 +7,21 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 from importlib.metadata import version as get_version
 
-project = 'kensho-kfinance'
-copyright = '2025, Kensho Technologies'
-author = 'Kensho Technologies'
+from docs.build_tool_calling_documentation import add_tool_calling_docs_for_all_tools
+
+
+project = "kensho-kfinance"
+copyright = "2025, Kensho Technologies"
+author = "Kensho Technologies"
+
+# Add documentation for tool calling.
+add_tool_calling_docs_for_all_tools()
 
 # borrowed from here:
 # https://setuptools-scm.readthedocs.io/en/latest/usage/#usage-from-sphinx
 release: str = get_version(project)
 # for example take major/minor
-version: str = ".".join(release.split('.')[:2])
+version: str = ".".join(release.split(".")[:2])
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -57,7 +63,7 @@ source_suffix = [".rst", ".md"]
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # https://sphinx-rtd-theme.readthedocs.io/en/stable/configuring.html
 html_theme_options = {"body_min_width": 0, "body_max_width": "none"}

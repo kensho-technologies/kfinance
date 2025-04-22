@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from kfinance.constants import Periodicity, PeriodType
 from kfinance.fetch import KFinanceApiClient
 
 
@@ -50,8 +51,8 @@ class TestFetchItem(TestCase):
         start_date = "2025-01-01"
         end_date = "2025-01-31"
         is_adjusted = False
-        periodicity = "day"
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}pricing/{trading_item_id}/{start_date}/{end_date}/{periodicity}/unadjusted"
+        periodicity = Periodicity.day
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}pricing/{trading_item_id}/{start_date}/{end_date}/{periodicity.value}/unadjusted"
         self.kfinance_api_client.fetch_history(
             trading_item_id=trading_item_id,
             is_adjusted=is_adjusted,
@@ -77,12 +78,12 @@ class TestFetchItem(TestCase):
             company_id=company_id, statement_type=statement_type
         )
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
-        period_type = "quarterly"
+        period_type = PeriodType.quarterly
         start_year = 2024
         end_year = 2024
         start_quarter = 1
         end_quarter = 4
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}statements/{company_id}/{statement_type}/{period_type}/{start_year}/{end_year}/{start_quarter}/{end_quarter}"
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}statements/{company_id}/{statement_type}/{period_type.value}/{start_year}/{end_year}/{start_quarter}/{end_quarter}"
         self.kfinance_api_client.fetch_statement(
             company_id=company_id,
             statement_type=statement_type,
@@ -100,12 +101,12 @@ class TestFetchItem(TestCase):
         expected_fetch_url = f"{self.kfinance_api_client.url_base}line_item/{company_id}/{line_item}/none/none/none/none/none"
         self.kfinance_api_client.fetch_line_item(company_id=company_id, line_item=line_item)
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
-        period_type = "quarterly"
+        period_type = PeriodType.quarterly
         start_year = 2024
         end_year = 2024
         start_quarter = 1
         end_quarter = 4
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}line_item/{company_id}/{line_item}/{period_type}/{start_year}/{end_year}/{start_quarter}/{end_quarter}"
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}line_item/{company_id}/{line_item}/{period_type.value}/{start_year}/{end_year}/{start_quarter}/{end_quarter}"
         self.kfinance_api_client.fetch_line_item(
             company_id=company_id,
             line_item=line_item,

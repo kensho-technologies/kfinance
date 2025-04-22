@@ -1,6 +1,6 @@
 from typing import Type
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from kfinance.constants import BusinessRelationshipType
 from kfinance.kfinance import BusinessRelationships
@@ -8,9 +8,8 @@ from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdenti
 
 
 class GetBusinessRelationshipFromIdentifierArgs(ToolArgsWithIdentifier):
-    business_relationship: BusinessRelationshipType = Field(
-        description="The type of business relationship requested"
-    )
+    # no description because the description for enum fields comes from the enum docstring.
+    business_relationship: BusinessRelationshipType
 
 
 class GetBusinessRelationshipFromIdentifier(KfinanceTool):

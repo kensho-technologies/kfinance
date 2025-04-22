@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Literal, Optional
 import numpy as np
 import pandas as pd
 
-from .constants import LINE_ITEMS, BusinessRelationshipType
+from .constants import LINE_ITEMS, BusinessRelationshipType, PeriodType
 from .fetch import KFinanceApiClient
 
 
@@ -27,16 +27,12 @@ class CompanyFunctionsMetaClass:
 
     def validate_inputs(
         self,
-        period_type: Optional[str] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
     ) -> None:
         """Test the time inputs for validity."""
-
-        if period_type not in {"annual", "quarterly", "ytd", "ltm", None}:
-            raise RuntimeError(f"Period type {period_type} is not valid.")
 
         if start_year and (start_year > datetime.now().year):
             raise ValueError("start_year is in the future")
@@ -54,7 +50,7 @@ class CompanyFunctionsMetaClass:
     def statement(
         self,
         statement_type: str,
-        period_type: Optional[str] = None,
+        period_type: Optional[PeriodType] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
@@ -63,7 +59,6 @@ class CompanyFunctionsMetaClass:
         """Get the company's financial statement"""
         try:
             self.validate_inputs(
-                period_type=period_type,
                 start_year=start_year,
                 end_year=end_year,
                 start_quarter=start_quarter,
@@ -182,7 +177,7 @@ class CompanyFunctionsMetaClass:
     def line_item(
         self,
         line_item: str,
-        period_type: Optional[str] = None,
+        period_type: Optional[PeriodType] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
@@ -191,7 +186,6 @@ class CompanyFunctionsMetaClass:
         """Get a DataFrame of a financial line item according to the date ranges."""
         try:
             self.validate_inputs(
-                period_type=period_type,
                 start_year=start_year,
                 end_year=end_year,
                 start_quarter=start_quarter,

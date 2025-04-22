@@ -34,4 +34,4 @@ unit-test *args:
 # First, copy the dependencies in docs/requirements.txt into pyproject.toml and install in a venv.
 # Don't merge changes to pyproject and docs/output into the remote repo!
 sphinx *args:
-    sphinx-build docs docs/output
+    PYTHONPATH="${PYTHONPATH:-}:." sphinx-build docs docs/output

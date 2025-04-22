@@ -1,9 +1,9 @@
 from datetime import date
 from typing import Type
 
-from constants import Periodicity
 from pydantic import BaseModel, Field
 
+from kfinance.constants import Periodicity
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
@@ -39,6 +39,6 @@ class GetPricesFromIdentifier(KfinanceTool):
         return ticker.history(
             start_date=start_date.isoformat() if start_date else None,
             end_date=end_date.isoformat() if end_date else None,
-            periodicity=periodicity.value,
+            periodicity=periodicity,
             adjusted=adjusted,
         ).to_markdown()

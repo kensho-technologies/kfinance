@@ -13,9 +13,7 @@ class GetFinancialLineItemFromIdentifierArgs(ToolArgsWithIdentifier):
     line_item: Literal[tuple(LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore[valid-type]
         description="The type of financial line_item requested"
     )
-
-    # no description because the description for enum fields comes from the enum docstring.
-    period_type: PeriodType | None = Field(default=None)
+    period_type: PeriodType | None = Field(default=None, description="The period type")
     start_year: int | None = Field(default=None, description="The starting year for the data range")
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Starting quarter")
