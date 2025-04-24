@@ -9,7 +9,8 @@ Documentation page for kensho-kfinance library.
    :maxdepth: 1
 
    kfinance <kfinance>
-   llm_tools <llm_tools>
+   tool_calling <tool_calling>
+
 
 Indices and tables
 ==================

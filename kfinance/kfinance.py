@@ -7,31 +7,31 @@ from io import BytesIO
 import logging
 import re
 from sys import stdout
-from typing import Iterable, NamedTuple, Optional
+from typing import TYPE_CHECKING, Any, Callable, Iterable, NamedTuple, Optional
 from urllib.parse import urljoin
 import webbrowser
 
+import google.ai.generativelanguage_v1beta.types as gapic
+from langchain_core.utils.function_calling import convert_to_openai_tool
+from langchain_google_genai._function_utils import convert_to_genai_function_declarations
 import numpy as np
 import pandas as pd
 from PIL.Image import Image, open as image_open
 
 from .batch_request_handling import add_methods_of_singular_class_to_iterable_class
-from .constants import HistoryMetadata, IdentificationTriple, LatestPeriods, YearAndQuarter
+from .constants import (
+    HistoryMetadata,
+    IdentificationTriple,
+    LatestPeriods,
+    Periodicity,
+    YearAndQuarter,
+)
 from .fetch import (
     DEFAULT_API_HOST,
     DEFAULT_API_VERSION,
     DEFAULT_OKTA_AUTH_SERVER,
     DEFAULT_OKTA_HOST,
     KFinanceApiClient,
-)
-from .llm_tools import (
-    _llm_tools,
-    anthropic_tool_descriptions,
-    gemini_tool_descriptions,
-    get_latest,
-    get_n_quarters_ago,
-    langchain_tools,
-    openai_tool_descriptions,
 )
 from .meta_classes import (
     CompanyFunctionsMetaClass,
@@ -40,6 +40,9 @@ from .meta_classes import (
 from .prompt import PROMPT
 from .server_thread import ServerThread
 
+
+if TYPE_CHECKING:
+    from kfinance.tool_calling.shared_models import KfinanceTool
 
 logger = logging.getLogger(__name__)
 
@@ -124,23 +127,20 @@ class TradingItem:
 
     def history(
         self,
-        periodicity: str = "day",
+        periodicity: Periodicity = Periodicity.day,
         adjusted: bool = True,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> pd.DataFrame:
         """Retrieves the historical price data for a given asset over a specified date range.
 
-        :param str periodicity: Determines the frequency of the historical data returned. Options are "day", "week", "month" and "year". This default to "day"
+        :param periodicity: Determines the frequency of the historical data returned. Defaults to Periodicity.day.
         :param Optional[bool] adjusted: Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits, it defaults True
         :param Optional[str] start_date: The start date for historical price retrieval in format "YYYY-MM-DD", default to None
         :param Optional[str] end_date: The end date for historical price retrieval in format "YYYY-MM-DD", default to None
-        :return: A pd.DataFrame containing historical price data with columns corresponding to the specified periodicity, with Date as the index, and columns "open", "high", "low", "close", "volume" in type decimal. The Date index is a string that depends on the periodicity. If periodicity="day", the Date index is the day in format "YYYY-MM-DD", eg "2024-05-13" If periodicity="week", the Date index is the week number of the year in format "YYYY Week ##", eg "2024 Week 2" If periodicity="month", the Date index is the month name of the year in format "<Month> YYYY", eg "January 2024". If periodicity="year", the Date index is the year in format "YYYY", eg "2024".
+        :return: A pd.DataFrame containing historical price data with columns corresponding to the specified periodicity, with Date as the index, and columns "open", "high", "low", "close", "volume" in type decimal. The Date index is a string that depends on the periodicity. If Periodicity.day, the Date index is the day in format "YYYY-MM-DD", eg "2024-05-13" If Periodicity.week, the Date index is the week number of the year in format "YYYY Week ##", eg "2024 Week 2" If Periodicity.month, the Date index is the month name of the year in format "<Month> YYYY", eg "January 2024". If Periodicity.year, the Date index is the year in format "YYYY", eg "2024".
         :rtype: pd.DataFrame
         """
-        if periodicity not in {"day", "week", "month", "year"}:
-            raise RuntimeError(f"Periodicity type {periodicity} is not valid.")
-
         if start_date and end_date:
             if (
                 datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -165,23 +165,20 @@ class TradingItem:
 
     def price_chart(
         self,
-        periodicity: str = "day",
+        periodicity: Periodicity = Periodicity.day,
         adjusted: bool = True,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> Image:
         """Get the price chart.
 
-        :param str periodicity: Determines the frequency of the historical data returned. Options are "day", "week", "month" and "year". This default to "day"
+        :param str periodicity: Determines the frequency of the historical data returned. Defaults to Periodicity.day.
         :param Optional[bool] adjusted: Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits, it defaults True
         :param Optional[str] start_date: The start date for historical price retrieval in format "YYYY-MM-DD", default to None
         :param Optional[str] end_date: The end date for historical price retrieval in format "YYYY-MM-DD", default to None
         :return: An image showing the price chart of the trading item
         :rtype: Image
         """
-
-        if periodicity not in {"day", "week", "month", "year"}:
-            raise RuntimeError(f"Periodicity type {periodicity} is not valid.")
 
         if start_date and end_date:
             if (
@@ -855,22 +852,22 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
 
     def history(
         self,
-        periodicity: str = "day",
+        periodicity: Periodicity = Periodicity.day,
         adjusted: bool = True,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> pd.DataFrame:
         """Retrieves the historical price data for a given asset over a specified date range.
 
-        :param periodicity: Determines the frequency of the historical data returned. Options are "day", "week", "month" and "year". This default to "day"
-        :type periodicity: str
+        :param periodicity: Determines the frequency of the historical data returned. Defaults to Periodicity.day.
+        :type periodicity: Periodicity
         :param adjusted: Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits, it defaults True
         :type adjusted: bool, optional
         :param start_date: The start date for historical price retrieval in format "YYYY-MM-DD", default to None
         :type start_date: str, optional
         :param end_date: The end date for historical price retrieval in format "YYYY-MM-DD", default to None
         :type end_date: str, optional
-        :return: A pd.DataFrame containing historical price data with columns corresponding to the specified periodicity, with Date as the index, and columns "open", "high", "low", "close", "volume" in type decimal. The Date index is a string that depends on the periodicity. If periodicity="day", the Date index is the day in format "YYYY-MM-DD", eg "2024-05-13" If periodicity="week", the Date index is the week number of the year in format "YYYY Week ##", eg "2024 Week 2" If periodicity="month", the Date index is the month name of the year in format "<Month> YYYY", eg "January 2024". If periodicity="year", the Date index is the year in format "YYYY", eg "2024".
+        :return: A pd.DataFrame containing historical price data with columns corresponding to the specified periodicity, with Date as the index, and columns "open", "high", "low", "close", "volume" in type decimal. The Date index is a string that depends on the periodicity. If Periodicity.day, the Date index is the day in format "YYYY-MM-DD", eg "2024-05-13" If Periodicity.week, the Date index is the week number of the year in format "YYYY Week ##", eg "2024 Week 2" If Periodicity.month, the Date index is the month name of the year in format "<Month> YYYY", eg "January 2024". If Periodicity.year, the Date index is the year in format "YYYY", eg "2024".
         :rtype: pd.DataFrame
         """
         return self.primary_trading_item.history(
@@ -882,15 +879,15 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
 
     def price_chart(
         self,
-        periodicity: str = "day",
+        periodicity: Periodicity = Periodicity.day,
         adjusted: bool = True,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> Image:
         """Get the price chart.
 
-        :param periodicity: Determines the frequency of the historical data returned. Options are "day", "week", "month" and "year". This default to "day"
-        :type periodicity: str
+        :param str periodicity: Determines the frequency of the historical data returned. Defaults to Periodicity.day.
+        :type periodicity: Periodicity
         :param adjusted: Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits, it defaults True
         :type adjusted: bool, optional
         :param start_date: The start date for historical price retrieval in format "YYYY-MM-DD", default to None
@@ -1121,11 +1118,63 @@ class Client:
             )
             stdout.write("Login credentials received.\n")
 
-        self.tools = _llm_tools(self)
-        self.langchain_tools = langchain_tools(self.tools)
-        self.anthropic_tool_descriptions = anthropic_tool_descriptions
-        self.gemini_tool_descriptions = gemini_tool_descriptions
-        self.openai_tool_descriptions = openai_tool_descriptions
+        self._tools: list[KfinanceTool] | None = None
+
+    @property
+    def langchain_tools(self) -> list["KfinanceTool"]:
+        """Return a list of all Kfinance tools for tool calling."""
+        if self._tools is None:
+            from kfinance.tool_calling import ALL_TOOLS
+
+            self._tools = [t(kfinance_client=self) for t in ALL_TOOLS]  # type: ignore[call-arg]
+        return self._tools
+
+    @property
+    def tools(self) -> dict[str, Callable]:
+        """Return a mapping of tool calling function names to the corresponding functions.
+
+        `tools` is intended for running without langchain. When running with langchain,
+        use `langchain_tools`.
+        """
+        return {t.name: t.run_without_langchain for t in self.langchain_tools}
+
+    @property
+    def anthropic_tool_descriptions(self) -> list[dict[str, Any]]:
+        """Return tool descriptions for anthropic"""
+
+        anthropic_tool_descriptions = []
+
+        for tool in self.langchain_tools:
+            # Copied from https://python.langchain.com/api_reference/_modules/langchain_anthropic/chat_models.html#convert_to_anthropic_tool
+            # to avoid adding a langchain-anthropic dependency.
+            oai_formatted = convert_to_openai_tool(tool)["function"]
+            anthropic_tool_descriptions.append(
+                dict(
+                    name=oai_formatted["name"],
+                    description=oai_formatted["description"],
+                    input_schema=oai_formatted["parameters"],
+                )
+            )
+
+        return anthropic_tool_descriptions
+
+    @property
+    def gemini_tool_descriptions(self) -> gapic.Tool:
+        """Return tool descriptions for gemini.
+
+        The conversion from BaseTool -> openai tool description -> google tool mirrors the
+        langchain implementation.
+        """
+        openai_tool_descriptions = [
+            convert_to_openai_tool(t)["function"] for t in self.langchain_tools
+        ]
+        return convert_to_genai_function_declarations(openai_tool_descriptions)
+
+    @property
+    def openai_tool_descriptions(self) -> list[dict[str, Any]]:
+        """Return tool descriptions for gemini"""
+        openai_tool_descriptions = [convert_to_openai_tool(t) for t in self.langchain_tools]
+        return openai_tool_descriptions
 
     @property
     def access_token(self) -> str:
@@ -1154,7 +1203,7 @@ class Client:
         :rtype: Ticker
         """
         if function_called:
-            self.kfinance_api_client.user_agent_source = "function_calling"
+            self.kfinance_api_client.user_agent_source = "tool_calling"
         return Ticker(self.kfinance_api_client, str(identifier), exchange_code)
 
     def tickers(
@@ -1222,14 +1271,42 @@ class Client:
         )
 
     @staticmethod
-    def get_latest() -> LatestPeriods:
+    def get_latest(use_local_timezone: bool = True) -> LatestPeriods:
         """Get the latest annual reporting year, latest quarterly reporting quarter and year, and current date.
 
+        :param use_local_timezone: whether to use the local timezone of the user
+        :type use_local_timezone: bool
         :return: A dict in the form of {"annual": {"latest_year": int}, "quarterly": {"latest_quarter": int, "latest_year": int}, "now": {"current_year": int, "current_quarter": int, "current_month": int, "current_date": str of Y-m-d}}
         :rtype: Latest
         """
 
-        return get_latest()
+        datetime_now = datetime.now() if use_local_timezone else datetime.now(timezone.utc)
+        current_year = datetime_now.year
+        current_qtr = (datetime_now.month - 1) // 3 + 1
+
+        # Quarterly data. Get most recent year and quarter
+        if current_qtr == 1:
+            most_recent_year_qtrly = current_year - 1
+            most_recent_qtr = 4
+        else:
+            most_recent_year_qtrly = current_year
+            most_recent_qtr = current_qtr - 1
+
+        # Annual data. Get most recent year
+        most_recent_year_annual = current_year - 1
+
+        current_month = datetime_now.month
+        latest: LatestPeriods = {
+            "annual": {"latest_year": most_recent_year_annual},
+            "quarterly": {"latest_quarter": most_recent_qtr, "latest_year": most_recent_year_qtrly},
+            "now": {
+                "current_year": current_year,
+                "current_quarter": current_qtr,
+                "current_month": current_month,
+                "current_date": datetime_now.date().isoformat(),
+            },
+        }
+        return latest
 
     @staticmethod
     def get_n_quarters_ago(n: int) -> YearAndQuarter:
@@ -1240,4 +1317,17 @@ class Client:
         :rtype: YearAndQuarter
         """
 
-        return get_n_quarters_ago(n)
+        datetime_now = datetime.now()
+        current_qtr = (datetime_now.month - 1) // 3 + 1
+        total_quarters_completed = datetime_now.year * 4 + current_qtr - 1
+        total_quarters_completed_n_quarters_ago = total_quarters_completed - n
+
+        year_n_quarters_ago = total_quarters_completed_n_quarters_ago // 4
+        quarter_n_quarters_ago = total_quarters_completed_n_quarters_ago % 4 + 1
+
+        year_quarter_n_quarters_ago: YearAndQuarter = {
+            "year": year_n_quarters_ago,
+            "quarter": quarter_n_quarters_ago,
+        }
+
+        return year_quarter_n_quarters_ago
