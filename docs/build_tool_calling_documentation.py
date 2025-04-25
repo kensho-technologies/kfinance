@@ -1,5 +1,5 @@
-import inspect
 from enum import Enum
+import inspect
 from pathlib import Path
 
 from langchain_core.utils.function_calling import convert_to_openai_tool
@@ -48,11 +48,7 @@ def add_function_to_tools_file(tool: KfinanceTool) -> None:
     """
 
     # The signature built with the inspect module does not include necessary imports.
-    imports = [
-        "import kfinance",
-        "import datetime",
-        "from typing import Optional"
-    ]
+    imports = ["import kfinance", "import datetime", "from typing import Optional"]
     signature_str = build_signature_str(tool)
 
     # Use inspect to retrieve the return type and add it to the imports if it's not a builtin.
@@ -66,10 +62,6 @@ def add_function_to_tools_file(tool: KfinanceTool) -> None:
     for field_name, field_metadata in tool.args_schema.model_fields.items():
         # We use the openai definition to extract the field description. This means that, just like
         # pydantic/langchain, we use the docstring of an enum as the description for an enum field.
-        try:
-            openai_params[field_name]['description']
-        except:
-            assert False, tool.name
         args += f"\n    :param {field_name}: {openai_params[field_name]['description']}"
         args += f"\n    :type {field_name}: {display_as_type(field_metadata.annotation)}"
 
@@ -84,7 +76,8 @@ def add_function_to_tools_file(tool: KfinanceTool) -> None:
     with open(inspect.getfile(tool.__class__), mode="a") as f:
         f.write(func_str)
 
-def build_signature_str(tool) -> str:
+
+def build_signature_str(tool: KfinanceTool) -> str:
     """Return the signature string of the tool
 
     Return value example:
@@ -104,7 +97,6 @@ def build_signature_str(tool) -> str:
     return f"def {tool.name}{signature}:"
 
 
-
 def add_module_to_tool_calling_rst(tool: KfinanceTool) -> None:
     """Add a module for each tool to tool_calling.rst.
 
@@ -121,3 +113,6 @@ def add_module_to_tool_calling_rst(tool: KfinanceTool) -> None:
 
     with open(Path(Path(__file__).resolve().parent, "tool_calling.rst"), mode="a") as f:
         f.write(module_str)
+
+if __name__ == "__main__":
+    add_tool_calling_docs_for_all_tools()
