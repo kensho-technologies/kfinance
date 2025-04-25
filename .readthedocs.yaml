@@ -8,7 +8,7 @@ build:
       # borrowed from here:
       # https://docs.readthedocs.com/platform/stable/build-customization.html#avoid-having-a-dirty-git-index
       - git update-index --assume-unchanged docs/conf.py
-    tool_calling_pre_processing:
+    pre_build:
       # build documentation for tool calling before generating docs.
       - pip install langchain-core
       - python docs/build_tool_calling_documentation.py
