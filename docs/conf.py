@@ -7,15 +7,10 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 from importlib.metadata import version as get_version
 
-from docs.build_tool_calling_documentation import add_tool_calling_docs_for_all_tools
-
-
 project = "kensho-kfinance"
 copyright = "2025, Kensho Technologies"
 author = "Kensho Technologies"
 
-# Add documentation for tool calling.
-add_tool_calling_docs_for_all_tools()
 
 # borrowed from here:
 # https://setuptools-scm.readthedocs.io/en/latest/usage/#usage-from-sphinx
@@ -57,7 +52,6 @@ templates_path = ["templates"]
 
 # The suffix of source filenames.
 source_suffix = [".rst", ".md"]
-
 
 
 # -- Options for HTML output -------------------------------------------------
