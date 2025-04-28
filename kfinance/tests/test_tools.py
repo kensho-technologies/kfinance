@@ -1,7 +1,6 @@
 from datetime import date, datetime
 
 from langchain_core.utils.function_calling import convert_to_openai_tool
-import pytest
 from requests_mock import Mocker
 import time_machine
 
@@ -42,27 +41,6 @@ from kfinance.tool_calling.get_latest import GetLatestArgs
 from kfinance.tool_calling.get_n_quarters_ago import GetNQuartersAgoArgs
 from kfinance.tool_calling.get_prices_from_identifier import GetPricesFromIdentifierArgs
 from kfinance.tool_calling.shared_models import ToolArgsWithIdentifier
-
-
-@pytest.fixture
-def mock_client(requests_mock: Mocker) -> Client:
-    """Create a KFinanceApiClient with a mock response for the SPGI id triple."""
-
-    client = Client(refresh_token="foo")
-    # Set access token so that the client doesn't try to fetch it.
-    client.kfinance_api_client._access_token = "foo"  # noqa: SLF001
-    client.kfinance_api_client._access_token_expiry = datetime(2100, 1, 1).timestamp()  # noqa: SLF001
-
-    # Create a mock for the SPGI id triple.
-    requests_mock.get(
-        url="https://kfinance.kensho.com/api/v1/id/SPGI",
-        json={
-            "trading_item_id": SPGI_TRADING_ITEM_ID,
-            "security_id": SPGI_SECURITY_ID,
-            "company_id": SPGI_COMPANY_ID,
-        },
-    )
-    return client
 
 
 class TestGetBusinessRelationshipFromIdentifier:

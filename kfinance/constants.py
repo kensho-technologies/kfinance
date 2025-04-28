@@ -88,6 +88,16 @@ class BusinessRelationshipType(StrEnum):
     client_services = "client_services"
 
 
+class Permission(Enum):
+    EarningsPermission = "EarningsPermission"
+    GICSPermission = "GICSPermission"
+    IDPermission = "IDPermission"
+    ISCRSPermission = "ISCRSPermission"
+    PricingPermission = "PricingPermission"
+    RelationshipPermission = "RelationshipPermission"
+    StatementsPermission = "StatementsPermission"
+
+
 class YearAndQuarter(TypedDict):
     year: int
     quarter: int

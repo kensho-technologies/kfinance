@@ -2,7 +2,7 @@ from typing import Literal, Type
 
 from pydantic import BaseModel, Field
 
-from kfinance.constants import PeriodType, StatementType
+from kfinance.constants import PeriodType, Permission, StatementType
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
@@ -20,6 +20,7 @@ class GetFinancialStatementFromIdentifier(KfinanceTool):
     name: str = "get_financial_statement_from_identifier"
     description: str = "Get the financial statement associated with an identifier."
     args_schema: Type[BaseModel] = GetFinancialStatementFromIdentifierArgs
+    required_permission: Permission | None = Permission.StatementsPermission
 
     def _run(
         self,

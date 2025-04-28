@@ -25,6 +25,7 @@ from .constants import (
     IndustryClassification,
     LatestPeriods,
     Periodicity,
+    Permission,
     YearAndQuarter,
 )
 from .fetch import (
@@ -1157,6 +1158,28 @@ class Client:
             stdout.write("Login credentials received.\n")
 
         self._tools: list[KfinanceTool] | None = None
+        self._user_permissions: set[Permission] | None = None
+
+    @property
+    def user_permissions(self) -> set[Permission]:
+        """Return the permissions that the current user holds."""
+
+        if self._user_permissions is None:
+            # Fetch and parse user permissions
+            user_permission_dict = self.kfinance_api_client.fetch_permissions()
+            self._user_permissions = set()
+            for permission_str in user_permission_dict["permissions"]:
+                try:
+                    self._user_permissions.add(Permission[permission_str])
+                except KeyError:
+                    logger.warning(
+                        "Could not resolve %s to a member of the Permission enum. "
+                        "%s may be a new type of permission that still needs to be "
+                        "added to the enum.",
+                        permission_str,
+                        permission_str,
+                    )
+        return self._user_permissions
 
     @property
     def langchain_tools(self) -> list["KfinanceTool"]:
@@ -1164,7 +1187,16 @@ class Client:
         if self._tools is None:
             from kfinance.tool_calling import ALL_TOOLS
 
-            self._tools = [t(kfinance_client=self) for t in ALL_TOOLS]  # type: ignore[call-arg]
+            self._tools = []
+            # Add tool to _tools if the user has permissions to use it.
+            for tool_cls in ALL_TOOLS:
+                tool = tool_cls(kfinance_client=self)  # type: ignore[call-arg]
+                if (
+                    tool.required_permission is None
+                    or tool.required_permission in self.user_permissions
+                ):
+                    self._tools.append(tool)
+
         return self._tools
 
     @property

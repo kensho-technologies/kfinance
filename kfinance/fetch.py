@@ -191,6 +191,11 @@ class KFinanceApiClient:
         response.raise_for_status()
         return response.json()
 
+    def fetch_permissions(self) -> dict[str, list[str]]:
+        """Return the permissions of the user."""
+        url = f"{self.url_base}users/permissions"
+        return self.fetch(url)
+
     def fetch_id_triple(self, identifier: str, exchange_code: Optional[str] = None) -> dict:
         """Get the ID triple from [identifier]."""
         url = f"{self.url_base}id/{identifier}"
