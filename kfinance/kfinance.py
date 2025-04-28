@@ -7,7 +7,7 @@ from io import BytesIO
 import logging
 import re
 from sys import stdout
-from typing import Iterable, NamedTuple, Optional
+from typing import Iterable, NamedTuple, Optional, Set
 from urllib.parse import urljoin
 import webbrowser
 
@@ -16,7 +16,7 @@ import pandas as pd
 from PIL.Image import Image, open as image_open
 
 from .batch_request_handling import add_methods_of_singular_class_to_iterable_class
-from .constants import HistoryMetadata, IdentificationTriple, LatestPeriods, YearAndQuarter
+from .constants import HistoryMetadata, IdentificationTriple, LatestPeriods, YearAndQuarter, IndustryClassification
 from .fetch import (
     DEFAULT_API_HOST,
     DEFAULT_API_VERSION,
@@ -1163,31 +1163,82 @@ class Client:
         state_iso_code: Optional[str] = None,
         simple_industry: Optional[str] = None,
         exchange_code: Optional[str] = None,
+        sic: Optional[str] = None,
+        naics: Optional[str] = None,
+        nace: Optional[str] = None,
+        anzsic: Optional[str] = None,
+        spcapiqetf: Optional[str] = None,
+        spratings: Optional[str] = None,
+        gics: Optional[str] = None,
     ) -> Tickers:
         """Generate tickers object representing the collection of Tickers that meet all the supplied parameters
 
         One of country_iso_code, simple_industry, or exchange_code must be supplied. A parameter set to None is not used to filter on
 
-        :param country_iso_code: The ISO 3166-1 Alpha-2 or Alpha-3 code that represent the primary country the firm is based in. It default None
+        :param country_iso_code: The ISO 3166-1 Alpha-2 or Alpha-3 code that represent the primary country the firm is based in. It defaults to None
         :type country_iso_code: str, optional
-        :param state_iso_code: The ISO 3166-2 Alpha-2 code that represents the primary subdivision of the country the firm the based in. Not all ISO 3166-2 codes are supported as S&P doesn't maintain the full list but a feature request for the full list is submitted to S&P product. Requires country_iso_code also to have a value other then None. It default None
+        :param state_iso_code: The ISO 3166-2 Alpha-2 code that represents the primary subdivision of the country the firm the based in. Not all ISO 3166-2 codes are supported as S&P doesn't maintain the full list but a feature request for the full list is submitted to S&P product. Requires country_iso_code also to have a value other then None. It defaults to None
         :type state_iso_code: str, optional
-        :param simple_industry: The S&P CIQ Simple Industry defined in ciqSimpleIndustry in XPF. It default None
+        :param simple_industry: The S&P CIQ Simple Industry defined in ciqSimpleIndustry in XPF. It defaults to None
         :type simple_industry: str, optional
-        :param exchange_code: The exchange code for the primary equity listing exchange of the firm. It default None
+        :param exchange_code: The exchange code for the primary equity listing exchange of the firm. It defaults to None
         :type exchange_code: str, optional
+        :param sic: The SIC industry code. It defaults to None
+        :type sic: str, optional
+        :param naics: The NAICS industry code. It defaults to None
+        :type naics: str, optional
+        :param nace: The NACE industry code. It defaults to None
+        :type nace: str, optional
+        :param anzsic: The ANZSIC industry code. It defaults to None
+        :type anzsic: str, optional
+        :param spcapiqetf: The S&P CapitalIQ ETF industry code. It defaults to None
+        :type spcapiqetf: str, optional        
+        :param spratings: The S&P Ratings industry code. It defaults to None
+        :type spratings: str, optional
+        :param gics: The GICS code. It defaults to None
+        :type gics: str, optional        
         :return: A tickers object that is the group of Ticker objects meeting all the supplied parameters
         :rtype: Tickers
         """
-        return Tickers(
+        # Create a list to accumulate the fetched ticker sets
+        ticker_sets : list[Tickers] = []
+
+        # Map the parameters to the industry_dict, pass the values in as the key.
+        industry_dict = {
+            "sic": sic,
+            "naics": naics,
+            "nace": nace,
+            "anzsic": anzsic,
+            "spcapiqetf": spcapiqetf,
+            "spratings": spratings,
+            "gics": gics,
+        }
+
+        if any(parameter is not None for parameter in [country_iso_code, state_iso_code, simple_industry, exchange_code]):
+            ticker_sets.append(Tickers(
             kfinance_api_client=self.kfinance_api_client,
             id_triples=self.kfinance_api_client.fetch_ticker_combined(
-                country_iso_code=country_iso_code,
                 state_iso_code=state_iso_code,
                 simple_industry=simple_industry,
                 exchange_code=exchange_code,
-            )["tickers"],
-        )
+                )["tickers"],
+            ))
+ 
+        for key, value in industry_dict.items():
+            if value is not None:
+                ticker_sets.append(Tickers(
+                kfinance_api_client=self.kfinance_api_client,
+                id_triples=self.kfinance_api_client.fetch_ticker_from_industry_code(
+                    industry_code=value,
+                    industry_classification=IndustryClassification(key),
+                )["tickers"],
+                ))
+
+        if not ticker_sets:
+            return Tickers(kfinance_api_client=self.kfinance_api_client, id_triples=set())
+
+        common_ticker_elements = set.intersection(*ticker_sets)
+        return common_ticker_elements
 
     def company(self, company_id: int) -> Company:
         """Generate the Company object from company_id
