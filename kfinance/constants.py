@@ -1,6 +1,6 @@
 from datetime import date
 from itertools import chain
-from typing import TypedDict
+from typing import NamedTuple, TypedDict
 
 from strenum import StrEnum
 
@@ -20,7 +20,7 @@ class HistoryMetadata(TypedDict):
     first_trade_date: date
 
 
-class IdentificationTriple(TypedDict):
+class IdentificationTriple(NamedTuple):
     trading_item_id: int
     security_id: int
     company_id: int

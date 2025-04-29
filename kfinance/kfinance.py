@@ -7,7 +7,7 @@ from io import BytesIO
 import logging
 import re
 from sys import stdout
-from typing import Iterable, NamedTuple, Optional, Set
+from typing import Any, Iterable, NamedTuple, Optional
 from urllib.parse import urljoin
 import webbrowser
 
@@ -16,7 +16,13 @@ import pandas as pd
 from PIL.Image import Image, open as image_open
 
 from .batch_request_handling import add_methods_of_singular_class_to_iterable_class
-from .constants import HistoryMetadata, IdentificationTriple, LatestPeriods, YearAndQuarter, IndustryClassification
+from .constants import (
+    HistoryMetadata,
+    IdentificationTriple,
+    IndustryClassification,
+    LatestPeriods,
+    YearAndQuarter,
+)
 from .fetch import (
     DEFAULT_API_HOST,
     DEFAULT_API_VERSION,
@@ -542,6 +548,31 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
                 "Neither an identifier nor an identification triple (company id, security id, & trading item id) were passed in"
             )
 
+    @property
+    def id_triple(self) -> IdentificationTriple:
+        return IdentificationTriple(
+            company_id=self.company_id,
+            security_id=self.security_id,
+            trading_item_id=self.trading_item_id
+        )
+
+    def __hash__(self) -> int:
+        # I think there are two broad options here.
+        # Option 1: Use only data currently available. So if company_id is None (not yet fetched),
+        # use that in the hash.
+        # The problem with this approach is that there are multiple ways of defining
+        # the same ticker, e.g. Ticker(ticker="SPGI") and Ticker(company_id=spgi_company_id).
+        # Option 2: Use company_id, security_id, and trading_item_id. This should be a way of
+        # identifying unique tickers but would mean having to fetch id triples where not yet
+        # available.
+        return hash(self.id_triple)
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Ticker):
+            return False
+        return self.id_triple == other.id_triple
+
+
     def __str__(self) -> str:
         """String representation for the ticker object"""
         str_attributes = []
@@ -991,21 +1022,39 @@ class Tickers(set):
         :type id_triples: Iterable[IdentificationTriple]
         """
         self.kfinance_api_client = kfinance_api_client
+
         super().__init__(
             Ticker(
                 kfinance_api_client=kfinance_api_client,
-                company_id=id_triple["company_id"],
-                security_id=id_triple["security_id"],
-                trading_item_id=id_triple["trading_item_id"],
+                company_id=id_triple.company_id,
+                security_id=id_triple.security_id,
+                trading_item_id=id_triple.trading_item_id,
             )
             for id_triple in id_triples
         )
-        set.intersection
 
-    def intersection(self, *s: Iterable[Tickers]) -> Tickers:
-        common_elements = super().intersection(*s) # create a set of common elements 
-        result_tickers_set = Tickers(kfinance_api_client=self.kfinance_api_client, id_triples=self.id_triples) # create a new Tickers object
-        return result_tickers_set.update(common_elements) 
+    def intersection(self, *s: Iterable[Any]) -> Tickers:
+        for obj in s:
+            if not isinstance(obj, Tickers):
+                raise ValueError("Can only intersect Tickers object with other Tickers object.")
+
+        self_triples = {t.id_triple for t in self}
+        set_triples = []
+
+        for ticker_set in s:
+            set_triples.append({t.id_triple for t in ticker_set})
+        common_triples = self_triples.intersection(*set_triples)
+
+        return Tickers(
+            kfinance_api_client=self.kfinance_api_client,
+            id_triples=common_triples
+        )
+
+    def __and__(self, other: Any) -> "Tickers":
+
+        if not isinstance(other, Tickers):
+            raise ValueError("Can only combine Tickers objects with other Tickers objects.")
+        return self.intersection(other)
 
     def companies(self) -> Companies:
         """Build a group of company objects from the group of tickers
@@ -1198,11 +1247,11 @@ class Client:
         :param anzsic: The ANZSIC industry code. It defaults to None
         :type anzsic: str, optional
         :param spcapiqetf: The S&P CapitalIQ ETF industry code. It defaults to None
-        :type spcapiqetf: str, optional        
+        :type spcapiqetf: str, optional
         :param spratings: The S&P Ratings industry code. It defaults to None
         :type spratings: str, optional
         :param gics: The GICS code. It defaults to None
-        :type gics: str, optional        
+        :type gics: str, optional
         :return: A tickers object that is the group of Ticker objects meeting all the supplied parameters
         :rtype: Tickers
         """
@@ -1229,7 +1278,7 @@ class Client:
                 exchange_code=exchange_code,
                 )["tickers"],
             ))
- 
+
         for key, value in industry_dict.items():
             if value is not None:
                 ticker_sets.append(Tickers(
