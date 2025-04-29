@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.0.1
+- Fix readthedocs integration for llm tools.
+
+## v2.0.0
+- Refactor llm tools to use langchain `BaseTool`.
+
 ## v1.2.2
 - Add tabulate and pydantic as dependencies
 
