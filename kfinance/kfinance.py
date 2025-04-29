@@ -1000,6 +1000,12 @@ class Tickers(set):
             )
             for id_triple in id_triples
         )
+        set.intersection
+
+    def intersection(self, *s: Iterable[Tickers]) -> Tickers:
+        common_elements = super().intersection(*s) # create a set of common elements 
+        result_tickers_set = Tickers(kfinance_api_client=self.kfinance_api_client, id_triples=self.id_triples) # create a new Tickers object
+        return result_tickers_set.update(common_elements) 
 
     def companies(self) -> Companies:
         """Build a group of company objects from the group of tickers
@@ -1237,7 +1243,7 @@ class Client:
         if not ticker_sets:
             return Tickers(kfinance_api_client=self.kfinance_api_client, id_triples=set())
 
-        common_ticker_elements = set.intersection(*ticker_sets)
+        common_ticker_elements = Tickers.intersection(*ticker_sets)
         return common_ticker_elements
 
     def company(self, company_id: int) -> Company:
