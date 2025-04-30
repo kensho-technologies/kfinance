@@ -22,6 +22,7 @@ from .batch_request_handling import add_methods_of_singular_class_to_iterable_cl
 from .constants import (
     HistoryMetadata,
     IdentificationTriple,
+    IndustryClassification,
     LatestPeriods,
     Periodicity,
     YearAndQuarter,
@@ -539,6 +540,23 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
                 "Neither an identifier nor an identification triple (company id, security id, & trading item id) were passed in"
             )
 
+    @property
+    def id_triple(self) -> IdentificationTriple:
+        """Returns a unique identifier triple for the Ticker object."""
+        return IdentificationTriple(
+            company_id=self.company_id,
+            security_id=self.security_id,
+            trading_item_id=self.trading_item_id,
+        )
+
+    def __hash__(self) -> int:
+        return hash(self.id_triple)
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Ticker):
+            return False
+        return self.id_triple == other.id_triple
+
     def __str__(self) -> str:
         """String representation for the ticker object"""
         str_attributes = []
@@ -991,18 +1009,32 @@ class Tickers(set):
         super().__init__(
             Ticker(
                 kfinance_api_client=kfinance_api_client,
-                company_id=id_triple["company_id"],
-                security_id=id_triple["security_id"],
-                trading_item_id=id_triple["trading_item_id"],
+                company_id=id_triple.company_id,
+                security_id=id_triple.security_id,
+                trading_item_id=id_triple.trading_item_id,
             )
             for id_triple in id_triples
         )
-        set.intersection
 
-    def intersection(self, *s: Iterable[Tickers]) -> Tickers:
-        common_elements = super().intersection(*s) # create a set of common elements 
-        result_tickers_set = Tickers(kfinance_api_client=self.kfinance_api_client, id_triples=self.id_triples) # create a new Tickers object
-        return result_tickers_set.update(common_elements) 
+    def intersection(self, *s: Iterable[Any]) -> Tickers:
+        """Returns the intersection of Tickers objects"""
+        for obj in s:
+            if not isinstance(obj, Tickers):
+                raise ValueError("Can only intersect Tickers object with other Tickers object.")
+
+        self_triples = {t.id_triple for t in self}
+        set_triples = []
+
+        for ticker_set in s:
+            set_triples.append({t.id_triple for t in ticker_set})
+        common_triples = self_triples.intersection(*set_triples)
+
+        return Tickers(kfinance_api_client=self.kfinance_api_client, id_triples=common_triples)
+
+    def __and__(self, other: Any) -> "Tickers":
+        if not isinstance(other, Tickers):
+            raise ValueError("Can only combine Tickers objects with other Tickers objects.")
+        return self.intersection(other)
 
     def companies(self) -> Companies:
         """Build a group of company objects from the group of tickers
@@ -1247,16 +1279,16 @@ class Client:
         :param anzsic: The ANZSIC industry code. It defaults to None
         :type anzsic: str, optional
         :param spcapiqetf: The S&P CapitalIQ ETF industry code. It defaults to None
-        :type spcapiqetf: str, optional        
+        :type spcapiqetf: str, optional
         :param spratings: The S&P Ratings industry code. It defaults to None
         :type spratings: str, optional
         :param gics: The GICS code. It defaults to None
-        :type gics: str, optional        
+        :type gics: str, optional
         :return: A tickers object that is the group of Ticker objects meeting all the supplied parameters
         :rtype: Tickers
         """
         # Create a list to accumulate the fetched ticker sets
-        ticker_sets : list[Tickers] = []
+        ticker_sets: list[Tickers] = []
 
         # Map the parameters to the industry_dict, pass the values in as the key.
         industry_dict = {
@@ -1269,25 +1301,33 @@ class Client:
             "gics": gics,
         }
 
-        if any(parameter is not None for parameter in [country_iso_code, state_iso_code, simple_industry, exchange_code]):
-            ticker_sets.append(Tickers(
-            kfinance_api_client=self.kfinance_api_client,
-            id_triples=self.kfinance_api_client.fetch_ticker_combined(
-                state_iso_code=state_iso_code,
-                simple_industry=simple_industry,
-                exchange_code=exchange_code,
-                )["tickers"],
-            ))
- 
+        if any(
+            parameter is not None
+            for parameter in [country_iso_code, state_iso_code, simple_industry, exchange_code]
+        ):
+            ticker_sets.append(
+                Tickers(
+                    kfinance_api_client=self.kfinance_api_client,
+                    id_triples=self.kfinance_api_client.fetch_ticker_combined(
+                        country_iso_code=country_iso_code,
+                        state_iso_code=state_iso_code,
+                        simple_industry=simple_industry,
+                        exchange_code=exchange_code,
+                    ),
+                )
+            )
+
         for key, value in industry_dict.items():
             if value is not None:
-                ticker_sets.append(Tickers(
-                kfinance_api_client=self.kfinance_api_client,
-                id_triples=self.kfinance_api_client.fetch_ticker_from_industry_code(
-                    industry_code=value,
-                    industry_classification=IndustryClassification(key),
-                )["tickers"],
-                ))
+                ticker_sets.append(
+                    Tickers(
+                        kfinance_api_client=self.kfinance_api_client,
+                        id_triples=self.kfinance_api_client.fetch_ticker_from_industry_code(
+                            industry_code=value,
+                            industry_classification=IndustryClassification(key),
+                        ),
+                    )
+                )
 
         if not ticker_sets:
             return Tickers(kfinance_api_client=self.kfinance_api_client, id_triples=set())

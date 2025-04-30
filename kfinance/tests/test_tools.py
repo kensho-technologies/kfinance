@@ -7,6 +7,7 @@ import time_machine
 
 from kfinance.constants import BusinessRelationshipType, Capitalization, StatementType
 from kfinance.kfinance import Client
+from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
 from kfinance.tool_calling import (
     GetCompanyIdFromIdentifier,
     GetEarningsCallDatetimesFromIdentifier,
@@ -41,11 +42,6 @@ from kfinance.tool_calling.get_latest import GetLatestArgs
 from kfinance.tool_calling.get_n_quarters_ago import GetNQuartersAgoArgs
 from kfinance.tool_calling.get_prices_from_identifier import GetPricesFromIdentifierArgs
 from kfinance.tool_calling.shared_models import ToolArgsWithIdentifier
-
-
-SPGI_COMPANY_ID = 21719
-SPGI_SECURITY_ID = 2629107
-SPGI_TRADING_ITEM_ID = 2629108
 
 
 @pytest.fixture

@@ -358,10 +358,12 @@ class KFinanceApiClient:
         self,
         country_iso_code: str,
         state_iso_code: Optional[str] = None,
-    ) -> dict[str, list[IdentificationTriple]]:
+    ) -> list[IdentificationTriple]:
         """Fetch ticker geography groups"""
-        return self.fetch_geography_groups(
-            country_iso_code=country_iso_code, state_iso_code=state_iso_code, fetch_ticker=True
+        return self.tickers_response_to_id_triple(
+            self.fetch_geography_groups(
+                country_iso_code=country_iso_code, state_iso_code=state_iso_code, fetch_ticker=True
+            )
         )
 
     def fetch_company_geography_groups(
@@ -381,13 +383,13 @@ class KFinanceApiClient:
         url = f"{self.url_base}{'ticker_groups' if fetch_ticker else 'trading_item_groups'}/exchange/{exchange_code}"
         return self.fetch(url)
 
-    def fetch_ticker_exchange_groups(
-        self, exchange_code: str
-    ) -> dict[str, list[IdentificationTriple]]:
+    def fetch_ticker_exchange_groups(self, exchange_code: str) -> list[IdentificationTriple]:
         """Fetch ticker exchange groups"""
-        return self.fetch_exchange_groups(
-            exchange_code=exchange_code,
-            fetch_ticker=True,
+        return self.tickers_response_to_id_triple(
+            self.fetch_exchange_groups(
+                exchange_code=exchange_code,
+                fetch_ticker=True,
+            )
         )
 
     def fetch_trading_item_exchange_groups(self, exchange_code: str) -> dict[str, list[int]]:
@@ -397,13 +399,27 @@ class KFinanceApiClient:
             fetch_ticker=False,
         )
 
+    @staticmethod
+    def tickers_response_to_id_triple(
+        tickers_response: dict[str, list[dict]],
+    ) -> list[IdentificationTriple]:
+        """cases where you get back a dict[str, list[dict]] from tickers response. returns list[IdentificationTriple]. insert example"""
+        return [
+            IdentificationTriple(
+                trading_item_id=ticker["trading_item_id"],
+                security_id=ticker["security_id"],
+                company_id=ticker["company_id"],
+            )
+            for ticker in tickers_response["tickers"]
+        ]
+
     def fetch_ticker_combined(
         self,
         country_iso_code: Optional[str] = None,
         state_iso_code: Optional[str] = None,
         simple_industry: Optional[str] = None,
         exchange_code: Optional[str] = None,
-    ) -> dict[str, list[IdentificationTriple]]:
+    ) -> list[IdentificationTriple]:
         """Fetch tickers using combined filters route"""
         if (
             country_iso_code is None
@@ -414,11 +430,11 @@ class KFinanceApiClient:
             raise RuntimeError("Invalid parameters: No parameters provided or all set to none")
         elif country_iso_code is None and state_iso_code is not None:
             raise RuntimeError(
-                "Invalid parameters: state_iso_code must be provided with a country_iso_code value"
+                "Invalid parameters: country_iso_code must be provided with a state_iso_code value"
             )
         else:
             url = f"{self.url_base}ticker_groups/filters/geo/{str(country_iso_code).lower()}/{str(state_iso_code).lower()}/simple/{str(simple_industry).lower()}/exchange/{str(exchange_code).lower()}"
-            return self.fetch(url)
+            return self.tickers_response_to_id_triple(self.fetch(url))
 
     def fetch_companies_from_business_relationship(
         self, company_id: int, relationship_type: BusinessRelationshipType
@@ -443,22 +459,11 @@ class KFinanceApiClient:
         url = f"{self.url_base}relationship/{company_id}/{relationship_type}"
         return self.fetch(url)
 
-    def fetch_from_industry_code(
-        self,
-        industry_code: str,
-        industry_classification: IndustryClassification,
-        fetch_ticker: bool = True,
-    ) -> dict[str, list]:
-        """Fetches a list of companies or identification triples that are classified in the given industry_code and industry_classification."""
-
-        url = f"{self.url_base}{'ticker_groups' if fetch_ticker else 'company_groups'}/industry/{industry_classification}/{industry_code}"
-        return self.fetch(url)
-
     def fetch_ticker_from_industry_code(
         self,
         industry_code: str,
         industry_classification: IndustryClassification,
-    ) -> dict[str, list[IdentificationTriple]]:
+    ) -> list[IdentificationTriple]:
         """Fetches a list of identification triples that are classified in the given industry_code and industry_classification.
 
         Returns a dictionary of shape {"tickers": List[{“company_id”: <company_id>, “security_id”: <security_id>, “trading_item_id”: <trading_item_id>}]}.
@@ -467,13 +472,11 @@ class KFinanceApiClient:
         :param industry_classification: The type of industry_classification to filter on.
         :type industry_classification: IndustryClassification
         :return: A dictionary containing the list of identification triple [company_id, security_id, trading_item_id] that are classified in the given industry_code and industry_classification.
+        # TODO fix this
         :rtype: dict[str, list[IdentificationTriple]]
         """
-        return self.fetch_from_industry_code(
-            industry_code=industry_code,
-            industry_classification=industry_classification,
-            fetch_ticker=True,
-        )
+        url = f"{self.url_base}ticker_groups/industry/{industry_classification}/{industry_code}"
+        return self.tickers_response_to_id_triple(self.fetch(url))
 
     def fetch_company_from_industry_code(
         self,
@@ -490,8 +493,5 @@ class KFinanceApiClient:
         :return: A dictionary containing the list of companies that are classified in the given industry_code and industry_classification.
         :rtype: dict[str, list[int]]
         """
-        return self.fetch_from_industry_code(
-            industry_code=industry_code,
-            industry_classification=industry_classification,
-            fetch_ticker=False,
-        )
+        url = f"{self.url_base}company_groups/industry/{industry_classification}/{industry_code}"
+        return self.fetch(url)
