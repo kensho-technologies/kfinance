@@ -1258,9 +1258,9 @@ class Client:
         spratings: Optional[str] = None,
         gics: Optional[str] = None,
     ) -> Tickers:
-        """Generate tickers object representing the collection of Tickers that meet all the supplied parameters
+        """Generate a Tickers object representing the collection of Tickers that meet all the supplied parameters.
 
-        One of country_iso_code, simple_industry, or exchange_code must be supplied. A parameter set to None is not used to filter on
+        One of country_iso_code, simple_industry, or exchange_code must be supplied, or one of sic, naics, nace, anzsic, spcapiqetf, spratings, or gics.
 
         :param country_iso_code: The ISO 3166-1 Alpha-2 or Alpha-3 code that represent the primary country the firm is based in. It defaults to None
         :type country_iso_code: str, optional
@@ -1284,7 +1284,7 @@ class Client:
         :type spratings: str, optional
         :param gics: The GICS code. It defaults to None
         :type gics: str, optional
-        :return: A tickers object that is the group of Ticker objects meeting all the supplied parameters
+        :return: A Tickers object that is the intersection of Ticker objects meeting all the supplied parameters.
         :rtype: Tickers
         """
         # Create a list to accumulate the fetched ticker sets

@@ -403,7 +403,12 @@ class KFinanceApiClient:
     def tickers_response_to_id_triple(
         tickers_response: dict[str, list[dict]],
     ) -> list[IdentificationTriple]:
-        """cases where you get back a dict[str, list[dict]] from tickers response. returns list[IdentificationTriple]. insert example"""
+        """For fetch ticker cases with a dict[str, list[dict]] response, return a list[IdentificationTriple].
+
+        For example, with a given fetch tickers response:
+        {"tickers" : [{"trading_item_id": 1, "security_id": 1, "company_id": 1}, {"trading_item_id": 2,"security_id": 2,"company_id": 2}]},
+        return [[1, 1, 1], [2, 2, 2]].
+        """
         return [
             IdentificationTriple(
                 trading_item_id=ticker["trading_item_id"],
@@ -471,9 +476,8 @@ class KFinanceApiClient:
         :type industry_code: str
         :param industry_classification: The type of industry_classification to filter on.
         :type industry_classification: IndustryClassification
-        :return: A dictionary containing the list of identification triple [company_id, security_id, trading_item_id] that are classified in the given industry_code and industry_classification.
-        # TODO fix this
-        :rtype: dict[str, list[IdentificationTriple]]
+        :return: A list of identification triples [company_id, security_id, trading_item_id] that are classified in the given industry_code and industry_classification.
+        :rtype: list[IdentificationTriple]
         """
         url = f"{self.url_base}ticker_groups/industry/{industry_classification}/{industry_code}"
         return self.tickers_response_to_id_triple(self.fetch(url))
