@@ -1,5 +1,5 @@
 from unittest import TestCase
-from unittest.mock import Mock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -10,7 +10,7 @@ from kfinance.fetch import KFinanceApiClient
 def build_mock_api_client() -> KFinanceApiClient:
     """Create a KFinanceApiClient with mocked-out fetch function."""
     kfinance_api_client = KFinanceApiClient(refresh_token="fake_refresh_token")
-    kfinance_api_client.fetch = Mock()
+    kfinance_api_client.fetch = MagicMock()
     return kfinance_api_client
 
 

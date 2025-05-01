@@ -22,6 +22,7 @@ from .batch_request_handling import add_methods_of_singular_class_to_iterable_cl
 from .constants import (
     HistoryMetadata,
     IdentificationTriple,
+    IndustryClassification,
     LatestPeriods,
     Periodicity,
     YearAndQuarter,
@@ -539,6 +540,23 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
                 "Neither an identifier nor an identification triple (company id, security id, & trading item id) were passed in"
             )
 
+    @property
+    def id_triple(self) -> IdentificationTriple:
+        """Returns a unique identifier triple for the Ticker object."""
+        return IdentificationTriple(
+            company_id=self.company_id,
+            security_id=self.security_id,
+            trading_item_id=self.trading_item_id,
+        )
+
+    def __hash__(self) -> int:
+        return hash(self.id_triple)
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Ticker):
+            return False
+        return self.id_triple == other.id_triple
+
     def __str__(self) -> str:
         """String representation for the ticker object"""
         str_attributes = []
@@ -991,12 +1009,32 @@ class Tickers(set):
         super().__init__(
             Ticker(
                 kfinance_api_client=kfinance_api_client,
-                company_id=id_triple["company_id"],
-                security_id=id_triple["security_id"],
-                trading_item_id=id_triple["trading_item_id"],
+                company_id=id_triple.company_id,
+                security_id=id_triple.security_id,
+                trading_item_id=id_triple.trading_item_id,
             )
             for id_triple in id_triples
         )
+
+    def intersection(self, *s: Iterable[Any]) -> Tickers:
+        """Returns the intersection of Tickers objects"""
+        for obj in s:
+            if not isinstance(obj, Tickers):
+                raise ValueError("Can only intersect Tickers object with other Tickers object.")
+
+        self_triples = {t.id_triple for t in self}
+        set_triples = []
+
+        for ticker_set in s:
+            set_triples.append({t.id_triple for t in ticker_set})
+        common_triples = self_triples.intersection(*set_triples)
+
+        return Tickers(kfinance_api_client=self.kfinance_api_client, id_triples=common_triples)
+
+    def __and__(self, other: Any) -> "Tickers":
+        if not isinstance(other, Tickers):
+            raise ValueError("Can only combine Tickers objects with other Tickers objects.")
+        return self.intersection(other)
 
     def companies(self) -> Companies:
         """Build a group of company objects from the group of tickers
@@ -1212,31 +1250,90 @@ class Client:
         state_iso_code: Optional[str] = None,
         simple_industry: Optional[str] = None,
         exchange_code: Optional[str] = None,
+        sic: Optional[str] = None,
+        naics: Optional[str] = None,
+        nace: Optional[str] = None,
+        anzsic: Optional[str] = None,
+        spcapiqetf: Optional[str] = None,
+        spratings: Optional[str] = None,
+        gics: Optional[str] = None,
     ) -> Tickers:
-        """Generate tickers object representing the collection of Tickers that meet all the supplied parameters
+        """Generate a Tickers object representing the collection of Tickers that meet all the supplied parameters.
 
-        One of country_iso_code, simple_industry, or exchange_code must be supplied. A parameter set to None is not used to filter on
+        One of country_iso_code, simple_industry, or exchange_code must be supplied, or one of sic, naics, nace, anzsic, spcapiqetf, spratings, or gics.
 
-        :param country_iso_code: The ISO 3166-1 Alpha-2 or Alpha-3 code that represent the primary country the firm is based in. It default None
+        :param country_iso_code: The ISO 3166-1 Alpha-2 or Alpha-3 code that represent the primary country the firm is based in. It defaults to None
         :type country_iso_code: str, optional
-        :param state_iso_code: The ISO 3166-2 Alpha-2 code that represents the primary subdivision of the country the firm the based in. Not all ISO 3166-2 codes are supported as S&P doesn't maintain the full list but a feature request for the full list is submitted to S&P product. Requires country_iso_code also to have a value other then None. It default None
+        :param state_iso_code: The ISO 3166-2 Alpha-2 code that represents the primary subdivision of the country the firm the based in. Not all ISO 3166-2 codes are supported as S&P doesn't maintain the full list but a feature request for the full list is submitted to S&P product. Requires country_iso_code also to have a value other then None. It defaults to None
         :type state_iso_code: str, optional
-        :param simple_industry: The S&P CIQ Simple Industry defined in ciqSimpleIndustry in XPF. It default None
+        :param simple_industry: The S&P CIQ Simple Industry defined in ciqSimpleIndustry in XPF. It defaults to None
         :type simple_industry: str, optional
-        :param exchange_code: The exchange code for the primary equity listing exchange of the firm. It default None
+        :param exchange_code: The exchange code for the primary equity listing exchange of the firm. It defaults to None
         :type exchange_code: str, optional
-        :return: A tickers object that is the group of Ticker objects meeting all the supplied parameters
+        :param sic: The SIC industry code. It defaults to None
+        :type sic: str, optional
+        :param naics: The NAICS industry code. It defaults to None
+        :type naics: str, optional
+        :param nace: The NACE industry code. It defaults to None
+        :type nace: str, optional
+        :param anzsic: The ANZSIC industry code. It defaults to None
+        :type anzsic: str, optional
+        :param spcapiqetf: The S&P CapitalIQ ETF industry code. It defaults to None
+        :type spcapiqetf: str, optional
+        :param spratings: The S&P Ratings industry code. It defaults to None
+        :type spratings: str, optional
+        :param gics: The GICS code. It defaults to None
+        :type gics: str, optional
+        :return: A Tickers object that is the intersection of Ticker objects meeting all the supplied parameters.
         :rtype: Tickers
         """
-        return Tickers(
-            kfinance_api_client=self.kfinance_api_client,
-            id_triples=self.kfinance_api_client.fetch_ticker_combined(
-                country_iso_code=country_iso_code,
-                state_iso_code=state_iso_code,
-                simple_industry=simple_industry,
-                exchange_code=exchange_code,
-            )["tickers"],
-        )
+        # Create a list to accumulate the fetched ticker sets
+        ticker_sets: list[Tickers] = []
+
+        # Map the parameters to the industry_dict, pass the values in as the key.
+        industry_dict = {
+            "sic": sic,
+            "naics": naics,
+            "nace": nace,
+            "anzsic": anzsic,
+            "spcapiqetf": spcapiqetf,
+            "spratings": spratings,
+            "gics": gics,
+        }
+
+        if any(
+            parameter is not None
+            for parameter in [country_iso_code, state_iso_code, simple_industry, exchange_code]
+        ):
+            ticker_sets.append(
+                Tickers(
+                    kfinance_api_client=self.kfinance_api_client,
+                    id_triples=self.kfinance_api_client.fetch_ticker_combined(
+                        country_iso_code=country_iso_code,
+                        state_iso_code=state_iso_code,
+                        simple_industry=simple_industry,
+                        exchange_code=exchange_code,
+                    ),
+                )
+            )
+
+        for key, value in industry_dict.items():
+            if value is not None:
+                ticker_sets.append(
+                    Tickers(
+                        kfinance_api_client=self.kfinance_api_client,
+                        id_triples=self.kfinance_api_client.fetch_ticker_from_industry_code(
+                            industry_code=value,
+                            industry_classification=IndustryClassification(key),
+                        ),
+                    )
+                )
+
+        if not ticker_sets:
+            return Tickers(kfinance_api_client=self.kfinance_api_client, id_triples=set())
+
+        common_ticker_elements = Tickers.intersection(*ticker_sets)
+        return common_ticker_elements
 
     def company(self, company_id: int) -> Company:
         """Generate the Company object from company_id
