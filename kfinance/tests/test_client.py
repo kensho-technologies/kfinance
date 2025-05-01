@@ -34,7 +34,7 @@ class TestLangchainTools:
             "permissions": fetch_value
         }
 
-        assert mock_client.user_permissions == parsed_permissions
+        assert mock_client.kfinance_api_client.user_permissions == parsed_permissions
 
     def test_permission_filtering(self, mock_client: Client):
         """
@@ -44,7 +44,7 @@ class TestLangchainTools:
             specifically has access to.
         """
 
-        mock_client._user_permissions = {Permission.RelationshipPermission}  # noqa: SLF001
+        mock_client.kfinance_api_client._user_permissions = {Permission.RelationshipPermission}  # noqa: SLF001
         tool_classes = [type(t) for t in mock_client.langchain_tools]
         # User should have access to GetBusinessRelationshipFromIdentifier
         assert GetBusinessRelationshipFromIdentifier in tool_classes
