@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.1.0
+- Filter llm tools by user permissions
+
 ## v2.0.2
 - Add Client.tickers() method for ticker industry filters for ISRCS and GICS
 
