@@ -15,6 +15,7 @@ class TestTickers:
         expected_intersection = Tickers(
             kfinance_api_client=mock_client.kfinance_api_client, id_triples=[ticker_2]
         )
+        # tickers() calls both fetch_ticker_combined and fetch_ticker_from_industry_code so we set two different return values to test intersection()
         mock_client.kfinance_api_client.fetch_ticker_combined = Mock()
         mock_client.kfinance_api_client.fetch_ticker_combined.return_value = [ticker_1, ticker_2]
         mock_client.kfinance_api_client.fetch_ticker_from_industry_code = Mock()

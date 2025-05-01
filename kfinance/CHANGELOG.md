@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.0.2
+- Add Client.tickers() method for ticker industry filters for ISRCS and GICS>
+
 ## v2.0.1
 - Fix readthedocs integration for llm tools.
 

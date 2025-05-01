@@ -360,7 +360,7 @@ class KFinanceApiClient:
         state_iso_code: Optional[str] = None,
     ) -> list[IdentificationTriple]:
         """Fetch ticker geography groups"""
-        return self.tickers_response_to_id_triple(
+        return self._tickers_response_to_id_triple(
             self.fetch_geography_groups(
                 country_iso_code=country_iso_code, state_iso_code=state_iso_code, fetch_ticker=True
             )
@@ -385,7 +385,7 @@ class KFinanceApiClient:
 
     def fetch_ticker_exchange_groups(self, exchange_code: str) -> list[IdentificationTriple]:
         """Fetch ticker exchange groups"""
-        return self.tickers_response_to_id_triple(
+        return self._tickers_response_to_id_triple(
             self.fetch_exchange_groups(
                 exchange_code=exchange_code,
                 fetch_ticker=True,
@@ -400,7 +400,7 @@ class KFinanceApiClient:
         )
 
     @staticmethod
-    def tickers_response_to_id_triple(
+    def _tickers_response_to_id_triple(
         tickers_response: dict[str, list[dict]],
     ) -> list[IdentificationTriple]:
         """For fetch ticker cases with a dict[str, list[dict]] response, return a list[IdentificationTriple].
@@ -439,7 +439,7 @@ class KFinanceApiClient:
             )
         else:
             url = f"{self.url_base}ticker_groups/filters/geo/{str(country_iso_code).lower()}/{str(state_iso_code).lower()}/simple/{str(simple_industry).lower()}/exchange/{str(exchange_code).lower()}"
-            return self.tickers_response_to_id_triple(self.fetch(url))
+            return self._tickers_response_to_id_triple(self.fetch(url))
 
     def fetch_companies_from_business_relationship(
         self, company_id: int, relationship_type: BusinessRelationshipType
@@ -480,7 +480,7 @@ class KFinanceApiClient:
         :rtype: list[IdentificationTriple]
         """
         url = f"{self.url_base}ticker_groups/industry/{industry_classification}/{industry_code}"
-        return self.tickers_response_to_id_triple(self.fetch(url))
+        return self._tickers_response_to_id_triple(self.fetch(url))
 
     def fetch_company_from_industry_code(
         self,
