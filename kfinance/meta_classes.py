@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Callable, Literal, Optional
 
 import numpy as np
 import pandas as pd
+from requests.models import HTTPError
 
 from .constants import LINE_ITEMS, BusinessRelationshipType, PeriodType
 from .fetch import KFinanceApiClient
@@ -293,15 +294,19 @@ class CompanyFunctionsMetaClass:
         column_to_extract: Literal["market_cap", "tev", "shares_outstanding"],
         start_date: str | None,
         end_date: str | None,
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | None:
         """Helper function to fetch market cap, TEV, and shares outstanding."""
+        try:
+            data = self.kfinance_api_client.fetch_market_caps_tevs_and_shares_outstanding(
+                    company_id=self.company_id, start_date=start_date, end_date=end_date
+                )["market_caps"]
+        except HTTPError:
+            return None
 
-        df = pd.DataFrame(
-            self.kfinance_api_client.fetch_market_caps_tevs_and_shares_outstanding(
-                company_id=self.company_id, start_date=start_date, end_date=end_date
-            )["market_caps"]
-        )
-        return df.set_index("date")[[column_to_extract]].apply(pd.to_numeric).replace(np.nan, None)
+        df = pd.DataFrame(data)
+        df = df.set_index("date")[[column_to_extract]].apply(pd.to_numeric).replace(np.nan, None)
+        return df
+
 
 
 for line_item in LINE_ITEMS:

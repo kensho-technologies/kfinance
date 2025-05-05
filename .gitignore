@@ -104,3 +104,4 @@ kfinance/wrappers/
 
 docs/output/
 docs/generated/
+request_cache/

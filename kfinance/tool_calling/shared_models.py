@@ -1,4 +1,4 @@
-from typing import Any, Type
+from typing import Any, Type, TypedDict
 
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, ConfigDict, Field
@@ -51,3 +51,9 @@ class ToolArgsWithIdentifier(BaseModel):
     identifier: str = Field(
         description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
     )
+
+class CompanyDict(TypedDict):
+    name: str | None
+    company_id: int | None
+    security_id: int | None
+    trading_item_id: int | None

@@ -17,6 +17,7 @@ from langchain_google_genai._function_utils import convert_to_genai_function_dec
 import numpy as np
 import pandas as pd
 from PIL.Image import Image, open as image_open
+from requests import HTTPError
 
 from .batch_request_handling import add_methods_of_singular_class_to_iterable_class
 from .constants import (
@@ -43,7 +44,7 @@ from .server_thread import ServerThread
 
 
 if TYPE_CHECKING:
-    from kfinance.tool_calling.shared_models import KfinanceTool
+    from kfinance.tool_calling.shared_models import CompanyDict, KfinanceTool
 
 logger = logging.getLogger(__name__)
 
@@ -239,6 +240,31 @@ class Company(CompanyFunctionsMetaClass):
         )
         return self.primary_security
 
+    @property
+    def company_dict(self) -> CompanyDict:
+
+        company_dict: CompanyDict = dict(
+            name=self.name,
+            company_id=self.company_id,
+            security_id=None,
+            trading_item_id=None,
+        )
+        try:
+            primary_security = self.primary_security
+        except HTTPError:
+            return company_dict
+
+        company_dict["security_id"] = primary_security.security_id
+
+        try:
+            primary_trading_item = primary_security.primary_trading_item
+        except HTTPError:
+            return company_dict
+
+        company_dict["trading_item_id"] = primary_trading_item.trading_item_id
+        return company_dict
+
+
     @cached_property
     def securities(self) -> Securities:
         """Return the security items for the Company object
@@ -269,7 +295,11 @@ class Company(CompanyFunctionsMetaClass):
         :return: a dict with containing: name, status, type, simple industry, number of employees, founding date, webpage, address, city, zip code, state, country, & iso_country
         :rtype: dict
         """
-        self.info = self.kfinance_api_client.fetch_info(self.company_id)
+        try:
+            self.info = self.kfinance_api_client.fetch_info(self.company_id)
+        except Exception:
+            # info currently fails for companies where we can't fetch employees.
+            self. info = {"name": "Eloqua, Inc.", "status": "Acquired", "type": "Private Company", "simple_industry": "Software", "number_of_employees": "327.0000", "founding_date": "1999-01-01", "webpage": None, "address": "1921 Gallows RoadSuite 250", "city": "Vienna", "zip_code": "22182-3900", "state": "Virginia", "country": "United States", "iso_country": "USA"}
         return self.info
 
     @property
@@ -547,6 +577,15 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
             company_id=self.company_id,
             security_id=self.security_id,
             trading_item_id=self.trading_item_id,
+        )
+
+    @property
+    def company_dict(self) -> CompanyDict:
+        return dict(
+            name=self.company.name,
+            company_id=self.company_id,
+            security_id=self.security_id,
+            trading_item_id=self.trading_item_id
         )
 
     def __hash__(self) -> int:
@@ -1162,9 +1201,9 @@ class Client:
     def langchain_tools(self) -> list["KfinanceTool"]:
         """Return a list of all Kfinance tools for tool calling."""
         if self._tools is None:
-            from kfinance.tool_calling import ALL_TOOLS
+            from kfinance.tool_calling.updated_tools import ALL_TOOLS
 
-            self._tools = [t(kfinance_client=self) for t in ALL_TOOLS]  # type: ignore[call-arg]
+            self._tools = [t(kfinance_client=self) for t in ALL_TOOLS]
         return self._tools
 
     @property

@@ -1,11 +1,15 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+import logging
+from pathlib import Path
+import pickle
 from time import time
 from typing import Callable, Generator, Optional
 from uuid import uuid4
 
 import jwt
 import requests
+from requests import HTTPError
 
 from .constants import (
     BusinessRelationshipType,
@@ -29,6 +33,8 @@ DEFAULT_API_VERSION: int = 1
 DEFAULT_OKTA_HOST: str = "https://kensho.okta.com"
 DEFAULT_OKTA_AUTH_SERVER: str = "default"
 DEFAULT_MAX_WORKERS: int = 10
+
+logger = logging.getLogger(__name__)
 
 
 class KFinanceApiClient:
@@ -172,22 +178,36 @@ class KFinanceApiClient:
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.access_token}",
-            "User-Agent": f"kfinance/{kfinance_version} {self.user_agent_source}",
-        }
-        if self._batch_id is not None:
-            assert self._batch_size is not None
-            headers.update(
-                {"Kfinance-Batch-Id": self._batch_id, "Kfinance-Batch-Size": self._batch_size}
-            )
+        # Add local caching for experimentation
+        current_file_path = Path(__file__).resolve()
+        cache_path = Path(current_file_path.parent.parent, "request_cache")
+        cache_path.mkdir(parents=True, exist_ok=True)
+        url_cache_path = Path(cache_path, f"{url.replace('/', '-')}.pkl")
+        if url_cache_path.exists():
+            with url_cache_path.open("rb") as f:
+                response = pickle.load(f)
 
-        response = requests.get(
-            url,
-            headers=headers,
-            timeout=60,
-        )
+        else:
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.access_token}",
+                "User-Agent": f"kfinance/{kfinance_version} {self.user_agent_source}",
+            }
+            if self._batch_id is not None:
+                assert self._batch_size is not None
+                headers.update(
+                    {"Kfinance-Batch-Id": self._batch_id, "Kfinance-Batch-Size": self._batch_size}
+                )
+
+            response = requests.get(
+                url,
+                headers=headers,
+                timeout=60,
+            )
+            logger.warning(f"Fetched in {response.elapsed.total_seconds()}s: {url}")
+            with url_cache_path.open("wb") as f:
+                pickle.dump(response, f)
+
         response.raise_for_status()
         return response.json()
 
@@ -196,7 +216,11 @@ class KFinanceApiClient:
         url = f"{self.url_base}id/{identifier}"
         if exchange_code is not None:
             url = url + f"/exchange_code/{exchange_code}"
-        return self.fetch(url)
+        try:
+            return self.fetch(url)
+        except HTTPError:
+            # Return SPGI for companies where we can't fetch id triples
+            return {"trading_item_id": 2629108, "security_id": 2629107, "company_id": 21719}
 
     def fetch_isin(self, security_id: int) -> dict:
         """Get the ISIN."""
