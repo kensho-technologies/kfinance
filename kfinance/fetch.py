@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+import logging
 from time import time
 from typing import Callable, Generator, Optional
 from uuid import uuid4
@@ -13,6 +14,7 @@ from .constants import (
     IndustryClassification,
     Periodicity,
     PeriodType,
+    Permission,
 )
 
 
@@ -22,6 +24,8 @@ try:
     from .version import __version__ as kfinance_version
 except ImportError:
     kfinance_version = "dev"
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_API_HOST: str = "https://kfinance.kensho.com"
@@ -86,6 +90,7 @@ class KFinanceApiClient:
         self.user_agent_source = "object_oriented"
         self._batch_id: str | None = None
         self._batch_size: str | None = None
+        self._user_permissions: set[Permission] | None = None
 
     @contextmanager
     def batch_request_header(self, batch_size: int) -> Generator:
@@ -127,6 +132,9 @@ class KFinanceApiClient:
                 # nosemgrep:  python.jwt.security.unverified-jwt-decode.unverified-jwt-decode
                 options={"verify_signature": False},
             ).get("exp")
+            # When the access token gets refreshed, also refresh user permissions in case they
+            # have been updated.
+            self._refresh_user_permissions()
         return self._access_token
 
     def _get_access_token_via_refresh_token(self) -> str:
@@ -169,6 +177,33 @@ class KFinanceApiClient:
         response.raise_for_status()
         return response.json().get("access_token")
 
+    @property
+    def user_permissions(self) -> set[Permission]:
+        """Return the permissions that the current user holds."""
+
+        if self._user_permissions is None:
+            self._refresh_user_permissions()
+            # _refresh_user_permissions updates self._user_permissions in place
+            assert self._user_permissions is not None
+        return self._user_permissions
+
+    def _refresh_user_permissions(self) -> None:
+        """Fetches user permissions and stores them as KfinanceApiClient._user_permissions."""
+
+        user_permission_dict = self.fetch_permissions()
+        self._user_permissions = set()
+        for permission_str in user_permission_dict["permissions"]:
+            try:
+                self._user_permissions.add(Permission[permission_str])
+            except KeyError:
+                logger.warning(
+                    "Could not resolve %s to a member of the Permission enum. "
+                    "%s may be a new type of permission that still needs to be "
+                    "added to the enum.",
+                    permission_str,
+                    permission_str,
+                )
+
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
 
@@ -190,6 +225,11 @@ class KFinanceApiClient:
         )
         response.raise_for_status()
         return response.json()
+
+    def fetch_permissions(self) -> dict[str, list[str]]:
+        """Return the permissions of the user."""
+        url = f"{self.url_base}users/permissions"
+        return self.fetch(url)
 
     def fetch_id_triple(self, identifier: str, exchange_code: Optional[str] = None) -> dict:
         """Get the ID triple from [identifier]."""

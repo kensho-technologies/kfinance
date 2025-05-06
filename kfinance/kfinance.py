@@ -1164,7 +1164,16 @@ class Client:
         if self._tools is None:
             from kfinance.tool_calling import ALL_TOOLS
 
-            self._tools = [t(kfinance_client=self) for t in ALL_TOOLS]  # type: ignore[call-arg]
+            self._tools = []
+            # Add tool to _tools if the user has permissions to use it.
+            for tool_cls in ALL_TOOLS:
+                tool = tool_cls(kfinance_client=self)  # type: ignore[call-arg]
+                if (
+                    tool.required_permission is None
+                    or tool.required_permission in self.kfinance_api_client.user_permissions
+                ):
+                    self._tools.append(tool)
+
         return self._tools
 
     @property

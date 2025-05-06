@@ -2,7 +2,7 @@ from typing import Literal, Type
 
 from pydantic import BaseModel, Field
 
-from kfinance.constants import LINE_ITEM_NAMES_AND_ALIASES, PeriodType
+from kfinance.constants import LINE_ITEM_NAMES_AND_ALIASES, PeriodType, Permission
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
@@ -24,6 +24,7 @@ class GetFinancialLineItemFromIdentifier(KfinanceTool):
     name: str = "get_financial_line_item_from_identifier"
     description: str = "Get the financial line item associated with an identifier."
     args_schema: Type[BaseModel] = GetFinancialLineItemFromIdentifierArgs
+    required_permission: Permission | None = Permission.StatementsPermission
 
     def _run(
         self,

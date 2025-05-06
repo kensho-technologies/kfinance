@@ -250,3 +250,9 @@ class TestMarketCap:
             company_id=company_id, start_date=start_date, end_date=end_date
         )
         client.fetch.assert_called_with(expected_fetch_url)
+
+    def test_fetch_permissions(self):
+        client = build_mock_api_client()
+        expected_fetch_url = f"{client.url_base}users/permissions"
+        client.fetch_permissions()
+        client.fetch.assert_called_with(expected_fetch_url)

@@ -3,6 +3,7 @@ from typing import Any, Type
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, ConfigDict, Field
 
+from kfinance.constants import Permission
 from kfinance.kfinance import Client
 
 
@@ -15,6 +16,7 @@ class KfinanceTool(BaseTool):
 
     kfinance_client: Client
     args_schema: Type[BaseModel]
+    required_permission: Permission | None
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
