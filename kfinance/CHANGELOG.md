@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.2.0
+
+- Replace get company id, get security id, get trading item id tools with resolve identifiers tool
+
 ## v2.1.0
 - Filter llm tools by user permissions
 

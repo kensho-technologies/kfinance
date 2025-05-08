@@ -8,7 +8,6 @@ from kfinance.constants import BusinessRelationshipType, Capitalization, Stateme
 from kfinance.kfinance import Client
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
 from kfinance.tool_calling import (
-    GetCompanyIdFromIdentifier,
     GetEarningsCallDatetimesFromIdentifier,
     GetFinancialLineItemFromIdentifier,
     GetFinancialStatementFromIdentifier,
@@ -18,8 +17,7 @@ from kfinance.tool_calling import (
     GetLatest,
     GetNQuartersAgo,
     GetPricesFromIdentifier,
-    GetSecurityIdFromIdentifier,
-    GetTradingItemIdFromIdentifier,
+    ResolveIdentifiers,
 )
 from kfinance.tool_calling.get_business_relationship_from_identifier import (
     GetBusinessRelationshipFromIdentifier,
@@ -105,18 +103,6 @@ class TestGetCapitalizationFromIdentifier:
         )
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
-
-
-class TestGetCompanyIdFromIdentifier:
-    def test_get_company_id_from_identifier(self, mock_client: Client):
-        """
-        GIVEN the GetCompanyIdFromIdentifier tool
-        WHEN request the company id for SPGI
-        THEN we get back the SPGI company id
-        """
-        tool = GetCompanyIdFromIdentifier(kfinance_client=mock_client)
-        resp = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
-        assert resp == SPGI_COMPANY_ID
 
 
 class TestGetCusipFromTicker:
@@ -380,25 +366,17 @@ class TestPricesFromIdentifier:
         assert response == expected_response
 
 
-class TestGetSecurityIdFromIdentifier:
-    def test_get_security_id_from_identifier(self, mock_client: Client):
+class TestResolveIdentifiers:
+    def test_resolve_identifiers(self, mock_client: Client):
         """
-        GIVEN the GetSecurityIdFromIdentifier tool
-        WHEN we request the security id for SPGI
-        THEN we get back the SPGI primary security id
+        GIVEN the ResolveIdentifier tool
+        WHEN request to resolve SPGI
+        THEN we get back the SPGI company id, security id, and trading item id
         """
-        tool = GetSecurityIdFromIdentifier(kfinance_client=mock_client)
+        tool = ResolveIdentifiers(kfinance_client=mock_client)
         resp = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
-        assert resp == SPGI_SECURITY_ID
-
-
-class TestGetTradingItemIdFromIdentifier:
-    def test_get_security_id_from_identifier(self, mock_client: Client):
-        """
-        GIVEN the GetTradingItemIdFromIdentifier tool
-        WHEN we request the trading item id for SPGI
-        THEN we get back the SPGI primary trading item id
-        """
-        tool = GetTradingItemIdFromIdentifier(kfinance_client=mock_client)
-        resp = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
-        assert resp == SPGI_TRADING_ITEM_ID
+        assert resp == {
+            "company_id": SPGI_COMPANY_ID,
+            "security_id": SPGI_SECURITY_ID,
+            "trading_item_id": SPGI_TRADING_ITEM_ID,
+        }
