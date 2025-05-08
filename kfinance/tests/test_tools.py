@@ -369,9 +369,9 @@ class TestPricesFromIdentifier:
 class TestResolveIdentifiers:
     def test_resolve_identifiers(self, mock_client: Client):
         """
-        GIVEN the ResolveIdentifier tool
+        GIVEN the ResolveIdentifiers tool
         WHEN request to resolve SPGI
-        THEN we get back the SPGI company id, security id, and trading item id
+        THEN we get back a dict with the SPGI company id, security id, and trading item id
         """
         tool = ResolveIdentifiers(kfinance_client=mock_client)
         resp = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
