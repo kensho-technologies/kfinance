@@ -1,5 +1,4 @@
 from datetime import date
-from enum import Enum
 from itertools import chain
 from typing import NamedTuple, TypedDict
 
