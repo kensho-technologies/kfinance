@@ -6,10 +6,10 @@ from kfinance.constants import Permission
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
-class ResolveIdentifiers(KfinanceTool):
-    name: str = "resolve_identifiers"
+class ResolveIdentifier(KfinanceTool):
+    name: str = "resolve_identifier"
     description: str = (
-        "Get the company id, security id, and trading item id associated with an identifier."
+        "Get the company_id, security_id, and trading_item_id associated with an identifier."
     )
     args_schema: Type[BaseModel] = ToolArgsWithIdentifier
     required_permission: Permission | None = None
