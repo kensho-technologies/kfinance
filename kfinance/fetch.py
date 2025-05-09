@@ -281,7 +281,7 @@ class KFinanceApiClient:
             f"{self.url_base}pricing/{trading_item_id}/"
             f"{start_date if start_date is not None else 'none'}/"
             f"{end_date if end_date is not None else 'none'}/"
-            f"{periodicity.value if periodicity else 'none'}/"
+            f"{periodicity if periodicity else 'none'}/"
             f"{'adjusted' if is_adjusted else 'unadjusted'}"
         )
         return self.fetch(url)
@@ -318,7 +318,7 @@ class KFinanceApiClient:
             f"{self.url_base}price_chart/{trading_item_id}/"
             f"{start_date if start_date is not None else 'none'}/"
             f"{end_date if end_date is not None else 'none'}/"
-            f"{periodicity.value if periodicity else 'none'}/"
+            f"{periodicity if periodicity else 'none'}/"
             f"{'adjusted' if is_adjusted else 'unadjusted'}"
         )
 
@@ -346,7 +346,7 @@ class KFinanceApiClient:
         """Get a specified financial statement for a specified duration."""
         url = (
             f"{self.url_base}statements/{company_id}/{statement_type}/"
-            f"{period_type.value if period_type else 'none'}/"
+            f"{period_type if period_type else 'none'}/"
             f"{start_year if start_year is not None else 'none'}/"
             f"{end_year if end_year is not None else 'none'}/"
             f"{start_quarter if start_quarter is not None else 'none'}/"
@@ -367,7 +367,7 @@ class KFinanceApiClient:
         """Get a specified financial line item for a specified duration."""
         url = (
             f"{self.url_base}line_item/{company_id}/{line_item}/"
-            f"{period_type.value if period_type else 'none'}/"
+            f"{period_type if period_type else 'none'}/"
             f"{start_year if start_year is not None else 'none'}/"
             f"{end_year if end_year is not None else 'none'}/"
             f"{start_quarter if start_quarter is not None else 'none'}/"

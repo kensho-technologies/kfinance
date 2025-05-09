@@ -1,5 +1,4 @@
 from datetime import date
-from enum import Enum
 from itertools import chain
 from typing import NamedTuple, TypedDict
 
@@ -27,7 +26,7 @@ class IdentificationTriple(NamedTuple):
     company_id: int
 
 
-class Capitalization(Enum):
+class Capitalization(StrEnum):
     """The capitalization type"""
 
     market_cap = "market_cap"
@@ -35,7 +34,7 @@ class Capitalization(Enum):
     shares_outstanding = "shares_outstanding"
 
 
-class PeriodType(Enum):
+class PeriodType(StrEnum):
     """The period type"""
 
     annual = "annual"
@@ -44,7 +43,7 @@ class PeriodType(Enum):
     ytd = "ytd"
 
 
-class Periodicity(Enum):
+class Periodicity(StrEnum):
     """The frequency or interval at which the historical data points are sampled or aggregated. Periodicity is not the same as the date range. The date range specifies the time span over which the data is retrieved, while periodicity determines how the data within that date range is aggregated."""
 
     day = "day"
@@ -53,7 +52,7 @@ class Periodicity(Enum):
     year = "year"
 
 
-class StatementType(Enum):
+class StatementType(StrEnum):
     """The type of financial statement"""
 
     balance_sheet = "balance_sheet"
@@ -88,7 +87,7 @@ class BusinessRelationshipType(StrEnum):
     client_services = "client_services"
 
 
-class Permission(Enum):
+class Permission(StrEnum):
     EarningsPermission = "EarningsPermission"
     GICSPermission = "GICSPermission"
     IDPermission = "IDPermission"
