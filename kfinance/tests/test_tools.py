@@ -17,7 +17,7 @@ from kfinance.tool_calling import (
     GetLatest,
     GetNQuartersAgo,
     GetPricesFromIdentifier,
-    ResolveIdentifiers,
+    ResolveIdentifier,
 )
 from kfinance.tool_calling.get_business_relationship_from_identifier import (
     GetBusinessRelationshipFromIdentifier,
@@ -366,14 +366,14 @@ class TestPricesFromIdentifier:
         assert response == expected_response
 
 
-class TestResolveIdentifiers:
-    def test_resolve_identifiers(self, mock_client: Client):
+class TestResolveIdentifier:
+    def test_resolve_identifier(self, mock_client: Client):
         """
-        GIVEN the ResolveIdentifiers tool
+        GIVEN the ResolveIdentifier tool
         WHEN request to resolve SPGI
         THEN we get back a dict with the SPGI company id, security id, and trading item id
         """
-        tool = ResolveIdentifiers(kfinance_client=mock_client)
+        tool = ResolveIdentifier(kfinance_client=mock_client)
         resp = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
         assert resp == {
             "company_id": SPGI_COMPANY_ID,
