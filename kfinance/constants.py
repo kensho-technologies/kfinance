@@ -1740,3 +1740,15 @@ FINANCIAL_STATEMENTS_SYNONYMS: dict[str, int] = {
     "income_stmt": 1,
     "cashflow": 3,
 }
+
+
+class ToolMode(Enum):
+    """Used to indicate the mode or modes in which a tool is available.
+
+    SCREENER mode means that a tool is used in to filter companies and handle
+        groups of companies
+    NON_SCREENER mode means that a tool is intended to process individual companies.
+    """
+
+    SCREENER = "SCREENER"
+    NON_SCREENER = "NON_SCREENER"

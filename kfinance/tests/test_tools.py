@@ -3,6 +3,30 @@ from datetime import date, datetime
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from requests_mock import Mocker
 import time_machine
+from tool_calling.non_screener_tools.get_capitalization_from_company_id import (
+    GetCapitalizationFromIdentifier,
+    GetCapitalizationFromIdentifierArgs,
+)
+from tool_calling.non_screener_tools.get_cusip_from_security_id import (
+    GetCusipFromTicker,
+    GetCusipFromTickerArgs,
+)
+from tool_calling.non_screener_tools.get_financial_line_item_from_company_id import (
+    GetFinancialLineItemFromIdentifierArgs,
+)
+from tool_calling.non_screener_tools.get_financial_statement_from_company_id import (
+    GetFinancialStatementFromIdentifierArgs,
+)
+from tool_calling.non_screener_tools.get_isin_from_security_id import GetIsinFromTickerArgs
+from tool_calling.non_screener_tools.get_prices_from_trading_item_id import (
+    GetPricesFromIdentifierArgs,
+)
+from tool_calling.screener_tools.get_business_relationship_from_company_id import (
+    GetBusinessRelationshipFromCompanyId,
+    GetBusinessRelationshipFromIdentifierArgs,
+)
+from tool_calling.shared_tools.get_latest import GetLatestArgs
+from tool_calling.shared_tools.get_n_quarters_ago import GetNQuartersAgoArgs
 
 from kfinance.constants import BusinessRelationshipType, Capitalization, StatementType
 from kfinance.kfinance import Client
@@ -19,25 +43,6 @@ from kfinance.tool_calling import (
     GetPricesFromIdentifier,
     ResolveIdentifier,
 )
-from kfinance.tool_calling.get_business_relationship_from_identifier import (
-    GetBusinessRelationshipFromIdentifier,
-    GetBusinessRelationshipFromIdentifierArgs,
-)
-from kfinance.tool_calling.get_capitalization_from_identifier import (
-    GetCapitalizationFromIdentifier,
-    GetCapitalizationFromIdentifierArgs,
-)
-from kfinance.tool_calling.get_cusip_from_ticker import GetCusipFromTicker, GetCusipFromTickerArgs
-from kfinance.tool_calling.get_financial_line_item_from_identifier import (
-    GetFinancialLineItemFromIdentifierArgs,
-)
-from kfinance.tool_calling.get_financial_statement_from_identifier import (
-    GetFinancialStatementFromIdentifierArgs,
-)
-from kfinance.tool_calling.get_isin_from_ticker import GetIsinFromTickerArgs
-from kfinance.tool_calling.get_latest import GetLatestArgs
-from kfinance.tool_calling.get_n_quarters_ago import GetNQuartersAgoArgs
-from kfinance.tool_calling.get_prices_from_identifier import GetPricesFromIdentifierArgs
 from kfinance.tool_calling.shared_models import ToolArgsWithIdentifier
 
 
@@ -57,7 +62,7 @@ class TestGetBusinessRelationshipFromIdentifier:
             json=supplier_resp,
         )
 
-        tool = GetBusinessRelationshipFromIdentifier(kfinance_client=mock_client)
+        tool = GetBusinessRelationshipFromCompanyId(kfinance_client=mock_client)
         args = GetBusinessRelationshipFromIdentifierArgs(
             identifier="SPGI", business_relationship=BusinessRelationshipType.supplier
         )

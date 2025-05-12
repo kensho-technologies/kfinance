@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from kfinance.constants import LatestPeriods, Permission
 from kfinance.tool_calling.shared_models import KfinanceTool
+from kfinance.constants import ToolMode
 
 
 class GetLatestArgs(BaseModel):
@@ -17,6 +18,7 @@ class GetLatest(KfinanceTool):
     description: str = "Get the latest annual reporting year, latest quarterly reporting quarter and year, and current date."
     args_schema: Type[BaseModel] = GetLatestArgs
     required_permission: Permission | None = None
+    tool_modes: set[ToolMode] = {ToolMode.SCREENER, ToolMode.NON_SCREENER}
 
     def _run(self, use_local_timezone: bool = True) -> LatestPeriods:
         return self.kfinance_client.get_latest(use_local_timezone=use_local_timezone)

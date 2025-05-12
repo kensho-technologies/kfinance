@@ -5,7 +5,7 @@ import pytest
 from kfinance.constants import Permission
 from kfinance.kfinance import Client
 from kfinance.tool_calling import (
-    GetBusinessRelationshipFromIdentifier,
+    GetBusinessRelationshipFromCompanyId,
     GetFinancialStatementFromIdentifier,
     GetLatest,
 )
@@ -47,7 +47,7 @@ class TestLangchainTools:
         mock_client.kfinance_api_client._user_permissions = {Permission.RelationshipPermission}  # noqa: SLF001
         tool_classes = [type(t) for t in mock_client.langchain_tools]
         # User should have access to GetBusinessRelationshipFromIdentifier
-        assert GetBusinessRelationshipFromIdentifier in tool_classes
+        assert GetBusinessRelationshipFromCompanyId in tool_classes
         # User should have access to functions that don't require permissions
         assert GetLatest in tool_classes
         # User should not have access to functions that require statement permissions
