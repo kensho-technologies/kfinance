@@ -26,6 +26,7 @@ from .constants import (
     LatestPeriods,
     Periodicity,
     YearAndQuarter,
+    ToolMode
 )
 from .fetch import (
     DEFAULT_API_HOST,
@@ -44,6 +45,7 @@ from .server_thread import ServerThread
 
 if TYPE_CHECKING:
     from kfinance.tool_calling.shared_models import KfinanceTool
+
 
 logger = logging.getLogger(__name__)
 
@@ -1161,8 +1163,12 @@ class Client:
     @property
     def langchain_tools(self) -> list["KfinanceTool"]:
         """Return a list of all Kfinance tools for tool calling."""
+
+
         if self._tools is None:
             from kfinance.tool_calling import ALL_TOOLS
+
+            tool_mode = ToolMode.NON_SCREENER
 
             self._tools = []
             # Add tool to _tools if the user has permissions to use it.
@@ -1171,7 +1177,7 @@ class Client:
                 if (
                     tool.required_permission is None
                     or tool.required_permission in self.kfinance_api_client.user_permissions
-                ):
+                ) and tool_mode in tool.tool_modes:
                     self._tools.append(tool)
 
         return self._tools
