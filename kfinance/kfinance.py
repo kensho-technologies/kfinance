@@ -537,11 +537,32 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
 
     @property
     def id_triple(self) -> IdentificationTriple:
-        """Returns a unique identifier triple for the Ticker object."""
+        """Returns a unique identification triple for the Ticker object.
+
+        :return: an identification triple consisting of company_id, security_id, and trading_item_id
+        :rtype: IdentificationTriple
+        """
+
+        if self._company_id is None or self._security_id is None or self._trading_item_id is None:
+            if self._identifier is None:
+                raise RuntimeError(
+                    "Fetching the id triple of a Ticker requires an identifier "
+                    "(ticker, CUSIP, or ISIN)."
+                )
+            id_triple = self.kfinance_api_client.fetch_id_triple(
+                identifier=self._identifier, exchange_code=self.exchange_code
+            )
+            self._company_id = id_triple["company_id"]
+            self._security_id = id_triple["security_id"]
+            self._trading_item_id = id_triple["trading_item_id"]
+            assert self._company_id
+            assert self._security_id
+            assert self._trading_item_id
+
         return IdentificationTriple(
-            company_id=self.company_id,
-            security_id=self.security_id,
-            trading_item_id=self.trading_item_id,
+            company_id=self._company_id,
+            security_id=self._security_id,
+            trading_item_id=self._trading_item_id,
         )
 
     def __hash__(self) -> int:
@@ -570,79 +591,32 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
 
         return f"{type(self).__module__}.{type(self).__qualname__} of {', '.join(str_attributes)}"
 
-    def set_identification_triple(self) -> None:
-        """Get & set company_id, security_id, & trading_item_id for ticker with an exchange"""
-        if self._identifier is None:
-            raise RuntimeError(
-                "Ticker.set_identification_triple was called with a identifier set to None"
-            )
-        else:
-            id_triple = self.kfinance_api_client.fetch_id_triple(
-                self._identifier, self.exchange_code
-            )
-            self.company_id = id_triple["company_id"]
-            self.security_id = id_triple["security_id"]
-            self.trading_item_id = id_triple["trading_item_id"]
-
-    def set_company_id(self) -> int:
-        """Set the company id for the object
-
-        :return: the CIQ company id
-        :rtype: int
-        """
-        self.set_identification_triple()
-        return self.company_id
-
-    def set_security_id(self) -> int:
-        """Set the security id for the object
-
-        :return: the CIQ security id
-        :rtype: int
-        """
-        self.set_identification_triple()
-        return self.security_id
-
-    def set_trading_item_id(self) -> int:
-        """Set the trading item id for the object
-
-        :return: the CIQ trading item id
-        :rtype: int
-        """
-        self.set_identification_triple()
-        return self.trading_item_id
-
-    @cached_property
+    @property
     def company_id(self) -> int:
         """Get the company id for the object
 
         :return: the CIQ company id
         :rtype: int
         """
-        if self._company_id:
-            return self._company_id
-        return self.set_company_id()
+        return self.id_triple.company_id
 
-    @cached_property
+    @property
     def security_id(self) -> int:
         """Get the CIQ security id for the object
 
         :return: the CIQ security id
         :rtype: int
         """
-        if self._security_id:
-            return self._security_id
-        return self.set_security_id()
+        return self.id_triple.security_id
 
-    @cached_property
+    @property
     def trading_item_id(self) -> int:
         """Get the CIQ trading item id for the object
 
         :return: the CIQ trading item id
         :rtype: int
         """
-        if self._trading_item_id:
-            return self._trading_item_id
-        return self.set_trading_item_id()
+        return self.id_triple.trading_item_id
 
     @cached_property
     def primary_security(self) -> Security:
