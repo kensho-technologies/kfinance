@@ -234,10 +234,9 @@ class Company(CompanyFunctionsMetaClass):
         primary_security_id = self.kfinance_api_client.fetch_primary_security(self.company_id)[
             "primary_security"
         ]
-        self.primary_security = Security(
+        return Security(
             kfinance_api_client=self.kfinance_api_client, security_id=primary_security_id
         )
-        return self.primary_security
 
     @cached_property
     def securities(self) -> Securities:
@@ -247,10 +246,7 @@ class Company(CompanyFunctionsMetaClass):
         :rtype: Securities
         """
         security_ids = self.kfinance_api_client.fetch_securities(self.company_id)["securities"]
-        self.securities = Securities(
-            kfinance_api_client=self.kfinance_api_client, security_ids=security_ids
-        )
-        return self.securities
+        return Securities(kfinance_api_client=self.kfinance_api_client, security_ids=security_ids)
 
     @cached_property
     def latest_earnings_call(self) -> None:
@@ -269,8 +265,7 @@ class Company(CompanyFunctionsMetaClass):
         :return: a dict with containing: name, status, type, simple industry, number of employees, founding date, webpage, address, city, zip code, state, country, & iso_country
         :rtype: dict
         """
-        self.info = self.kfinance_api_client.fetch_info(self.company_id)
-        return self.info
+        return self.kfinance_api_client.fetch_info(self.company_id)
 
     @property
     def name(self) -> str:

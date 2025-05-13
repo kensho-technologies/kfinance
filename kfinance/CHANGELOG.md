@@ -1,8 +1,13 @@
 # Changelog
 
 ## v2.2.0
-
 - Replace get company id, get security id, get trading item id tools with resolve identifier tool
+
+## v2.1.2
+- Allow batch executor to handle multiple requests
+
+## v2.1.1
+- Use cachetools cache
 
 ## v2.1.0
 - Filter llm tools by user permissions
