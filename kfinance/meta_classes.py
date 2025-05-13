@@ -1,8 +1,9 @@
 from datetime import datetime
-from functools import cache, cached_property
+from functools import cached_property
 import logging
 from typing import TYPE_CHECKING, Any, Callable, Literal, Optional
 
+from cachetools import LRUCache, cached
 import numpy as np
 import pandas as pd
 
@@ -46,7 +47,7 @@ class CompanyFunctionsMetaClass:
         if end_quarter and not (1 <= end_quarter <= 4):
             raise ValueError("end_qtr is out of range 1 to 4")
 
-    @cache
+    @cached(cache=LRUCache(maxsize=100))
     def statement(
         self,
         statement_type: str,
@@ -85,7 +86,7 @@ class CompanyFunctionsMetaClass:
 
     def income_statement(
         self,
-        period_type: Optional[str] = None,
+        period_type: Optional[PeriodType] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
@@ -103,7 +104,7 @@ class CompanyFunctionsMetaClass:
 
     def income_stmt(
         self,
-        period_type: Optional[str] = None,
+        period_type: Optional[PeriodType] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
@@ -121,7 +122,7 @@ class CompanyFunctionsMetaClass:
 
     def balance_sheet(
         self,
-        period_type: Optional[str] = None,
+        period_type: Optional[PeriodType] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
@@ -139,7 +140,7 @@ class CompanyFunctionsMetaClass:
 
     def cash_flow(
         self,
-        period_type: Optional[str] = None,
+        period_type: Optional[PeriodType] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
@@ -157,7 +158,7 @@ class CompanyFunctionsMetaClass:
 
     def cashflow(
         self,
-        period_type: Optional[str] = None,
+        period_type: Optional[PeriodType] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
@@ -173,7 +174,7 @@ class CompanyFunctionsMetaClass:
             end_quarter=end_quarter,
         )
 
-    @cache
+    @cached(cache=LRUCache(maxsize=100))
     def line_item(
         self,
         line_item: str,

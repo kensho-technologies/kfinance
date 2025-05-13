@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.1.1
+- Use cachetools cache
+
 ## v2.1.0
 - Filter llm tools by user permissions
 
