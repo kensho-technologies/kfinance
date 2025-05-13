@@ -34,8 +34,13 @@ class TestTradingItem(TestCase):
     def test_batch_request_property(self, m):
         """GIVEN a kfinance group object like Companies
         WHEN we batch request a property for each object in the group
-        THEN the batch request completes successfully and we get back a mapping of
-        company objects to the corresponding values."""
+        THEN the batch request completes successfully, and we get back a mapping of
+        company objects to the corresponding values.
+
+        Note: This test also checks that multiple tasks can be submitted. In the
+        first implementation, we used the threadpool context manager, which shuts down
+        the threadpool on __exit__ and prevented further tasks from getting submitted.
+        """
 
         m.get(
             "https://kfinance.kensho.com/api/v1/info/1001",
@@ -52,12 +57,13 @@ class TestTradingItem(TestCase):
             },
         )
 
-        companies = Companies(self.kfinance_api_client, [1001, 1002])
-        result = companies.city
-        id_based_result = self.company_object_keys_as_company_id(result)
+        for _ in range(3):
+            companies = Companies(self.kfinance_api_client, [1001, 1002])
+            result = companies.city
+            id_based_result = self.company_object_keys_as_company_id(result)
 
-        expected_id_based_result = {1001: "Mock City A", 1002: "Mock City B"}
-        self.assertDictEqual(id_based_result, expected_id_based_result)
+            expected_id_based_result = {1001: "Mock City A", 1002: "Mock City B"}
+            self.assertDictEqual(id_based_result, expected_id_based_result)
 
     @requests_mock.Mocker()
     def test_batch_request_cached_properties(self, m):

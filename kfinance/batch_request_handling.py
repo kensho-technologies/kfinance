@@ -72,19 +72,19 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
         def process_in_batch(
             method: Callable, self: IterableKfinanceClass, *args: Any, **kwargs: Any
         ) -> dict:
-            results = {}
             kfinance_api_client = self.kfinance_api_client
             with kfinance_api_client.batch_request_header(batch_size=len(self)):
-                with kfinance_api_client.thread_pool as executor:
-                    results = dict(
-                        zip(
-                            self,
-                            [
-                                process_in_thread_pool(executor, method, obj, *args, **kwargs)
-                                for obj in self
-                            ],
-                        )
+                results = dict(
+                    zip(
+                        self,
+                        [
+                            process_in_thread_pool(
+                                kfinance_api_client.thread_pool, method, obj, *args, **kwargs
+                            )
+                            for obj in self
+                        ],
                     )
+                )
 
             return results
 
