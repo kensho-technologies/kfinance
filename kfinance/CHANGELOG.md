@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.1.2
+- Allow batch executor to handle multiple requests
+
 ## v2.1.1
 - Use cachetools cache
 
