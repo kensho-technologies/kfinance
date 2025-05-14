@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 
 # Distribution / packaging
+.python-version
 .Python
 build/
 develop-eggs/
