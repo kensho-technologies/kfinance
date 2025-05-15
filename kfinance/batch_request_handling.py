@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future
 import functools
 from functools import cached_property
 import threading
@@ -55,36 +55,26 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
             instances of [singular_cls].
         """
 
-        def process_in_thread_pool(
-            executor: ThreadPoolExecutor, method: Callable, obj: T, *args: Any, **kwargs: Any
-        ) -> Any:
-            with throttle:
-                future = executor.submit(method, obj, *args, **kwargs)
-                try:
-                    return future.result()
-                except HTTPError as http_err:
-                    error_code = http_err.response.status_code
-                    if error_code == 404:
-                        return None
-                    else:
-                        raise http_err
-
         def process_in_batch(
             method: Callable, self: IterableKfinanceClass, *args: Any, **kwargs: Any
         ) -> dict:
-            kfinance_api_client = self.kfinance_api_client
-            with kfinance_api_client.batch_request_header(batch_size=len(self)):
-                results = dict(
-                    zip(
-                        self,
-                        [
-                            process_in_thread_pool(
-                                kfinance_api_client.thread_pool, method, obj, *args, **kwargs
-                            )
-                            for obj in self
-                        ],
+            with self.kfinance_api_client.batch_request_header(batch_size=len(self)):
+                futures = []
+                for obj in self:
+                    # Acquire throttle before submitting the task
+                    throttle.acquire()
+                    future = self.kfinance_api_client.thread_pool.submit(
+                        method, obj, *args, **kwargs
                     )
-                )
+                    # On success or failure, release the throttle.
+                    # This releases the throttle before the
+                    # `resolve_future_with_error_handling` call.
+                    future.add_done_callback(lambda f: throttle.release())
+                    futures.append(future)
+
+                results = {}
+                for obj, future in zip(self, futures):
+                    results[obj] = resolve_future_with_error_handling(future)
 
             return results
 
@@ -135,3 +125,18 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
         return iterable_cls
 
     return decorator
+
+
+def resolve_future_with_error_handling(future: Future) -> Any:
+    """Return the result of a future with error handling for non-200 status codes.
+
+    If request returned a 404, return None. Otherwise, raise the error.
+    """
+    try:
+        return future.result()
+    except HTTPError as http_err:
+        error_code = http_err.response.status_code
+        if error_code == 404:
+            return None
+        else:
+            raise http_err
