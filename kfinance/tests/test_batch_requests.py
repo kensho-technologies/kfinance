@@ -1,7 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
+import time
 from typing import Any, Dict
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 import numpy as np
 import pandas as pd
@@ -9,6 +10,7 @@ import pytest
 import requests
 import requests_mock
 
+from kfinance.batch_request_handling import MAX_WORKERS_CAP
 from kfinance.fetch import KFinanceApiClient
 from kfinance.kfinance import Companies, Company, Ticker, TradingItems
 
@@ -260,3 +262,33 @@ class TestTradingItem(TestCase):
 
         expected_id_based_result = {1001: "Mock City A"}
         self.assertDictEqual(id_based_result, expected_id_based_result)
+
+    @patch.object(Company, "info", new_callable=PropertyMock)
+    def test_batch_requests_processed_in_parallel(self, mock_value: PropertyMock):
+        """
+        WHEN a batch request gets processed
+        THEN the requests are handled in parallel not sequentially.
+        """
+
+        sleep_duration = 0.05
+
+        def mock_info_with_sleep() -> dict[str, str]:
+            """Mock an info call with a short sleep"""
+            time.sleep(sleep_duration)
+            return {"city": "Cambridge"}
+
+        mock_value.side_effect = mock_info_with_sleep
+
+        # Create tasks up to the MAX_WORKERS_CAP (max number of parallel tasks)
+        companies = Companies(
+            self.kfinance_api_client_with_thread_pool, [i for i in range(MAX_WORKERS_CAP)]
+        )
+
+        start = time.perf_counter()
+        result = companies.city
+        end = time.perf_counter()
+        assert len(result) == MAX_WORKERS_CAP
+        # Check that the requests run faster than sequential.
+        # In practice, the requests should take barely more than the `sleep_duration` but timing
+        # based tests can be flaky, especially in CI.
+        assert end - start < MAX_WORKERS_CAP * sleep_duration
