@@ -16,7 +16,7 @@ class GetHistoryMetadataFromTradingItemId(KfinanceTool):
     description: str = "Get the history metadata associated with a trading_item_id. History metadata includes currency, symbol, exchange name, instrument type, and first trade date."
     args_schema: Type[BaseModel] = GetHistoryMetadataFromTradingItemIdArgs
     required_permission: Permission | None = None
-    tool_modes: set[ToolMode] = {ToolMode.NON_SCREENER}
+    tool_modes: set[ToolMode] = {ToolMode.INDIVIDUAL}
 
     def _run(self, trading_item_id: int) -> HistoryMetadata:
         return self.kfinance_client.trading_item(trading_item_id).history_metadata

@@ -2,7 +2,7 @@ from datetime import date
 from typing import Type
 
 from pydantic import BaseModel, Field
-from tool_calling import KfinanceTool
+from kfinance.tool_calling import KfinanceTool
 
 from kfinance.constants import Periodicity, Permission
 from kfinance.constants import ToolMode
@@ -29,7 +29,7 @@ class GetPricesFromTradingItemId(KfinanceTool):
     description: str = "Get the historical open, high, low, and close prices, and volume of a trading_item_id between inclusive start_date and inclusive end date. When requesting the most recent values, leave start_date and end_date empty."
     args_schema: Type[BaseModel] = GetPricesFromTradingItemIdArgs
     required_permission: Permission | None = Permission.PricingPermission
-    tool_modes: set[ToolMode] = {ToolMode.NON_SCREENER}
+    tool_modes: set[ToolMode] = {ToolMode.INDIVIDUAL}
 
     def _run(
         self,

@@ -223,6 +223,8 @@ class KFinanceApiClient:
             headers=headers,
             timeout=60,
         )
+        batch_log = f"batch {self._batch_id[:3]}" if self._batch_id else ""
+        logger.warning(f"{response.status_code} {response.elapsed} {batch_log} {url}")
         response.raise_for_status()
         return response.json()
 

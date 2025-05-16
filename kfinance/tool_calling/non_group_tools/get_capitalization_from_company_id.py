@@ -24,7 +24,7 @@ class GetCapitalizationFromCompanyId(KfinanceTool):
     description: str = "Get the historical market cap, tev (Total Enterprise Value), or shares outstanding for a company_id between inclusive start_date and inclusive end date. When requesting the most recent values, leave start_date and end_date empty."
     args_schema = GetCapitalizationFromCompanyIdArgs
     required_permission: Permission | None = Permission.PricingPermission
-    tool_modes: set[ToolMode] = {ToolMode.NON_SCREENER}
+    tool_modes: set[ToolMode] = {ToolMode.INDIVIDUAL}
 
     def _run(
         self,

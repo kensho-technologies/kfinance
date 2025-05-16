@@ -18,7 +18,7 @@ class GetNQuartersAgo(KfinanceTool):
     )
     args_schema: Type[BaseModel] = GetNQuartersAgoArgs
     required_permission: Permission | None = None
-    tool_modes: set[ToolMode]  = {ToolMode.SCREENER, ToolMode.NON_SCREENER}
+    tool_modes: set[ToolMode]  = {ToolMode.GROUP, ToolMode.INDIVIDUAL}
 
     def _run(self, n: int) -> YearAndQuarter:
         return self.kfinance_client.get_n_quarters_ago(n)

@@ -16,7 +16,7 @@ class GetCusipFromSecurityId(KfinanceTool):
     description: str = "Get the CUSIP associated with a security_id."
     args_schema: Type[BaseModel] = GetCusipFromSecurityIdArgs
     required_permission: Permission | None = Permission.IDPermission
-    tool_modes: set[ToolMode] = {ToolMode.NON_SCREENER}
+    tool_modes: set[ToolMode] = {ToolMode.INDIVIDUAL}
 
     def _run(self, security_id: int) -> str:
         return self.kfinance_client.security(security_id).cusip

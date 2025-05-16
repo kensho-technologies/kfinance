@@ -19,7 +19,7 @@ class ResolveIdentifier(KfinanceTool):
     )
     args_schema: Type[BaseModel] = ResolveIdentifierArgs
     required_permission: Permission | None = None
-    tool_modes: set[ToolMode] = {ToolMode.NON_SCREENER}
+    tool_modes: set[ToolMode] = {ToolMode.INDIVIDUAL}
 
     def _run(self, identifier: str) -> dict[str, int]:
         return self.kfinance_client.ticker(identifier).id_triple._asdict()

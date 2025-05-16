@@ -3,47 +3,36 @@ from datetime import date, datetime
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from requests_mock import Mocker
 import time_machine
-from tool_calling.non_screener_tools.get_capitalization_from_company_id import (
-    GetCapitalizationFromIdentifier,
-    GetCapitalizationFromIdentifierArgs,
-)
-from tool_calling.non_screener_tools.get_cusip_from_security_id import (
-    GetCusipFromTicker,
-    GetCusipFromTickerArgs,
-)
-from tool_calling.non_screener_tools.get_financial_line_item_from_company_id import (
-    GetFinancialLineItemFromIdentifierArgs,
-)
-from tool_calling.non_screener_tools.get_financial_statement_from_company_id import (
-    GetFinancialStatementFromIdentifierArgs,
-)
-from tool_calling.non_screener_tools.get_isin_from_security_id import GetIsinFromTickerArgs
-from tool_calling.non_screener_tools.get_prices_from_trading_item_id import (
-    GetPricesFromIdentifierArgs,
-)
-from tool_calling.screener_tools.get_business_relationship_from_company_id import (
-    GetBusinessRelationshipFromCompanyId,
-    GetBusinessRelationshipFromIdentifierArgs,
-)
-from tool_calling.shared_tools.get_latest import GetLatestArgs
-from tool_calling.shared_tools.get_n_quarters_ago import GetNQuartersAgoArgs
+
+from kfinance.tool_calling import GetBusinessRelationshipFromCompanyId
+from kfinance.tool_calling import GetCapitalizationFromCompanyId, GetCusipFromSecurityId, \
+    GetEarningsCallDatetimesFromCompanyId, GetFinancialStatementFromCompanyId, \
+    GetHistoryMetadataFromTradingItemId, GetInfoFromCompanyId, GetIsinFromSecurityId, \
+    ResolveIdentifier, GetPricesFromTradingItemId
+from kfinance.tool_calling.non_group_tools.get_capitalization_from_company_id import \
+    GetCapitalizationFromCompanyIdArgs
+from kfinance.tool_calling.non_group_tools.get_cusip_from_security_id import GetCusipFromSecurityIdArgs
+from kfinance.tool_calling.non_group_tools.get_earnings_call_datetimes_from_company_id import \
+    GetEarningsCallDatetimesFromCompanyIdArgs
+from kfinance.tool_calling.non_group_tools.get_financial_line_item_from_company_id import \
+    GetFinancialLineItemFromCompanyIdArgs, GetFinancialLineItemFromCompanyId
+from kfinance.tool_calling.non_group_tools.get_financial_statement_from_company_id import \
+    GetFinancialStatementFromIdentifierArgs
+from kfinance.tool_calling.non_group_tools.get_history_metadata_from_trading_item_id import \
+    GetHistoryMetadataFromTradingItemIdArgs
+from kfinance.tool_calling.non_group_tools.get_info_from_company_id import GetInfoFromCompanyIdArgs
+from kfinance.tool_calling.non_group_tools.get_isin_from_security_id import GetIsinFromSecurityIdArgs
+from kfinance.tool_calling.non_group_tools.get_prices_from_trading_item_id import \
+    GetPricesFromTradingItemIdArgs
+from kfinance.tool_calling.non_group_tools.resolve_identifier import ResolveIdentifierArgs
+from kfinance.tool_calling.group_tools.get_business_relationship_from_company_id import \
+    GetBusinessRelationshipFromCompanyIdArgs
+from kfinance.tool_calling.shared_tools.get_latest import GetLatestArgs, GetLatest
+from kfinance.tool_calling.shared_tools.get_n_quarters_ago import GetNQuartersAgoArgs, GetNQuartersAgo
 
 from kfinance.constants import BusinessRelationshipType, Capitalization, StatementType
 from kfinance.kfinance import Client
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
-from kfinance.tool_calling import (
-    GetEarningsCallDatetimesFromIdentifier,
-    GetFinancialLineItemFromIdentifier,
-    GetFinancialStatementFromIdentifier,
-    GetHistoryMetadataFromIdentifier,
-    GetInfoFromIdentifier,
-    GetIsinFromTicker,
-    GetLatest,
-    GetNQuartersAgo,
-    GetPricesFromIdentifier,
-    ResolveIdentifier,
-)
-from kfinance.tool_calling.shared_models import ToolArgsWithIdentifier
 
 
 class TestGetBusinessRelationshipFromIdentifier:
@@ -63,7 +52,7 @@ class TestGetBusinessRelationshipFromIdentifier:
         )
 
         tool = GetBusinessRelationshipFromCompanyId(kfinance_client=mock_client)
-        args = GetBusinessRelationshipFromIdentifierArgs(
+        args = GetBusinessRelationshipFromCompanyIdArgs(
             identifier="SPGI", business_relationship=BusinessRelationshipType.supplier
         )
         resp = tool.run(args.model_dump(mode="json"))
@@ -102,8 +91,8 @@ class TestGetCapitalizationFromIdentifier:
 
         expected_response = "| date       |   market_cap |\n|:-----------|-------------:|\n| 2024-04-10 |  1.32767e+11 |\n| 2024-04-11 |  1.32416e+11 |"
 
-        tool = GetCapitalizationFromIdentifier(kfinance_client=mock_client)
-        args = GetCapitalizationFromIdentifierArgs(
+        tool = GetCapitalizationFromCompanyId(kfinance_client=mock_client)
+        args = GetCapitalizationFromCompanyIdArgs(
             identifier="SPGI", capitalization=Capitalization.market_cap
         )
         response = tool.run(args.model_dump(mode="json"))
@@ -123,8 +112,8 @@ class TestGetCusipFromTicker:
             url=f"https://kfinance.kensho.com/api/v1/cusip/{SPGI_SECURITY_ID}",
             json={"cusip": spgi_cusip},
         )
-        tool = GetCusipFromTicker(kfinance_client=mock_client)
-        resp = tool.run(GetCusipFromTickerArgs(ticker_str="SPGI").model_dump(mode="json"))
+        tool = GetCusipFromSecurityId(kfinance_client=mock_client)
+        resp = tool.run(GetCusipFromSecurityIdArgs(ticker_str="SPGI").model_dump(mode="json"))
         assert resp == spgi_cusip
 
 
@@ -144,8 +133,8 @@ class TestGetEarningsCallDatetimesFromTicker:
         )
         expected_response = '["2025-04-29T12:30:00+00:00", "2025-02-11T13:30:00+00:00"]'
 
-        tool = GetEarningsCallDatetimesFromIdentifier(kfinance_client=mock_client)
-        response = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
+        tool = GetEarningsCallDatetimesFromCompanyId(kfinance_client=mock_client)
+        response = tool.run(GetEarningsCallDatetimesFromCompanyIdArgs(identifier="SPGI").model_dump(mode="json"))
         assert response == expected_response
 
 
@@ -173,8 +162,8 @@ class TestGetFinancialLineItemFromIdentifier:
         )
         expected_response = "|         |      2020 |      2021 |       2022 |       2023 |       2024 |\n|:--------|----------:|----------:|-----------:|-----------:|-----------:|\n| revenue | 7.442e+09 | 8.297e+09 | 1.1181e+10 | 1.2497e+10 | 1.4208e+10 |"
 
-        tool = GetFinancialLineItemFromIdentifier(kfinance_client=mock_client)
-        args = GetFinancialLineItemFromIdentifierArgs(identifier="SPGI", line_item="revenue")
+        tool = GetFinancialLineItemFromCompanyId(kfinance_client=mock_client)
+        args = GetFinancialLineItemFromCompanyIdArgs(identifier="SPGI", line_item="revenue")
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
 
@@ -184,7 +173,7 @@ class TestGetFinancialLineItemFromIdentifier:
         WHEN we generate an openai schema from the tool
         THEN all line items and aliases are included in the line item enum
         """
-        tool = GetFinancialLineItemFromIdentifier(kfinance_client=mock_client)
+        tool = GetFinancialLineItemFromCompanyId(kfinance_client=mock_client)
         oai_schema = convert_to_openai_tool(tool)
         line_items = oai_schema["function"]["parameters"]["properties"]["line_item"]["enum"]
         # revenue is a line item
@@ -214,7 +203,7 @@ class TestGetFinancialStatementFromIdentifier:
         )
         expected_response = "|                |      2020 |\n|:---------------|----------:|\n| Revenues       | 7.442e+09 |\n| Total Revenues | 7.442e+09 |"
 
-        tool = GetFinancialStatementFromIdentifier(kfinance_client=mock_client)
+        tool = GetFinancialStatementFromCompanyId(kfinance_client=mock_client)
         args = GetFinancialStatementFromIdentifierArgs(
             identifier="SPGI", statement=StatementType.income_statement
         )
@@ -249,8 +238,8 @@ class TestGetHistoryMetadataFromIdentifier:
             json=metadata_resp,
         )
 
-        tool = GetHistoryMetadataFromIdentifier(kfinance_client=mock_client)
-        resp = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
+        tool = GetHistoryMetadataFromTradingItemId(kfinance_client=mock_client)
+        resp = tool.run(GetHistoryMetadataFromTradingItemIdArgs(identifier="SPGI").model_dump(mode="json"))
         assert resp == expected_resp
 
 
@@ -269,8 +258,8 @@ class TestGetInfoFromIdentifier:
             json=info_resp,
         )
 
-        tool = GetInfoFromIdentifier(kfinance_client=mock_client)
-        resp = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
+        tool = GetInfoFromCompanyId(kfinance_client=mock_client)
+        resp = tool.run(GetInfoFromCompanyIdArgs(identifier="SPGI").model_dump(mode="json"))
         assert resp == str(info_resp)
 
 
@@ -288,8 +277,8 @@ class TestGetIsinFromTicker:
             json={"isin": spgi_isin},
         )
 
-        tool = GetIsinFromTicker(kfinance_client=mock_client)
-        resp = tool.run(GetIsinFromTickerArgs(ticker_str="SPGI").model_dump(mode="json"))
+        tool = GetIsinFromSecurityId(kfinance_client=mock_client)
+        resp = tool.run(GetIsinFromSecurityIdArgs(ticker_str="SPGI").model_dump(mode="json"))
         assert resp == spgi_isin
 
 
@@ -366,8 +355,8 @@ class TestPricesFromIdentifier:
         )
         expected_response = "| date       |   open |   high |    low |   close |      volume |\n|:-----------|-------:|-------:|-------:|--------:|------------:|\n| 2024-04-11 | 424.26 | 425.99 | 422.04 |  422.92 | 1.12916e+06 |\n| 2024-04-12 | 419.23 | 421.94 | 416.45 |  417.81 | 1.18223e+06 |"
 
-        tool = GetPricesFromIdentifier(kfinance_client=mock_client)
-        response = tool.run(GetPricesFromIdentifierArgs(identifier="SPGI").model_dump(mode="json"))
+        tool = GetPricesFromTradingItemId(kfinance_client=mock_client)
+        response = tool.run(GetPricesFromTradingItemIdArgs(identifier="SPGI").model_dump(mode="json"))
         assert response == expected_response
 
 
@@ -379,7 +368,7 @@ class TestResolveIdentifier:
         THEN we get back a dict with the SPGI company id, security id, and trading item id
         """
         tool = ResolveIdentifier(kfinance_client=mock_client)
-        resp = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
+        resp = tool.run(ResolveIdentifierArgs(identifier="SPGI").model_dump(mode="json"))
         assert resp == {
             "company_id": SPGI_COMPANY_ID,
             "security_id": SPGI_SECURITY_ID,

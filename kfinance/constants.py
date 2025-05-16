@@ -1,4 +1,5 @@
 from datetime import date
+from enum import Enum
 from itertools import chain
 from typing import NamedTuple, TypedDict
 
@@ -1744,10 +1745,10 @@ FINANCIAL_STATEMENTS_SYNONYMS: dict[str, int] = {
 class ToolMode(Enum):
     """Used to indicate the mode or modes in which a tool is available.
 
-    SCREENER mode means that a tool is used in to filter companies and handle
+    GROUP mode means that a tool is used in to filter companies and handle
         groups of companies
-    NON_SCREENER mode means that a tool is intended to process individual companies.
+    INDIVIDUAL mode means that a tool is intended to process individual companies.
     """
 
-    SCREENER = "SCREENER"
-    NON_SCREENER = "NON_SCREENER"
+    GROUP = "GROUP"
+    INDIVIDUAL = "INDIVIDUAL"

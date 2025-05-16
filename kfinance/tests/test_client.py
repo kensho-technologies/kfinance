@@ -6,9 +6,9 @@ from kfinance.constants import Permission
 from kfinance.kfinance import Client
 from kfinance.tool_calling import (
     GetBusinessRelationshipFromCompanyId,
-    GetFinancialStatementFromIdentifier,
     GetLatest,
 )
+from kfinance.tool_calling import GetFinancialStatementFromCompanyId
 
 
 class TestLangchainTools:
@@ -51,4 +51,4 @@ class TestLangchainTools:
         # User should have access to functions that don't require permissions
         assert GetLatest in tool_classes
         # User should not have access to functions that require statement permissions
-        assert GetFinancialStatementFromIdentifier not in tool_classes
+        assert GetFinancialStatementFromCompanyId not in tool_classes

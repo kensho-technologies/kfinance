@@ -17,7 +17,7 @@ class GetEarningsCallDatetimesFromCompanyId(KfinanceTool):
     description: str = "Get earnings call datetimes associated with a company_id."
     args_schema: Type[BaseModel] = GetEarningsCallDatetimesFromCompanyIdArgs
     required_permission: Permission | None = Permission.EarningsPermission
-    tool_modes: set[ToolMode] = {ToolMode.NON_SCREENER}
+    tool_modes: set[ToolMode] = {ToolMode.INDIVIDUAL}
 
     def _run(self, company_id: int) -> str:
         company = self.kfinance_client.company(company_id)

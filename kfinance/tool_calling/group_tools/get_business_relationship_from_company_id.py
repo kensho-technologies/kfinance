@@ -19,7 +19,7 @@ class GetBusinessRelationshipFromCompanyId(KfinanceTool):
     description: str = 'Get the current and previous company IDs that are relationship_type of a given company_id. For example, "What are the current distributors of SPGI?" or "What are the previous borrowers of JPM?"'
     args_schema: Type[BaseModel] = GetBusinessRelationshipFromCompanyIdArgs
     required_permission: Permission | None = Permission.RelationshipPermission
-    tool_modes: set[ToolMode] = {ToolMode.SCREENER}
+    tool_modes: set[ToolMode] = {ToolMode.GROUP}
 
     def _run(self, company_id: int, business_relationship: BusinessRelationshipType) -> dict:
         company = self.kfinance_client.company(company_id)

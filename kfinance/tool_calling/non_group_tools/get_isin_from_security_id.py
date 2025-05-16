@@ -16,7 +16,7 @@ class GetIsinFromSecurityId(KfinanceTool):
     description: str = "Get the ISIN associated with a security_id."
     args_schema: Type[BaseModel] = GetIsinFromSecurityIdArgs
     required_permission: Permission | None = Permission.IDPermission
-    tool_modes: set[ToolMode] = {ToolMode.NON_SCREENER}
+    tool_modes: set[ToolMode] = {ToolMode.INDIVIDUAL}
 
     def _run(self, security_id: int) -> str:
         return self.kfinance_client.security(security_id).isin
