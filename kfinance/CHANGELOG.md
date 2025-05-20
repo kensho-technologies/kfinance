@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.2.1
+- Make number of employees optional to reflect backend changes
+
 ## v2.2.0
 - Replace get company id, get security id, get trading item id tools with resolve identifier tool
 

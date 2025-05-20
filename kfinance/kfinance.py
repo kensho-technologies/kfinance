@@ -262,7 +262,7 @@ class Company(CompanyFunctionsMetaClass):
     def info(self) -> dict:
         """Get the company info
 
-        :return: a dict with containing: name, status, type, simple industry, number of employees, founding date, webpage, address, city, zip code, state, country, & iso_country
+        :return: a dict with containing: name, status, type, simple industry, number of employees (if available), founding date, webpage, address, city, zip code, state, country, & iso_country
         :rtype: dict
         """
         return self.kfinance_api_client.fetch_info(self.company_id)
@@ -304,11 +304,11 @@ class Company(CompanyFunctionsMetaClass):
         return self.info["simple_industry"]
 
     @property
-    def number_of_employees(self) -> str:
-        """Get the number of employees the company has
+    def number_of_employees(self) -> str | None:
+        """Get the number of employees the company has (if available)
 
         :return: how many employees the company has
-        :rtype: str
+        :rtype: str | None
         """
         return self.info["number_of_employees"]
 
@@ -685,7 +685,7 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
     def info(self) -> dict:
         """Get the company info for the ticker
 
-        :return: a dict with containing: name, status, type, simple industry, number of employees, founding date, webpage, address, city, zip code, state, country, & iso_country
+        :return: a dict with containing: name, status, type, simple industry, number of employees (if available), founding date, webpage, address, city, zip code, state, country, & iso_country
         :rtype: dict
         """
         return self.company.info
@@ -727,11 +727,11 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         return self.company.simple_industry
 
     @property
-    def number_of_employees(self) -> str:
-        """Get the number of employees the company has
+    def number_of_employees(self) -> str | None:
+        """Get the number of employees the company has (if available)
 
         :return: how many employees the company has
-        :rtype: str
+        :rtype: str | None
         """
         return self.company.number_of_employees
 
