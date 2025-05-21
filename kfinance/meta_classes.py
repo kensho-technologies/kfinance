@@ -7,7 +7,7 @@ from cachetools import LRUCache, cached
 import numpy as np
 import pandas as pd
 
-from .constants import LINE_ITEMS, BusinessRelationshipType, PeriodType
+from .constants import LINE_ITEMS, BusinessRelationshipType, PeriodType, SegmentType
 from .fetch import KFinanceApiClient
 
 
@@ -303,6 +303,86 @@ class CompanyFunctionsMetaClass:
             )["market_caps"]
         )
         return df.set_index("date")[[column_to_extract]].apply(pd.to_numeric).replace(np.nan, None)
+
+    def segments(
+        self,
+        segment_type: SegmentType,
+        period_type: Optional[PeriodType] = None,
+        start_year: Optional[int] = None,
+        end_year: Optional[int] = None,
+        start_quarter: Optional[int] = None,
+        end_quarter: Optional[int] = None,
+    ) -> pd.DataFrame:
+        """Get the company's segments"""
+        try:
+            self.validate_inputs(
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+            )
+        except ValueError:
+            return pd.DataFrame()
+
+        results = self.kfinance_api_client.fetch_segments(
+            company_id=self.company_id,
+            segment_type=segment_type,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )["segments"]
+
+        period_name = (
+            "Year" if (period_type == PeriodType.annual or period_type is None) else "Period"
+        )
+
+        # flatten the nested dictionary and return as a DataFrame
+        rows = []
+        for period, segments in results.items():
+            for segment_name, line_items in segments.items():
+                for line_item, value in line_items.items():
+                    rows.append([period, segment_name, line_item, value])
+        return pd.DataFrame(
+            rows, columns=[period_name, "Segment Name", "Line Item", "Value"]
+        ).replace(np.nan, None)
+
+    def business_segments(
+        self,
+        period_type: Optional[PeriodType] = None,
+        start_year: Optional[int] = None,
+        end_year: Optional[int] = None,
+        start_quarter: Optional[int] = None,
+        end_quarter: Optional[int] = None,
+    ) -> pd.DataFrame:
+        """Get the company's line of business segments"""
+        return self.segments(
+            segment_type=SegmentType.business,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )
+
+    def geographic_segments(
+        self,
+        period_type: Optional[PeriodType] = None,
+        start_year: Optional[int] = None,
+        end_year: Optional[int] = None,
+        start_quarter: Optional[int] = None,
+        end_quarter: Optional[int] = None,
+    ) -> pd.DataFrame:
+        """Get the company's geographic segments"""
+        return self.segments(
+            segment_type=SegmentType.geographic,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )
 
 
 for line_item in LINE_ITEMS:
