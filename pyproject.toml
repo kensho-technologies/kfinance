@@ -63,6 +63,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 version_file = "kfinance/version.py"
 
+[tool.setuptools]
+packages = ["kfinance"]
+
 [tool.ruff]
 line-length = 100
 extend-exclude = ["alembic_schema", "migrations", ".venv", "venv", "*_pb2*", "version.py"]
