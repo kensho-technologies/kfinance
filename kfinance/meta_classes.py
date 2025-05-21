@@ -357,6 +357,7 @@ class CompanyFunctionsMetaClass:
         end_quarter: Optional[int] = None,
     ) -> pd.DataFrame:
         """Retrieves the templated line of business segments for a given period_type, start_year, start_quarter, end_year and end_quarter.
+
         :param period_type: The period_type requested for. Can be “annual”, “quarterly”, "ytd". Defaults to “annual” when start_quarter and end_quarter are None.
         :type start_year: PeriodType, optional
         :param start_year: The starting calendar year, defaults to None
@@ -388,6 +389,7 @@ class CompanyFunctionsMetaClass:
         end_quarter: Optional[int] = None,
     ) -> pd.DataFrame:
         """Retrieves the templated geographic segments for a given company for a given period_type, start_year, start_quarter, end_year and end_quarter.
+
         :param period_type: The period_type requested for. Can be “annual”, “quarterly”, "ytd". Defaults to “annual” when start_quarter and end_quarter are None.
         :type start_year: PeriodType, optional
         :param start_year: The starting calendar year, defaults to None
