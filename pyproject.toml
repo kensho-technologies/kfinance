@@ -37,7 +37,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "coverage>=7.6.10,<8",
+    "ipykernel>=6.29,<7",
     "mypy>=1.15.0,<2",
+    "nbconvert>=7.16,<8",
+    "nbformat>5.10,<6",
+    "nbqa>1.9,<2",
     "pytest>=6.1.2,<7",
     "pytest-cov>=6.0.0,<7",
     "requests_mock>=1.12,<2",
