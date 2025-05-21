@@ -213,7 +213,7 @@ class MockKFinanceApiClient:
         end_quarter,
     ):
         """Get a segment"""
-        return MOCK_COMPANY_DB[company_id]["segments"]
+        return MOCK_COMPANY_DB[company_id]
 
 
 class TestTradingItem(TestCase):
