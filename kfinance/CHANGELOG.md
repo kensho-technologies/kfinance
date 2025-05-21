@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.2.3
+ - Add mergers & acquisitions.
+
 ## v2.2.1
 - Make number of employees optional to reflect backend changes
 
