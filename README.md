@@ -18,6 +18,8 @@ To receive access, please email [S&P Global Market Intelligence](market.intellig
 
 Once access is obtained, get started using the [Authentication Guide](https://docs.kensho.com/llmreadyapi/kf-authentication) and [Usage Guide](https://docs.kensho.com/llmreadyapi/usage).
 
+We also provide an [interactive notebook](usage_examples.ipynb) that demonstrates some usage examples.
+
 # Versioning
 The kFinance uses semantic versioning (major, minor, patch). 
 To bump the version, add a new entry in [CHANGELOG.md](kfinance%2FCHANGELOG.md). 
