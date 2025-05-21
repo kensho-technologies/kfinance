@@ -316,7 +316,7 @@ class KFinanceApiClient:
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
     ) -> dict:
-        """Get a specified segment for a specified duration."""
+        """Get a specified segment type for a specified duration."""
         url = (
             f"{self.url_base}segments/{company_id}/{segment_type}/"
             f"{period_type if period_type else 'none'}/"
