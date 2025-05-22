@@ -1,4 +1,5 @@
 from datetime import date
+from enum import Enum
 from itertools import chain
 from typing import NamedTuple, TypedDict
 
@@ -1746,3 +1747,15 @@ FINANCIAL_STATEMENTS_SYNONYMS: dict[str, int] = {
     "income_stmt": 1,
     "cashflow": 3,
 }
+
+
+class ToolMode(Enum):
+    """Used to indicate the mode or modes in which a tool is available.
+
+    GROUP mode means that a tool is used in to filter companies and handle
+        groups of companies
+    INDIVIDUAL mode means that a tool is intended to process individual companies.
+    """
+
+    GROUP = "GROUP"
+    INDIVIDUAL = "INDIVIDUAL"

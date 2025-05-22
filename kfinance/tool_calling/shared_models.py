@@ -1,9 +1,9 @@
 from typing import Any, Type
 
 from langchain_core.tools import BaseTool
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
-from kfinance.constants import Permission
+from kfinance.constants import Permission, ToolMode
 from kfinance.kfinance import Client
 
 
@@ -17,6 +17,7 @@ class KfinanceTool(BaseTool):
     kfinance_client: Client
     args_schema: Type[BaseModel]
     required_permission: Permission | None
+    tool_modes: set[ToolMode]
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
@@ -41,15 +42,3 @@ class KfinanceTool(BaseTool):
     def _run(self, *args: Any, **kwargs: Any) -> Any:
         """The code to execute the tool"""
         ...
-
-
-class ToolArgsWithIdentifier(BaseModel):
-    """Tool argument with an identifier.
-
-    All tools using an identifier should subclass this model to ensure that the description
-    of identifier is always the same.
-    """
-
-    identifier: str = Field(
-        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
-    )

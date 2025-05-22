@@ -25,6 +25,7 @@ from .constants import (
     IndustryClassification,
     LatestPeriods,
     Periodicity,
+    ToolMode,
     YearAndQuarter,
 )
 from .fetch import (
@@ -44,6 +45,7 @@ from .server_thread import ServerThread
 
 if TYPE_CHECKING:
     from kfinance.tool_calling.shared_models import KfinanceTool
+
 
 logger = logging.getLogger(__name__)
 
@@ -934,6 +936,7 @@ class Securities(set):
         :param security_ids: An iterable of S&P CIQ Security ids
         :type security_ids: Iterable[int]
         """
+        self.kfinance_api_client = kfinance_api_client
         super().__init__(Security(kfinance_api_client, security_id) for security_id in security_ids)
 
 
@@ -1125,15 +1128,15 @@ class Client:
             )
             stdout.write("Login credentials received.\n")
 
-        self._tools: list[KfinanceTool] | None = None
+        self._all_tools: list[KfinanceTool] | None = None
 
-    @property
-    def langchain_tools(self) -> list["KfinanceTool"]:
+    def get_langchain_tools(self, tool_mode: ToolMode) -> list["KfinanceTool"]:
         """Return a list of all Kfinance tools for tool calling."""
-        if self._tools is None:
+
+        if self._all_tools is None:
             from kfinance.tool_calling import ALL_TOOLS
 
-            self._tools = []
+            self._all_tools = []
             # Add tool to _tools if the user has permissions to use it.
             for tool_cls in ALL_TOOLS:
                 tool = tool_cls(kfinance_client=self)  # type: ignore[call-arg]
@@ -1141,26 +1144,28 @@ class Client:
                     tool.required_permission is None
                     or tool.required_permission in self.kfinance_api_client.user_permissions
                 ):
-                    self._tools.append(tool)
+                    self._all_tools.append(tool)
 
-        return self._tools
+        logger.warning([t.name for t in self._all_tools if tool_mode in t.tool_modes])
 
-    @property
-    def tools(self) -> dict[str, Callable]:
+        return [t for t in self._all_tools if tool_mode in t.tool_modes]
+
+    def get_tools(self, tool_mode: ToolMode) -> dict[str, Callable]:
         """Return a mapping of tool calling function names to the corresponding functions.
 
         `tools` is intended for running without langchain. When running with langchain,
         use `langchain_tools`.
         """
-        return {t.name: t.run_without_langchain for t in self.langchain_tools}
+        return {
+            t.name: t.run_without_langchain for t in self.get_langchain_tools(tool_mode=tool_mode)
+        }
 
-    @property
-    def anthropic_tool_descriptions(self) -> list[dict[str, Any]]:
+    def get_anthropic_tool_descriptions(self, tool_mode: ToolMode) -> list[dict[str, Any]]:
         """Return tool descriptions for anthropic"""
 
         anthropic_tool_descriptions = []
 
-        for tool in self.langchain_tools:
+        for tool in self.get_langchain_tools(tool_mode=tool_mode):
             # Copied from https://python.langchain.com/api_reference/_modules/langchain_anthropic/chat_models.html#convert_to_anthropic_tool
             # to avoid adding a langchain-anthropic dependency.
             oai_formatted = convert_to_openai_tool(tool)["function"]
@@ -1174,22 +1179,23 @@ class Client:
 
         return anthropic_tool_descriptions
 
-    @property
-    def gemini_tool_descriptions(self) -> gapic.Tool:
+    def get_gemini_tool_descriptions(self, tool_mode: ToolMode) -> gapic.Tool:
         """Return tool descriptions for gemini.
 
         The conversion from BaseTool -> openai tool description -> google tool mirrors the
         langchain implementation.
         """
         openai_tool_descriptions = [
-            convert_to_openai_tool(t)["function"] for t in self.langchain_tools
+            convert_to_openai_tool(t)["function"]
+            for t in self.get_langchain_tools(tool_mode=tool_mode)
         ]
         return convert_to_genai_function_declarations(openai_tool_descriptions)
 
-    @property
-    def openai_tool_descriptions(self) -> list[dict[str, Any]]:
+    def get_openai_tool_descriptions(self, tool_mode: ToolMode) -> list[dict[str, Any]]:
         """Return tool descriptions for gemini"""
-        openai_tool_descriptions = [convert_to_openai_tool(t) for t in self.langchain_tools]
+        openai_tool_descriptions = [
+            convert_to_openai_tool(t) for t in self.get_langchain_tools(tool_mode=tool_mode)
+        ]
         return openai_tool_descriptions
 
     @property

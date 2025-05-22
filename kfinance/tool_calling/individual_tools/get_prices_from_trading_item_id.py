@@ -3,11 +3,12 @@ from typing import Type
 
 from pydantic import BaseModel, Field
 
-from kfinance.constants import Periodicity, Permission
-from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
+from kfinance.constants import Periodicity, Permission, ToolMode
+from kfinance.tool_calling.shared_models import KfinanceTool
 
 
-class GetPricesFromIdentifierArgs(ToolArgsWithIdentifier):
+class GetPricesFromTradingItemIdArgs(BaseModel):
+    trading_item_id: int
     start_date: date | None = Field(
         description="The start date for historical price retrieval", default=None
     )
@@ -22,22 +23,23 @@ class GetPricesFromIdentifierArgs(ToolArgsWithIdentifier):
     )
 
 
-class GetPricesFromIdentifier(KfinanceTool):
-    name: str = "get_prices_from_identifier"
-    description: str = "Get the historical open, high, low, and close prices, and volume of an identifier between inclusive start_date and inclusive end date. When requesting the most recent values, leave start_date and end_date empty."
-    args_schema: Type[BaseModel] = GetPricesFromIdentifierArgs
+class GetPricesFromTradingItemId(KfinanceTool):
+    name: str = "get_prices_from_trading_item_id"
+    description: str = "Get the historical open, high, low, and close prices, and volume of a trading_item_id between inclusive start_date and inclusive end date. When requesting the most recent values, leave start_date and end_date empty."
+    args_schema: Type[BaseModel] = GetPricesFromTradingItemIdArgs
     required_permission: Permission | None = Permission.PricingPermission
+    tool_modes: set[ToolMode] = {ToolMode.INDIVIDUAL}
 
     def _run(
         self,
-        identifier: str,
+        trading_item_id: int,
         start_date: date | None = None,
         end_date: date | None = None,
         periodicity: Periodicity = Periodicity.day,
         adjusted: bool = True,
     ) -> str:
-        ticker = self.kfinance_client.ticker(identifier)
-        return ticker.history(
+        trading_item = self.kfinance_client.trading_item(trading_item_id)
+        return trading_item.history(
             start_date=start_date.isoformat() if start_date else None,
             end_date=end_date.isoformat() if end_date else None,
             periodicity=periodicity,

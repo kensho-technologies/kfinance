@@ -1,12 +1,13 @@
 from concurrent.futures import Future
+from dataclasses import dataclass, field
 import functools
 from functools import cached_property
 import threading
-from typing import Any, Callable, Iterable, Protocol, Sized, Type, TypeVar
+from typing import Any, Callable, Hashable, Iterable, Protocol, Sized, Type, TypeVar
 
 from requests.exceptions import HTTPError
 
-from .fetch import KFinanceApiClient
+from kfinance.fetch import KFinanceApiClient
 
 
 T = TypeVar("T")
@@ -55,29 +56,6 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
             instances of [singular_cls].
         """
 
-        def process_in_batch(
-            method: Callable, self: IterableKfinanceClass, *args: Any, **kwargs: Any
-        ) -> dict:
-            with self.kfinance_api_client.batch_request_header(batch_size=len(self)):
-                futures = []
-                for obj in self:
-                    # Acquire throttle before submitting the task
-                    throttle.acquire()
-                    future = self.kfinance_api_client.thread_pool.submit(
-                        method, obj, *args, **kwargs
-                    )
-                    # On success or failure, release the throttle.
-                    # This releases the throttle before the
-                    # `resolve_future_with_error_handling` call.
-                    future.add_done_callback(lambda f: throttle.release())
-                    futures.append(future)
-
-                results = {}
-                for obj, future in zip(self, futures):
-                    results[obj] = resolve_future_with_error_handling(future)
-
-            return results
-
         for method_name in dir(singular_cls):
             method = getattr(singular_cls, method_name)
             if method_name.startswith("__") or method_name.startswith("set_"):
@@ -89,7 +67,13 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
                     def method_wrapper(
                         self: IterableKfinanceClass, *args: Any, **kwargs: Any
                     ) -> dict:
-                        return process_in_batch(method, self, *args, **kwargs)
+                        return process_tasks_in_thread_pool_executor(
+                            api_client=self.kfinance_api_client,
+                            tasks=[
+                                Task(func=method, args=(obj, *args), kwargs=kwargs, result_key=obj)
+                                for obj in self
+                            ],
+                        )
 
                     return method_wrapper
 
@@ -103,7 +87,12 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
                     @functools.wraps(method.fget)
                     def prop_wrapper(self: IterableKfinanceClass) -> Any:
                         assert method.fget is not None
-                        return process_in_batch(method.fget, self)
+                        return process_tasks_in_thread_pool_executor(
+                            api_client=self.kfinance_api_client,
+                            tasks=[
+                                Task(func=method.fget, args=(obj,), result_key=obj) for obj in self
+                            ],
+                        )
 
                     return prop_wrapper
 
@@ -114,7 +103,12 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
                 def create_cached_prop_wrapper(method: cached_property) -> cached_property:
                     @functools.wraps(method.func)
                     def cached_prop_wrapper(self: IterableKfinanceClass) -> Any:
-                        return process_in_batch(method.func, self)
+                        return process_tasks_in_thread_pool_executor(
+                            api_client=self.kfinance_api_client,
+                            tasks=[
+                                Task(func=method.func, args=(obj,), result_key=obj) for obj in self
+                            ],
+                        )
 
                     wrapped_cached_property = cached_property(cached_prop_wrapper)
                     wrapped_cached_property.__set_name__(iterable_cls, method_name)
@@ -125,6 +119,43 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
         return iterable_cls
 
     return decorator
+
+
+@dataclass(kw_only=True)
+class Task:
+    func: Callable
+    args: Any
+    kwargs: Any = field(default_factory=dict)
+    result_key: Hashable
+    future: Future | None = None
+
+
+def process_tasks_in_thread_pool_executor(api_client: KFinanceApiClient, tasks: list[Task]) -> dict:
+    """Execute a list of tasks in the api client's thread pool executor and return the results.
+
+    Returs a dict mapping from each task's key to the corresponding result.
+    """
+
+    # Update access if necessary before submitting batch job.
+    # If the batch job starts without a valid token, each thread may try to refresh it.
+    assert api_client.access_token
+    with api_client.batch_request_header(batch_size=len(tasks)):
+        for task in tasks:
+            # Acquire throttle before submitting the task
+            throttle.acquire()
+            future = api_client.thread_pool.submit(task.func, *task.args, **task.kwargs)
+            # On success or failure, release the throttle.
+            # This releases the throttle before the
+            # `resolve_future_with_error_handling` call.
+            future.add_done_callback(lambda f: throttle.release())
+            task.future = future
+
+        results = {}
+        for task in tasks:
+            assert task.future
+            results[task.result_key] = resolve_future_with_error_handling(task.future)
+
+    return results
 
 
 def resolve_future_with_error_handling(future: Future) -> Any:

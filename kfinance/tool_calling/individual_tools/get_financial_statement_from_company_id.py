@@ -2,17 +2,14 @@ from typing import Literal, Type
 
 from pydantic import BaseModel, Field
 
-from kfinance.constants import LINE_ITEM_NAMES_AND_ALIASES, PeriodType, Permission
-from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
+from kfinance.constants import PeriodType, Permission, StatementType, ToolMode
+from kfinance.tool_calling.shared_models import KfinanceTool
 
 
-class GetFinancialLineItemFromIdentifierArgs(ToolArgsWithIdentifier):
-    # Note: mypy will not enforce this literal because of the type: ignore.
-    # But pydantic still uses the literal to check for allowed values and only includes
-    # allowed values in generated schemas.
-    line_item: Literal[tuple(LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore[valid-type]
-        description="The type of financial line_item requested"
-    )
+class GetFinancialStatementFromCompanyIdArgs(BaseModel):
+    company_id: int
+    # no description because the description for enum fields comes from the enum docstring.
+    statement: StatementType
     period_type: PeriodType | None = Field(default=None, description="The period type")
     start_year: int | None = Field(default=None, description="The starting year for the data range")
     end_year: int | None = Field(default=None, description="The ending year for the data range")
@@ -20,24 +17,25 @@ class GetFinancialLineItemFromIdentifierArgs(ToolArgsWithIdentifier):
     end_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Ending quarter")
 
 
-class GetFinancialLineItemFromIdentifier(KfinanceTool):
-    name: str = "get_financial_line_item_from_identifier"
-    description: str = "Get the financial line item associated with an identifier."
-    args_schema: Type[BaseModel] = GetFinancialLineItemFromIdentifierArgs
+class GetFinancialStatementFromCompanyId(KfinanceTool):
+    name: str = "get_financial_statement_from_company_id"
+    description: str = "Get the financial statement associated with a company_id."
+    args_schema: Type[BaseModel] = GetFinancialStatementFromCompanyIdArgs
     required_permission: Permission | None = Permission.StatementsPermission
+    tool_modes: set[ToolMode] = {ToolMode.INDIVIDUAL}
 
     def _run(
         self,
-        identifier: str,
-        line_item: str,
+        company_id: int,
+        statement: StatementType,
         period_type: PeriodType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
         start_quarter: Literal[1, 2, 3, 4] | None = None,
         end_quarter: Literal[1, 2, 3, 4] | None = None,
     ) -> str:
-        ticker = self.kfinance_client.ticker(identifier)
-        return getattr(ticker, line_item)(
+        company = self.kfinance_client.company(company_id)
+        return getattr(company, statement.value)(
             period_type=period_type,
             start_year=start_year,
             end_year=end_year,
