@@ -206,19 +206,24 @@ class Company(CompanyFunctionsMetaClass):
     :type kfinance_api_client: KFinanceApiClient
     :param company_id: The S&P Global CIQ Company Id
     :type company_id: int
+    :param transaction_id: The S&P Global CIQ Transaction Id (if this company was party to a particular transaction
+    :type transaction_id: int
     """
 
-    def __init__(self, kfinance_api_client: KFinanceApiClient, company_id: int):
+    def __init__(self, kfinance_api_client: KFinanceApiClient, company_id: int, transaction_id: int = -1):
         """Initialize the Company object
 
         :param kfinance_api_client: The KFinanceApiClient used to fetch data
         :type kfinance_api_client: KFinanceApiClient
         :param company_id: The S&P Global CIQ Company Id
         :type company_id: int
+        :param transaction_id: The S&P Global CIQ Transaction Id (if this company was party to a particular transaction
+        :type transaction_id: int
         """
         super().__init__()
         self.kfinance_api_client = kfinance_api_client
         self.company_id = company_id
+        self.transaction_id = transaction_id
 
     def __str__(self) -> str:
         """String representation for the company object"""
@@ -906,20 +911,54 @@ class BusinessRelationships(NamedTuple):
         return f"{type(self).__module__}.{type(self).__qualname__} of {str(dictionary)}"
 
 
+class MergerOrAcquisition():
+    def __init__(self, kfinance_api_client: KFinanceApiClient, transaction_id: int, merger_title: str) -> None:
+        self.kfinance_api_client = kfinance_api_client
+        self.transaction_id = transaction_id
+        self.merger_title = merger_title
+        self.retrieved_data = None
+
+    @property
+    def get_merger_title(self) -> str:
+        return self.merger_title
+
+    @cached_property
+    def get_timeline(self) -> pd.DataFrame:
+        if self.retrieved_data is None:
+            self.retrieved_data = self.kfinance_api_client.fetch_merger_info(self.transaction_id)
+
+        df = pd.DataFrame(self.retrieved_data["timeline"])
+        df["date"] = pd.to_datetime(df["date"])
+        return df
+
+    @cached_property
+    def get_participants(self):
+        if self.retrieved_data is None:
+            self.retrieved_data = self.kfinance_api_client.fetch_merger_info(self.transaction_id)
+
+        return {
+            "target": Company(kfinance_api_client=self.kfinance_api_client, company_id=self.retrieved_data["target"]["company_id"], transaction_id=self.transaction_id),
+            "buyers": Companies(kfinance_api_client=self.kfinance_api_client, company_ids=[company_id for company_id in self.retrieved_data["buyers"]["company_id"]], transaction_id=self.transaction_id),
+            "sellers": Companies(kfinance_api_client=self.kfinance_api_client, company_ids=[company_id for company_id in self.retrieved_data["sellers"]["company_id"]], transaction_id=self.transaction_id)
+        }
+
+
 @add_methods_of_singular_class_to_iterable_class(Company)
 class Companies(set):
     """Base class for representing a set of Companies"""
 
-    def __init__(self, kfinance_api_client: KFinanceApiClient, company_ids: Iterable[int]) -> None:
+    def __init__(self, kfinance_api_client: KFinanceApiClient, company_ids: Iterable[int], transaction_id: int = -1) -> None:
         """Initialize the Companies object
 
         :param kfinance_api_client: The KFinanceApiClient used to fetch data
         :type kfinance_api_client: KFinanceApiClient
         :param company_ids: An iterable of S&P CIQ Company ids
         :type company_ids: Iterable[int]
+        :param transaction_id: If the companies were party to a transaction, the S&P CIQ Transaction Id
+        :type transaction_id: int
         """
         self.kfinance_api_client = kfinance_api_client
-        super().__init__(Company(kfinance_api_client, company_id) for company_id in company_ids)
+        super().__init__(Company(kfinance_api_client=kfinance_api_client, company_id=company_id, transaction_id=transaction_id) for company_id in company_ids)
 
 
 @add_methods_of_singular_class_to_iterable_class(Security)
@@ -1034,6 +1073,12 @@ class Tickers(set):
         return TradingItems(
             self.kfinance_api_client, (ticker.trading_item_id for ticker in self.__iter__())
         )
+
+@add_methods_of_singular_class_to_iterable_class(MergerOrAcquisition)
+class MergersAndAcquisitions(set):
+    def __init__(self, kfinance_api_client: KFinanceApiClient, ids_and_titles: Iterable[dict]) -> None:
+        self.kfinance_api_client = kfinance_api_client
+        super().__init__(MergerOrAcquisition(kfinance_api_client=kfinance_api_client, transaction_id=id_and_title["transaction_id"], merger_title=id_and_title["merger_title"]) for id_and_title in ids_and_titles)
 
 
 class Client:
@@ -1344,6 +1389,13 @@ class Client:
         return TradingItem(
             kfinance_api_client=self.kfinance_api_client, trading_item_id=trading_item_id
         )
+
+    def mergers_and_acquisitions(self, company_id: int) -> dict[str, MergersAndAcquisitions]:
+        mergers_for_company = self.kfinance_api_client.fetch_mergers_for_company(company_id=company_id)
+        output: dict = {}
+        for literal in ["target", "buyer", "seller"]:
+            output[literal] = MergersAndAcquisitions(self.kfinance_api_client, mergers_for_company[literal])
+        return output
 
     @staticmethod
     def get_latest(use_local_timezone: bool = True) -> LatestPeriods:
