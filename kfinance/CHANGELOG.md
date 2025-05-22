@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.2.2
+- Add segments
+
 ## v2.2.1
 - Make number of employees optional to reflect backend changes
 
