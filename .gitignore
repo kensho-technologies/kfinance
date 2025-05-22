@@ -101,7 +101,7 @@ dmypy.json
 
 
 kfinance/version.py
-kfinance/wrappers/
+wrappers/
 
 docs/output/
 docs/generated/

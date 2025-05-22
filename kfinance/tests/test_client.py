@@ -2,11 +2,11 @@ from unittest.mock import Mock
 
 import pytest
 
-from kfinance.constants import Permission
+from kfinance.constants import Permission, ToolMode
 from kfinance.kfinance import Client
 from kfinance.tool_calling import (
-    GetBusinessRelationshipFromIdentifier,
-    GetFinancialStatementFromIdentifier,
+    GetBusinessRelationshipFromCompanyId,
+    GetFinancialStatementFromCompanyId,
     GetLatest,
 )
 
@@ -45,10 +45,10 @@ class TestLangchainTools:
         """
 
         mock_client.kfinance_api_client._user_permissions = {Permission.RelationshipPermission}  # noqa: SLF001
-        tool_classes = [type(t) for t in mock_client.langchain_tools]
+        tool_classes = [type(t) for t in mock_client.get_langchain_tools(ToolMode.GROUP)]
         # User should have access to GetBusinessRelationshipFromIdentifier
-        assert GetBusinessRelationshipFromIdentifier in tool_classes
+        assert GetBusinessRelationshipFromCompanyId in tool_classes
         # User should have access to functions that don't require permissions
         assert GetLatest in tool_classes
         # User should not have access to functions that require statement permissions
-        assert GetFinancialStatementFromIdentifier not in tool_classes
+        assert GetFinancialStatementFromCompanyId not in tool_classes
