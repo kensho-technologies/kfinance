@@ -102,6 +102,7 @@ class Permission(StrEnum):
     PricingPermission = "PricingPermission"
     RelationshipPermission = "RelationshipPermission"
     StatementsPermission = "StatementsPermission"
+    SegmentsPermission = "SegmentsPermission"
 
 
 class YearAndQuarter(TypedDict):
