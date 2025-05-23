@@ -312,7 +312,7 @@ class CompanyFunctionsMetaClass:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
-    ) -> pd.DataFrame:
+    ) -> dict:
         """Get the company's segments"""
         try:
             self.validate_inputs(
@@ -322,9 +322,9 @@ class CompanyFunctionsMetaClass:
                 end_quarter=end_quarter,
             )
         except ValueError:
-            return pd.DataFrame()
+            return {}
 
-        results = self.kfinance_api_client.fetch_segments(
+        return self.kfinance_api_client.fetch_segments(
             company_id=self.company_id,
             segment_type=segment_type,
             period_type=period_type,
@@ -334,20 +334,6 @@ class CompanyFunctionsMetaClass:
             end_quarter=end_quarter,
         )["segments"]
 
-        period_name = (
-            "Year" if (period_type == PeriodType.annual or period_type is None) else "Period"
-        )
-
-        # flatten the nested dictionary and return as a DataFrame
-        rows = []
-        for period, segments in results.items():
-            for segment_name, line_items in segments.items():
-                for line_item, value in line_items.items():
-                    rows.append([period, segment_name, line_item, value])
-        return pd.DataFrame(
-            rows, columns=[period_name, "Segment Name", "Line Item", "Value"]
-        ).replace(np.nan, None)
-
     def business_segments(
         self,
         period_type: Optional[PeriodType] = None,
@@ -355,7 +341,7 @@ class CompanyFunctionsMetaClass:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
-    ) -> pd.DataFrame:
+    ) -> dict:
         """Retrieves the templated line of business segments for a given period_type, start_year, start_quarter, end_year and end_quarter.
 
         :param period_type: The period_type requested for. Can be “annual”, “quarterly”, "ytd". Defaults to “annual” when start_quarter and end_quarter are None.
@@ -368,8 +354,8 @@ class CompanyFunctionsMetaClass:
         :type start_quarter: int, optional
         :param end_quarter: The ending calendar quarter, defaults to None
         :type end_quarter: int, optional
-        :return: A DataFrame with `Year`/`Period`, `Segment Name`, `Line Item` and `Value` column.
-        :rtype: pd.DataFrame
+        :return: A dictionary containing the templated line of business segments for each time period, segment name, line item, and value.
+        :rtype: dict
         """
         return self._segments(
             segment_type=SegmentType.business,
@@ -387,8 +373,8 @@ class CompanyFunctionsMetaClass:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
-    ) -> pd.DataFrame:
-        """Retrieves the templated geographic segments for a given company for a given period_type, start_year, start_quarter, end_year and end_quarter.
+    ) -> dict:
+        """Retrieves the templated geographic segments for a given period_type, start_year, start_quarter, end_year and end_quarter.
 
         :param period_type: The period_type requested for. Can be “annual”, “quarterly”, "ytd". Defaults to “annual” when start_quarter and end_quarter are None.
         :type start_year: PeriodType, optional
@@ -400,8 +386,8 @@ class CompanyFunctionsMetaClass:
         :type start_quarter: int, optional
         :param end_quarter: The ending calendar quarter, defaults to None
         :type end_quarter: int, optional
-        :return: A DataFrame with `Year`/`Period`, `Segment Name`, `Line Item` and `Value` column.
-        :rtype: pd.DataFrame
+        :return: A dictionary containing the templated geographic segments for each time period, segment name, line item, and value.
+        :rtype: dict
         """
         return self._segments(
             segment_type=SegmentType.geographic,
