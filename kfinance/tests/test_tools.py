@@ -229,55 +229,34 @@ class TestGetSegmentsFromIdentifier:
         THEN we get back the SPGI business segment
         """
 
+        segments_response = {
+            "segments": {
+                "2020": {
+                    "Commodity Insights": {
+                        "CAPEX": -7000000.0,
+                        "D&A": 17000000.0,
+                    },
+                    "Unallocated Assets Held for Sale": None,
+                },
+                "2021": {
+                    "Commodity Insights": {
+                        "CAPEX": -2000000.0,
+                        "D&A": 12000000.0,
+                    },
+                    "Unallocated Assets Held for Sale": {"Total Assets": 321000000.0},
+                },
+            },
+        }
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/segments/{SPGI_COMPANY_ID}/business/none/none/none/none/none",
             # truncated from the original API response
-            json={
-                "segments": {
-                    "2020": {
-                        "Commodity Insights": {
-                            "CAPEX": -7000000.0,
-                            "D&A": 17000000.0,
-                        },
-                        "Unallocated Assets Held for Sale": None,
-                    },
-                    "2021": {
-                        "Commodity Insights": {
-                            "CAPEX": -2000000.0,
-                            "D&A": 12000000.0,
-                        },              
-                        "Unallocated Assets Held for Sale": {
-                            "Total Assets": 321000000.0
-                        },
-                    },
-                },
-            },
+            json=segments_response,
         )
-        expected_response = {
-                "segments": {
-                    "2020": {
-                        "Commodity Insights": {
-                            "CAPEX": -7000000.0,
-                            "D&A": 17000000.0,
-                        },
-                        "Unallocated Assets Held for Sale": None,
-                    },
-                    "2021": {
-                        "Commodity Insights": {
-                            "CAPEX": -2000000.0,
-                            "D&A": 12000000.0,
-                        },              
-                        "Unallocated Assets Held for Sale": {
-                            "Total Assets": 321000000.0
-                        },
-                    },
-                },
-            }
 
         tool = GetSegmentsFromIdentifier(kfinance_client=mock_client)
-        args = GetSegmentsFromIdentifierArgs(identifier="SPGI", segment=SegmentType.business)
+        args = GetSegmentsFromIdentifierArgs(identifier="SPGI", segment_type=SegmentType.business)
         response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
+        assert response == segments_response
 
 
 class TestGetHistoryMetadataFromIdentifier:

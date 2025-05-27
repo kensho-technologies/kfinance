@@ -22,6 +22,9 @@ from kfinance.tool_calling.get_isin_from_ticker import GetIsinFromTicker
 from kfinance.tool_calling.get_latest import GetLatest
 from kfinance.tool_calling.get_n_quarters_ago import GetNQuartersAgo
 from kfinance.tool_calling.get_prices_from_identifier import GetPricesFromIdentifier
+from kfinance.tool_calling.get_segments_from_identifier import (
+    GetSegmentsFromIdentifier,
+)
 from kfinance.tool_calling.resolve_identifier import ResolveIdentifier
 from kfinance.tool_calling.shared_models import KfinanceTool
 
@@ -40,4 +43,5 @@ ALL_TOOLS: list[Type[KfinanceTool]] = [
     GetFinancialLineItemFromIdentifier,
     GetBusinessRelationshipFromIdentifier,
     ResolveIdentifier,
+    GetSegmentsFromIdentifier,
 ]

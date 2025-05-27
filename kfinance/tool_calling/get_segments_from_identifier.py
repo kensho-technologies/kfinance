@@ -8,7 +8,7 @@ from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdenti
 
 class GetSegmentsFromIdentifierArgs(ToolArgsWithIdentifier):
     # no description because the description for enum fields comes from the enum docstring.
-    segment: SegmentType
+    segment_type: SegmentType
     period_type: PeriodType | None = Field(default=None, description="The period type")
     start_year: int | None = Field(default=None, description="The starting year for the data range")
     end_year: int | None = Field(default=None, description="The ending year for the data range")
@@ -25,7 +25,7 @@ class GetSegmentsFromIdentifier(KfinanceTool):
     def _run(
         self,
         identifier: str,
-        segment: SegmentType,
+        segment_type: SegmentType,
         period_type: PeriodType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
@@ -33,7 +33,7 @@ class GetSegmentsFromIdentifier(KfinanceTool):
         end_quarter: Literal[1, 2, 3, 4] | None = None,
     ) -> str:
         ticker = self.kfinance_client.ticker(identifier)
-        return getattr(ticker, segment.value)(
+        return getattr(ticker, segment_type.value+"_segments")(
             period_type=period_type,
             start_year=start_year,
             end_year=end_year,
