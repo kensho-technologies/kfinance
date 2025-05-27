@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.2.4
+- Add segments as llm tools
+
 ## v2.2.3
 - Change segments return type to nested dictionary
 
