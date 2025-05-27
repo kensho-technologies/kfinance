@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.2.3
+- Change segments return type to nested dictionary
+
 ## v2.2.2
 - Add segments
 

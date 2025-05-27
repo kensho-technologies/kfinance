@@ -337,17 +337,10 @@ class TestCompany(TestCase):
 
     def test_business_segments(self) -> None:
         """test business statement"""
-        rows = []
-        for period, segments in MOCK_COMPANY_DB[msft_company_id]["segments"].items():
-            for segment_name, line_items in segments.items():
-                for line_item, value in line_items.items():
-                    rows.append([period, segment_name, line_item, value])
-        expected_segments = pd.DataFrame(
-            rows, columns=["Year", "Segment Name", "Line Item", "Value"]
-        ).replace(np.nan, None)
+        expected_segments = MOCK_COMPANY_DB[msft_company_id]["segments"]
 
         business_segment = self.msft_company.business_segments()
-        pd.testing.assert_frame_equal(expected_segments, business_segment)
+        self.assertEqual(expected_segments, business_segment)
 
 
 class TestSecurity(TestCase):
