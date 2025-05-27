@@ -33,7 +33,7 @@ class GetSegmentsFromIdentifier(KfinanceTool):
         end_quarter: Literal[1, 2, 3, 4] | None = None,
     ) -> str:
         ticker = self.kfinance_client.ticker(identifier)
-        return getattr(ticker, segment_type.value+"_segments")(
+        return getattr(ticker, segment_type.value + "_segments")(
             period_type=period_type,
             start_year=start_year,
             end_year=end_year,

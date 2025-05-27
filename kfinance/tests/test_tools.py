@@ -256,7 +256,7 @@ class TestGetSegmentsFromIdentifier:
         tool = GetSegmentsFromIdentifier(kfinance_client=mock_client)
         args = GetSegmentsFromIdentifierArgs(identifier="SPGI", segment_type=SegmentType.business)
         response = tool.run(args.model_dump(mode="json"))
-        assert response == segments_response
+        assert response == segments_response["segments"]
 
 
 class TestGetHistoryMetadataFromIdentifier:
