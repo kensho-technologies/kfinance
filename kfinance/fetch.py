@@ -15,6 +15,7 @@ from .constants import (
     Periodicity,
     PeriodType,
     Permission,
+    SegmentType,
 )
 
 
@@ -302,6 +303,27 @@ class KFinanceApiClient:
             f"{self.url_base}market_cap/{company_id}/"
             f"{start_date if start_date is not None else 'none'}/"
             f"{end_date if end_date is not None else 'none'}"
+        )
+        return self.fetch(url)
+
+    def fetch_segments(
+        self,
+        company_id: int,
+        segment_type: SegmentType,
+        period_type: Optional[PeriodType] = None,
+        start_year: Optional[int] = None,
+        end_year: Optional[int] = None,
+        start_quarter: Optional[int] = None,
+        end_quarter: Optional[int] = None,
+    ) -> dict:
+        """Get a specified segment type for a specified duration."""
+        url = (
+            f"{self.url_base}segments/{company_id}/{segment_type}/"
+            f"{period_type if period_type else 'none'}/"
+            f"{start_year if start_year is not None else 'none'}/"
+            f"{end_year if end_year is not None else 'none'}/"
+            f"{start_quarter if start_quarter is not None else 'none'}/"
+            f"{end_quarter if end_quarter is not None else 'none'}"
         )
         return self.fetch(url)
 

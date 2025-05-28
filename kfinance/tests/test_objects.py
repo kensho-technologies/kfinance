@@ -75,6 +75,19 @@ MOCK_COMPANY_DB = {
                 }
             }
         },
+        "segments": {
+            "2024": {
+                "Intelligent Cloud": {"Operating Income": 49584000000.0, "Revenue": 105362000000.0},
+                "More Personal Computing": {
+                    "Operating Income": 19309000000.0,
+                    "Revenue": 62032000000.0,
+                },
+                "Productivity and Business Processes": {
+                    "Operating Income": 40540000000.0,
+                    "Revenue": 77728000000.0,
+                },
+            }
+        },
     }
 }
 
@@ -188,6 +201,19 @@ class MockKFinanceApiClient:
                 },
             ]
         }
+
+    def fetch_segments(
+        self,
+        company_id,
+        segment_type,
+        period_type,
+        start_year,
+        end_year,
+        start_quarter,
+        end_quarter,
+    ):
+        """Get a segment"""
+        return MOCK_COMPANY_DB[company_id]
 
 
 class TestTradingItem(TestCase):
@@ -308,6 +334,13 @@ class TestCompany(TestCase):
         )
         revenue = self.msft_company.revenue()
         pd.testing.assert_frame_equal(expected_revenue, revenue)
+
+    def test_business_segments(self) -> None:
+        """test business statement"""
+        expected_segments = MOCK_COMPANY_DB[msft_company_id]["segments"]
+
+        business_segment = self.msft_company.business_segments()
+        self.assertEqual(expected_segments, business_segment)
 
 
 class TestSecurity(TestCase):

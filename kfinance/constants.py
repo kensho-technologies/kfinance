@@ -62,6 +62,13 @@ class StatementType(StrEnum):
     cf = "cashflow"
 
 
+class SegmentType(StrEnum):
+    """The type of segment"""
+
+    business = "business"
+    geographic = "geographic"
+
+
 class BusinessRelationshipType(StrEnum):
     """The type of business relationship"""
 
@@ -95,6 +102,7 @@ class Permission(StrEnum):
     PricingPermission = "PricingPermission"
     RelationshipPermission = "RelationshipPermission"
     StatementsPermission = "StatementsPermission"
+    SegmentsPermission = "SegmentsPermission"
 
 
 class YearAndQuarter(TypedDict):

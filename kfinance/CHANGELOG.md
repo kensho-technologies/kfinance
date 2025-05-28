@@ -1,7 +1,16 @@
 # Changelog
 
-## v2.2.3
+## v2.2.5
  - Add mergers & acquisitions.
+
+## v2.2.4
+- Add segments as llm tools
+
+## v2.2.3
+- Change segments return type to nested dictionary
+
+## v2.2.2
+- Add segments
 
 ## v2.2.1
 - Make number of employees optional to reflect backend changes

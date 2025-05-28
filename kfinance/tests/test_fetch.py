@@ -229,6 +229,29 @@ class TestFetchItem(TestCase):
         )
         self.kfinance_api_client.fetch.assert_called_once_with(expected_fetch_url)
 
+    def test_fetch_segments(self) -> None:
+        company_id = 21719
+        segment_type = "business"
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}segments/{company_id}/{segment_type}/none/none/none/none/none"
+        self.kfinance_api_client.fetch_segments(company_id=company_id, segment_type=segment_type)
+        self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
+        period_type = PeriodType.quarterly
+        start_year = 2023
+        end_year = 2023
+        start_quarter = 1
+        end_quarter = 4
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}segments/{company_id}/{segment_type}/{period_type.value}/{start_year}/{end_year}/{start_quarter}/{end_quarter}"
+        self.kfinance_api_client.fetch_segments(
+            company_id=company_id,
+            segment_type=segment_type,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )
+        self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
+
 
 class TestMarketCap:
     @pytest.mark.parametrize(
