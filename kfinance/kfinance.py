@@ -212,7 +212,13 @@ class Company(CompanyFunctionsMetaClass):
     :type advisor_type_name: str
     """
 
-    def __init__(self, kfinance_api_client: KFinanceApiClient, company_id: int, transaction_id: int = -1, advisor_type_name: str = None)
+    def __init__(
+        self,
+        kfinance_api_client: KFinanceApiClient,
+        company_id: int,
+        transaction_id: Optional[int] = None,
+        advisor_type_name: Optional[str] = None,
+    ):
         """Initialize the Company object
 
         :param kfinance_api_client: The KFinanceApiClient used to fetch data
@@ -221,6 +227,8 @@ class Company(CompanyFunctionsMetaClass):
         :type company_id: int
         :param transaction_id: The S&P Global CIQ Transaction Id (if this company was party to a particular transaction
         :type transaction_id: int
+        :param advisor_type_name: If the company advised another company during a transaction, the type of advisor
+        :type advisor_type_name: str
         """
         super().__init__()
         self.kfinance_api_client = kfinance_api_client
@@ -408,27 +416,43 @@ class Company(CompanyFunctionsMetaClass):
 
     @cached_property
     def mergers_and_acquisitions(self) -> dict[str, MergersAndAcquisitions]:
+        """Get the mergers and acquisitions this company has been party to.
+
+        :return: three lists of transactions, one each for 'target', 'buyer', and 'seller'
+        :rtype: dict[str, MergersAndAcquisitions]
+        """
         mergers_for_company = self.kfinance_api_client.fetch_mergers_for_company(
-            company_id=self.company_id)
+            company_id=self.company_id
+        )
         output: dict = {}
         for literal in ["target", "buyer", "seller"]:
-            output[literal] = MergersAndAcquisitions(self.kfinance_api_client,
-                                                     mergers_for_company[literal])
+            output[literal] = MergersAndAcquisitions(
+                self.kfinance_api_client, mergers_for_company[literal]
+            )
         return output
 
     @cached_property
     def advisors(self) -> Companies | None:
+        """Get the companies that advised this company during the current transaction."""
         if not self.transaction_id:
             return None
-        advisors = self.kfinance_api_client.fetch_advisors_for_company_in_merger(transaction_id=self.transaction_id, advised_company_id=self.company_id)
+        advisors = self.kfinance_api_client.fetch_advisors_for_company_in_merger(
+            transaction_id=self.transaction_id, advised_company_id=self.company_id
+        )
+        company_ids: list[int] = []
+        advisor_type_names: list[str] = []
+        for advisor in advisors["advisor"]:
+            company_ids.append(int(advisor["advisor_company_id"]))
+            advisor_type_names.append(str(advisor["advisor_type_name"]))
         return Companies(
             kfinance_api_client=self.kfinance_api_client,
-            company_ids=[company_id for company_id in advisors["advisors"]["advisor_company_id"]],
-            advisor_type_names=[advisor_type_name for advisor_type_name in advisors["advisors"]["advisor_type_name"]]
+            company_ids=company_ids,
+            advisor_type_names=advisor_type_names,
         )
 
     @cached_property
     def advisor_type_name(self) -> str | None:
+        """When this company advised another during a transaction, get the advisor type name."""
         return self.advisor_type_name
 
 
@@ -940,52 +964,103 @@ class BusinessRelationships(NamedTuple):
 
 
 class MergerOrAcquisition:
-    def __init__(self, kfinance_api_client: KFinanceApiClient, transaction_id: int, merger_title: str) -> None:
+    """An object that represents a merger or an acquisition of a company."""
+
+    def __init__(
+        self, kfinance_api_client: KFinanceApiClient, transaction_id: int, merger_title: str
+    ) -> None:
+        """MergerOrAcqusition initializer.
+
+        :param kfinance_api_client: The KFinanceApiClient used to retrieve data.
+        :type kfinance_api_client: KFinanceApiClient
+
+        """
         self.kfinance_api_client = kfinance_api_client
         self.transaction_id = transaction_id
         self.merger_title = merger_title
-        self.retrieved_data = None
+        self.merger_info_fetched = False
+        self.merger_info: dict
 
     @property
     def get_merger_title(self) -> str:
+        """The merger title includes the status of the merger and its target."""
         return self.merger_title
 
     def _fetch_merger_info(self) -> None:
-        if self.retrieved_data is not None:
+        if self.merger_info_fetched:
             return
-        self.retrieved_data = self.kfinance_api_client.fetch_merger_info(self.transaction_id)
-        timeline = pd.DataFrame(self.retrieved_data["timeline"])
+        self.merger_info = self.kfinance_api_client.fetch_merger_info(self.transaction_id)
+        timeline = pd.DataFrame(self.merger_info["timeline"])
         timeline["date"] = pd.to_datetime(timeline["date"])
-        self.retrieved_data["timeline"] = timeline
-        details = pd.DataFrame(self.retrieved_data["consideration"]["details"])
-        self.retrieved_data["consideration"]["details"] = details
+        self.merger_info["timeline"] = timeline
+        details = pd.DataFrame(self.merger_info["consideration"]["details"])
+        self.merger_info["consideration"]["details"] = details
+        self.merger_info_fetched = True
 
     @cached_property
     def get_timeline(self) -> pd.DataFrame:
+        """The timeline of the merger includes every new status, along with the dates of each status change."""
         self._fetch_merger_info()
-        return self.retrieved_data["timeline"]
+        return self.merger_info["timeline"]
 
     @cached_property
     def get_participants(self) -> dict:
+        """A merger's participants are organized into categories: the target, the buyer or buyers, and the seller or sellers.
+
+        Each category is a single Company or a list of Companies.
+        """
         self._fetch_merger_info()
         return {
-            "target": Company(kfinance_api_client=self.kfinance_api_client, company_id=self.retrieved_data["target"]["company_id"], transaction_id=self.transaction_id),
-            "buyers": Companies(kfinance_api_client=self.kfinance_api_client, company_ids=[company_id for company_id in self.retrieved_data["buyers"]["company_id"]], transaction_id=self.transaction_id),
-            "sellers": Companies(kfinance_api_client=self.kfinance_api_client, company_ids=[company_id for company_id in self.retrieved_data["sellers"]["company_id"]], transaction_id=self.transaction_id)
+            "target": Company(
+                kfinance_api_client=self.kfinance_api_client,
+                company_id=self.merger_info["target"]["company_id"],
+                transaction_id=self.transaction_id,
+            ),
+            "buyers": Companies(
+                kfinance_api_client=self.kfinance_api_client,
+                company_ids=[company_id for company_id in self.merger_info["buyers"]["company_id"]],
+                transaction_id=self.transaction_id,
+            ),
+            "sellers": Companies(
+                kfinance_api_client=self.kfinance_api_client,
+                company_ids=[
+                    company_id for company_id in self.merger_info["sellers"]["company_id"]
+                ],
+                transaction_id=self.transaction_id,
+            ),
         }
 
     @cached_property
     def get_consideration(self) -> dict:
-        self._fetch_merger_info()
-        return self.retrieved_data["consideration"]
+        """A merger's consideration is the assets exchanged for the target company.
 
+        Properties in the consideration include:
+            - The currency of the consideration.
+            - The current gross total value of the consideration.
+            - The current implied equity value of the consideration.
+            - The current implied enterprise value of the consideration.
+            - A list of the consideration's details (sub-components of the consideration), where each consideration detail contains:
+                - The detail scenario.
+                - The detail subtype.
+                - The cash or cash equivalent offered per share.
+                - The number of shares in the target company.
+                - The current gross total of the consideration detail.
+        """
+        self._fetch_merger_info()
+        return self.merger_info["consideration"]
 
 
 @add_methods_of_singular_class_to_iterable_class(Company)
 class Companies(set):
     """Base class for representing a set of Companies"""
 
-    def __init__(self, kfinance_api_client: KFinanceApiClient, company_ids: Iterable[int], transaction_id: int = -1, advisor_type_names: Iterable[int] = None) -> None:
+    def __init__(
+        self,
+        kfinance_api_client: KFinanceApiClient,
+        company_ids: Iterable[int],
+        transaction_id: Optional[int] = None,
+        advisor_type_names: Optional[Iterable[str]] = None,
+    ) -> None:
         """Initialize the Companies object
 
         :param kfinance_api_client: The KFinanceApiClient used to fetch data
@@ -993,16 +1068,30 @@ class Companies(set):
         :param company_ids: An iterable of S&P CIQ Company ids
         :type company_ids: Iterable[int]
         :param transaction_id: If the companies were party to a transaction, the S&P CIQ Transaction Id
-        :type transaction_id: int
+        :type transaction_id: Optional[int]
         :param advisor_type_names: If the companies advised a company in a transaction, the advisor type names
-        :type advisor_type_names: Iterable[str]
+        :type advisor_type_names: Optional[Iterable[str]]
         """
         self.kfinance_api_client = kfinance_api_client
         if advisor_type_names is None:
-            super().__init__(Company(kfinance_api_client=kfinance_api_client, company_id=company_id, transaction_id=transaction_id) for company_id in company_ids)
+            super().__init__(
+                Company(
+                    kfinance_api_client=kfinance_api_client,
+                    company_id=company_id,
+                    transaction_id=transaction_id,
+                )
+                for company_id in company_ids
+            )
         else:
-            for company_id, advisor_type_name in zip(company_ids, advisor_type_names):
-                super().__init__(Company(kfinance_api_client=kfinance_api_client, company_id=company_id, advisor_type_name=advisor_type_name))
+            super().__init__(
+                Company(
+                    kfinance_api_client=kfinance_api_client,
+                    company_id=company_id,
+                    transaction_id=None,
+                    advisor_type_name=advisor_type_name,
+                )
+                for company_id, advisor_type_name in zip(company_ids, advisor_type_names)
+            )
 
 
 @add_methods_of_singular_class_to_iterable_class(Security)
@@ -1118,11 +1207,28 @@ class Tickers(set):
             self.kfinance_api_client, (ticker.trading_item_id for ticker in self.__iter__())
         )
 
+
 @add_methods_of_singular_class_to_iterable_class(MergerOrAcquisition)
 class MergersAndAcquisitions(set):
-    def __init__(self, kfinance_api_client: KFinanceApiClient, ids_and_titles: Iterable[dict]) -> None:
+    def __init__(
+        self, kfinance_api_client: KFinanceApiClient, ids_and_titles: Iterable[dict]
+    ) -> None:
+        """MergersAndAcquisitions initializer.
+
+        :param kfinance_api_client: The KFinanceApiClient used to fetch data.
+        :type kfinance_api_client: KFinanceApiClient
+        :param ids_and_titles: A iterable of transaction IDs and merger titles.
+        :type ids_and_titles: Iterable[dict]
+        """
         self.kfinance_api_client = kfinance_api_client
-        super().__init__(MergerOrAcquisition(kfinance_api_client=kfinance_api_client, transaction_id=id_and_title["transaction_id"], merger_title=id_and_title["merger_title"]) for id_and_title in ids_and_titles)
+        super().__init__(
+            MergerOrAcquisition(
+                kfinance_api_client=kfinance_api_client,
+                transaction_id=id_and_title["transaction_id"],
+                merger_title=id_and_title["merger_title"],
+            )
+            for id_and_title in ids_and_titles
+        )
 
 
 class Client:
@@ -1435,10 +1541,21 @@ class Client:
         )
 
     def mergers_and_acquisitions(self, company_id: int) -> dict[str, MergersAndAcquisitions]:
-        mergers_for_company = self.kfinance_api_client.fetch_mergers_for_company(company_id=company_id)
+        """Generate 3 named lists of MergersAndAcquisitions objects from company_id.
+
+        :param company_id: S&P Global company ID
+        :type company_id: int
+        :return: A dictionary of three keys ('target', 'buyer', and 'seller'), each of whose values is a MergersAndAcquisitions.
+        :rtype: dict[str, MergersAndAcquisitions]
+        """
+        mergers_for_company = self.kfinance_api_client.fetch_mergers_for_company(
+            company_id=company_id
+        )
         output: dict = {}
         for literal in ["target", "buyer", "seller"]:
-            output[literal] = MergersAndAcquisitions(self.kfinance_api_client, mergers_for_company[literal])
+            output[literal] = MergersAndAcquisitions(
+                self.kfinance_api_client, mergers_for_company[literal]
+            )
         return output
 
     @staticmethod
