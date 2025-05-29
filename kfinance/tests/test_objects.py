@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from PIL.Image import open as image_open
 
-from kfinance.kfinance import Company, MergerOrAcquisition, Security, Ticker, TradingItem
+from kfinance.kfinance import Companies, Company, MergerOrAcquisition, Security, Ticker, TradingItem
 
 
 msft_company_id = "21835"
@@ -104,13 +104,15 @@ MOCK_COMPANY_DB = {
             ],
         },
         "advisors": {
-            msft_buys_mongo: [
-                {
-                    "advisor_company_id": 251994106,
-                    "advisor_company_name": "Kensho Technologies, Inc.",
-                    "advisor_type_name": "Professional Mongo Enjoyer",
-                }
-            ]
+            msft_buys_mongo: {
+                "advisors": [
+                    {
+                        "advisor_company_id": 251994106,
+                        "advisor_company_name": "Kensho Technologies, Inc.",
+                        "advisor_type_name": "Professional Mongo Enjoyer",
+                    }
+                ]
+            }
         },
     }
 }
@@ -419,9 +421,22 @@ class TestCompany(TestCase):
         self.assertEqual(expected_mergers, mergers)
 
     def test_advisors(self) -> None:
-        expected_advisors = MOCK_COMPANY_DB[msft_company_id]["advisors"][msft_buys_mongo]
+        expected_advisors_json = MOCK_COMPANY_DB[msft_company_id]["advisors"][msft_buys_mongo][
+            "advisors"
+        ]
+        expected_company_ids: list[int] = []
+        expected_advisor_type_names: list[str] = []
+        for advisor in expected_advisors_json:
+            expected_company_ids.append(int(advisor["advisor_company_id"]))
+            expected_advisor_type_names.append(str(advisor["advisor_type_name"]))
         advisors = self.msft_company.advisors
-        self.assertEqual(expected_advisors, advisors)
+        company_ids: list[int] = []
+        advisor_type_names: list[str] = []
+        for advisor in advisors:
+            company_ids.append(advisor.company_id)
+            advisor_type_names.append(advisor.advisor_type_name)
+        self.assertListEqual(expected_company_ids, company_ids)
+        self.assertListEqual(expected_advisor_type_names, advisor_type_names)
 
 
 class TestSecurity(TestCase):

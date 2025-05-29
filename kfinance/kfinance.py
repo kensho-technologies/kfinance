@@ -438,10 +438,10 @@ class Company(CompanyFunctionsMetaClass):
             return None
         advisors = self.kfinance_api_client.fetch_advisors_for_company_in_merger(
             transaction_id=self.transaction_id, advised_company_id=self.company_id
-        )
+        )["advisors"]
         company_ids: list[int] = []
         advisor_type_names: list[str] = []
-        for advisor in advisors["advisor"]:
+        for advisor in advisors:
             company_ids.append(int(advisor["advisor_company_id"]))
             advisor_type_names.append(str(advisor["advisor_type_name"]))
         return Companies(

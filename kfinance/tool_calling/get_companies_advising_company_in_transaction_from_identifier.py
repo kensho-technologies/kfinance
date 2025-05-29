@@ -23,7 +23,10 @@ class GetCompaniesAdvisingCompanyInTransactionFromIdentifier(KfinanceTool):
 
         if advisors:
             return [
-                {"company_id": advisor.company_id, "advisor_type_name": advisor.advisor_type_name}
+                {
+                    "advisor_company_id": advisor.company_id,
+                    "advisor_type_name": advisor.advisor_type_name,
+                }
                 for advisor in advisors
             ]
         else:
