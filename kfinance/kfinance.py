@@ -967,7 +967,7 @@ class MergerOrAcquisition:
     """An object that represents a merger or an acquisition of a company."""
 
     def __init__(
-        self, kfinance_api_client: KFinanceApiClient, transaction_id: int, merger_title: str
+        self, kfinance_api_client: KFinanceApiClient, transaction_id: int, merger_title: str | None
     ) -> None:
         """MergerOrAcqusition initializer.
 
@@ -982,7 +982,7 @@ class MergerOrAcquisition:
         self.merger_info: dict
 
     @property
-    def get_merger_title(self) -> str:
+    def get_merger_title(self) -> str | None:
         """The merger title includes the status of the merger and its target."""
         return self.merger_title
 

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from PIL.Image import open as image_open
 
-from kfinance.kfinance import Company, Security, Ticker, TradingItem
+from kfinance.kfinance import Company, MergerOrAcquisition, Security, Ticker, TradingItem
 
 
 msft_company_id = "21835"
@@ -16,6 +16,7 @@ msft_security_id = "2630412"
 msft_isin = "US5949181045"
 msft_cusip = "594918104"
 msft_trading_item_id = "2630413"
+msft_buys_mongo = "517414"
 
 
 MOCK_TRADING_ITEM_DB = {
@@ -88,6 +89,29 @@ MOCK_COMPANY_DB = {
                 },
             }
         },
+        "mergers": {
+            "target": [
+                {"transaction_id": 10998717, "merger_title": "Closed M/A of Microsoft Corporation"},
+                {"transaction_id": 28237969, "merger_title": "Closed M/A of Microsoft Corporation"},
+            ],
+            "buyer": [
+                {"transaction_id": 517414, "merger_title": "Closed M/A of MongoMusic, Inc."},
+                {"transaction_id": 596722, "merger_title": "Closed M/A of Digital Anvil, Inc."},
+            ],
+            "seller": [
+                {"transaction_id": 455551, "merger_title": "Closed M/A of VacationSpot.com, Inc."},
+                {"transaction_id": 456045, "merger_title": "Closed M/A of TransPoint, LLC"},
+            ],
+        },
+        "advisors": {
+            msft_buys_mongo: [
+                {
+                    "advisor_company_id": 251994106,
+                    "advisor_company_name": "Kensho Technologies, Inc.",
+                    "advisor_type_name": "Professional Mongo Enjoyer",
+                }
+            ]
+        },
     }
 }
 
@@ -116,6 +140,42 @@ MOCK_CUSIP_DB = {
         "company_id": msft_company_id,
         "security_id": msft_security_id,
         "trading_item_id": msft_trading_item_id,
+    }
+}
+
+MOCK_MERGERS_DB = {
+    msft_buys_mongo: {
+        "timeline": [
+            {"status": "Announced", "date": "2000-09-12"},
+            {"status": "Closed", "date": "2000-09-12"},
+        ],
+        "participants": {
+            "target": {"company_id": 31696, "company_name": "MongoMusic, Inc."},
+            "buyers": [{"company_id": 21835, "company_name": "Microsoft Corporation"}],
+            "sellers": [
+                {"company_id": 18805, "company_name": "Angel Investors L.P."},
+                {"company_id": 20087, "company_name": "Draper Richards, L.P."},
+                {"company_id": 22103, "company_name": "BRV Partners, LLC"},
+                {"company_id": 23745, "company_name": "Venture Frogs, LLC"},
+                {"company_id": 105902, "company_name": "ARGUS Capital International Limited"},
+                {"company_id": 880300, "company_name": "Sony Music Entertainment, Inc."},
+            ],
+        },
+        "consideration": {
+            "currency_name": "US Dollar",
+            "current_calculated_gross_total_transaction_value": "51609375.000000",
+            "current_calculated_implied_equity_value": "51609375.000000",
+            "current_calculated_implied_enterprise_value": "51609375.000000",
+            "details": [
+                {
+                    "scenario": "Stock Lump Sum",
+                    "subtype": "Common Equity",
+                    "cash_or_cash_equivalent_per_target_share_unit": None,
+                    "number_of_target_shares_sought": "1000000.000000",
+                    "current_calculated_gross_value_of_consideration": "51609375.000000",
+                }
+            ],
+        },
     }
 }
 
@@ -215,6 +275,15 @@ class MockKFinanceApiClient:
         """Get a segment"""
         return MOCK_COMPANY_DB[company_id]
 
+    def fetch_mergers_for_company(self, company_id):
+        return MOCK_COMPANY_DB[company_id]["mergers"]
+
+    def fetch_merger_info(self, transaction_id):
+        return MOCK_MERGERS_DB[transaction_id]
+
+    def fetch_advisors_for_company_in_merger(self, transaction_id, advised_company_id):
+        return MOCK_COMPANY_DB[advised_company_id]["advisors"][transaction_id]
+
 
 class TestTradingItem(TestCase):
     def setUp(self):
@@ -273,7 +342,9 @@ class TestCompany(TestCase):
     def setUp(self):
         """setup tests"""
         self.kfinance_api_client = MockKFinanceApiClient()
-        self.msft_company = Company(self.kfinance_api_client, msft_company_id)
+        self.msft_company = Company(
+            self.kfinance_api_client, company_id=msft_company_id, transaction_id=msft_buys_mongo
+        )
 
     def test_company_id(self) -> None:
         """test company id"""
@@ -341,6 +412,16 @@ class TestCompany(TestCase):
 
         business_segment = self.msft_company.business_segments()
         self.assertEqual(expected_segments, business_segment)
+
+    def test_mergers(self) -> None:
+        expected_mergers = MOCK_COMPANY_DB[msft_company_id]["mergers"]
+        mergers = self.msft_company.mergers_and_acquisitions
+        self.assertEqual(expected_mergers, mergers)
+
+    def test_advisors(self) -> None:
+        expected_advisors = MOCK_COMPANY_DB[msft_company_id]["advisors"][msft_buys_mongo]
+        advisors = self.msft_company.advisors
+        self.assertEqual(expected_advisors, advisors)
 
 
 class TestSecurity(TestCase):
@@ -619,3 +700,18 @@ class TestTicker(TestCase):
         expected_dataframe.index.name = "date"
         market_caps = self.msft_ticker_from_ticker.market_cap()
         pd.testing.assert_frame_equal(expected_dataframe, market_caps)
+
+
+class TestMerger(TestCase):
+    def setUp(self):
+        self.kfinance_api_client = MockKFinanceApiClient()
+        self.merger = MergerOrAcquisition(
+            self.kfinance_api_client,
+            transaction_id=msft_buys_mongo,
+            merger_title="Closed M/A of MongoMusic, Inc.",
+        )
+
+    def test_merger_info(self) -> None:
+        expected_merger_info = MOCK_MERGERS_DB[msft_buys_mongo]
+        merger_info = self.merger.merger_info
+        self.assertEqual(expected_merger_info, merger_info)
