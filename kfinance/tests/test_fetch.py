@@ -299,7 +299,7 @@ class TestFetchCompaniesFromBusinessRelationship:
         http_resp = {"current": [883103], "previous": [472898, 8182358]}
         expected_result = RelationshipResponseNoName(current=[883103], previous=[472898, 8182358])
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/supplier",
+            url=f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{BusinessRelationshipType.supplier}",
             json=http_resp,
         )
 
@@ -332,7 +332,7 @@ class TestFetchCompaniesFromBusinessRelationship:
         )
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/supplier",
+            url=f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{BusinessRelationshipType.supplier}",
             json=http_resp,
         )
 

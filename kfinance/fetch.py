@@ -508,7 +508,7 @@ class KFinanceApiClient:
     def fetch_companies_from_business_relationship(
         self, company_id: int, relationship_type: BusinessRelationshipType
     ) -> RelationshipResponse | RelationshipResponseNoName:
-        """Fetches a dictionary of current and previous company IDs associated with a given company ID based on the specified relationship type.
+        """Fetches a dictionary of current and previous company IDs and names associated with a given company ID based on the specified relationship type.
 
         Example: fetch_companies_from_business_relationship(company_id=1234, relationship_type="distributor") returns a dictionary of company 1234's current and previous distributors.
 
