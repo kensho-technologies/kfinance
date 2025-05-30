@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from PIL.Image import open as image_open
 
-from kfinance.kfinance import Companies, Company, MergerOrAcquisition, Security, Ticker, TradingItem
+from kfinance.kfinance import Company, MergerOrAcquisition, Security, Ticker, TradingItem
 
 
 msft_company_id = "21835"
@@ -114,7 +114,15 @@ MOCK_COMPANY_DB = {
                 ]
             }
         },
-    }
+    },
+    31696: {"info": {"name": "MongoMusic, Inc."}},
+    21835: {"info": {"name": "Microsoft Corporation"}},
+    18805: {"info": {"name": "Angel Investors L.P."}},
+    20087: {"info": {"name": "Draper Richards, L.P."}},
+    22103: {"info": {"name": "BRV Partners, LLC"}},
+    23745: {"info": {"name": "Venture Frogs, LLC"}},
+    105902: {"info": {"name": "ARGUS Capital International Limited"}},
+    880300: {"info": {"name": "Sony Music Entertainment, Inc."}},
 }
 
 
@@ -180,6 +188,15 @@ MOCK_MERGERS_DB = {
         },
     }
 }
+
+
+def ordered(obj):
+    if isinstance(obj, dict):
+        return sorted((k, ordered(v)) for k, v in obj.items())
+    if isinstance(obj, list):
+        return sorted(ordered(x) for x in obj)
+    else:
+        return obj
 
 
 class MockKFinanceApiClient:
@@ -418,7 +435,21 @@ class TestCompany(TestCase):
     def test_mergers(self) -> None:
         expected_mergers = MOCK_COMPANY_DB[msft_company_id]["mergers"]
         mergers = self.msft_company.mergers_and_acquisitions
-        self.assertEqual(expected_mergers, mergers)
+        mergers_json = {
+            "target": [
+                {"transaction_id": merger.transaction_id, "merger_title": merger.merger_title}
+                for merger in mergers["target"]
+            ],
+            "buyer": [
+                {"transaction_id": merger.transaction_id, "merger_title": merger.merger_title}
+                for merger in mergers["buyer"]
+            ],
+            "seller": [
+                {"transaction_id": merger.transaction_id, "merger_title": merger.merger_title}
+                for merger in mergers["seller"]
+            ],
+        }
+        self.assertEqual(ordered(expected_mergers), ordered(mergers_json))
 
     def test_advisors(self) -> None:
         expected_advisors_json = MOCK_COMPANY_DB[msft_company_id]["advisors"][msft_buys_mongo][
@@ -728,5 +759,22 @@ class TestMerger(TestCase):
 
     def test_merger_info(self) -> None:
         expected_merger_info = MOCK_MERGERS_DB[msft_buys_mongo]
-        merger_info = self.merger.merger_info
-        self.assertEqual(expected_merger_info, merger_info)
+        merger_info = {
+            "timeline": self.merger.get_timeline,
+            "participants": {
+                "target": {
+                    "company_id": self.merger.get_participants["target"].company_id,
+                    "company_name": self.merger.get_participants["target"].name,
+                },
+                "buyers": [
+                    {"company_id": company.company_id, "company_name": company.name}
+                    for company in self.merger.get_participants["buyers"]
+                ],
+                "sellers": [
+                    {"company_id": company.company_id, "company_name": company.name}
+                    for company in self.merger.get_participants["sellers"]
+                ],
+            },
+            "consideration": self.merger.get_consideration,
+        }
+        self.assertEqual(ordered(expected_merger_info), ordered(merger_info))

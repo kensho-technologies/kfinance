@@ -1013,18 +1013,20 @@ class MergerOrAcquisition:
         return {
             "target": Company(
                 kfinance_api_client=self.kfinance_api_client,
-                company_id=self.merger_info["target"]["company_id"],
+                company_id=self.merger_info["participants"]["target"]["company_id"],
                 transaction_id=self.transaction_id,
             ),
             "buyers": Companies(
                 kfinance_api_client=self.kfinance_api_client,
-                company_ids=[company_id for company_id in self.merger_info["buyers"]["company_id"]],
+                company_ids=[
+                    company["company_id"] for company in self.merger_info["participants"]["buyers"]
+                ],
                 transaction_id=self.transaction_id,
             ),
             "sellers": Companies(
                 kfinance_api_client=self.kfinance_api_client,
                 company_ids=[
-                    company_id for company_id in self.merger_info["sellers"]["company_id"]
+                    company["company_id"] for company in self.merger_info["participants"]["sellers"]
                 ],
                 transaction_id=self.transaction_id,
             ),

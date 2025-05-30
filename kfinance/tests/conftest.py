@@ -29,4 +29,12 @@ def mock_client(requests_mock: Mocker) -> Client:
             "company_id": SPGI_COMPANY_ID,
         },
     )
+    requests_mock.get(
+        url="https://kfinance.kensho.com/api/v1/id/MSFT",
+        json={
+            "trading_item_id": 2630413,
+            "security_id": 2630412,
+            "company_id": 21835
+        },
+    )
     return client

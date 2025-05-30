@@ -59,12 +59,14 @@ class TestGetCompaniesAdvisingCompanyInTransactionFromIdentifier:
     def test_get_companies_advising_company_in_transaction_from_identifier(
         self, requests_mock: Mocker, mock_client: Client
     ):
-        expected_response = [
-            {
-                "advisor_company_id": 251994106,
-                "advisor_type_name": "Professional Mongo Enjoyer",
-            }
-        ]
+        expected_response = {
+            "advisors": [
+                {
+                    "advisor_company_id": 251994106,
+                    "advisor_type_name": "Professional Mongo Enjoyer",
+                }
+            ]
+        }
         transaction_id = 517414
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/merger/info/{transaction_id}/advisors/21835",
@@ -75,7 +77,7 @@ class TestGetCompaniesAdvisingCompanyInTransactionFromIdentifier:
             identifier="MSFT", transaction_id=transaction_id
         )
         response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
+        assert response == expected_response["advisors"]
 
 
 class TestGetMergerInfoFromTransactionID:
