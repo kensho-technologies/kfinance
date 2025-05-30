@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.2.5
+- Add parsing for relationship response with name
+
 ## v2.2.4
 - Add segments as llm tools
 

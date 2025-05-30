@@ -2,9 +2,17 @@ from unittest import TestCase
 from unittest.mock import MagicMock
 
 import pytest
+from requests_mock import Mocker
 
-from kfinance.constants import Periodicity, PeriodType
+from kfinance.constants import BusinessRelationshipType, Periodicity, PeriodType
 from kfinance.fetch import KFinanceApiClient
+from kfinance.kfinance import Client
+from kfinance.pydantic_models import (
+    CompanyIdAndName,
+    RelationshipResponse,
+    RelationshipResponseNoName,
+)
+from kfinance.tests.conftest import SPGI_COMPANY_ID
 
 
 def build_mock_api_client() -> KFinanceApiClient:
@@ -279,3 +287,56 @@ class TestMarketCap:
         expected_fetch_url = f"{client.url_base}users/permissions"
         client.fetch_permissions()
         client.fetch.assert_called_with(expected_fetch_url)
+
+
+class TestFetchCompaniesFromBusinessRelationship:
+    def test_old_response_format(self, requests_mock: Mocker, mock_client: Client) -> None:
+        """
+        GIVEN a business relationship request
+        WHEN the api returns a response in the old (no name) format
+        THEN the response can successfully be parsed.
+        """
+        http_resp = {"current": [883103], "previous": [472898, 8182358]}
+        expected_result = RelationshipResponseNoName(current=[883103], previous=[472898, 8182358])
+        requests_mock.get(
+            url=f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{BusinessRelationshipType.supplier}",
+            json=http_resp,
+        )
+
+        resp = mock_client.kfinance_api_client.fetch_companies_from_business_relationship(
+            company_id=SPGI_COMPANY_ID, relationship_type=BusinessRelationshipType.supplier
+        )
+        assert resp == expected_result
+
+    def test_new_response_format(self, requests_mock: Mocker, mock_client: Client) -> None:
+        """
+        GIVEN a business relationship request
+        WHEN the api returns a response in the new (with name) format
+        THEN the response can successfully be parsed.
+        """
+
+        http_resp = {
+            "current": [{"company_name": "foo", "company_id": 883103}],
+            "previous": [
+                {"company_name": "bar", "company_id": 472898},
+                {"company_name": "baz", "company_id": 8182358},
+            ],
+        }
+
+        expected_result = RelationshipResponse(
+            current=[CompanyIdAndName(company_name="foo", company_id=883103)],
+            previous=[
+                CompanyIdAndName(company_name="bar", company_id=472898),
+                CompanyIdAndName(company_name="baz", company_id=8182358),
+            ],
+        )
+
+        requests_mock.get(
+            url=f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{BusinessRelationshipType.supplier}",
+            json=http_resp,
+        )
+
+        resp = mock_client.kfinance_api_client.fetch_companies_from_business_relationship(
+            company_id=SPGI_COMPANY_ID, relationship_type=BusinessRelationshipType.supplier
+        )
+        assert resp == expected_result

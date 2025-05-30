@@ -9,11 +9,11 @@ import pandas as pd
 
 from .constants import LINE_ITEMS, BusinessRelationshipType, PeriodType, SegmentType
 from .fetch import KFinanceApiClient
+from .pydantic_models import RelationshipResponse
 
 
 if TYPE_CHECKING:
     from .kfinance import BusinessRelationships
-
 
 logger = logging.getLogger(__name__)
 
@@ -223,14 +223,32 @@ class CompanyFunctionsMetaClass:
         """
         from .kfinance import BusinessRelationships, Companies
 
-        companies = self.kfinance_api_client.fetch_companies_from_business_relationship(
-            self.company_id,
-            relationship_type,
+        relationship_resp = self.kfinance_api_client.fetch_companies_from_business_relationship(
+            company_id=self.company_id,
+            relationship_type=relationship_type,
         )
-        return BusinessRelationships(
-            Companies(self.kfinance_api_client, companies["current"]),
-            Companies(self.kfinance_api_client, companies["previous"]),
-        )
+        if isinstance(relationship_resp, RelationshipResponse):
+            return BusinessRelationships(
+                current=Companies(
+                    kfinance_api_client=self.kfinance_api_client,
+                    company_ids=[c.company_id for c in relationship_resp.current],
+                ),
+                previous=Companies(
+                    kfinance_api_client=self.kfinance_api_client,
+                    company_ids=[c.company_id for c in relationship_resp.previous],
+                ),
+            )
+        else:
+            return BusinessRelationships(
+                current=Companies(
+                    kfinance_api_client=self.kfinance_api_client,
+                    company_ids=relationship_resp.current,
+                ),
+                previous=Companies(
+                    kfinance_api_client=self.kfinance_api_client,
+                    company_ids=relationship_resp.previous,
+                ),
+            )
 
     def market_cap(
         self,
