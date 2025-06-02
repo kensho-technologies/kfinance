@@ -36,3 +36,7 @@ unit-test *args:
 # Don't merge changes to pyproject and docs/output into the remote repo!
 sphinx *args:
     PYTHONPATH="${PYTHONPATH:-}:." sphinx-build docs docs/output
+
+# Install all dependencies including dev dependencies
+install-deps:
+    pip install -e .[dev]
