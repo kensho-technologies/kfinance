@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timezone
 from functools import cached_property
@@ -7,7 +8,7 @@ from io import BytesIO
 import logging
 import re
 from sys import stdout
-from typing import TYPE_CHECKING, Any, Callable, Iterable, NamedTuple, Optional
+from typing import TYPE_CHECKING, Any, Callable, Iterable, NamedTuple, Optional, overload
 from urllib.parse import urljoin
 import webbrowser
 
@@ -197,6 +198,85 @@ class TradingItem:
         )
         image = image_open(BytesIO(content))
         return image
+
+
+class Transcript(Sequence[dict[str, str]]):
+    """Transcript class that represents earnings call transcript components"""
+
+    def __init__(self, transcript_components: list[dict[str, str]]):
+        """Initialize the Transcript object
+
+        :param transcript_components: List of transcript component dictionaries
+        :type transcript_components: list[dict[str, str]]
+        """
+        self._components = transcript_components
+
+    @overload
+    def __getitem__(self, index: int) -> dict[str, str]: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[dict[str, str]]: ...
+
+    def __getitem__(self, index: int | slice) -> dict[str, str] | list[dict[str, str]]:
+        return self._components[index]
+
+    def __len__(self) -> int:
+        return len(self._components)
+
+    @property
+    def raw(self) -> str:
+        """Get the raw transcript as a single string
+
+        :return: Raw transcript text with speaker names and double newlines between components
+        :rtype: str
+        """
+        raw_components = []
+        for component in self._components:
+            speaker = component["person_name"]
+            text = component["text"]
+            raw_components.append(f"{speaker}: {text}")
+        return "\n\n".join(raw_components)
+
+
+class Earnings:
+    """Earnings class that represents an earnings call event"""
+
+    def __init__(
+        self,
+        kfinance_api_client: "KFinanceApiClient",
+        name: str,
+        datetime: datetime,
+        key_dev_id: int,
+    ):
+        """Initialize the Earnings object
+
+        :param kfinance_api_client: The KFinanceApiClient used to fetch data
+        :type kfinance_api_client: KFinanceApiClient
+        :param name: The earnings call name
+        :type name: str
+        :param datetime: The earnings call datetime
+        :type datetime: datetime
+        :param key_dev_id: The key dev ID for the earnings call
+        :type key_dev_id: int
+        """
+        self.kfinance_api_client = kfinance_api_client
+        self.name = name
+        self.datetime = datetime
+        self.key_dev_id = key_dev_id
+
+    def __str__(self) -> str:
+        """String representation for the earnings object"""
+        return f"{type(self).__module__}.{type(self).__qualname__} of {self.key_dev_id}"
+
+    @cached_property
+    def transcript(self) -> Transcript:
+        """Get the transcript for this earnings call
+
+        :return: The transcript object containing all components
+        :rtype: Transcript
+        """
+        transcript_data = self.kfinance_api_client.fetch_transcript(self.key_dev_id)
+        return Transcript(transcript_data["transcript"])
 
 
 class Company(CompanyFunctionsMetaClass):
@@ -397,6 +477,120 @@ class Company(CompanyFunctionsMetaClass):
                 "earnings"
             ]
         ]
+
+    def earnings(
+        self, start_date: Optional[str] = None, end_date: Optional[str] = None
+    ) -> list[Earnings]:
+        """Get earnings calls for the company within date range sorted in descending order by date
+
+        :param start_date: Start date filter in format "YYYY-MM-DD", defaults to None
+        :type start_date: str, optional
+        :param end_date: End date filter in format "YYYY-MM-DD", defaults to None
+        :type end_date: str, optional
+        :return: List of earnings objects
+        :rtype: list[Earnings]
+        """
+        earnings_call_data = self.kfinance_api_client.fetch_earnings(self.company_id)
+        earnings_calls = []
+
+        for earnings_call in earnings_call_data["earnings"]:
+            earnings_call_datetime = datetime.fromisoformat(earnings_call["datetime"]).replace(
+                tzinfo=timezone.utc
+            )
+
+            # Apply date filtering if provided
+            if start_date:
+                start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
+                if earnings_call_datetime.date() < start_dt:
+                    continue
+
+            if end_date:
+                end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
+                if earnings_call_datetime.date() > end_dt:
+                    continue
+
+            earnings_calls.append(
+                Earnings(
+                    kfinance_api_client=self.kfinance_api_client,
+                    name=earnings_call["name"],
+                    datetime=earnings_call_datetime,
+                    key_dev_id=earnings_call["key_dev_id"],
+                )
+            )
+
+        return earnings_calls
+
+    @cached_property
+    def last_earnings(self) -> Optional[Earnings]:
+        """Get the most recent past earnings call
+
+        :return: The most recent earnings call or None if no data available
+        :rtype: Optional[Earnings]
+        """
+        earnings_call_data = self.kfinance_api_client.fetch_earnings(self.company_id)
+        if not earnings_call_data["earnings"]:
+            return None
+
+        now = datetime.now(timezone.utc)
+        past_earnings_calls = []
+
+        for earnings_call in earnings_call_data["earnings"]:
+            earning_call_datetime = datetime.fromisoformat(earnings_call["datetime"]).replace(
+                tzinfo=timezone.utc
+            )
+            if earning_call_datetime <= now:
+                past_earnings_calls.append(earnings_call)
+
+        if not past_earnings_calls:
+            return None
+
+        # Sort by datetime descending and get the most recent
+        past_earnings_calls.sort(key=lambda x: x["datetime"], reverse=True)
+        latest = past_earnings_calls[0]
+
+        return Earnings(
+            kfinance_api_client=self.kfinance_api_client,
+            name=latest["name"],
+            datetime=datetime.fromisoformat(latest["datetime"]).replace(tzinfo=timezone.utc),
+            key_dev_id=latest["key_dev_id"],
+        )
+
+    @cached_property
+    def next_earnings(self) -> Optional[Earnings]:
+        """Get the next upcoming earnings call
+
+        :return: The next earnings call or None if no data available
+        :rtype: Optional[Earnings]
+        """
+        earnings_call_data = self.kfinance_api_client.fetch_earnings(self.company_id)
+        if not earnings_call_data["earnings"]:
+            return None
+
+        now = datetime.now(timezone.utc)
+        future_earnings_calls = []
+
+        for earnings_call in earnings_call_data["earnings"]:
+            earning_call_datetime = datetime.fromisoformat(earnings_call["datetime"]).replace(
+                tzinfo=timezone.utc
+            )
+            if earning_call_datetime > now:
+                future_earnings_calls.append(earnings_call)
+
+        if not future_earnings_calls:
+            return None
+
+        # Sort by datetime ascending and get the earliest
+        future_earnings_calls.sort(key=lambda x: x["datetime"])
+        next_earnings_call = future_earnings_calls[0]
+
+        return Earnings(
+            kfinance_api_client=self.kfinance_api_client,
+            name=next_earnings_call["name"],
+            datetime=datetime.fromisoformat(next_earnings_call["datetime"]).replace(
+                tzinfo=timezone.utc
+            ),
+            key_dev_id=next_earnings_call["key_dev_id"],
+        )
 
 
 class Security:
