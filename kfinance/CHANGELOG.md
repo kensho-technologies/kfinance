@@ -1,7 +1,10 @@
 # Changelog
 
-## v2.2.5
+## v2.2.6
  - Add mergers & acquisitions.
+
+## v2.2.5
+- Add parsing for relationship response with name
 
 ## v2.2.4
 - Add segments as llm tools
