@@ -493,21 +493,24 @@ class Company(CompanyFunctionsMetaClass):
         earnings_call_data = self.kfinance_api_client.fetch_earnings(self.company_id)
         earnings_calls = []
 
+        parsed_start_date = (
+            datetime.strptime(start_date, "%Y-%m-%d").date() if start_date is not None else None
+        )
+        parsed_end_date = (
+            datetime.strptime(end_date, "%Y-%m-%d").date() if end_date is not None else None
+        )
+
         for earnings_call in earnings_call_data["earnings"]:
             earnings_call_datetime = datetime.fromisoformat(earnings_call["datetime"]).replace(
                 tzinfo=timezone.utc
             )
 
             # Apply date filtering if provided
-            if start_date:
-                start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
-                if earnings_call_datetime.date() < start_dt:
-                    continue
+            if parsed_start_date is not None and earnings_call_datetime.date() < parsed_start_date:
+                continue
 
-            if end_date:
-                end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
-                if earnings_call_datetime.date() > end_dt:
-                    continue
+            if parsed_end_date is not None and earnings_call_datetime.date() > parsed_end_date:
+                continue
 
             earnings_calls.append(
                 Earnings(
