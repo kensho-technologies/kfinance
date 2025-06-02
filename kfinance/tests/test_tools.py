@@ -7,7 +7,7 @@ import time_machine
 from kfinance.constants import BusinessRelationshipType, Capitalization, SegmentType, StatementType
 from kfinance.kfinance import Client
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
-from kfinance.tests.test_objects import MOCK_COMPANY_DB, MOCK_MERGERS_DB
+from kfinance.tests.test_objects import MOCK_COMPANY_DB, MOCK_MERGERS_DB, ordered
 from kfinance.tool_calling import (
     GetEarningsCallDatetimesFromIdentifier,
     GetFinancialLineItemFromIdentifier,
@@ -88,15 +88,40 @@ class TestGetMergerInfoFromTransactionID:
             url=f"https://kfinance.kensho.com/api/v1/merger/info/{transaction_id}",
             json=expected_response,
         )
+        requests_mock.get(
+            url="https://kfinance.kensho.com/api/v1/info/31696", json=MOCK_COMPANY_DB[31696]["info"]
+        )
+        requests_mock.get(
+            url="https://kfinance.kensho.com/api/v1/info/21835", json=MOCK_COMPANY_DB[21835]["info"]
+        )
+        requests_mock.get(
+            url="https://kfinance.kensho.com/api/v1/info/18805", json=MOCK_COMPANY_DB[18805]["info"]
+        )
+        requests_mock.get(
+            url="https://kfinance.kensho.com/api/v1/info/20087", json=MOCK_COMPANY_DB[20087]["info"]
+        )
+        requests_mock.get(
+            url="https://kfinance.kensho.com/api/v1/info/22103", json=MOCK_COMPANY_DB[22103]["info"]
+        )
+        requests_mock.get(
+            url="https://kfinance.kensho.com/api/v1/info/23745", json=MOCK_COMPANY_DB[23745]["info"]
+        )
+        requests_mock.get(
+            url="https://kfinance.kensho.com/api/v1/info/105902", json=MOCK_COMPANY_DB[105902]["info"]
+        )
+        requests_mock.get(
+            url="https://kfinance.kensho.com/api/v1/info/880300", json=MOCK_COMPANY_DB[880300]["info"]
+        )
+
         tool = GetMergerInfoFromTransactionID(kfinance_client=mock_client)
         args = GetMergerInfoFromTransactionIDArgs(transaction_id=transaction_id)
         response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
+        assert ordered(response) == ordered(expected_response)
 
 
 class TestGetMergersFromIdentifier:
     def test_get_mergers_from_identifier(self, requests_mock: Mocker, mock_client: Client):
-        expected_response = MOCK_COMPANY_DB["21835"]
+        expected_response = MOCK_COMPANY_DB["21835"]["mergers"]
         company_id = 21835
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/mergers/{company_id}", json=expected_response
@@ -104,7 +129,7 @@ class TestGetMergersFromIdentifier:
         tool = GetMergersFromIdentifier(kfinance_client=mock_client)
         args = ToolArgsWithIdentifier(identifier="MSFT")
         response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
+        assert ordered(response) == ordered(expected_response)
 
 
 class TestGetBusinessRelationshipFromIdentifier:

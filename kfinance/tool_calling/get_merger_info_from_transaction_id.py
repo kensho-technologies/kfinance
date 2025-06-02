@@ -28,11 +28,23 @@ class GetMergerInfoFromTransactionID(KfinanceTool):
         merger_consideration = merger_or_acquisition.get_consideration
 
         return {
-            "timeline": merger_timeline.to_dict(orient="records"),
+            "timeline": [
+                {"status": timeline["status"], "date": timeline["date"].strftime("%Y-%m-%d")}
+                for timeline in merger_timeline.to_dict(orient="records")
+            ],
             "participants": {
-                "target": merger_participants["target"].company_id,
-                "buyers": [buyer.company_id for buyer in merger_participants["buyers"]],
-                "sellers": [seller.company_id for seller in merger_participants["sellers"]],
+                "target": {
+                    "company_id": merger_participants["target"].company_id,
+                    "company_name": merger_participants["target"].name,
+                },
+                "buyers": [
+                    {"company_id": buyer.company_id, "company_name": buyer.name}
+                    for buyer in merger_participants["buyers"]
+                ],
+                "sellers": [
+                    {"company_id": seller.company_id, "company_name": seller.name}
+                    for seller in merger_participants["sellers"]
+                ],
             },
             "consideration": {
                 "currency_name": merger_consideration["currency_name"],
