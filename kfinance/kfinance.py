@@ -225,7 +225,7 @@ class Company(CompanyFunctionsMetaClass):
         :type kfinance_api_client: KFinanceApiClient
         :param company_id: The S&P Global CIQ Company Id
         :type company_id: int
-        :param transaction_id: The S&P Global CIQ Transaction Id (if this company was party to a particular transaction
+        :param transaction_id: The S&P Global CIQ Transaction Id (if this company was party to a particular transaction)
         :type transaction_id: int
         :param advisor_type_name: If the company advised another company during a transaction, the type of advisor
         :type advisor_type_name: str
