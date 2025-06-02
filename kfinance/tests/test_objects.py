@@ -763,7 +763,7 @@ class TestMerger(TestCase):
         merger_info = {
             "timeline": [
                 {"status": timeline["status"], "date": timeline["date"].strftime("%Y-%m-%d")}
-                for index, timeline in self.merger.get_timeline.iterrows()
+                for timeline in self.merger.get_timeline.to_dict(orient="records")
             ],
             "participants": {
                 "target": {
@@ -802,7 +802,7 @@ class TestMerger(TestCase):
                             "current_calculated_gross_value_of_consideration"
                         ],
                     }
-                    for index, detail in self.merger.get_consideration["details"].iterrows()
+                    for detail in self.merger.get_consideration["details"].to_dict(orient="records")
                 ],
             },
         }
