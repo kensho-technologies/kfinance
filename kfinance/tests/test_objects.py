@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime, timezone
 from io import BytesIO
 import re
@@ -295,13 +296,13 @@ class MockKFinanceApiClient:
         return MOCK_COMPANY_DB[company_id]
 
     def fetch_mergers_for_company(self, company_id):
-        return MOCK_COMPANY_DB[company_id]["mergers"]
+        return copy.deepcopy(MOCK_COMPANY_DB[company_id]["mergers"])
 
     def fetch_merger_info(self, transaction_id):
-        return MOCK_MERGERS_DB[transaction_id]
+        return copy.deepcopy(MOCK_MERGERS_DB[transaction_id])
 
     def fetch_advisors_for_company_in_merger(self, transaction_id, advised_company_id):
-        return MOCK_COMPANY_DB[advised_company_id]["advisors"][transaction_id]
+        return copy.deepcopy(MOCK_COMPANY_DB[advised_company_id]["advisors"][transaction_id])
 
 
 class TestTradingItem(TestCase):
@@ -760,7 +761,12 @@ class TestMerger(TestCase):
     def test_merger_info(self) -> None:
         expected_merger_info = MOCK_MERGERS_DB[msft_buys_mongo]
         merger_info = {
-            "timeline": self.merger.get_timeline,
+            "timeline": [
+                {
+                "status": timeline["status"],
+                "date": timeline["date"].strftime("%Y-%m-%d")
+                } for index, timeline in self.merger.get_timeline.iterrows()
+            ],
             "participants": {
                 "target": {
                     "company_id": self.merger.get_participants["target"].company_id,
@@ -775,6 +781,20 @@ class TestMerger(TestCase):
                     for company in self.merger.get_participants["sellers"]
                 ],
             },
-            "consideration": self.merger.get_consideration,
+            "consideration": {
+                "currency_name": self.merger.get_consideration["currency_name"],
+                "current_calculated_gross_total_transaction_value": self.merger.get_consideration["current_calculated_gross_total_transaction_value"],
+                "current_calculated_implied_equity_value": self.merger.get_consideration["current_calculated_implied_equity_value"],
+                "current_calculated_implied_enterprise_value": self.merger.get_consideration["current_calculated_implied_enterprise_value"],
+                "details": [
+                    {
+                        "scenario": detail["scenario"],
+                        "subtype": detail["subtype"],
+                        "cash_or_cash_equivalent_per_target_share_unit": detail["cash_or_cash_equivalent_per_target_share_unit"],
+                        "number_of_target_shares_sought": detail["number_of_target_shares_sought"],
+                        "current_calculated_gross_value_of_consideration": detail["current_calculated_gross_value_of_consideration"],
+                    } for index, detail in self.merger.get_consideration["details"].iterrows()
+                ],
+            }
         }
         self.assertEqual(ordered(expected_merger_info), ordered(merger_info))
