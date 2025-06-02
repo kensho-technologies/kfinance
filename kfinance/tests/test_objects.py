@@ -762,10 +762,8 @@ class TestMerger(TestCase):
         expected_merger_info = MOCK_MERGERS_DB[msft_buys_mongo]
         merger_info = {
             "timeline": [
-                {
-                "status": timeline["status"],
-                "date": timeline["date"].strftime("%Y-%m-%d")
-                } for index, timeline in self.merger.get_timeline.iterrows()
+                {"status": timeline["status"], "date": timeline["date"].strftime("%Y-%m-%d")}
+                for index, timeline in self.merger.get_timeline.iterrows()
             ],
             "participants": {
                 "target": {
@@ -783,18 +781,29 @@ class TestMerger(TestCase):
             },
             "consideration": {
                 "currency_name": self.merger.get_consideration["currency_name"],
-                "current_calculated_gross_total_transaction_value": self.merger.get_consideration["current_calculated_gross_total_transaction_value"],
-                "current_calculated_implied_equity_value": self.merger.get_consideration["current_calculated_implied_equity_value"],
-                "current_calculated_implied_enterprise_value": self.merger.get_consideration["current_calculated_implied_enterprise_value"],
+                "current_calculated_gross_total_transaction_value": self.merger.get_consideration[
+                    "current_calculated_gross_total_transaction_value"
+                ],
+                "current_calculated_implied_equity_value": self.merger.get_consideration[
+                    "current_calculated_implied_equity_value"
+                ],
+                "current_calculated_implied_enterprise_value": self.merger.get_consideration[
+                    "current_calculated_implied_enterprise_value"
+                ],
                 "details": [
                     {
                         "scenario": detail["scenario"],
                         "subtype": detail["subtype"],
-                        "cash_or_cash_equivalent_per_target_share_unit": detail["cash_or_cash_equivalent_per_target_share_unit"],
+                        "cash_or_cash_equivalent_per_target_share_unit": detail[
+                            "cash_or_cash_equivalent_per_target_share_unit"
+                        ],
                         "number_of_target_shares_sought": detail["number_of_target_shares_sought"],
-                        "current_calculated_gross_value_of_consideration": detail["current_calculated_gross_value_of_consideration"],
-                    } for index, detail in self.merger.get_consideration["details"].iterrows()
+                        "current_calculated_gross_value_of_consideration": detail[
+                            "current_calculated_gross_value_of_consideration"
+                        ],
+                    }
+                    for index, detail in self.merger.get_consideration["details"].iterrows()
                 ],
-            }
+            },
         }
         self.assertEqual(ordered(expected_merger_info), ordered(merger_info))

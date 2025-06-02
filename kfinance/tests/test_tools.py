@@ -107,10 +107,12 @@ class TestGetMergerInfoFromTransactionID:
             url="https://kfinance.kensho.com/api/v1/info/23745", json=MOCK_COMPANY_DB[23745]["info"]
         )
         requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/info/105902", json=MOCK_COMPANY_DB[105902]["info"]
+            url="https://kfinance.kensho.com/api/v1/info/105902",
+            json=MOCK_COMPANY_DB[105902]["info"],
         )
         requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/info/880300", json=MOCK_COMPANY_DB[880300]["info"]
+            url="https://kfinance.kensho.com/api/v1/info/880300",
+            json=MOCK_COMPANY_DB[880300]["info"],
         )
 
         tool = GetMergerInfoFromTransactionID(kfinance_client=mock_client)
