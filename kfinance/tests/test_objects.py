@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from PIL.Image import open as image_open
 
-from kfinance.kfinance import Company, MergerOrAcquisition, Security, Ticker, TradingItem
+from kfinance.kfinance import AdvisedCompany, MergerOrAcquisition, Security, Ticker, TradingItem
 
 
 msft_company_id = "21835"
@@ -362,7 +362,7 @@ class TestCompany(TestCase):
     def setUp(self):
         """setup tests"""
         self.kfinance_api_client = MockKFinanceApiClient()
-        self.msft_company = Company(
+        self.msft_company = AdvisedCompany(
             self.kfinance_api_client, company_id=msft_company_id, transaction_id=msft_buys_mongo
         )
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.2.6
+## v2.4
  - Add mergers & acquisitions.
 
 ## v2.2.5
