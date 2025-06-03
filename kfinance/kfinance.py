@@ -1536,6 +1536,17 @@ class Client:
             kfinance_api_client=self.kfinance_api_client, trading_item_id=trading_item_id
         )
 
+    def transcript(self, key_dev_id: int) -> Transcript:
+        """Generate Transcript object from key_dev_id
+
+        :param key_dev_id: The key dev ID for the earnings call
+        :type key_dev_id: int
+        :return: The transcript specified by the key dev id
+        :rtype: Transcript
+        """
+        transcript_data = self.kfinance_api_client.fetch_transcript(key_dev_id)
+        return Transcript(transcript_data["transcript"])
+
     @staticmethod
     def get_latest(use_local_timezone: bool = True) -> LatestPeriods:
         """Get the latest annual reporting year, latest quarterly reporting quarter and year, and current date.
