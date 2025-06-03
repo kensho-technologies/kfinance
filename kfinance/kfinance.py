@@ -269,7 +269,7 @@ class EarningsCall:
         """String representation for the earnings call object"""
         return f"{type(self).__module__}.{type(self).__qualname__} of {self.key_dev_id}"
 
-    @cached_property
+    @property
     def transcript(self) -> Transcript:
         """Get the transcript for this earnings call
 
