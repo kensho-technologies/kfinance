@@ -4,6 +4,8 @@ import re
 from typing import Optional
 from unittest import TestCase
 
+import time_machine
+
 import numpy as np
 import pandas as pd
 from PIL.Image import open as image_open
@@ -772,24 +774,14 @@ class TestCompanyEarningsCall(TestCase):
         self.assertEqual(len(earnings_call_list), 1)
         self.assertEqual(earnings_call_list[0].key_dev_id, 1916266381)
 
+    @time_machine.travel(datetime(2025, 2, 1, 12, tzinfo=timezone.utc))
     def test_company_last_earnings_call(self):
         """test company last_earnings_call property"""
-        # Mock the current time to be after all earnings calls
-        import unittest.mock
+        last_earnings_call = self.msft_company.last_earnings_call
+        self.assertEqual(last_earnings_call.key_dev_id, 1916266382)
 
-        with unittest.mock.patch("kfinance.kfinance.datetime") as mock_datetime:
-            mock_datetime.now.return_value = datetime(2025, 2, 1, tzinfo=timezone.utc)
-            mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
-            last_earnings_call = self.msft_company.last_earnings_call
-            self.assertEqual(last_earnings_call.key_dev_id, 1916266382)
-
+    @time_machine.travel(datetime(2024, 6, 1, 12, tzinfo=timezone.utc))
     def test_company_next_earnings_call(self):
         """test company next_earnings_call property"""
-        # Mock the current time to be before all earnings calls
-        import unittest.mock
-
-        with unittest.mock.patch("kfinance.kfinance.datetime") as mock_datetime:
-            mock_datetime.now.return_value = datetime(2024, 6, 1, tzinfo=timezone.utc)
-            mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
-            next_earnings_call = self.msft_company.next_earnings_call
-            self.assertEqual(next_earnings_call.key_dev_id, 1916266380)
+        next_earnings_call = self.msft_company.next_earnings_call
+        self.assertEqual(next_earnings_call.key_dev_id, 1916266380)

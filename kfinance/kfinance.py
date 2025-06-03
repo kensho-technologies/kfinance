@@ -530,9 +530,8 @@ class Company(CompanyFunctionsMetaClass):
             start_date_utc = None
 
         if end_date is not None:
-            end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(
-                tzinfo=timezone.utc
-            )
+            end_date_datetime = datetime.combine(end_date, datetime.max.time())
+            end_date_utc = end_date_datetime if end_date_datetime.tzinfo is not None else end_date_datetime.replace(tzinfo=timezone.utc)
         else:
             end_date_utc = None
 
