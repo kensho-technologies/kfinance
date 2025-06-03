@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class Component(BaseModel):
+class TranscriptComponent(BaseModel):
     """A transcript component with person name, text, and component type."""
 
     person_name: str

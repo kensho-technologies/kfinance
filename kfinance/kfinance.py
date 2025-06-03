@@ -40,7 +40,7 @@ from .meta_classes import (
     DelegatedCompanyFunctionsMetaClass,
 )
 from .prompt import PROMPT
-from .pydantic_models import Component
+from .pydantic_models import TranscriptComponent
 from .server_thread import ServerThread
 
 
@@ -201,7 +201,7 @@ class TradingItem:
         return image
 
 
-class Transcript(Sequence[Component]):
+class Transcript(Sequence[TranscriptComponent]):
     """Transcript class that represents earnings call transcript components"""
 
     def __init__(self, transcript_components: list[dict[str, str]]):
@@ -210,15 +210,15 @@ class Transcript(Sequence[Component]):
         :param transcript_components: List of transcript component dictionaries
         :type transcript_components: list[dict[str, str]]
         """
-        self._components = [Component(**component) for component in transcript_components]
+        self._components = [TranscriptComponent(**component) for component in transcript_components]
 
     @overload
-    def __getitem__(self, index: int) -> Component: ...
+    def __getitem__(self, index: int) -> TranscriptComponent: ...
 
     @overload
-    def __getitem__(self, index: slice) -> list[Component]: ...
+    def __getitem__(self, index: slice) -> list[TranscriptComponent]: ...
 
-    def __getitem__(self, index: int | slice) -> Component | list[Component]:
+    def __getitem__(self, index: int | slice) -> TranscriptComponent | list[TranscriptComponent]:
         return self._components[index]
 
     def __len__(self) -> int:
@@ -300,7 +300,7 @@ class Company(CompanyFunctionsMetaClass):
         super().__init__()
         self.kfinance_api_client = kfinance_api_client
         self.company_id = company_id
-        self._earnings_calls: list[EarningsCall] | None = None
+        self._all_earnings_calls: list[EarningsCall] | None = None
 
     def __str__(self) -> str:
         """String representation for the company object"""
@@ -480,20 +480,21 @@ class Company(CompanyFunctionsMetaClass):
             ]
         ]
 
-    def _load_earnings_calls(self) -> None:
-        """Load and cache all earnings calls for this company"""
-        if self._earnings_calls is not None:
-            return
+    @property
+    def all_earnings_calls(self) -> list[EarningsCall]:
+        """Retrieve and cache all earnings calls for this company"""
+        if self._all_earnings_calls is not None:
+            return self._all_earnings_calls
 
         earnings_call_data = self.kfinance_api_client.fetch_earnings_calls(self.company_id)
-        self._earnings_calls = []
+        self._all_earnings_calls = []
 
         for earnings_call in earnings_call_data["earnings"]:
             earnings_call_datetime = datetime.fromisoformat(earnings_call["datetime"]).replace(
                 tzinfo=timezone.utc
             )
 
-            self._earnings_calls.append(
+            self._all_earnings_calls.append(
                 EarningsCall(
                     kfinance_api_client=self.kfinance_api_client,
                     name=earnings_call["name"],
@@ -501,6 +502,8 @@ class Company(CompanyFunctionsMetaClass):
                     key_dev_id=earnings_call["key_dev_id"],
                 )
             )
+
+        return self._all_earnings_calls
 
     def earnings_calls(
         self, start_date: date | None = None, end_date: date | None = None
@@ -514,34 +517,28 @@ class Company(CompanyFunctionsMetaClass):
         :return: List of earnings objects
         :rtype: list[EarningsCall]
         """
-        self._load_earnings_calls()
-
-        if not self._earnings_calls:
+        if not self.all_earnings_calls:
             return []
 
         if start_date is not None:
-            start_date_datetime = datetime.combine(start_date, datetime.min.time())
-            start_date_utc = (
-                start_date_datetime
-                if start_date_datetime.tzinfo is not None
-                else start_date_datetime.replace(tzinfo=timezone.utc)
+            start_date_utc = datetime.combine(start_date, datetime.min.time()).replace(
+                tzinfo=timezone.utc
             )
+
         else:
             start_date_utc = None
 
         if end_date is not None:
-            end_date_datetime = datetime.combine(end_date, datetime.max.time())
-            end_date_utc = (
-                end_date_datetime
-                if end_date_datetime.tzinfo is not None
-                else end_date_datetime.replace(tzinfo=timezone.utc)
+            end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(
+                tzinfo=timezone.utc
             )
+
         else:
             end_date_utc = None
 
         filtered_earnings_calls = []
 
-        for earnings_call in self._earnings_calls:
+        for earnings_call in self.all_earnings_calls:
             # Apply date filtering if provided
             if start_date_utc is not None and earnings_call.datetime < start_date_utc:
                 continue
@@ -560,13 +557,12 @@ class Company(CompanyFunctionsMetaClass):
         :return: The most recent earnings call or None if no data available
         :rtype: EarningsCall | None
         """
-        self._load_earnings_calls()
 
-        if not self._earnings_calls:
+        if not self.all_earnings_calls:
             return None
 
         now = datetime.now(timezone.utc)
-        past_earnings_calls = [call for call in self._earnings_calls if call.datetime <= now]
+        past_earnings_calls = [call for call in self.all_earnings_calls if call.datetime <= now]
 
         if not past_earnings_calls:
             return None
@@ -581,13 +577,11 @@ class Company(CompanyFunctionsMetaClass):
         :return: The next earnings call or None if no data available
         :rtype: EarningsCall | None
         """
-        self._load_earnings_calls()
-
-        if not self._earnings_calls:
+        if not self.all_earnings_calls:
             return None
 
         now = datetime.now(timezone.utc)
-        future_earnings_calls = [call for call in self._earnings_calls if call.datetime > now]
+        future_earnings_calls = [call for call in self.all_earnings_calls if call.datetime > now]
 
         if not future_earnings_calls:
             return None
