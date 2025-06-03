@@ -14,7 +14,7 @@ class GetTranscriptArgs(BaseModel):
 
 class GetTranscript(KfinanceTool):
     name: str = "get_transcript"
-    description: str = "Get the transcript for an earnings call by key dev ID."
+    description: str = "Get the raw transcript text for an earnings call by key dev ID."
     args_schema: Type[BaseModel] = GetTranscriptArgs
     required_permission: Permission | None = Permission.EarningsPermission
 

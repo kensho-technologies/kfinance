@@ -9,7 +9,7 @@ from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdenti
 
 class GetEarningsCalls(KfinanceTool):
     name: str = "get_earnings_calls"
-    description: str = "Get all earnings calls for a given identifier."
+    description: str = "Get all earnings calls for a given identifier. Returns a list of dictionaries, each with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes."
     args_schema: Type[BaseModel] = ToolArgsWithIdentifier
     required_permission: Permission | None = Permission.EarningsPermission
 
