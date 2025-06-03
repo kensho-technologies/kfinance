@@ -138,18 +138,6 @@ class TestFetchItem(TestCase):
         self.kfinance_api_client.fetch_earnings_dates(company_id=company_id)
         self.kfinance_api_client.fetch.assert_called_once_with(expected_fetch_url)
 
-    def test_fetch_earnings(self) -> None:
-        company_id = 21719
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}earnings/{company_id}"
-        self.kfinance_api_client.fetch_earnings(company_id=company_id)
-        self.kfinance_api_client.fetch.assert_called_once_with(expected_fetch_url)
-
-    def test_fetch_transcript(self) -> None:
-        key_dev_id = 12345
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}transcript/{key_dev_id}"
-        self.kfinance_api_client.fetch_transcript(key_dev_id=key_dev_id)
-        self.kfinance_api_client.fetch.assert_called_once_with(expected_fetch_url)
-
     def test_fetch_ticker_geography_groups(self) -> None:
         country_iso_code = "USA"
         expected_fetch_url = (

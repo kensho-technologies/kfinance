@@ -1,27 +1,22 @@
 from datetime import date, datetime
 
 from langchain_core.utils.function_calling import convert_to_openai_tool
-from pytest import raises
 from requests_mock import Mocker
 import time_machine
 
 from kfinance.constants import BusinessRelationshipType, Capitalization, SegmentType, StatementType
-from kfinance.kfinance import Client, NoEarningsCallDataError
+from kfinance.kfinance import Client
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
 from kfinance.tool_calling import (
     GetEarningsCallDatetimesFromIdentifier,
-    GetEarningsCalls,
     GetFinancialLineItemFromIdentifier,
     GetFinancialStatementFromIdentifier,
     GetHistoryMetadataFromIdentifier,
     GetInfoFromIdentifier,
     GetIsinFromTicker,
     GetLatest,
-    GetLatestEarningsCall,
-    GetNextEarningsCall,
     GetNQuartersAgo,
     GetPricesFromIdentifier,
-    GetTranscript,
     ResolveIdentifier,
 )
 from kfinance.tool_calling.get_business_relationship_from_identifier import (
@@ -47,7 +42,6 @@ from kfinance.tool_calling.get_segments_from_identifier import (
     GetSegmentsFromIdentifier,
     GetSegmentsFromIdentifierArgs,
 )
-from kfinance.tool_calling.get_transcript import GetTranscriptArgs
 from kfinance.tool_calling.shared_models import ToolArgsWithIdentifier
 
 
@@ -428,213 +422,3 @@ class TestResolveIdentifier:
             "security_id": SPGI_SECURITY_ID,
             "trading_item_id": SPGI_TRADING_ITEM_ID,
         }
-
-
-class TestGetLatestEarnings:
-    def test_get_latest_earnings(self, requests_mock: Mocker, mock_client: Client):
-        """
-        GIVEN the GetLatestEarnings tool
-        WHEN we request the latest earnings for SPGI
-        THEN we get back the latest SPGI earnings
-        """
-        earnings_data = {
-            "earnings": [
-                {
-                    "name": "SPGI Q4 2024 Earnings Call",
-                    "datetime": "2025-02-11T13:30:00",
-                    "key_dev_id": 12345,
-                },
-                {
-                    "name": "SPGI Q3 2024 Earnings Call",
-                    "datetime": "2024-10-30T12:30:00",
-                    "key_dev_id": 12344,
-                },
-            ]
-        }
-
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_data,
-        )
-
-        expected_response = {
-            "name": "SPGI Q4 2024 Earnings Call",
-            "key_dev_id": 12345,
-            "datetime": "2025-02-11T13:30:00+00:00",
-        }
-
-        tool = GetLatestEarnings(kfinance_client=mock_client)
-        response = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
-        assert response == expected_response
-
-    def test_get_latest_earnings_no_data(self, requests_mock: Mocker, mock_client: Client):
-        """
-        GIVEN the GetLatestEarnings tool
-        WHEN we request the latest earnings for a company with no data
-        THEN we get a NoEarningsDataError exception
-        """
-        earnings_data = {"earnings": []}
-
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_data,
-        )
-
-        tool = GetLatestEarnings(kfinance_client=mock_client)
-        with raises(NoEarningsDataError, match="Latest earnings for SPGI not found"):
-            tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
-
-
-class TestGetNextEarnings:
-    def test_get_next_earnings_(self, requests_mock: Mocker, mock_client: Client):
-        """
-        GIVEN the GetNextEarnings tool
-        WHEN we request the next earnings for SPGI
-        THEN we get back the next SPGI earnings
-        """
-        earnings_data = {
-            "earnings": [
-                {
-                    "name": "SPGI Q1 2025 Earnings Call",
-                    "datetime": "2025-04-29T12:30:00",
-                    "key_dev_id": 12346,
-                },
-                {
-                    "name": "SPGI Q4 2024 Earnings Call",
-                    "datetime": "2025-02-11T13:30:00",
-                    "key_dev_id": 12345,
-                },
-            ]
-        }
-
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_data,
-        )
-
-        expected_response = {
-            "name": "SPGI Q1 2025 Earnings Call",
-            "key_dev_id": 12346,
-            "datetime": "2025-04-29T12:30:00+00:00",
-        }
-
-        with time_machine.travel("2025-03-01T00:00:00+00:00"):
-            tool = GetNextEarnings(kfinance_client=mock_client)
-            response = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
-            assert response == expected_response
-
-    def test_get_next_earnings_no_data(self, requests_mock: Mocker, mock_client: Client):
-        """
-        GIVEN the GetNextEarningsCall tool
-        WHEN we request the next earnings call for a company with no data
-        THEN we get a NoEarningsCallDataError exception
-        """
-        earnings_data = {"earnings": []}
-
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_data,
-        )
-
-        with time_machine.travel("2025-03-01T00:00:00+00:00"):
-            tool = GetNextEarnings(kfinance_client=mock_client)
-            with raises(NoEarningsDataError, match="Next earnings call for SPGI not found"):
-                tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
-
-
-class TestGetEarnings:
-    def test_get_earnings(self, requests_mock: Mocker, mock_client: Client):
-        """
-        GIVEN the GetEarnings tool
-        WHEN we request all earnings for SPGI
-        THEN we get back all SPGI earnings
-        """
-        earnings_data = {
-            "earnings": [
-                {
-                    "name": "SPGI Q1 2025 Earnings Call",
-                    "datetime": "2025-04-29T12:30:00",
-                    "key_dev_id": 12346,
-                },
-                {
-                    "name": "SPGI Q4 2024 Earnings Call",
-                    "datetime": "2025-02-11T13:30:00",
-                    "key_dev_id": 12345,
-                },
-            ]
-        }
-
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_data,
-        )
-
-        expected_response = [
-            {
-                "name": "SPGI Q1 2025 Earnings Call",
-                "key_dev_id": 12346,
-                "datetime": "2025-04-29T12:30:00+00:00",
-            },
-            {
-                "name": "SPGI Q4 2024 Earnings Call",
-                "key_dev_id": 12345,
-                "datetime": "2025-02-11T13:30:00+00:00",
-            },
-        ]
-
-        tool = GetEarnings(kfinance_client=mock_client)
-        response = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
-        assert response == expected_response
-
-    def test_get_earnings_no_data(self, requests_mock: Mocker, mock_client: Client):
-        """
-        GIVEN the GetEarnings tool
-        WHEN we request all earnings for a company with no data
-        THEN we get a NoEarningslDataError exception
-        """
-        earnings_data = {"earnings": []}
-
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_data,
-        )
-
-        tool = GetEarningsCalls(kfinance_client=mock_client)
-        with raises(NoEarningsDataError, match="Earnings for SPGI not found"):
-            tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
-
-
-class TestGetTranscript:
-    def test_get_transcript(self, requests_mock: Mocker, mock_client: Client):
-        """
-        GIVEN the GetTranscript tool
-        WHEN we request a transcript by key_dev_id
-        THEN we get back the transcript text
-        """
-        transcript_data = {
-            "transcript": [
-                {
-                    "person_name": "Operator",
-                    "text": "Good morning, everyone.",
-                    "component_type": "speech",
-                },
-                {
-                    "person_name": "CEO",
-                    "text": "Thank you for joining us today.",
-                    "component_type": "speech",
-                },
-            ]
-        }
-
-        requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/transcript/12345",
-            json=transcript_data,
-        )
-
-        expected_response = (
-            "Operator: Good morning, everyone.\n\nCEO: Thank you for joining us today."
-        )
-
-        tool = GetTranscript(kfinance_client=mock_client)
-        response = tool.run(GetTranscriptArgs(key_dev_id=12345).model_dump(mode="json"))
-        assert response == expected_response

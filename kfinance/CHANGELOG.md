@@ -1,8 +1,5 @@
 # Changelog
 
-## v2.3.1
-- Add llm tools for retrieving earnings calls and transcripts
-
 ## v2.3.0
 - Add earnings call and transcript objects
 
