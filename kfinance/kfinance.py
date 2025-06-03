@@ -300,7 +300,7 @@ class Company(CompanyFunctionsMetaClass):
         super().__init__()
         self.kfinance_api_client = kfinance_api_client
         self.company_id = company_id
-        self._earnings_calls: Optional[list[EarningsCall]] = None
+        self._earnings_calls: list[EarningsCall] | None = None
 
     def __str__(self) -> str:
         """String representation for the company object"""
@@ -503,7 +503,7 @@ class Company(CompanyFunctionsMetaClass):
             )
 
     def earnings_call(
-        self, start_date: Optional[date] = None, end_date: Optional[date] = None
+        self, start_date: date | None = None, end_date: date | None = None
     ) -> list[EarningsCall]:
         """Get earnings calls for the company within date range sorted in descending order by date
 
@@ -516,9 +516,16 @@ class Company(CompanyFunctionsMetaClass):
         """
         self._load_earnings_calls()
 
+        if not self._earnings_calls:
+            return []
+
         if start_date is not None:
             start_date_datetime = datetime.combine(start_date, datetime.min.time())
-            start_date_utc = start_date_datetime if start_date_datetime.tzinfo is not None else start_date_datetime.replace(tzinfo=timezone.utc)
+            start_date_utc = (
+                start_date_datetime
+                if start_date_datetime.tzinfo is not None
+                else start_date_datetime.replace(tzinfo=timezone.utc)
+            )
         else:
             start_date_utc = None
 
@@ -530,9 +537,6 @@ class Company(CompanyFunctionsMetaClass):
             end_date_utc = None
 
         filtered_calls = []
-
-        if self._earnings_calls is None:
-            return []
 
         for earnings_call in self._earnings_calls:
             # Apply date filtering if provided
