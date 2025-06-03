@@ -4,11 +4,10 @@ import re
 from typing import Optional
 from unittest import TestCase
 
-import time_machine
-
 import numpy as np
 import pandas as pd
 from PIL.Image import open as image_open
+import time_machine
 
 from kfinance.kfinance import Company, EarningsCall, Security, Ticker, TradingItem, Transcript
 
@@ -757,18 +756,18 @@ class TestCompanyEarningsCall(TestCase):
         self.kfinance_api_client = MockKFinanceApiClient()
         self.msft_company = Company(self.kfinance_api_client, msft_company_id)
 
-    def test_company_earnings_call(self):
+    def test_company_earnings_calls(self):
         """test company earnings_call method"""
-        earnings_call_list = self.msft_company.earnings_call()
+        earnings_call_list = self.msft_company.earnings_calls()
         self.assertEqual(len(earnings_call_list), 3)
         self.assertIsInstance(earnings_call_list[0], EarningsCall)
         self.assertEqual(earnings_call_list[0].key_dev_id, 1916266380)
 
-    def test_company_earnings_call_with_date_filter(self):
+    def test_company_earnings_calls_with_date_filter(self):
         """test company earnings_call method with date filtering"""
         start_date = date(2024, 8, 1)
         end_date = date(2024, 12, 31)
-        earnings_call_list = self.msft_company.earnings_call(
+        earnings_call_list = self.msft_company.earnings_calls(
             start_date=start_date, end_date=end_date
         )
         self.assertEqual(len(earnings_call_list), 1)

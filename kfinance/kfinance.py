@@ -502,7 +502,7 @@ class Company(CompanyFunctionsMetaClass):
                 )
             )
 
-    def earnings_call(
+    def earnings_calls(
         self, start_date: date | None = None, end_date: date | None = None
     ) -> list[EarningsCall]:
         """Get earnings calls for the company within date range sorted in descending order by date
@@ -531,7 +531,11 @@ class Company(CompanyFunctionsMetaClass):
 
         if end_date is not None:
             end_date_datetime = datetime.combine(end_date, datetime.max.time())
-            end_date_utc = end_date_datetime if end_date_datetime.tzinfo is not None else end_date_datetime.replace(tzinfo=timezone.utc)
+            end_date_utc = (
+                end_date_datetime
+                if end_date_datetime.tzinfo is not None
+                else end_date_datetime.replace(tzinfo=timezone.utc)
+            )
         else:
             end_date_utc = None
 
