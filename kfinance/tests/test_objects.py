@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from io import BytesIO
 import re
 from typing import Optional
@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from PIL.Image import open as image_open
 
-from kfinance.kfinance import Company, Earnings, Security, Ticker, TradingItem, Transcript
+from kfinance.kfinance import Company, EarningsCall, Security, Ticker, TradingItem, Transcript
 
 
 msft_company_id = "21835"
@@ -260,7 +260,7 @@ class MockKFinanceApiClient:
         """Get a segment"""
         return MOCK_COMPANY_DB[company_id]
 
-    def fetch_earnings(self, company_id: int) -> dict:
+    def fetch_earnings_calls(self, company_id: int) -> dict:
         """Get the earnings calls for a company."""
         return MOCK_COMPANY_DB[company_id]["earnings"]
 
@@ -697,8 +697,20 @@ class TestTranscript(TestCase):
 
     def test_transcript_indexing(self):
         """test transcript indexing"""
-        self.assertEqual(self.transcript[0], self.transcript_components[0])
-        self.assertEqual(self.transcript[1], self.transcript_components[1])
+        self.assertEqual(
+            self.transcript[0].person_name, self.transcript_components[0]["person_name"]
+        )
+        self.assertEqual(self.transcript[0].text, self.transcript_components[0]["text"])
+        self.assertEqual(
+            self.transcript[0].component_type, self.transcript_components[0]["component_type"]
+        )
+        self.assertEqual(
+            self.transcript[1].person_name, self.transcript_components[1]["person_name"]
+        )
+        self.assertEqual(self.transcript[1].text, self.transcript_components[1]["text"])
+        self.assertEqual(
+            self.transcript[1].component_type, self.transcript_components[1]["component_type"]
+        )
 
     def test_transcript_raw(self):
         """test transcript raw property"""
@@ -706,74 +718,78 @@ class TestTranscript(TestCase):
         self.assertEqual(self.transcript.raw, expected_raw)
 
 
-class TestEarnings(TestCase):
+class TestEarningsCall(TestCase):
     def setUp(self):
         """setup tests"""
         self.kfinance_api_client = MockKFinanceApiClient()
-        self.earnings = Earnings(
+        self.earnings_call = EarningsCall(
             kfinance_api_client=self.kfinance_api_client,
             name="Microsoft Corporation, Q4 2024 Earnings Call, Jul 25, 2024",
             datetime=datetime.fromisoformat("2024-07-25T21:30:00").replace(tzinfo=timezone.utc),
             key_dev_id=1916266380,
         )
 
-    def test_earnings_attributes(self):
-        """test earnings attributes"""
+    def test_earnings_call_attributes(self):
+        """test earnings call attributes"""
         self.assertEqual(
-            self.earnings.name, "Microsoft Corporation, Q4 2024 Earnings Call, Jul 25, 2024"
+            self.earnings_call.name, "Microsoft Corporation, Q4 2024 Earnings Call, Jul 25, 2024"
         )
-        self.assertEqual(self.earnings.key_dev_id, 1916266380)
+        self.assertEqual(self.earnings_call.key_dev_id, 1916266380)
         expected_datetime = datetime.fromisoformat("2024-07-25T21:30:00").replace(
             tzinfo=timezone.utc
         )
-        self.assertEqual(self.earnings.datetime, expected_datetime)
+        self.assertEqual(self.earnings_call.datetime, expected_datetime)
 
-    def test_earnings_transcript(self):
-        """test earnings transcript property"""
-        transcript = self.earnings.transcript
+    def test_earnings_call_transcript(self):
+        """test earnings call transcript property"""
+        transcript = self.earnings_call.transcript
         self.assertIsInstance(transcript, Transcript)
         self.assertEqual(len(transcript), 2)
-        self.assertEqual(transcript[0]["person_name"], "Operator")
-        self.assertEqual(transcript[1]["person_name"], "Satya Nadella")
+        self.assertEqual(transcript[0].person_name, "Operator")
+        self.assertEqual(transcript[1].person_name, "Satya Nadella")
 
 
-class TestCompanyEarnings(TestCase):
+class TestCompanyEarningsCall(TestCase):
     def setUp(self):
         """setup tests"""
         self.kfinance_api_client = MockKFinanceApiClient()
         self.msft_company = Company(self.kfinance_api_client, msft_company_id)
 
-    def test_company_earnings(self):
-        """test company earnings method"""
-        earnings_list = self.msft_company.earnings()
-        self.assertEqual(len(earnings_list), 3)
-        self.assertIsInstance(earnings_list[0], Earnings)
-        self.assertEqual(earnings_list[0].key_dev_id, 1916266380)
+    def test_company_earnings_call(self):
+        """test company earnings_call method"""
+        earnings_call_list = self.msft_company.earnings_call()
+        self.assertEqual(len(earnings_call_list), 3)
+        self.assertIsInstance(earnings_call_list[0], EarningsCall)
+        self.assertEqual(earnings_call_list[0].key_dev_id, 1916266380)
 
-    def test_company_earnings_with_date_filter(self):
-        """test company earnings method with date filtering"""
-        earnings_list = self.msft_company.earnings(start_date="2024-08-01", end_date="2024-12-31")
-        self.assertEqual(len(earnings_list), 1)
-        self.assertEqual(earnings_list[0].key_dev_id, 1916266381)
+    def test_company_earnings_call_with_date_filter(self):
+        """test company earnings_call method with date filtering"""
+        start_date = date(2024, 8, 1)
+        end_date = date(2024, 12, 31)
+        earnings_call_list = self.msft_company.earnings_call(
+            start_date=start_date, end_date=end_date
+        )
+        self.assertEqual(len(earnings_call_list), 1)
+        self.assertEqual(earnings_call_list[0].key_dev_id, 1916266381)
 
-    def test_company_last_earnings(self):
-        """test company last_earnings property"""
+    def test_company_last_earnings_call(self):
+        """test company last_earnings_call property"""
         # Mock the current time to be after all earnings calls
         import unittest.mock
 
         with unittest.mock.patch("kfinance.kfinance.datetime") as mock_datetime:
             mock_datetime.now.return_value = datetime(2025, 2, 1, tzinfo=timezone.utc)
             mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
-            last_earnings = self.msft_company.last_earnings
-            self.assertEqual(last_earnings.key_dev_id, 1916266382)
+            last_earnings_call = self.msft_company.last_earnings_call
+            self.assertEqual(last_earnings_call.key_dev_id, 1916266382)
 
-    def test_company_next_earnings(self):
-        """test company next_earnings property"""
+    def test_company_next_earnings_call(self):
+        """test company next_earnings_call property"""
         # Mock the current time to be before all earnings calls
         import unittest.mock
 
         with unittest.mock.patch("kfinance.kfinance.datetime") as mock_datetime:
             mock_datetime.now.return_value = datetime(2024, 6, 1, tzinfo=timezone.utc)
             mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
-            next_earnings = self.msft_company.next_earnings
-            self.assertEqual(next_earnings.key_dev_id, 1916266380)
+            next_earnings_call = self.msft_company.next_earnings_call
+            self.assertEqual(next_earnings_call.key_dev_id, 1916266380)

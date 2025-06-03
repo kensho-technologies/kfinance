@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.2.6
+## v2.3.0
 - Add earnings and transcript objects
 
 ## v2.2.5

@@ -40,6 +40,7 @@ from .meta_classes import (
     DelegatedCompanyFunctionsMetaClass,
 )
 from .prompt import PROMPT
+from .pydantic_models import Component
 from .server_thread import ServerThread
 
 
@@ -200,7 +201,7 @@ class TradingItem:
         return image
 
 
-class Transcript(Sequence[dict[str, str]]):
+class Transcript(Sequence[Component]):
     """Transcript class that represents earnings call transcript components"""
 
     def __init__(self, transcript_components: list[dict[str, str]]):
@@ -209,15 +210,15 @@ class Transcript(Sequence[dict[str, str]]):
         :param transcript_components: List of transcript component dictionaries
         :type transcript_components: list[dict[str, str]]
         """
-        self._components = transcript_components
+        self._components = [Component(**component) for component in transcript_components]
 
     @overload
-    def __getitem__(self, index: int) -> dict[str, str]: ...
+    def __getitem__(self, index: int) -> Component: ...
 
     @overload
-    def __getitem__(self, index: slice) -> list[dict[str, str]]: ...
+    def __getitem__(self, index: slice) -> list[Component]: ...
 
-    def __getitem__(self, index: int | slice) -> dict[str, str] | list[dict[str, str]]:
+    def __getitem__(self, index: int | slice) -> Component | list[Component]:
         return self._components[index]
 
     def __len__(self) -> int:
@@ -232,14 +233,14 @@ class Transcript(Sequence[dict[str, str]]):
         """
         raw_components = []
         for component in self._components:
-            speaker = component["person_name"]
-            text = component["text"]
+            speaker = component.person_name
+            text = component.text
             raw_components.append(f"{speaker}: {text}")
         return "\n\n".join(raw_components)
 
 
-class Earnings:
-    """Earnings class that represents an earnings call event"""
+class EarningsCall:
+    """EarningsCall class that represents an earnings call event"""
 
     def __init__(
         self,
@@ -299,6 +300,7 @@ class Company(CompanyFunctionsMetaClass):
         super().__init__()
         self.kfinance_api_client = kfinance_api_client
         self.company_id = company_id
+        self._earnings_calls: Optional[list[EarningsCall]] = None
 
     def __str__(self) -> str:
         """String representation for the company object"""
@@ -478,42 +480,21 @@ class Company(CompanyFunctionsMetaClass):
             ]
         ]
 
-    def earnings(
-        self, start_date: Optional[str] = None, end_date: Optional[str] = None
-    ) -> list[Earnings]:
-        """Get earnings calls for the company within date range sorted in descending order by date
+    def _load_earnings_calls(self) -> None:
+        """Load and cache all earnings calls for this company"""
+        if self._earnings_calls is not None:
+            return
 
-        :param start_date: Start date filter in format "YYYY-MM-DD", defaults to None
-        :type start_date: str, optional
-        :param end_date: End date filter in format "YYYY-MM-DD", defaults to None
-        :type end_date: str, optional
-        :return: List of earnings objects
-        :rtype: list[Earnings]
-        """
-        earnings_call_data = self.kfinance_api_client.fetch_earnings(self.company_id)
-        earnings_calls = []
-
-        parsed_start_date = (
-            datetime.strptime(start_date, "%Y-%m-%d").date() if start_date is not None else None
-        )
-        parsed_end_date = (
-            datetime.strptime(end_date, "%Y-%m-%d").date() if end_date is not None else None
-        )
+        earnings_call_data = self.kfinance_api_client.fetch_earnings_calls(self.company_id)
+        self._earnings_calls = []
 
         for earnings_call in earnings_call_data["earnings"]:
             earnings_call_datetime = datetime.fromisoformat(earnings_call["datetime"]).replace(
                 tzinfo=timezone.utc
             )
 
-            # Apply date filtering if provided
-            if parsed_start_date is not None and earnings_call_datetime.date() < parsed_start_date:
-                continue
-
-            if parsed_end_date is not None and earnings_call_datetime.date() > parsed_end_date:
-                continue
-
-            earnings_calls.append(
-                Earnings(
+            self._earnings_calls.append(
+                EarningsCall(
                     kfinance_api_client=self.kfinance_api_client,
                     name=earnings_call["name"],
                     datetime=earnings_call_datetime,
@@ -521,79 +502,91 @@ class Company(CompanyFunctionsMetaClass):
                 )
             )
 
-        return earnings_calls
+    def earnings_call(
+        self, start_date: Optional[date] = None, end_date: Optional[date] = None
+    ) -> list[EarningsCall]:
+        """Get earnings calls for the company within date range sorted in descending order by date
 
-    @cached_property
-    def last_earnings(self) -> Optional[Earnings]:
+        :param start_date: Start date filter, defaults to None
+        :type start_date: date, optional
+        :param end_date: End date filter, defaults to None
+        :type end_date: date, optional
+        :return: List of earnings objects
+        :rtype: list[EarningsCall]
+        """
+        self._load_earnings_calls()
+
+        if start_date is not None:
+            start_date_datetime = datetime.combine(start_date, datetime.min.time())
+            start_date_utc = start_date_datetime if start_date_datetime.tzinfo is not None else start_date_datetime.replace(tzinfo=timezone.utc)
+        else:
+            start_date_utc = None
+
+        if end_date is not None:
+            end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(
+                tzinfo=timezone.utc
+            )
+        else:
+            end_date_utc = None
+
+        filtered_calls = []
+
+        if self._earnings_calls is None:
+            return []
+
+        for earnings_call in self._earnings_calls:
+            # Apply date filtering if provided
+            if start_date_utc is not None and earnings_call.datetime < start_date_utc:
+                continue
+
+            if end_date_utc is not None and earnings_call.datetime > end_date_utc:
+                continue
+
+            filtered_calls.append(earnings_call)
+
+        return filtered_calls
+
+    @property
+    def last_earnings_call(self) -> EarningsCall | None:
         """Get the most recent past earnings call
 
         :return: The most recent earnings call or None if no data available
-        :rtype: Optional[Earnings]
+        :rtype: EarningsCall | None
         """
-        earnings_call_data = self.kfinance_api_client.fetch_earnings(self.company_id)
-        if not earnings_call_data["earnings"]:
+        self._load_earnings_calls()
+
+        if not self._earnings_calls:
             return None
 
         now = datetime.now(timezone.utc)
-        past_earnings_calls = []
-
-        for earnings_call in earnings_call_data["earnings"]:
-            earning_call_datetime = datetime.fromisoformat(earnings_call["datetime"]).replace(
-                tzinfo=timezone.utc
-            )
-            if earning_call_datetime <= now:
-                past_earnings_calls.append(earnings_call)
+        past_earnings_calls = [call for call in self._earnings_calls if call.datetime <= now]
 
         if not past_earnings_calls:
             return None
 
         # Sort by datetime descending and get the most recent
-        past_earnings_calls.sort(key=lambda x: x["datetime"], reverse=True)
-        latest = past_earnings_calls[0]
+        return max(past_earnings_calls, key=lambda x: x.datetime)
 
-        return Earnings(
-            kfinance_api_client=self.kfinance_api_client,
-            name=latest["name"],
-            datetime=datetime.fromisoformat(latest["datetime"]).replace(tzinfo=timezone.utc),
-            key_dev_id=latest["key_dev_id"],
-        )
-
-    @cached_property
-    def next_earnings(self) -> Optional[Earnings]:
+    @property
+    def next_earnings_call(self) -> EarningsCall | None:
         """Get the next upcoming earnings call
 
         :return: The next earnings call or None if no data available
-        :rtype: Optional[Earnings]
+        :rtype: EarningsCall | None
         """
-        earnings_call_data = self.kfinance_api_client.fetch_earnings(self.company_id)
-        if not earnings_call_data["earnings"]:
+        self._load_earnings_calls()
+
+        if not self._earnings_calls:
             return None
 
         now = datetime.now(timezone.utc)
-        future_earnings_calls = []
-
-        for earnings_call in earnings_call_data["earnings"]:
-            earning_call_datetime = datetime.fromisoformat(earnings_call["datetime"]).replace(
-                tzinfo=timezone.utc
-            )
-            if earning_call_datetime > now:
-                future_earnings_calls.append(earnings_call)
+        future_earnings_calls = [call for call in self._earnings_calls if call.datetime > now]
 
         if not future_earnings_calls:
             return None
 
         # Sort by datetime ascending and get the earliest
-        future_earnings_calls.sort(key=lambda x: x["datetime"])
-        next_earnings_call = future_earnings_calls[0]
-
-        return Earnings(
-            kfinance_api_client=self.kfinance_api_client,
-            name=next_earnings_call["name"],
-            datetime=datetime.fromisoformat(next_earnings_call["datetime"]).replace(
-                tzinfo=timezone.utc
-            ),
-            key_dev_id=next_earnings_call["key_dev_id"],
-        )
+        return min(future_earnings_calls, key=lambda x: x.datetime)
 
 
 class Security:

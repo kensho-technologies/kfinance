@@ -568,7 +568,7 @@ class KFinanceApiClient:
         url = f"{self.url_base}company_groups/industry/{industry_classification}/{industry_code}"
         return self.fetch(url)
 
-    def fetch_earnings(self, company_id: int) -> dict:
+    def fetch_earnings_calls(self, company_id: int) -> dict:
         """Get the earnings calls for a company."""
         url = f"{self.url_base}earnings/{company_id}"
         return self.fetch(url)
