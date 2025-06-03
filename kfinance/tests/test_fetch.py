@@ -138,10 +138,10 @@ class TestFetchItem(TestCase):
         self.kfinance_api_client.fetch_earnings_dates(company_id=company_id)
         self.kfinance_api_client.fetch.assert_called_once_with(expected_fetch_url)
 
-    def test_fetch_earnings_calls(self) -> None:
+    def test_fetch_earnings(self) -> None:
         company_id = 21719
         expected_fetch_url = f"{self.kfinance_api_client.url_base}earnings/{company_id}"
-        self.kfinance_api_client.fetch_earnings_calls(company_id=company_id)
+        self.kfinance_api_client.fetch_earnings(company_id=company_id)
         self.kfinance_api_client.fetch.assert_called_once_with(expected_fetch_url)
 
     def test_fetch_transcript(self) -> None:

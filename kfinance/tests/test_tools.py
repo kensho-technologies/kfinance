@@ -430,14 +430,14 @@ class TestResolveIdentifier:
         }
 
 
-class TestGetLatestEarningsCall:
-    def test_get_latest_earnings_call(self, requests_mock: Mocker, mock_client: Client):
+class TestGetLatestEarnings:
+    def test_get_latest_earnings(self, requests_mock: Mocker, mock_client: Client):
         """
-        GIVEN the GetLatestEarningsCall tool
-        WHEN we request the latest earnings call for SPGI
-        THEN we get back the latest SPGI earnings call
+        GIVEN the GetLatestEarnings tool
+        WHEN we request the latest earnings for SPGI
+        THEN we get back the latest SPGI earnings
         """
-        earnings_calls_data = {
+        earnings_data = {
             "earnings": [
                 {
                     "name": "SPGI Q4 2024 Earnings Call",
@@ -454,7 +454,7 @@ class TestGetLatestEarningsCall:
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_calls_data,
+            json=earnings_data,
         )
 
         expected_response = {
@@ -463,36 +463,36 @@ class TestGetLatestEarningsCall:
             "datetime": "2025-02-11T13:30:00+00:00",
         }
 
-        tool = GetLatestEarningsCall(kfinance_client=mock_client)
+        tool = GetLatestEarnings(kfinance_client=mock_client)
         response = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
         assert response == expected_response
 
-    def test_get_latest_earnings_call_no_data(self, requests_mock: Mocker, mock_client: Client):
+    def test_get_latest_earnings_no_data(self, requests_mock: Mocker, mock_client: Client):
         """
-        GIVEN the GetLatestEarningsCall tool
-        WHEN we request the latest earnings call for a company with no data
-        THEN we get a NoEarningsCallDataError exception
+        GIVEN the GetLatestEarnings tool
+        WHEN we request the latest earnings for a company with no data
+        THEN we get a NoEarningsDataError exception
         """
-        earnings_calls_data = {"earnings": []}
+        earnings_data = {"earnings": []}
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_calls_data,
+            json=earnings_data,
         )
 
-        tool = GetLatestEarningsCall(kfinance_client=mock_client)
-        with raises(NoEarningsCallDataError, match="Latest earnings call for SPGI not found"):
+        tool = GetLatestEarnings(kfinance_client=mock_client)
+        with raises(NoEarningsDataError, match="Latest earnings for SPGI not found"):
             tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
 
 
-class TestGetNextEarningsCall:
-    def test_get_next_earnings_call(self, requests_mock: Mocker, mock_client: Client):
+class TestGetNextEarnings:
+    def test_get_next_earnings_(self, requests_mock: Mocker, mock_client: Client):
         """
-        GIVEN the GetNextEarningsCall tool
-        WHEN we request the next earnings call for SPGI
-        THEN we get back the next SPGI earnings call
+        GIVEN the GetNextEarnings tool
+        WHEN we request the next earnings for SPGI
+        THEN we get back the next SPGI earnings
         """
-        earnings_calls_data = {
+        earnings_data = {
             "earnings": [
                 {
                     "name": "SPGI Q1 2025 Earnings Call",
@@ -509,7 +509,7 @@ class TestGetNextEarningsCall:
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_calls_data,
+            json=earnings_data,
         )
 
         expected_response = {
@@ -519,37 +519,37 @@ class TestGetNextEarningsCall:
         }
 
         with time_machine.travel("2025-03-01T00:00:00+00:00"):
-            tool = GetNextEarningsCall(kfinance_client=mock_client)
+            tool = GetNextEarnings(kfinance_client=mock_client)
             response = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
             assert response == expected_response
 
-    def test_get_next_earnings_call_no_data(self, requests_mock: Mocker, mock_client: Client):
+    def test_get_next_earnings_no_data(self, requests_mock: Mocker, mock_client: Client):
         """
         GIVEN the GetNextEarningsCall tool
         WHEN we request the next earnings call for a company with no data
         THEN we get a NoEarningsCallDataError exception
         """
-        earnings_calls_data = {"earnings": []}
+        earnings_data = {"earnings": []}
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_calls_data,
+            json=earnings_data,
         )
 
         with time_machine.travel("2025-03-01T00:00:00+00:00"):
-            tool = GetNextEarningsCall(kfinance_client=mock_client)
-            with raises(NoEarningsCallDataError, match="Next earnings call for SPGI not found"):
+            tool = GetNextEarnings(kfinance_client=mock_client)
+            with raises(NoEarningsDataError, match="Next earnings call for SPGI not found"):
                 tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
 
 
-class TestGetEarningsCalls:
-    def test_get_earnings_calls(self, requests_mock: Mocker, mock_client: Client):
+class TestGetEarnings:
+    def test_get_earnings(self, requests_mock: Mocker, mock_client: Client):
         """
-        GIVEN the GetEarningsCalls tool
-        WHEN we request all earnings calls for SPGI
-        THEN we get back all SPGI earnings calls
+        GIVEN the GetEarnings tool
+        WHEN we request all earnings for SPGI
+        THEN we get back all SPGI earnings
         """
-        earnings_calls_data = {
+        earnings_data = {
             "earnings": [
                 {
                     "name": "SPGI Q1 2025 Earnings Call",
@@ -566,7 +566,7 @@ class TestGetEarningsCalls:
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_calls_data,
+            json=earnings_data,
         )
 
         expected_response = [
@@ -582,25 +582,25 @@ class TestGetEarningsCalls:
             },
         ]
 
-        tool = GetEarningsCalls(kfinance_client=mock_client)
+        tool = GetEarnings(kfinance_client=mock_client)
         response = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
         assert response == expected_response
 
-    def test_get_earnings_calls_no_data(self, requests_mock: Mocker, mock_client: Client):
+    def test_get_earnings_no_data(self, requests_mock: Mocker, mock_client: Client):
         """
-        GIVEN the GetEarningsCalls tool
-        WHEN we request all earnings calls for a company with no data
-        THEN we get a NoEarningsCallDataError exception
+        GIVEN the GetEarnings tool
+        WHEN we request all earnings for a company with no data
+        THEN we get a NoEarningslDataError exception
         """
-        earnings_calls_data = {"earnings": []}
+        earnings_data = {"earnings": []}
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_calls_data,
+            json=earnings_data,
         )
 
         tool = GetEarningsCalls(kfinance_client=mock_client)
-        with raises(NoEarningsCallDataError, match="Earnings calls for SPGI not found"):
+        with raises(NoEarningsDataError, match="Earnings for SPGI not found"):
             tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
 
 

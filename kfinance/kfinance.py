@@ -50,8 +50,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class NoEarningsCallDataError(Exception):
-    """Exception raised when no earnings call data is found for a company."""
+class NoEarningsDataError(Exception):
+    """Exception raised when no earnings data is found for a company."""
 
     pass
 
@@ -217,6 +217,7 @@ class Transcript(Sequence[TranscriptComponent]):
         :type transcript_components: list[dict[str, str]]
         """
         self._components = [TranscriptComponent(**component) for component in transcript_components]
+        self._raw_transcript: str | None = None
 
     @overload
     def __getitem__(self, index: int) -> TranscriptComponent: ...
@@ -237,16 +238,21 @@ class Transcript(Sequence[TranscriptComponent]):
         :return: Raw transcript text with speaker names and double newlines between components
         :rtype: str
         """
+        if self._raw_transcript is not None:
+            return self._raw_transcript
+        
         raw_components = []
         for component in self._components:
             speaker = component.person_name
             text = component.text
             raw_components.append(f"{speaker}: {text}")
-        return "\n\n".join(raw_components)
+
+        self._raw_transcript =  "\n\n".join(raw_components)
+        return self._raw_transcript
 
 
-class EarningsCall:
-    """EarningsCall class that represents an earnings call event"""
+class Earnings:
+    """Earnings class that represents an earnings item"""
 
     def __init__(
         self,
@@ -259,31 +265,36 @@ class EarningsCall:
 
         :param kfinance_api_client: The KFinanceApiClient used to fetch data
         :type kfinance_api_client: KFinanceApiClient
-        :param name: The earnings call name
+        :param name: The earnings name
         :type name: str
-        :param datetime: The earnings call datetime
+        :param datetime: The earnings datetime
         :type datetime: datetime
-        :param key_dev_id: The key dev ID for the earnings call
+        :param key_dev_id: The key dev ID for the earnings
         :type key_dev_id: int
         """
         self.kfinance_api_client = kfinance_api_client
         self.name = name
         self.datetime = datetime
         self.key_dev_id = key_dev_id
+        self._transcript: Transcript | None = None
 
     def __str__(self) -> str:
-        """String representation for the earnings call object"""
+        """String representation for the earnings object"""
         return f"{type(self).__module__}.{type(self).__qualname__} of {self.key_dev_id}"
 
     @property
     def transcript(self) -> Transcript:
-        """Get the transcript for this earnings call
+        """Get the transcript for this earnings
 
         :return: The transcript object containing all components
         :rtype: Transcript
         """
+        if self._transcript is not None:
+            return self._transcript
+        
         transcript_data = self.kfinance_api_client.fetch_transcript(self.key_dev_id)
-        return Transcript(transcript_data["transcript"])
+        self._transcript = Transcript(transcript_data["transcript"])
+        return self._transcript
 
 
 class Company(CompanyFunctionsMetaClass):
@@ -306,7 +317,9 @@ class Company(CompanyFunctionsMetaClass):
         super().__init__()
         self.kfinance_api_client = kfinance_api_client
         self.company_id = company_id
-        self._all_earnings_calls: list[EarningsCall] | None = None
+        self._all_earnings: list[EarningsCall] | None = None
+        self._last_earnings: EarningsCall | None = None
+        self._next_earnings: EarningsCall | None = None
 
     def __str__(self) -> str:
         """String representation for the company object"""
@@ -337,8 +350,8 @@ class Company(CompanyFunctionsMetaClass):
         return Securities(kfinance_api_client=self.kfinance_api_client, security_ids=security_ids)
 
     @cached_property
-    def latest_earnings_call(self) -> None:
-        """Set and return the latest earnings call item for the object
+    def latest_earnings(self) -> None:
+        """Set and return the latest earnings item for the object
 
         :raises NotImplementedError: This function is not yet implemented
         """
@@ -487,43 +500,43 @@ class Company(CompanyFunctionsMetaClass):
         ]
 
     @property
-    def all_earnings_calls(self) -> list[EarningsCall]:
+    def all_earnings(self) -> list[Earnings]:
         """Retrieve and cache all earnings calls for this company"""
-        if self._all_earnings_calls is not None:
-            return self._all_earnings_calls
+        if self._all_earningss is not None:
+            return self._all_earnings
 
-        earnings_call_data = self.kfinance_api_client.fetch_earnings_calls(self.company_id)
-        self._all_earnings_calls = []
+        earnings_data = self.kfinance_api_client.fetch_earnings(self.company_id)
+        self._all_earnings = []
 
-        for earnings_call in earnings_call_data["earnings"]:
-            earnings_call_datetime = datetime.fromisoformat(earnings_call["datetime"]).replace(
+        for earnings in earnings_data["earnings"]:
+            earnings_datetime = datetime.fromisoformat(earnings["datetime"]).replace(
                 tzinfo=timezone.utc
             )
 
-            self._all_earnings_calls.append(
-                EarningsCall(
+            self._all_earnings.append(
+                Earnings(
                     kfinance_api_client=self.kfinance_api_client,
-                    name=earnings_call["name"],
-                    datetime=earnings_call_datetime,
-                    key_dev_id=earnings_call["key_dev_id"],
+                    name=earnings["name"],
+                    datetime=earnings_datetime,
+                    key_dev_id=earnings["key_dev_id"],
                 )
             )
 
-        return self._all_earnings_calls
+        return self._all_earnings
 
-    def earnings_calls(
+    def earnings(
         self, start_date: date | None = None, end_date: date | None = None
-    ) -> list[EarningsCall]:
-        """Get earnings calls for the company within date range sorted in descending order by date
+    ) -> list[Earnings]:
+        """Get earnings for the company within date range sorted in descending order by date
 
         :param start_date: Start date filter, defaults to None
         :type start_date: date, optional
         :param end_date: End date filter, defaults to None
         :type end_date: date, optional
         :return: List of earnings objects
-        :rtype: list[EarningsCall]
+        :rtype: list[Earnings]
         """
-        if not self.all_earnings_calls:
+        if not self.all_earnings:
             return []
 
         if start_date is not None:
@@ -542,58 +555,60 @@ class Company(CompanyFunctionsMetaClass):
         else:
             end_date_utc = None
 
-        filtered_earnings_calls = []
+        filtered_earnings = []
 
-        for earnings_call in self.all_earnings_calls:
+        for earnings in self.all_earnings:
             # Apply date filtering if provided
-            if start_date_utc is not None and earnings_call.datetime < start_date_utc:
+            if start_date_utc is not None and earnings.datetime < start_date_utc:
                 continue
 
-            if end_date_utc is not None and earnings_call.datetime > end_date_utc:
+            if end_date_utc is not None and earnings.datetime > end_date_utc:
                 continue
 
-            filtered_earnings_calls.append(earnings_call)
+            filtered_earnings.append(earnings)
 
-        return filtered_earnings_calls
+        return filtered_earnings
 
     @property
-    def last_earnings_call(self) -> EarningsCall | None:
-        """Get the most recent past earnings call
+    def last_earnings(self) -> Earnings | None:
+        """Get the most recent past earnings
 
-        :return: The most recent earnings call or None if no data available
-        :rtype: EarningsCall | None
+        :return: The most recent earnings or None if no data available
+        :rtype: Earnings | None
         """
-
-        if not self.all_earnings_calls:
+        if self._last_earnings is not None:
+            return self._last_earnings
+        
+        if not self.all_earnings:
             return None
 
         now = datetime.now(timezone.utc)
-        past_earnings_calls = [call for call in self.all_earnings_calls if call.datetime <= now]
+        past_earnings = [earnings_item for earnings_item in self.all_earnings if earnings_item.datetime <= now]
 
-        if not past_earnings_calls:
+        if not past_earnings:
             return None
 
         # Sort by datetime descending and get the most recent
-        return max(past_earnings_calls, key=lambda x: x.datetime)
+        return max(past_earnings, key=lambda x: x.datetime)
 
     @property
-    def next_earnings_call(self) -> EarningsCall | None:
-        """Get the next upcoming earnings call
+    def next_earnings(self) -> Earnings | None:
+        """Get the next upcoming earnings
 
-        :return: The next earnings call or None if no data available
-        :rtype: EarningsCall | None
+        :return: The next earnings or None if no data available
+        :rtype: Earnings | None
         """
-        if not self.all_earnings_calls:
+        if not self.all_earnings:
             return None
 
         now = datetime.now(timezone.utc)
-        future_earnings_calls = [call for call in self.all_earnings_calls if call.datetime > now]
+        future_earnings = [earnings_item for earnings_item in self.all_earnings if earnings_item.datetime > now]
 
-        if not future_earnings_calls:
+        if not future_earnings:
             return None
 
         # Sort by datetime ascending and get the earliest
-        return min(future_earnings_calls, key=lambda x: x.datetime)
+        return min(future_earnings, key=lambda x: x.datetime)
 
 
 class Security:
