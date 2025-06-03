@@ -574,6 +574,6 @@ class KFinanceApiClient:
         return self.fetch(url)
 
     def fetch_transcript(self, key_dev_id: int) -> dict:
-        """Get the transcript for an earnings call."""
+        """Get the transcript for an earnings item."""
         url = f"{self.url_base}transcript/{key_dev_id}"
         return self.fetch(url)

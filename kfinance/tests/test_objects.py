@@ -266,7 +266,7 @@ class MockKFinanceApiClient:
         return MOCK_COMPANY_DB[company_id]["earnings"]
 
     def fetch_transcript(self, key_dev_id: int) -> dict:
-        """Get the transcript for an earnings call."""
+        """Get the transcript for an earnings item."""
         return MOCK_TRANSCRIPT_DB[key_dev_id]
 
 
