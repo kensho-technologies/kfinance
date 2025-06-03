@@ -210,7 +210,7 @@ class TradingItem:
 
 
 class Transcript(Sequence[TranscriptComponent]):
-    """Transcript class that represents earnings call transcript components"""
+    """Transcript class that represents earnings item transcript components"""
 
     def __init__(self, transcript_components: list[dict[str, str]]):
         """Initialize the Transcript object
@@ -320,7 +320,7 @@ class Company(CompanyFunctionsMetaClass):
         self.kfinance_api_client = kfinance_api_client
         self.company_id = company_id
         self._all_earnings: list[EarningsCall] | None = None
-        self._last_earnings: EarningsCall | None = None
+        self._latest_earnings: EarningsCall | None = None
         self._next_earnings: EarningsCall | None = None
 
     def __str__(self) -> str:
@@ -350,16 +350,6 @@ class Company(CompanyFunctionsMetaClass):
         """
         security_ids = self.kfinance_api_client.fetch_securities(self.company_id)["securities"]
         return Securities(kfinance_api_client=self.kfinance_api_client, security_ids=security_ids)
-
-    @cached_property
-    def latest_earnings(self) -> None:
-        """Set and return the latest earnings item for the object
-
-        :raises NotImplementedError: This function is not yet implemented
-        """
-        raise NotImplementedError(
-            "The latest earnings call property of company class not implemented yet"
-        )
 
     @cached_property
     def info(self) -> dict:
@@ -572,25 +562,25 @@ class Company(CompanyFunctionsMetaClass):
         return filtered_earnings
 
     @property
-    def last_earnings(self) -> Earnings | None:
+    def latest_earnings(self) -> Earnings | None:
         """Get the most recent past earnings
 
         :return: The most recent earnings or None if no data available
         :rtype: Earnings | None
         """
-        if self._last_earnings is not _SENTINEL:
-            return self._last_earnings
+        if self._latest_earnings is not _SENTINEL:
+            return self._latest_earnings
         
         if self.all_earnings == []:
             self._last_learnings = None
-            return self._last_earnings
+            return self._latest_earnings
 
         now = datetime.now(timezone.utc)
         past_earnings = [earnings_item for earnings_item in self.all_earnings if earnings_item.datetime <= now]
 
         if not past_earnings:
-            self._last_earnings = None
-            return self._last_earnings
+            self._latest_earnings = None
+            return self._latest_earnings
 
         # Sort by datetime descending and get the most recent
         self._last_learnings =  max(past_earnings, key=lambda x: x.datetime)

@@ -37,7 +37,6 @@ ALL_TOOLS: list[Type[KfinanceTool]] = [
     GetCusipFromTicker,
     GetInfoFromIdentifier,
     GetEarningsCallDatetimesFromIdentifier,
-    GetTranscript,
     GetHistoryMetadataFromIdentifier,
     GetPricesFromIdentifier,
     GetCapitalizationFromIdentifier,
