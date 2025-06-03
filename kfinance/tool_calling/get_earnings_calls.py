@@ -3,6 +3,7 @@ from typing import Type
 from pydantic import BaseModel
 
 from kfinance.constants import Permission
+from kfinance.kfinance import NoEarningsCallDataError
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
@@ -15,6 +16,9 @@ class GetEarningsCalls(KfinanceTool):
     def _run(self, identifier: str) -> list[dict]:
         ticker = self.kfinance_client.ticker(identifier)
         earnings_calls = ticker.company.earnings_calls()
+
+        if not earnings_calls:
+            raise NoEarningsCallDataError(f"Earnings calls for {identifier} not found")
 
         return [
             {

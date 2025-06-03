@@ -3,6 +3,7 @@ from typing import Type
 from pydantic import BaseModel
 
 from kfinance.constants import Permission
+from kfinance.kfinance import NoEarningsCallDataError
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
@@ -17,7 +18,7 @@ class GetLatestEarningsCall(KfinanceTool):
         latest_earnings_call = ticker.company.last_earnings_call
 
         if latest_earnings_call is None:
-            return {}
+            raise NoEarningsCallDataError(f"Latest earnings call for {identifier} not found")
 
         return {
             "name": latest_earnings_call.name,

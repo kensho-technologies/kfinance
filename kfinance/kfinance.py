@@ -50,6 +50,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class NoEarningsCallDataError(Exception):
+    """Exception raised when no earnings call data is found for a company."""
+
+    pass
+
+
 class TradingItem:
     """Trading Class
 

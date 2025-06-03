@@ -3,6 +3,7 @@ from typing import Type
 from pydantic import BaseModel
 
 from kfinance.constants import Permission
+from kfinance.kfinance import NoEarningsCallDataError
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
@@ -17,7 +18,7 @@ class GetNextEarningsCall(KfinanceTool):
         next_earnings_call = ticker.company.next_earnings_call
 
         if next_earnings_call is None:
-            return {}
+            raise NoEarningsCallDataError(f"Next earnings call for {identifier} not found")
 
         return {
             "name": next_earnings_call.name,
