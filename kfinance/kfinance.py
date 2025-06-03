@@ -49,8 +49,14 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
+class _SentinelType:
+    pass
+
+
 # use _SENTINEL as intial value for lazy-loaded properties that can be None
-_SENTINEL = object()
+_SENTINEL = _SentinelType()
+
 
 class NoEarningsDataError(Exception):
     """Exception raised when no earnings data is found for a company."""
@@ -242,14 +248,14 @@ class Transcript(Sequence[TranscriptComponent]):
         """
         if self._raw_transcript is not None:
             return self._raw_transcript
-        
+
         raw_components = []
         for component in self._components:
             speaker = component.person_name
             text = component.text
             raw_components.append(f"{speaker}: {text}")
 
-        self._raw_transcript =  "\n\n".join(raw_components)
+        self._raw_transcript = "\n\n".join(raw_components)
         return self._raw_transcript
 
 
@@ -293,7 +299,7 @@ class Earnings:
         """
         if self._transcript is not None:
             return self._transcript
-        
+
         transcript_data = self.kfinance_api_client.fetch_transcript(self.key_dev_id)
         self._transcript = Transcript(transcript_data["transcript"])
         return self._transcript
@@ -319,9 +325,9 @@ class Company(CompanyFunctionsMetaClass):
         super().__init__()
         self.kfinance_api_client = kfinance_api_client
         self.company_id = company_id
-        self._all_earnings: list[EarningsCall] | None = None
-        self._latest_earnings: EarningsCall | None = None
-        self._next_earnings: EarningsCall | None = None
+        self._all_earnings: list[Earnings] | None = None
+        self._latest_earnings: Earnings | None | _SentinelType = _SENTINEL
+        self._next_earnings: Earnings | None | _SentinelType = _SENTINEL
 
     def __str__(self) -> str:
         """String representation for the company object"""
@@ -493,8 +499,8 @@ class Company(CompanyFunctionsMetaClass):
 
     @property
     def all_earnings(self) -> list[Earnings]:
-        """Retrieve and cache all earnings calls for this company"""
-        if self._all_earningss is not None:
+        """Retrieve and cache all earnings items for this company"""
+        if self._all_earnings is not None:
             return self._all_earnings
 
         earnings_data = self.kfinance_api_client.fetch_earnings(self.company_id)
@@ -569,22 +575,25 @@ class Company(CompanyFunctionsMetaClass):
         :rtype: Earnings | None
         """
         if self._latest_earnings is not _SENTINEL:
+            assert isinstance(self._latest_earnings, (Earnings, type(None)))
             return self._latest_earnings
-        
+
         if self.all_earnings == []:
-            self._last_learnings = None
+            self._latest_earnings = None
             return self._latest_earnings
 
         now = datetime.now(timezone.utc)
-        past_earnings = [earnings_item for earnings_item in self.all_earnings if earnings_item.datetime <= now]
+        past_earnings = [
+            earnings_item for earnings_item in self.all_earnings if earnings_item.datetime <= now
+        ]
 
         if not past_earnings:
             self._latest_earnings = None
             return self._latest_earnings
 
         # Sort by datetime descending and get the most recent
-        self._last_learnings =  max(past_earnings, key=lambda x: x.datetime)
-        return self._last_learnings
+        self._latest_earnings = max(past_earnings, key=lambda x: x.datetime)
+        return self._latest_earnings
 
     @property
     def next_earnings(self) -> Earnings | None:
@@ -594,19 +603,22 @@ class Company(CompanyFunctionsMetaClass):
         :rtype: Earnings | None
         """
         if self._next_earnings is not _SENTINEL:
+            assert isinstance(self._next_earnings, (Earnings, type(None)))
             return self._next_earnings
-        
+
         if not self.all_earnings:
             self._next_earnings = None
             return self._next_earnings
 
         now = datetime.now(timezone.utc)
-        future_earnings = [earnings_item for earnings_item in self.all_earnings if earnings_item.datetime > now]
+        future_earnings = [
+            earnings_item for earnings_item in self.all_earnings if earnings_item.datetime > now
+        ]
 
         if not future_earnings:
             self._next_earnings = None
             return self._next_earnings
-        
+
         # Sort by datetime ascending and get the earliest
         self._next_earnings = min(future_earnings, key=lambda x: x.datetime)
         return self._next_earnings
@@ -1561,7 +1573,7 @@ class Client:
     def transcript(self, key_dev_id: int) -> Transcript:
         """Generate Transcript object from key_dev_id
 
-        :param key_dev_id: The key dev ID for the earnings call
+        :param key_dev_id: The key dev ID for the earnings
         :type key_dev_id: int
         :return: The transcript specified by the key dev id
         :rtype: Transcript

@@ -1,7 +1,7 @@
 # Changelog
 
 ## v2.3.0
-- Add earnings call and transcript objects
+- Add earnings and transcript objects
 
 ## v2.2.5
 - Add parsing for relationship response with name

@@ -25,7 +25,6 @@ from kfinance.tool_calling.get_prices_from_identifier import GetPricesFromIdenti
 from kfinance.tool_calling.get_segments_from_identifier import (
     GetSegmentsFromIdentifier,
 )
-from kfinance.tool_calling.get_transcript import GetTranscript
 from kfinance.tool_calling.resolve_identifier import ResolveIdentifier
 from kfinance.tool_calling.shared_models import KfinanceTool
 

@@ -9,7 +9,7 @@ import pandas as pd
 from PIL.Image import open as image_open
 import time_machine
 
-from kfinance.kfinance import Company, EarningsCall, Security, Ticker, TradingItem, Transcript
+from kfinance.kfinance import Company, Earnings, Security, Ticker, TradingItem, Transcript
 
 
 msft_company_id = "21835"
@@ -767,17 +767,15 @@ class TestCompanyEarnings(TestCase):
         """test company earnings method with date filtering"""
         start_date = date(2024, 8, 1)
         end_date = date(2024, 12, 31)
-        earnings_list = self.msft_company.earnings(
-            start_date=start_date, end_date=end_date
-        )
+        earnings_list = self.msft_company.earnings(start_date=start_date, end_date=end_date)
         self.assertEqual(len(earnings_list), 1)
         self.assertEqual(earnings_list[0].key_dev_id, 1916266381)
 
     @time_machine.travel(datetime(2025, 2, 1, 12, tzinfo=timezone.utc))
-    def test_company_last_earnings(self):
-        """test company last_earnings property"""
-        last_earnings = self.msft_company.last_earnings
-        self.assertEqual(last_earnings.key_dev_id, 1916266382)
+    def test_company_latest_earnings(self):
+        """test company latest_earnings property"""
+        latest_earnings = self.msft_company.latest_earnings
+        self.assertEqual(latest_earnings.key_dev_id, 1916266382)
 
     @time_machine.travel(datetime(2024, 6, 1, 12, tzinfo=timezone.utc))
     def test_company_next_earnings(self):
