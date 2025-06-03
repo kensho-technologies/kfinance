@@ -24,7 +24,7 @@ lint *args:
     # See https://docs.astral.sh/ruff/formatter/#sorting-imports
     python -m ruff --config pyproject.toml check kfinance --fix {{args}}
     python -m ruff --config pyproject.toml format kfinance {{args}}
-    nbqa mypy usage_examples.ipynb
+    nbqa mypy example_notebooks
 
 alias t := unit-test
 # Run unit tests. Use args for optional settings
@@ -36,3 +36,7 @@ unit-test *args:
 # Don't merge changes to pyproject and docs/output into the remote repo!
 sphinx *args:
     PYTHONPATH="${PYTHONPATH:-}:." sphinx-build docs docs/output
+
+# Install all dependencies including dev dependencies
+install-deps:
+    pip install -e .[dev]
