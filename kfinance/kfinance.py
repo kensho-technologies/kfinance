@@ -266,7 +266,7 @@ class EarningsCall:
         self.key_dev_id = key_dev_id
 
     def __str__(self) -> str:
-        """String representation for the earnings object"""
+        """String representation for the earnings call object"""
         return f"{type(self).__module__}.{type(self).__qualname__} of {self.key_dev_id}"
 
     @cached_property
@@ -536,7 +536,7 @@ class Company(CompanyFunctionsMetaClass):
         else:
             end_date_utc = None
 
-        filtered_calls = []
+        filtered_earnings_calls = []
 
         for earnings_call in self._earnings_calls:
             # Apply date filtering if provided
@@ -546,9 +546,9 @@ class Company(CompanyFunctionsMetaClass):
             if end_date_utc is not None and earnings_call.datetime > end_date_utc:
                 continue
 
-            filtered_calls.append(earnings_call)
+            filtered_earnings_calls.append(earnings_call)
 
-        return filtered_calls
+        return filtered_earnings_calls
 
     @property
     def last_earnings_call(self) -> EarningsCall | None:
