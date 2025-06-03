@@ -44,7 +44,7 @@ def jupyter_kernel_name() -> str:
 
 def test_run_notebook(jupyter_kernel_name: str):
     """
-    GIVEN the basic_usage.ipynb notebook
+    GIVEN the usage_examples.ipynb notebook
     WHEN the notebook gets run with a mock client and mock responses
     THEN all cells of the notebook complete without errors.
     """
@@ -165,9 +165,7 @@ def test_run_notebook(jupyter_kernel_name: str):
     """)
 
     # Load the notebook
-    notebook_path = Path(
-        Path(__file__).parent.parent.parent, "example_notebooks", "basic_usage.ipynb"
-    )
+    notebook_path = Path(Path(__file__).parent.parent.parent, "usage_examples.ipynb")
     with notebook_path.open() as f:
         nb = nbformat.read(f, as_version=4)
 

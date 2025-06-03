@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.3.1
+- Add llm tools for retrieving earnings calls and transcripts
+
+## v2.3.0
+- Add earnings and transcript objects
+
 ## v2.2.5
 - Add parsing for relationship response with name
 

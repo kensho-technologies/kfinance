@@ -18,16 +18,7 @@ To receive access, please email [S&P Global Market Intelligence](market.intellig
 
 Once access is obtained, get started using the [Authentication Guide](https://docs.kensho.com/llmreadyapi/kf-authentication) and [Usage Guide](https://docs.kensho.com/llmreadyapi/usage).
 
-To get started, we provide some notebooks:
-
-- The [LLM-ready API Basic Usage](example_notebooks%2Fbasic_usage.ipynb) notebook demonstrates how 
-fetch data with the kFinance client.
-- The [tool_calling notebooks](example_notebooks%2Ftool_calling) show how the kFinance library can
-be used for tool calling. We provide notebooks for OpenAI (GPT), Anthropic (Claude), and Google
-  (Gemini). Each of these integrations comes in a langchain version, which uses langchain as a
-wrapper to simplify the integration, and as a lower level non-langchain version.
-
-We also provide an [interactive notebook](example_notebooks/basic_usage.ipynb) that demonstrates some usage examples.
+We also provide an [interactive notebook](usage_examples.ipynb) that demonstrates some usage examples.
 
 # Versioning
 The kFinance uses semantic versioning (major, minor, patch). 

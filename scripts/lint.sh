@@ -22,4 +22,4 @@ else
   python -m ruff --config pyproject.toml format kfinance --check
 fi
 
-nbqa mypy example_notebooks
+nbqa mypy usage_examples.ipynb
