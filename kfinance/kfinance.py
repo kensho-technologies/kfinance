@@ -49,6 +49,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# use _SENTINEL as intial value for lazy-loaded properties that can be None
+_SENTINEL = object()
 
 class NoEarningsDataError(Exception):
     """Exception raised when no earnings data is found for a company."""
@@ -576,20 +578,23 @@ class Company(CompanyFunctionsMetaClass):
         :return: The most recent earnings or None if no data available
         :rtype: Earnings | None
         """
-        if self._last_earnings is not None:
+        if self._last_earnings is not _SENTINEL:
             return self._last_earnings
         
-        if not self.all_earnings:
-            return None
+        if self.all_earnings == []:
+            self._last_learnings = None
+            return self._last_earnings
 
         now = datetime.now(timezone.utc)
         past_earnings = [earnings_item for earnings_item in self.all_earnings if earnings_item.datetime <= now]
 
         if not past_earnings:
-            return None
+            self._last_earnings = None
+            return self._last_earnings
 
         # Sort by datetime descending and get the most recent
-        return max(past_earnings, key=lambda x: x.datetime)
+        self._last_learnings =  max(past_earnings, key=lambda x: x.datetime)
+        return self._last_learnings
 
     @property
     def next_earnings(self) -> Earnings | None:
@@ -598,17 +603,23 @@ class Company(CompanyFunctionsMetaClass):
         :return: The next earnings or None if no data available
         :rtype: Earnings | None
         """
+        if self._next_earnings is not _SENTINEL:
+            return self._next_earnings
+        
         if not self.all_earnings:
-            return None
+            self._next_earnings = None
+            return self._next_earnings
 
         now = datetime.now(timezone.utc)
         future_earnings = [earnings_item for earnings_item in self.all_earnings if earnings_item.datetime > now]
 
         if not future_earnings:
-            return None
-
+            self._next_earnings = None
+            return self._next_earnings
+        
         # Sort by datetime ascending and get the earliest
-        return min(future_earnings, key=lambda x: x.datetime)
+        self._next_earnings = min(future_earnings, key=lambda x: x.datetime)
+        return self._next_earnings
 
 
 class Security:
