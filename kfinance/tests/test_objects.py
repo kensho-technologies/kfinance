@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from io import BytesIO
 import re
 from typing import Optional
@@ -7,8 +7,9 @@ from unittest import TestCase
 import numpy as np
 import pandas as pd
 from PIL.Image import open as image_open
+import time_machine
 
-from kfinance.kfinance import Company, Security, Ticker, TradingItem
+from kfinance.kfinance import Company, Earnings, Security, Ticker, TradingItem, Transcript
 
 
 msft_company_id = "21835"
@@ -54,6 +55,25 @@ MOCK_COMPANY_DB = {
             "iso_country": "USA",
         },
         "earnings_call_dates": {"earnings": ["2004-07-22T21:30:00"]},
+        "earnings": {
+            "earnings": [
+                {
+                    "name": "Microsoft Corporation, Q4 2024 Earnings Call, Jul 25, 2024",
+                    "key_dev_id": 1916266380,
+                    "datetime": "2024-07-25T21:30:00",
+                },
+                {
+                    "name": "Microsoft Corporation, Q1 2025 Earnings Call, Oct 24, 2024",
+                    "key_dev_id": 1916266381,
+                    "datetime": "2024-10-24T21:30:00",
+                },
+                {
+                    "name": "Microsoft Corporation, Q2 2025 Earnings Call, Jan 25, 2025",
+                    "key_dev_id": 1916266382,
+                    "datetime": "2025-01-25T21:30:00",
+                },
+            ]
+        },
         "statements": {
             "income_statement": {
                 "statements": {
@@ -89,6 +109,32 @@ MOCK_COMPANY_DB = {
             }
         },
     }
+}
+
+MOCK_TRANSCRIPT_DB = {
+    1916266380: {
+        "transcript": [
+            {
+                "component_type": "Presentation Operator Message",
+                "person_name": "Operator",
+                "text": "Good morning, and welcome to Microsoft's Fourth Quarter 2024 Earnings Conference Call.",
+            },
+            {
+                "component_type": "Presenter Speech",
+                "person_name": "Satya Nadella",
+                "text": "Thank you for joining us today. We had an exceptional quarter with strong growth across all segments.",
+            },
+        ]
+    },
+    1916266381: {
+        "transcript": [
+            {
+                "component_type": "Presentation Operator Message",
+                "person_name": "Operator",
+                "text": "Good morning, and welcome to Microsoft's First Quarter 2025 Earnings Conference Call.",
+            }
+        ]
+    },
 }
 
 
@@ -214,6 +260,14 @@ class MockKFinanceApiClient:
     ):
         """Get a segment"""
         return MOCK_COMPANY_DB[company_id]
+
+    def fetch_earnings(self, company_id: int) -> dict:
+        """Get the earnings for a company."""
+        return MOCK_COMPANY_DB[company_id]["earnings"]
+
+    def fetch_transcript(self, key_dev_id: int) -> dict:
+        """Get the transcript for an earnings item."""
+        return MOCK_TRANSCRIPT_DB[key_dev_id]
 
 
 class TestTradingItem(TestCase):
@@ -619,3 +673,112 @@ class TestTicker(TestCase):
         expected_dataframe.index.name = "date"
         market_caps = self.msft_ticker_from_ticker.market_cap()
         pd.testing.assert_frame_equal(expected_dataframe, market_caps)
+
+
+class TestTranscript(TestCase):
+    def setUp(self):
+        """setup tests"""
+        self.transcript_components = [
+            {
+                "component_type": "Presentation Operator Message",
+                "person_name": "Operator",
+                "text": "Good morning, and welcome to Microsoft's Fourth Quarter 2024 Earnings Conference Call.",
+            },
+            {
+                "component_type": "Presenter Speech",
+                "person_name": "Satya Nadella",
+                "text": "Thank you for joining us today. We had an exceptional quarter with strong growth across all segments.",
+            },
+        ]
+        self.transcript = Transcript(self.transcript_components)
+
+    def test_transcript_length(self):
+        """test transcript length"""
+        self.assertEqual(len(self.transcript), 2)
+
+    def test_transcript_indexing(self):
+        """test transcript indexing"""
+        self.assertEqual(
+            self.transcript[0].person_name, self.transcript_components[0]["person_name"]
+        )
+        self.assertEqual(self.transcript[0].text, self.transcript_components[0]["text"])
+        self.assertEqual(
+            self.transcript[0].component_type, self.transcript_components[0]["component_type"]
+        )
+        self.assertEqual(
+            self.transcript[1].person_name, self.transcript_components[1]["person_name"]
+        )
+        self.assertEqual(self.transcript[1].text, self.transcript_components[1]["text"])
+        self.assertEqual(
+            self.transcript[1].component_type, self.transcript_components[1]["component_type"]
+        )
+
+    def test_transcript_raw(self):
+        """test transcript raw property"""
+        expected_raw = "Operator: Good morning, and welcome to Microsoft's Fourth Quarter 2024 Earnings Conference Call.\n\nSatya Nadella: Thank you for joining us today. We had an exceptional quarter with strong growth across all segments."
+        self.assertEqual(self.transcript.raw, expected_raw)
+
+
+class TestEarnings(TestCase):
+    def setUp(self):
+        """setup tests"""
+        self.kfinance_api_client = MockKFinanceApiClient()
+        self.earnings = Earnings(
+            kfinance_api_client=self.kfinance_api_client,
+            name="Microsoft Corporation, Q4 2024 Earnings Call, Jul 25, 2024",
+            datetime=datetime.fromisoformat("2024-07-25T21:30:00").replace(tzinfo=timezone.utc),
+            key_dev_id=1916266380,
+        )
+
+    def test_earnings_attributes(self):
+        """test earnings attributes"""
+        self.assertEqual(
+            self.earnings.name, "Microsoft Corporation, Q4 2024 Earnings Call, Jul 25, 2024"
+        )
+        self.assertEqual(self.earnings.key_dev_id, 1916266380)
+        expected_datetime = datetime.fromisoformat("2024-07-25T21:30:00").replace(
+            tzinfo=timezone.utc
+        )
+        self.assertEqual(self.earnings.datetime, expected_datetime)
+
+    def test_earnings_transcript(self):
+        """test earnings transcript property"""
+        transcript = self.earnings.transcript
+        self.assertIsInstance(transcript, Transcript)
+        self.assertEqual(len(transcript), 2)
+        self.assertEqual(transcript[0].person_name, "Operator")
+        self.assertEqual(transcript[1].person_name, "Satya Nadella")
+
+
+class TestCompanyEarnings(TestCase):
+    def setUp(self):
+        """setup tests"""
+        self.kfinance_api_client = MockKFinanceApiClient()
+        self.msft_company = Company(self.kfinance_api_client, msft_company_id)
+
+    def test_company_earnings(self):
+        """test company earnings method"""
+        earnings_list = self.msft_company.earnings()
+        self.assertEqual(len(earnings_list), 3)
+        self.assertIsInstance(earnings_list[0], Earnings)
+        self.assertEqual(earnings_list[0].key_dev_id, 1916266380)
+
+    def test_company_earnings_with_date_filter(self):
+        """test company earnings method with date filtering"""
+        start_date = date(2024, 8, 1)
+        end_date = date(2024, 12, 31)
+        earnings_list = self.msft_company.earnings(start_date=start_date, end_date=end_date)
+        self.assertEqual(len(earnings_list), 1)
+        self.assertEqual(earnings_list[0].key_dev_id, 1916266381)
+
+    @time_machine.travel(datetime(2025, 2, 1, 12, tzinfo=timezone.utc))
+    def test_company_latest_earnings(self):
+        """test company latest_earnings property"""
+        latest_earnings = self.msft_company.latest_earnings
+        self.assertEqual(latest_earnings.key_dev_id, 1916266382)
+
+    @time_machine.travel(datetime(2024, 6, 1, 12, tzinfo=timezone.utc))
+    def test_company_next_earnings(self):
+        """test company next_earnings property"""
+        next_earnings = self.msft_company.next_earnings
+        self.assertEqual(next_earnings.key_dev_id, 1916266380)
