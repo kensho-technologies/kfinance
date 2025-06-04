@@ -506,7 +506,7 @@ class Company(CompanyFunctionsMetaClass):
                     kfinance_api_client=self.kfinance_api_client,
                     name=earnings["name"],
                     datetime=earnings_datetime,
-                    key_dev_id=earnings["key_dev_id"],
+                    key_dev_id=earnings["keydevid"],
                 )
             )
 

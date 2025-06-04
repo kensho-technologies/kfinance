@@ -441,13 +441,13 @@ class TestGetLatestEarnings:
             "earnings": [
                 {
                     "name": "SPGI Q4 2024 Earnings Call",
-                    "datetime": "2025-02-11T13:30:00",
-                    "key_dev_id": 12345,
+                    "datetime": "2025-02-11T13:30:00Z",
+                    "keydevid": 12345,
                 },
                 {
                     "name": "SPGI Q3 2024 Earnings Call",
-                    "datetime": "2024-10-30T12:30:00",
-                    "key_dev_id": 12344,
+                    "datetime": "2024-10-30T12:30:00Z",
+                    "keydevid": 12344,
                 },
             ]
         }
@@ -496,13 +496,13 @@ class TestGetNextEarnings:
             "earnings": [
                 {
                     "name": "SPGI Q1 2025 Earnings Call",
-                    "datetime": "2025-04-29T12:30:00",
-                    "key_dev_id": 12346,
+                    "datetime": "2025-04-29T12:30:00Z",
+                    "keydevid": 12346,
                 },
                 {
                     "name": "SPGI Q4 2024 Earnings Call",
-                    "datetime": "2025-02-11T13:30:00",
-                    "key_dev_id": 12345,
+                    "datetime": "2025-02-11T13:30:00Z",
+                    "keydevid": 12345,
                 },
             ]
         }
@@ -554,12 +554,12 @@ class TestGetEarnings:
                 {
                     "name": "SPGI Q1 2025 Earnings Call",
                     "datetime": "2025-04-29T12:30:00Z",
-                    "key_dev_id": 12346,
+                    "keydevid": 12346,
                 },
                 {
                     "name": "SPGI Q4 2024 Earnings Call",
                     "datetime": "2025-02-11T13:30:00Z",
-                    "key_dev_id": 12345,
+                    "keydevid": 12345,
                 },
             ]
         }
