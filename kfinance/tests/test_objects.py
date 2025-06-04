@@ -59,7 +59,7 @@ MOCK_COMPANY_DB = {
             "earnings": [
                 {
                     "name": "Microsoft Corporation, Q4 2024 Earnings Call, Jul 25, 2024",
-                    "keydevid": 1916266380,
+                    "key_dev_id": 1916266380,
                     "datetime": "2024-07-25T21:30:00",
                 },
                 {
