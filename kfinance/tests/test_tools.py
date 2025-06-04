@@ -6,19 +6,19 @@ from requests_mock import Mocker
 import time_machine
 
 from kfinance.constants import BusinessRelationshipType, Capitalization, SegmentType, StatementType
-from kfinance.kfinance import Client, NoEarningsCallDataError
+from kfinance.kfinance import Client, NoEarningsDataError
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
 from kfinance.tool_calling import (
+    GetEarnings,
     GetEarningsCallDatetimesFromIdentifier,
-    GetEarningsCalls,
     GetFinancialLineItemFromIdentifier,
     GetFinancialStatementFromIdentifier,
     GetHistoryMetadataFromIdentifier,
     GetInfoFromIdentifier,
     GetIsinFromTicker,
     GetLatest,
-    GetLatestEarningsCall,
-    GetNextEarningsCall,
+    GetLatestEarnings,
+    GetNextEarnings,
     GetNQuartersAgo,
     GetPricesFromIdentifier,
     GetTranscript,
@@ -525,9 +525,9 @@ class TestGetNextEarnings:
 
     def test_get_next_earnings_no_data(self, requests_mock: Mocker, mock_client: Client):
         """
-        GIVEN the GetNextEarningsCall tool
-        WHEN we request the next earnings call for a company with no data
-        THEN we get a NoEarningsCallDataError exception
+        GIVEN the GetNextEarnings tool
+        WHEN we request the next earnings for a company with no data
+        THEN we get a NoEarningsDataError exception
         """
         earnings_data = {"earnings": []}
 
@@ -538,7 +538,7 @@ class TestGetNextEarnings:
 
         with time_machine.travel("2025-03-01T00:00:00+00:00"):
             tool = GetNextEarnings(kfinance_client=mock_client)
-            with raises(NoEarningsDataError, match="Next earnings call for SPGI not found"):
+            with raises(NoEarningsDataError, match="Next earnings for SPGI not found"):
                 tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
 
 
@@ -599,7 +599,7 @@ class TestGetEarnings:
             json=earnings_data,
         )
 
-        tool = GetEarningsCalls(kfinance_client=mock_client)
+        tool = GetEarnings(kfinance_client=mock_client)
         with raises(NoEarningsDataError, match="Earnings for SPGI not found"):
             tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
 

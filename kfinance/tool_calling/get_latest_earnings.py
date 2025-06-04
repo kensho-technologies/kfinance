@@ -3,7 +3,7 @@ from typing import Type
 from pydantic import BaseModel
 
 from kfinance.constants import Permission
-from kfinance.kfinance import NoEarningsCallDataError
+from kfinance.kfinance import NoEarningsDataError
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
@@ -15,10 +15,10 @@ class GetLatestEarnings(KfinanceTool):
 
     def _run(self, identifier: str) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
-        latest_earnings = ticker.company.last_earnings
+        latest_earnings = ticker.company.latest_earnings
 
         if latest_earnings is None:
-            raise NoEarningsCallDataError(f"Latest earnings for {identifier} not found")
+            raise NoEarningsDataError(f"Latest earnings for {identifier} not found")
 
         return {
             "name": latest_earnings.name,
