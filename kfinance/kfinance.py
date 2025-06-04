@@ -50,14 +50,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class _SentinelType:
-    pass
-
-
-# use _SENTINEL as intial value for lazy-loaded properties that can be None
-_SENTINEL = _SentinelType()
-
-
 class NoEarningsDataError(Exception):
     """Exception raised when no earnings data is found for a company."""
 
@@ -326,8 +318,6 @@ class Company(CompanyFunctionsMetaClass):
         self.kfinance_api_client = kfinance_api_client
         self.company_id = company_id
         self._all_earnings: list[Earnings] | None = None
-        self._latest_earnings: Earnings | None | _SentinelType = _SENTINEL
-        self._next_earnings: Earnings | None | _SentinelType = _SENTINEL
 
     def __str__(self) -> str:
         """String representation for the company object"""
@@ -574,13 +564,8 @@ class Company(CompanyFunctionsMetaClass):
         :return: The most recent earnings or None if no data available
         :rtype: Earnings | None
         """
-        if self._latest_earnings is not _SENTINEL:
-            assert isinstance(self._latest_earnings, (Earnings, type(None)))
-            return self._latest_earnings
-
-        if self.all_earnings == []:
-            self._latest_earnings = None
-            return self._latest_earnings
+        if not self.all_earnings:
+            return None
 
         now = datetime.now(timezone.utc)
         past_earnings = [
@@ -588,12 +573,10 @@ class Company(CompanyFunctionsMetaClass):
         ]
 
         if not past_earnings:
-            self._latest_earnings = None
-            return self._latest_earnings
+            return None
 
         # Sort by datetime descending and get the most recent
-        self._latest_earnings = max(past_earnings, key=lambda x: x.datetime)
-        return self._latest_earnings
+        return max(past_earnings, key=lambda x: x.datetime)
 
     @property
     def next_earnings(self) -> Earnings | None:
@@ -602,13 +585,8 @@ class Company(CompanyFunctionsMetaClass):
         :return: The next earnings or None if no data available
         :rtype: Earnings | None
         """
-        if self._next_earnings is not _SENTINEL:
-            assert isinstance(self._next_earnings, (Earnings, type(None)))
-            return self._next_earnings
-
         if not self.all_earnings:
-            self._next_earnings = None
-            return self._next_earnings
+            return None
 
         now = datetime.now(timezone.utc)
         future_earnings = [
@@ -616,12 +594,10 @@ class Company(CompanyFunctionsMetaClass):
         ]
 
         if not future_earnings:
-            self._next_earnings = None
-            return self._next_earnings
+            return None
 
         # Sort by datetime ascending and get the earliest
-        self._next_earnings = min(future_earnings, key=lambda x: x.datetime)
-        return self._next_earnings
+        return min(future_earnings, key=lambda x: x.datetime)
 
 
 class Security:
