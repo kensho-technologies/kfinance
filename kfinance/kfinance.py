@@ -497,9 +497,9 @@ class Company(CompanyFunctionsMetaClass):
         self._all_earnings = []
 
         for earnings in earnings_data["earnings"]:
-            earnings_datetime = datetime.fromisoformat(earnings["datetime"]).replace(
-                tzinfo=timezone.utc
-            )
+            earnings_datetime = datetime.fromisoformat(
+                earnings["datetime"].replace("Z", "+00:00")
+            ).replace(tzinfo=timezone.utc)
 
             self._all_earnings.append(
                 Earnings(

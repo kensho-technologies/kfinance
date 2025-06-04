@@ -553,12 +553,12 @@ class TestGetEarnings:
             "earnings": [
                 {
                     "name": "SPGI Q1 2025 Earnings Call",
-                    "datetime": "2025-04-29T12:30:00",
+                    "datetime": "2025-04-29T12:30:00Z",
                     "key_dev_id": 12346,
                 },
                 {
                     "name": "SPGI Q4 2024 Earnings Call",
-                    "datetime": "2025-02-11T13:30:00",
+                    "datetime": "2025-02-11T13:30:00Z",
                     "key_dev_id": 12345,
                 },
             ]
