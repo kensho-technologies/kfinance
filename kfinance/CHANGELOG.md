@@ -1,7 +1,11 @@
 # Changelog
 
+## v2.3.1
+- Replace `cached_property` with `property` to enable batching
+
 ## v2.3.0
 - Add earnings and transcript objects
+
 
 ## v2.2.5
 - Add parsing for relationship response with name

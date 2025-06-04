@@ -9,7 +9,17 @@ import pandas as pd
 from PIL.Image import open as image_open
 import time_machine
 
-from kfinance.kfinance import Company, Earnings, Security, Ticker, TradingItem, Transcript
+from kfinance.constants import BusinessRelationshipType
+from kfinance.kfinance import (
+    BusinessRelationships,
+    Company,
+    Earnings,
+    Security,
+    Ticker,
+    TradingItem,
+    Transcript,
+)
+from kfinance.pydantic_models import CompanyIdAndName, RelationshipResponse
 
 
 msft_company_id = "21835"
@@ -108,6 +118,13 @@ MOCK_COMPANY_DB = {
                 },
             }
         },
+        BusinessRelationshipType.supplier: RelationshipResponse(
+            current=[CompanyIdAndName(company_name="foo", company_id=883103)],
+            previous=[
+                CompanyIdAndName(company_name="bar", company_id=472898),
+                CompanyIdAndName(company_name="baz", company_id=8182358),
+            ],
+        ),
     }
 }
 
@@ -261,6 +278,11 @@ class MockKFinanceApiClient:
         """Get a segment"""
         return MOCK_COMPANY_DB[company_id]
 
+    def fetch_companies_from_business_relationship(
+        self, company_id: int, relationship_type: BusinessRelationshipType
+    ) -> RelationshipResponse:
+        return MOCK_COMPANY_DB[company_id][relationship_type]
+
     def fetch_earnings(self, company_id: int) -> dict:
         """Get the earnings for a company."""
         return MOCK_COMPANY_DB[company_id]["earnings"]
@@ -395,6 +417,30 @@ class TestCompany(TestCase):
 
         business_segment = self.msft_company.business_segments()
         self.assertEqual(expected_segments, business_segment)
+
+    def test_relationships(self) -> None:
+        """
+        WHEN we fetch the relationships of a company
+        THEN we get back a BusinessRelationships object.
+        """
+
+        expected_suppliers = MOCK_COMPANY_DB[msft_company_id][BusinessRelationshipType.supplier]
+
+        suppliers_via_method = self.msft_company.relationships(BusinessRelationshipType.supplier)
+        self.assertIsInstance(suppliers_via_method, BusinessRelationships)
+        # Company ids should match
+        self.assertEqual(
+            sorted([c.company_id for c in suppliers_via_method.current]),
+            sorted([c.company_id for c in expected_suppliers.current]),
+        )
+        self.assertEqual(
+            sorted([c.company_id for c in suppliers_via_method.previous]),
+            sorted([c.company_id for c in expected_suppliers.previous]),
+        )
+
+        # Fetching via property should return the same result
+        suppliers_via_property = self.msft_company.supplier
+        self.assertEqual(suppliers_via_property, suppliers_via_method)
 
 
 class TestSecurity(TestCase):
