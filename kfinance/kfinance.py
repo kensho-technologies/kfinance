@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from datetime import date, datetime, timezone
 from functools import cached_property
 from io import BytesIO
@@ -497,6 +498,9 @@ class Company(CompanyFunctionsMetaClass):
         self._all_earnings = []
 
         for earnings in earnings_data["earnings"]:
+            if "keydevid" in earnings:
+                earnings["key_dev_id"] = deepcopy(earnings["keydevid"])
+                del earnings["keydevid"]
             earnings_datetime = datetime.fromisoformat(
                 earnings["datetime"].replace("Z", "+00:00")
             ).replace(tzinfo=timezone.utc)
@@ -506,7 +510,7 @@ class Company(CompanyFunctionsMetaClass):
                     kfinance_api_client=self.kfinance_api_client,
                     name=earnings["name"],
                     datetime=earnings_datetime,
-                    key_dev_id=earnings["keydevid"],
+                    key_dev_id=earnings["key_dev_id"],
                 )
             )
 
