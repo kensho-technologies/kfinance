@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.1
+- Replace `cached_property` with `property` to enable batching
+
 ## v2.3.0
 - Add earnings and transcript objects
 

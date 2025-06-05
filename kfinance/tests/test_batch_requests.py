@@ -68,38 +68,6 @@ class TestTradingItem(TestCase):
             self.assertDictEqual(id_based_result, expected_id_based_result)
 
     @requests_mock.Mocker()
-    def test_batch_request_cached_properties(self, m):
-        """GIVEN a kfinance group object like Companies
-        WHEN we batch request a cached property for each object in the group
-        THEN the batch request completes successfully and we get back a mapping of
-        company objects to the corresponding values."""
-
-        m.get(
-            "https://kfinance.kensho.com/api/v1/securities/1001",
-            json={"securities": [101, 102, 103]},
-        )
-        m.get(
-            "https://kfinance.kensho.com/api/v1/securities/1002",
-            json={"securities": [104, 105, 106, 107]},
-        )
-        m.get("https://kfinance.kensho.com/api/v1/securities/1005", json={"securities": [108, 109]})
-
-        companies = Companies(self.kfinance_api_client, [1001, 1002, 1005])
-        result = companies.securities
-
-        id_based_result = self.company_object_keys_as_company_id(result)
-        for k, v in id_based_result.items():
-            id_based_result[k] = set(map(lambda s: s.security_id, v))
-
-        expected_id_based_result = {
-            1001: set([101, 102, 103]),
-            1002: set([104, 105, 106, 107]),
-            1005: set([108, 109]),
-        }
-
-        self.assertDictEqual(id_based_result, expected_id_based_result)
-
-    @requests_mock.Mocker()
     def test_batch_request_function(self, m):
         """GIVEN a kfinance group object like TradingItems
         WHEN we batch request a function for each object in the group
