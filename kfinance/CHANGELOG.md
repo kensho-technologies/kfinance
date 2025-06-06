@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.4.0
+ - Add mergers & acquisitions.
+
 ## v2.3.0
 - Add earnings and transcript objects
 

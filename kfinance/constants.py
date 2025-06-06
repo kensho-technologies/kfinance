@@ -103,6 +103,7 @@ class Permission(StrEnum):
     RelationshipPermission = "RelationshipPermission"
     StatementsPermission = "StatementsPermission"
     SegmentsPermission = "SegmentsPermission"
+    MergersPermission = "MergersPermission"
 
 
 class YearAndQuarter(TypedDict):

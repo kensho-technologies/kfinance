@@ -4,6 +4,9 @@ from kfinance.tool_calling.get_business_relationship_from_identifier import (
     GetBusinessRelationshipFromIdentifier,
 )
 from kfinance.tool_calling.get_capitalization_from_identifier import GetCapitalizationFromIdentifier
+from kfinance.tool_calling.get_companies_advising_company_in_transaction_from_identifier import (
+    GetCompaniesAdvisingCompanyInTransactionFromIdentifier,
+)
 from kfinance.tool_calling.get_cusip_from_ticker import GetCusipFromTicker
 from kfinance.tool_calling.get_earnings_call_datetimes_from_identifier import (
     GetEarningsCallDatetimesFromIdentifier,
@@ -20,6 +23,8 @@ from kfinance.tool_calling.get_history_metadata_from_identifier import (
 from kfinance.tool_calling.get_info_from_identifier import GetInfoFromIdentifier
 from kfinance.tool_calling.get_isin_from_ticker import GetIsinFromTicker
 from kfinance.tool_calling.get_latest import GetLatest
+from kfinance.tool_calling.get_merger_info_from_transaction_id import GetMergerInfoFromTransactionID
+from kfinance.tool_calling.get_mergers_from_identifier import GetMergersFromIdentifier
 from kfinance.tool_calling.get_n_quarters_ago import GetNQuartersAgo
 from kfinance.tool_calling.get_prices_from_identifier import GetPricesFromIdentifier
 from kfinance.tool_calling.get_segments_from_identifier import (
@@ -44,4 +49,7 @@ ALL_TOOLS: list[Type[KfinanceTool]] = [
     GetBusinessRelationshipFromIdentifier,
     ResolveIdentifier,
     GetSegmentsFromIdentifier,
+    GetCompaniesAdvisingCompanyInTransactionFromIdentifier,
+    GetMergerInfoFromTransactionID,
+    GetMergersFromIdentifier,
 ]
