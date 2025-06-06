@@ -10,7 +10,16 @@ import pandas as pd
 from PIL.Image import open as image_open
 import time_machine
 
-from kfinance.kfinance import AdvisedCompany, Company, Earnings, MergerOrAcquisition, Security, Ticker, TradingItem, Transcript
+from kfinance.kfinance import (
+    AdvisedCompany,
+    Company,
+    Earnings,
+    MergerOrAcquisition,
+    Security,
+    Ticker,
+    TradingItem,
+    Transcript,
+)
 
 
 msft_company_id = "21835"
@@ -344,7 +353,6 @@ class MockKFinanceApiClient:
     def fetch_earnings(self, company_id: int) -> dict:
         """Get the earnings for a company."""
         return MOCK_COMPANY_DB[company_id]["earnings"]
-
 
     def fetch_transcript(self, key_dev_id: int) -> dict:
         """Get the transcript for an earnings item."""

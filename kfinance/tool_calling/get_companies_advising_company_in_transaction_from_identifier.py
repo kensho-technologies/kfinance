@@ -30,6 +30,7 @@ class GetCompaniesAdvisingCompanyInTransactionFromIdentifier(KfinanceTool):
             return [
                 {
                     "advisor_company_id": advisor.company_id,
+                    "advisor_company_name": advisor.name,
                     "advisor_type_name": advisor.advisor_type_name,
                 }
                 for advisor in advisors

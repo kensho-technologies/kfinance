@@ -310,7 +310,7 @@ class Company(CompanyFunctionsMetaClass):
         self,
         kfinance_api_client: KFinanceApiClient,
         company_id: int,
-        advisor_type_name: Optional[str] = None,
+        company_name: str | None = None,
     ):
         """Initialize the Company object
 
@@ -323,6 +323,8 @@ class Company(CompanyFunctionsMetaClass):
         self.kfinance_api_client = kfinance_api_client
         self.company_id = company_id
         self._all_earnings: list[Earnings] | None = None
+        self._mergers_for_company: dict[str, MergersAndAcquisitions] | None = None
+        self._company_name = company_name
 
     def __str__(self) -> str:
         """String representation for the company object"""
@@ -368,7 +370,7 @@ class Company(CompanyFunctionsMetaClass):
         :return: The company name
         :rtype: str
         """
-        return self.info["name"]
+        return self._company_name if self._company_name else self.info["name"]
 
     @property
     def status(self) -> str:
@@ -611,15 +613,17 @@ class Company(CompanyFunctionsMetaClass):
         :return: three lists of transactions, one each for 'target', 'buyer', and 'seller'
         :rtype: dict[str, MergersAndAcquisitions]
         """
-        mergers_for_company = self.kfinance_api_client.fetch_mergers_for_company(
-            company_id=self.company_id
-        )
-        output: dict = {}
-        for literal in ["target", "buyer", "seller"]:
-            output[literal] = MergersAndAcquisitions(
-                self.kfinance_api_client, mergers_for_company[literal]
+        if self._mergers_for_company is None:
+            mergers_for_company = self.kfinance_api_client.fetch_mergers_for_company(
+                company_id=self.company_id
             )
-        return output
+            output: dict = {}
+            for literal in ["target", "buyer", "seller"]:
+                output[literal] = MergersAndAcquisitions(
+                    self.kfinance_api_client, mergers_for_company[literal]
+                )
+            self._mergers_for_company = output
+        return self._mergers_for_company
 
 
 class AdvisedCompany(Company):
@@ -630,6 +634,7 @@ class AdvisedCompany(Company):
         kfinance_api_client: KFinanceApiClient,
         company_id: int,
         transaction_id: int,
+        company_name: str | None = None,
     ):
         """Initialize the AdvisedCompany object
 
@@ -641,7 +646,7 @@ class AdvisedCompany(Company):
         :type transaction_id: int
         """
 
-        super().__init__(kfinance_api_client=kfinance_api_client, company_id=company_id)
+        super().__init__(kfinance_api_client=kfinance_api_client, company_id=company_id, company_name=company_name)
         self.transaction_id = transaction_id
 
     @property
@@ -650,16 +655,16 @@ class AdvisedCompany(Company):
         advisors = self.kfinance_api_client.fetch_advisors_for_company_in_merger(
             transaction_id=self.transaction_id, advised_company_id=self.company_id
         )["advisors"]
-        company_ids: list[int] = []
-        advisor_type_names: list[str] = []
-        for advisor in advisors:
-            company_ids.append(int(advisor["advisor_company_id"]))
-            advisor_type_names.append(str(advisor["advisor_type_name"]))
-        return Companies(
-            kfinance_api_client=self.kfinance_api_client,
-            company_ids=company_ids,
-            advisor_type_names=advisor_type_names,
-        )
+        companies = [
+            AdvisorCompany(
+                kfinance_api_client=self.kfinance_api_client,
+                company_id=int(advisor["advisor_company_id"]),
+                company_name=str(advisor["advisor_company_name"]),
+                advisor_type_name=str(advisor["advisor_type_name"]),
+            )
+            for advisor in advisors
+        ]
+        return Companies(kfinance_api_client=self.kfinance_api_client, companies=companies)
 
 
 class AdvisorCompany(Company):
@@ -670,6 +675,7 @@ class AdvisorCompany(Company):
         kfinance_api_client: KFinanceApiClient,
         company_id: int,
         advisor_type_name: str,
+        company_name: str | None = None,
     ):
         """Initialize the AdvisorCompany object
 
@@ -681,7 +687,11 @@ class AdvisorCompany(Company):
         :type advisor_type_name: str
         """
 
-        super().__init__(kfinance_api_client=kfinance_api_client, company_id=company_id)
+        super().__init__(
+            kfinance_api_client=kfinance_api_client,
+            company_id=company_id,
+            company_name=company_name,
+        )
         self._advisor_type_name = advisor_type_name
 
     @property
@@ -1246,21 +1256,30 @@ class MergerOrAcquisition:
             "target": AdvisedCompany(
                 kfinance_api_client=self.kfinance_api_client,
                 company_id=self.merger_info["participants"]["target"]["company_id"],
+                company_name=self.merger_info["participants"]["target"]["company_name"],
                 transaction_id=self.transaction_id,
             ),
             "buyers": Companies(
                 kfinance_api_client=self.kfinance_api_client,
-                company_ids=[
-                    company["company_id"] for company in self.merger_info["participants"]["buyers"]
+                companies=[
+                    AdvisedCompany(
+                        kfinance_api_client=self.kfinance_api_client,
+                        company_id=company["company_id"],
+                        company_name=company["company_name"],
+                        transaction_id=self.transaction_id
+                    ) for company in self.merger_info["participants"]["buyers"]
                 ],
-                transaction_id=self.transaction_id,
             ),
             "sellers": Companies(
                 kfinance_api_client=self.kfinance_api_client,
-                company_ids=[
-                    company["company_id"] for company in self.merger_info["participants"]["sellers"]
+                companies=[
+                    AdvisedCompany(
+                        kfinance_api_client=self.kfinance_api_client,
+                        company_id=company["company_id"],
+                        company_name=company["company_name"],
+                        transaction_id=self.transaction_id
+                    ) for company in self.merger_info["participants"]["sellers"]
                 ],
-                transaction_id=self.transaction_id,
             ),
         }
 
@@ -1290,9 +1309,9 @@ class Companies(set):
     def __init__(
         self,
         kfinance_api_client: KFinanceApiClient,
-        company_ids: Iterable[int],
+        company_ids: Optional[Iterable[int]] = None,
         transaction_id: Optional[int] = None,
-        advisor_type_names: Optional[Iterable[str]] = None,
+        companies: Optional[Iterable[Company]] = None,
     ) -> None:
         """Initialize the Companies object
 
@@ -1302,36 +1321,30 @@ class Companies(set):
         :type company_ids: Iterable[int]
         :param transaction_id: If the companies were party to a transaction, the S&P CIQ Transaction Id
         :type transaction_id: Optional[int]
-        :param advisor_type_names: If the companies advised a company in a transaction, the advisor type names
-        :type advisor_type_names: Optional[Iterable[str]]
+        :param companies: If there's already an iterable of Company objects
+        :type companies: Iterable[Company]
         """
         self.kfinance_api_client = kfinance_api_client
-        if transaction_id is not None:
-            super().__init__(
-                AdvisedCompany(
-                    kfinance_api_client=kfinance_api_client,
-                    company_id=company_id,
-                    transaction_id=transaction_id,
+        if companies is not None:
+            super().__init__(company for company in companies)
+        elif company_ids is not None:
+            if transaction_id is not None:
+                super().__init__(
+                    AdvisedCompany(
+                        kfinance_api_client=kfinance_api_client,
+                        company_id=company_id,
+                        transaction_id=transaction_id,
+                    )
+                    for company_id in company_ids
                 )
-                for company_id in company_ids
-            )
-        elif advisor_type_names is not None:
-            super().__init__(
-                AdvisorCompany(
-                    kfinance_api_client=kfinance_api_client,
-                    company_id=company_id,
-                    advisor_type_name=advisor_type_name,
+            else:
+                super().__init__(
+                    Company(
+                        kfinance_api_client=kfinance_api_client,
+                        company_id=company_id,
+                    )
+                    for company_id in company_ids
                 )
-                for company_id, advisor_type_name in zip(company_ids, advisor_type_names)
-            )
-        else:
-            super().__init__(
-                Company(
-                    kfinance_api_client=kfinance_api_client,
-                    company_id=company_id,
-                )
-                for company_id in company_ids
-            )
 
 
 @add_methods_of_singular_class_to_iterable_class(Security)

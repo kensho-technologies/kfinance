@@ -63,6 +63,7 @@ class TestGetCompaniesAdvisingCompanyInTransactionFromIdentifier:
             "advisors": [
                 {
                     "advisor_company_id": 251994106,
+                    "advisor_company_name": "Kensho Technologies, Inc.",
                     "advisor_type_name": "Professional Mongo Enjoyer",
                 }
             ]
@@ -88,33 +89,6 @@ class TestGetMergerInfoFromTransactionID:
             url=f"https://kfinance.kensho.com/api/v1/merger/info/{transaction_id}",
             json=expected_response,
         )
-        requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/info/31696", json=MOCK_COMPANY_DB[31696]["info"]
-        )
-        requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/info/21835", json=MOCK_COMPANY_DB[21835]["info"]
-        )
-        requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/info/18805", json=MOCK_COMPANY_DB[18805]["info"]
-        )
-        requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/info/20087", json=MOCK_COMPANY_DB[20087]["info"]
-        )
-        requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/info/22103", json=MOCK_COMPANY_DB[22103]["info"]
-        )
-        requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/info/23745", json=MOCK_COMPANY_DB[23745]["info"]
-        )
-        requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/info/105902",
-            json=MOCK_COMPANY_DB[105902]["info"],
-        )
-        requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/info/880300",
-            json=MOCK_COMPANY_DB[880300]["info"],
-        )
-
         tool = GetMergerInfoFromTransactionID(kfinance_client=mock_client)
         args = GetMergerInfoFromTransactionIDArgs(transaction_id=transaction_id)
         response = tool.run(args.model_dump(mode="json"))
