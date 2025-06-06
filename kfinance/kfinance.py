@@ -646,7 +646,11 @@ class AdvisedCompany(Company):
         :type transaction_id: int
         """
 
-        super().__init__(kfinance_api_client=kfinance_api_client, company_id=company_id, company_name=company_name)
+        super().__init__(
+            kfinance_api_client=kfinance_api_client,
+            company_id=company_id,
+            company_name=company_name,
+        )
         self.transaction_id = transaction_id
 
     @property
@@ -1266,8 +1270,9 @@ class MergerOrAcquisition:
                         kfinance_api_client=self.kfinance_api_client,
                         company_id=company["company_id"],
                         company_name=company["company_name"],
-                        transaction_id=self.transaction_id
-                    ) for company in self.merger_info["participants"]["buyers"]
+                        transaction_id=self.transaction_id,
+                    )
+                    for company in self.merger_info["participants"]["buyers"]
                 ],
             ),
             "sellers": Companies(
@@ -1277,8 +1282,9 @@ class MergerOrAcquisition:
                         kfinance_api_client=self.kfinance_api_client,
                         company_id=company["company_id"],
                         company_name=company["company_name"],
-                        transaction_id=self.transaction_id
-                    ) for company in self.merger_info["participants"]["sellers"]
+                        transaction_id=self.transaction_id,
+                    )
+                    for company in self.merger_info["participants"]["sellers"]
                 ],
             ),
         }
