@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timezone
 from functools import cached_property
@@ -7,7 +8,7 @@ from io import BytesIO
 import logging
 import re
 from sys import stdout
-from typing import TYPE_CHECKING, Any, Callable, Iterable, NamedTuple, Optional
+from typing import TYPE_CHECKING, Any, Callable, Iterable, NamedTuple, Optional, overload
 from urllib.parse import urljoin
 import webbrowser
 
@@ -39,6 +40,7 @@ from .meta_classes import (
     DelegatedCompanyFunctionsMetaClass,
 )
 from .prompt import PROMPT
+from .pydantic_models import TranscriptComponent
 from .server_thread import ServerThread
 
 
@@ -46,6 +48,12 @@ if TYPE_CHECKING:
     from kfinance.tool_calling.shared_models import KfinanceTool
 
 logger = logging.getLogger(__name__)
+
+
+class NoEarningsDataError(Exception):
+    """Exception raised when no earnings data is found for a company."""
+
+    pass
 
 
 class TradingItem:
@@ -199,6 +207,96 @@ class TradingItem:
         return image
 
 
+class Transcript(Sequence[TranscriptComponent]):
+    """Transcript class that represents earnings item transcript components"""
+
+    def __init__(self, transcript_components: list[dict[str, str]]):
+        """Initialize the Transcript object
+
+        :param transcript_components: List of transcript component dictionaries
+        :type transcript_components: list[dict[str, str]]
+        """
+        self._components = [TranscriptComponent(**component) for component in transcript_components]
+        self._raw_transcript: str | None = None
+
+    @overload
+    def __getitem__(self, index: int) -> TranscriptComponent: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[TranscriptComponent]: ...
+
+    def __getitem__(self, index: int | slice) -> TranscriptComponent | list[TranscriptComponent]:
+        return self._components[index]
+
+    def __len__(self) -> int:
+        return len(self._components)
+
+    @property
+    def raw(self) -> str:
+        """Get the raw transcript as a single string
+
+        :return: Raw transcript text with speaker names and double newlines between components
+        :rtype: str
+        """
+        if self._raw_transcript is not None:
+            return self._raw_transcript
+
+        raw_components = []
+        for component in self._components:
+            speaker = component.person_name
+            text = component.text
+            raw_components.append(f"{speaker}: {text}")
+
+        self._raw_transcript = "\n\n".join(raw_components)
+        return self._raw_transcript
+
+
+class Earnings:
+    """Earnings class that represents an earnings item"""
+
+    def __init__(
+        self,
+        kfinance_api_client: "KFinanceApiClient",
+        name: str,
+        datetime: datetime,
+        key_dev_id: int,
+    ):
+        """Initialize the Earnings object
+
+        :param kfinance_api_client: The KFinanceApiClient used to fetch data
+        :type kfinance_api_client: KFinanceApiClient
+        :param name: The earnings name
+        :type name: str
+        :param datetime: The earnings datetime
+        :type datetime: datetime
+        :param key_dev_id: The key dev ID for the earnings
+        :type key_dev_id: int
+        """
+        self.kfinance_api_client = kfinance_api_client
+        self.name = name
+        self.datetime = datetime
+        self.key_dev_id = key_dev_id
+        self._transcript: Transcript | None = None
+
+    def __str__(self) -> str:
+        """String representation for the earnings object"""
+        return f"{type(self).__module__}.{type(self).__qualname__} of {self.key_dev_id}"
+
+    @property
+    def transcript(self) -> Transcript:
+        """Get the transcript for this earnings
+
+        :return: The transcript object containing all components
+        :rtype: Transcript
+        """
+        if self._transcript is not None:
+            return self._transcript
+
+        transcript_data = self.kfinance_api_client.fetch_transcript(self.key_dev_id)
+        self._transcript = Transcript(transcript_data["transcript"])
+        return self._transcript
+
+
 class Company(CompanyFunctionsMetaClass):
     """Company class
 
@@ -224,6 +322,7 @@ class Company(CompanyFunctionsMetaClass):
         super().__init__()
         self.kfinance_api_client = kfinance_api_client
         self.company_id = company_id
+        self._all_earnings: list[Earnings] | None = None
 
     def __str__(self) -> str:
         """String representation for the company object"""
@@ -252,16 +351,6 @@ class Company(CompanyFunctionsMetaClass):
         """
         security_ids = self.kfinance_api_client.fetch_securities(self.company_id)["securities"]
         return Securities(kfinance_api_client=self.kfinance_api_client, security_ids=security_ids)
-
-    @cached_property
-    def latest_earnings_call(self) -> None:
-        """Set and return the latest earnings call item for the object
-
-        :raises NotImplementedError: This function is not yet implemented
-        """
-        raise NotImplementedError(
-            "The latest earnings call property of company class not implemented yet"
-        )
 
     @cached_property
     def info(self) -> dict:
@@ -402,6 +491,118 @@ class Company(CompanyFunctionsMetaClass):
                 "earnings"
             ]
         ]
+
+    @property
+    def all_earnings(self) -> list[Earnings]:
+        """Retrieve and cache all earnings items for this company"""
+        if self._all_earnings is not None:
+            return self._all_earnings
+
+        earnings_data = self.kfinance_api_client.fetch_earnings(self.company_id)
+        self._all_earnings = []
+
+        for earnings in earnings_data["earnings"]:
+            earnings_datetime = datetime.fromisoformat(earnings["datetime"]).replace(
+                tzinfo=timezone.utc
+            )
+
+            self._all_earnings.append(
+                Earnings(
+                    kfinance_api_client=self.kfinance_api_client,
+                    name=earnings["name"],
+                    datetime=earnings_datetime,
+                    key_dev_id=earnings["key_dev_id"],
+                )
+            )
+
+        return self._all_earnings
+
+    def earnings(
+        self, start_date: date | None = None, end_date: date | None = None
+    ) -> list[Earnings]:
+        """Get earnings for the company within date range sorted in descending order by date
+
+        :param start_date: Start date filter, defaults to None
+        :type start_date: date, optional
+        :param end_date: End date filter, defaults to None
+        :type end_date: date, optional
+        :return: List of earnings objects
+        :rtype: list[Earnings]
+        """
+        if not self.all_earnings:
+            return []
+
+        if start_date is not None:
+            start_date_utc = datetime.combine(start_date, datetime.min.time()).replace(
+                tzinfo=timezone.utc
+            )
+
+        else:
+            start_date_utc = None
+
+        if end_date is not None:
+            end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(
+                tzinfo=timezone.utc
+            )
+
+        else:
+            end_date_utc = None
+
+        filtered_earnings = []
+
+        for earnings in self.all_earnings:
+            # Apply date filtering if provided
+            if start_date_utc is not None and earnings.datetime < start_date_utc:
+                continue
+
+            if end_date_utc is not None and earnings.datetime > end_date_utc:
+                continue
+
+            filtered_earnings.append(earnings)
+
+        return filtered_earnings
+
+    @property
+    def latest_earnings(self) -> Earnings | None:
+        """Get the most recent past earnings
+
+        :return: The most recent earnings or None if no data available
+        :rtype: Earnings | None
+        """
+        if not self.all_earnings:
+            return None
+
+        now = datetime.now(timezone.utc)
+        past_earnings = [
+            earnings_item for earnings_item in self.all_earnings if earnings_item.datetime <= now
+        ]
+
+        if not past_earnings:
+            return None
+
+        # Sort by datetime descending and get the most recent
+        return max(past_earnings, key=lambda x: x.datetime)
+
+    @property
+    def next_earnings(self) -> Earnings | None:
+        """Get the next upcoming earnings
+
+        :return: The next earnings or None if no data available
+        :rtype: Earnings | None
+        """
+        if not self.all_earnings:
+            return None
+
+        now = datetime.now(timezone.utc)
+        future_earnings = [
+            earnings_item for earnings_item in self.all_earnings if earnings_item.datetime > now
+        ]
+
+        if not future_earnings:
+            return None
+
+        # Sort by datetime ascending and get the earliest
+        return min(future_earnings, key=lambda x: x.datetime)
 
     @property
     def mergers_and_acquisitions(self) -> dict[str, MergersAndAcquisitions]:
@@ -1578,6 +1779,17 @@ class Client:
         return TradingItem(
             kfinance_api_client=self.kfinance_api_client, trading_item_id=trading_item_id
         )
+
+    def transcript(self, key_dev_id: int) -> Transcript:
+        """Generate Transcript object from key_dev_id
+
+        :param key_dev_id: The key dev ID for the earnings
+        :type key_dev_id: int
+        :return: The transcript specified by the key dev id
+        :rtype: Transcript
+        """
+        transcript_data = self.kfinance_api_client.fetch_transcript(key_dev_id)
+        return Transcript(transcript_data["transcript"])
 
     def mergers_and_acquisitions(self, company_id: int) -> dict[str, MergersAndAcquisitions]:
         """Generate 3 named lists of MergersAndAcquisitions objects from company_id.

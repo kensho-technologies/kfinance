@@ -1,7 +1,10 @@
 # Changelog
 
-## v2.4
+## v2.4.0
  - Add mergers & acquisitions.
+
+## v2.3.0
+- Add earnings and transcript objects
 
 ## v2.2.5
 - Add parsing for relationship response with name
