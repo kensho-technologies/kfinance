@@ -1,5 +1,4 @@
 from kfinance.constants import CompetitorSource, Permission
-from kfinance.kfinance import Companies
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
@@ -18,7 +17,8 @@ class GetCompetitorsFromIdentifier(KfinanceTool):
         self,
         identifier: str,
         competitor_source: CompetitorSource,
-    ) -> Companies:
-        # TODO: typing
+    ) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
-        return ticker.competitors(competitor_source)
+        return self.kfinance_client.kfinance_api_client.fetch_competitors(
+            company_id=ticker.company_id, competitor_source=competitor_source
+        )

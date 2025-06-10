@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.5.1
+## v2.5.0
 - Add competitors function and llm tools
 
 ## v2.3.1
