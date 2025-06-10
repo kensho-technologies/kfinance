@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.5.0
+- Add competitors function and llm tools
+
 ## v2.4.0
 - Add MCP server
 
