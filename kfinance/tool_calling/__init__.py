@@ -8,6 +8,7 @@ from kfinance.tool_calling.get_companies_advising_company_in_transaction_from_id
     GetCompaniesAdvisingCompanyInTransactionFromIdentifier,
 )
 from kfinance.tool_calling.get_cusip_from_ticker import GetCusipFromTicker
+from kfinance.tool_calling.get_earnings import GetEarnings
 from kfinance.tool_calling.get_earnings_call_datetimes_from_identifier import (
     GetEarningsCallDatetimesFromIdentifier,
 )
@@ -23,13 +24,16 @@ from kfinance.tool_calling.get_history_metadata_from_identifier import (
 from kfinance.tool_calling.get_info_from_identifier import GetInfoFromIdentifier
 from kfinance.tool_calling.get_isin_from_ticker import GetIsinFromTicker
 from kfinance.tool_calling.get_latest import GetLatest
+from kfinance.tool_calling.get_latest_earnings import GetLatestEarnings
 from kfinance.tool_calling.get_merger_info_from_transaction_id import GetMergerInfoFromTransactionID
 from kfinance.tool_calling.get_mergers_from_identifier import GetMergersFromIdentifier
 from kfinance.tool_calling.get_n_quarters_ago import GetNQuartersAgo
+from kfinance.tool_calling.get_next_earnings import GetNextEarnings
 from kfinance.tool_calling.get_prices_from_identifier import GetPricesFromIdentifier
 from kfinance.tool_calling.get_segments_from_identifier import (
     GetSegmentsFromIdentifier,
 )
+from kfinance.tool_calling.get_transcript import GetTranscript
 from kfinance.tool_calling.resolve_identifier import ResolveIdentifier
 from kfinance.tool_calling.shared_models import KfinanceTool
 
@@ -41,6 +45,10 @@ ALL_TOOLS: list[Type[KfinanceTool]] = [
     GetCusipFromTicker,
     GetInfoFromIdentifier,
     GetEarningsCallDatetimesFromIdentifier,
+    GetEarnings,
+    GetLatestEarnings,
+    GetNextEarnings,
+    GetTranscript,
     GetHistoryMetadataFromIdentifier,
     GetPricesFromIdentifier,
     GetCapitalizationFromIdentifier,
