@@ -29,7 +29,7 @@ wrapper to simplify the integration, and as a lower level non-langchain version.
 
 We also provide an [interactive notebook](example_notebooks/basic_usage.ipynb) that demonstrates some usage examples.
 
-# MCP
+# MCP (Model Context Protocol)
 
 To run the kFinance MCP server use:
 
@@ -37,14 +37,14 @@ To run the kFinance MCP server use:
 
 This function initializes and starts an MCP server that exposes the kFinance tools. The server supports multiple authentication methods and transport protocols to accommodate different deployment scenarios.
 
-The servers full signature is as follows:
+The server's full signature is as follows:
 
 `kfinance.mcp [--stdio,-s]/[--sse, ] --refresh-token <refresh-token> --client-id <client-id> --private-key <private-key>`
 
 Authentication Methods (in order of precedence):
-1. Refresh Token: Uses an existing refresh token for authentication. The `--refresh-token <refresh-token>` argument must be provided
-2. Key Pair: Uses client ID and private key for authentication. Both the `--client-id <client-id>` and `--private-key <private-key>` arguments must be provided
-3. Browser: Falls back to browser-based authentication flow. This occurs if no auth arguments are provided
+1. Refresh Token: Uses an existing refresh token for authentication. The `--refresh-token <refresh-token>` argument must be provided.
+2. Key Pair: Uses client ID and private key for authentication. Both the `--client-id <client-id>` and `--private-key <private-key>` arguments must be provided.
+3. Browser: Falls back to browser-based authentication flow. This occurs if no auth arguments are provided.
 
 Transport Layers:
 - stdio can be set by passing either `--stdio` or `-s`
