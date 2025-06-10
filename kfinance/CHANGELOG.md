@@ -3,6 +3,9 @@
 ## v2.4.0
 - Add MCP server
 
+## v2.3.1
+- Add llm tools for retrieving earnings and transcripts
+
 ## v2.3.0
 - Add earnings and transcript objects
 
