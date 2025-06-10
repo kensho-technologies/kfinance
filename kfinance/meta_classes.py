@@ -7,7 +7,13 @@ from cachetools import LRUCache, cached
 import numpy as np
 import pandas as pd
 
-from .constants import LINE_ITEMS, BusinessRelationshipType, CompetitorSource, PeriodType, SegmentType
+from .constants import (
+    LINE_ITEMS,
+    BusinessRelationshipType,
+    CompetitorSource,
+    PeriodType,
+    SegmentType,
+)
 from .fetch import KFinanceApiClient
 from .pydantic_models import RelationshipResponse
 
@@ -416,7 +422,9 @@ class CompanyFunctionsMetaClass:
             end_quarter=end_quarter,
         )
 
-    def competitors(self, competitor_source: CompetitorSource = CompetitorSource.all)-> "Companies":
+    def competitors(
+        self, competitor_source: CompetitorSource = CompetitorSource.all
+    ) -> "Companies":
         """Get the list of companies that are competitors of company_id, optionally filtered by the competitor_source type.
 
         :return: The list of companies that are competitors of company_id, optionally filtered by the competitor_source type
@@ -424,11 +432,13 @@ class CompanyFunctionsMetaClass:
         """
         from .kfinance import Companies
 
-        competitors_data = self.kfinance_api_client.fetch_competitors(company_id=self.company_id, competitor_source=competitor_source)["companies"]
+        competitors_data = self.kfinance_api_client.fetch_competitors(
+            company_id=self.company_id, competitor_source=competitor_source
+        )["companies"]
         return Companies(
-                    kfinance_api_client=self.kfinance_api_client,
-                    company_ids=[company["company_id"] for company in competitors_data],
-                )
+            kfinance_api_client=self.kfinance_api_client,
+            company_ids=[company["company_id"] for company in competitors_data],
+        )
 
 
 for line_item in LINE_ITEMS:

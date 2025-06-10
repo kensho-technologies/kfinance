@@ -11,12 +11,12 @@ import requests
 
 from .constants import (
     BusinessRelationshipType,
+    CompetitorSource,
     IdentificationTriple,
     IndustryClassification,
     Periodicity,
     PeriodType,
     Permission,
-    CompetitorSource,
     SegmentType,
 )
 from .pydantic_models import RelationshipResponse, RelationshipResponseNoName

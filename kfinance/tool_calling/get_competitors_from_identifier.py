@@ -1,7 +1,3 @@
-from datetime import date
-
-from pydantic import Field
-
 from kfinance.constants import CompetitorSource, Permission
 from kfinance.kfinance import Companies
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier

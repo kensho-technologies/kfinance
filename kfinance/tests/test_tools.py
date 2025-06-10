@@ -5,10 +5,17 @@ from pytest import raises
 from requests_mock import Mocker
 import time_machine
 
-from kfinance.constants import BusinessRelationshipType, Capitalization, CompetitorSource, SegmentType, StatementType
+from kfinance.constants import (
+    BusinessRelationshipType,
+    Capitalization,
+    CompetitorSource,
+    SegmentType,
+    StatementType,
+)
 from kfinance.kfinance import Client, NoEarningsDataError
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
 from kfinance.tool_calling import (
+    GetCompetitorsFromIdentifier,
     GetEarnings,
     GetEarningsCallDatetimesFromIdentifier,
     GetFinancialLineItemFromIdentifier,
@@ -23,7 +30,6 @@ from kfinance.tool_calling import (
     GetPricesFromIdentifier,
     GetTranscript,
     ResolveIdentifier,
-    GetCompetitorsFromIdentifier
 )
 from kfinance.tool_calling.get_business_relationship_from_identifier import (
     GetBusinessRelationshipFromIdentifier,
@@ -32,6 +38,9 @@ from kfinance.tool_calling.get_business_relationship_from_identifier import (
 from kfinance.tool_calling.get_capitalization_from_identifier import (
     GetCapitalizationFromIdentifier,
     GetCapitalizationFromIdentifierArgs,
+)
+from kfinance.tool_calling.get_competitors_from_identifier import (
+    GetCompetitorsFromIdentifierArgs,
 )
 from kfinance.tool_calling.get_cusip_from_ticker import GetCusipFromTicker, GetCusipFromTickerArgs
 from kfinance.tool_calling.get_financial_line_item_from_identifier import (
@@ -48,7 +57,6 @@ from kfinance.tool_calling.get_segments_from_identifier import (
     GetSegmentsFromIdentifier,
     GetSegmentsFromIdentifierArgs,
 )
-from kfinance.tool_calling.get_competitors_from_identifier import (GetCompetitorsFromIdentifierArgs, GetCompetitorsFromIdentifier)
 from kfinance.tool_calling.get_transcript import GetTranscriptArgs
 from kfinance.tool_calling.shared_models import ToolArgsWithIdentifier
 
@@ -651,14 +659,8 @@ class TestGetCompetitorsFromIdentifier:
         """
         expected_competitors_response = {
             "companies": [
-                {
-                    "company_id": 35352,
-                    "company_name": "The Descartes Systems Group Inc."
-                },
-                {
-                    "company_id": 4003514,
-                    "company_name": "London Stock Exchange Group plc"
-                }
+                {"company_id": 35352, "company_name": "The Descartes Systems Group Inc."},
+                {"company_id": 4003514, "company_name": "London Stock Exchange Group plc"},
             ]
         }
         requests_mock.get(
@@ -668,7 +670,8 @@ class TestGetCompetitorsFromIdentifier:
         )
 
         tool = GetCompetitorsFromIdentifier(kfinance_client=mock_client)
-        args = GetCompetitorsFromIdentifierArgs(identifier="SPGI", competitor_source=CompetitorSource.named_by_competitor)
+        args = GetCompetitorsFromIdentifierArgs(
+            identifier="SPGI", competitor_source=CompetitorSource.named_by_competitor
+        )
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_competitors_response
-
