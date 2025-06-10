@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.4.0
+- Add MCP server
+
 ## v2.3.1
 - Add llm tools for retrieving earnings and transcripts
 
