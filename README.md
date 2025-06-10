@@ -31,11 +31,11 @@ We also provide an [interactive notebook](example_notebooks/basic_usage.ipynb) t
 
 # MCP
 
-To run the kfinance MCP server use:
+To run the kFinance MCP server use:
 
 `python -m kfinance.mcp`
 
-This function initializes and starts an MCP server that exposes Kfinance tools. The server supports multiple authentication methods and transport protocols to accommodate different deployment scenarios.
+This function initializes and starts an MCP server that exposes the kFinance tools. The server supports multiple authentication methods and transport protocols to accommodate different deployment scenarios.
 
 The servers full signature is as follows:
 
