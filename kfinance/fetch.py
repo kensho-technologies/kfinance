@@ -16,6 +16,7 @@ from .constants import (
     Periodicity,
     PeriodType,
     Permission,
+    CompetitorSource,
     SegmentType,
 )
 from .pydantic_models import RelationshipResponse, RelationshipResponseNoName
@@ -576,4 +577,11 @@ class KFinanceApiClient:
     def fetch_transcript(self, key_dev_id: int) -> dict:
         """Get the transcript for an earnings item."""
         url = f"{self.url_base}transcript/{key_dev_id}"
+        return self.fetch(url)
+
+    def fetch_competitors(self, company_id: int, competitor_source: CompetitorSource) -> dict:
+        """Get the competitors for a company."""
+        url = f"{self.url_base}competitors/{company_id}"
+        if competitor_source is not CompetitorSource.all:
+            url = url + f"/{competitor_source}"
         return self.fetch(url)

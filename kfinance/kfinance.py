@@ -25,6 +25,7 @@ from .constants import (
     HistoryMetadata,
     IdentificationTriple,
     IndustryClassification,
+    CompetitorSource,
     LatestPeriods,
     Periodicity,
     YearAndQuarter,
@@ -602,6 +603,7 @@ class Company(CompanyFunctionsMetaClass):
 
         # Sort by datetime ascending and get the earliest
         return min(future_earnings, key=lambda x: x.datetime)
+    
 
 
 class Security:

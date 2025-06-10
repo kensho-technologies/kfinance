@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.5.1
+- Add competitors function and llm tools
+
 ## v2.3.1
 - Add llm tools for retrieving earnings and transcripts
 
