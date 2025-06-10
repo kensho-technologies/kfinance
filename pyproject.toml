@@ -19,6 +19,8 @@ classifiers = [
 
 dependencies = [
     "cachetools>=5.5,<6",
+    "click>=8.2.1,<=9",
+    "fastmcp>=2,<3",
     "langchain-core>=0.3.15",
     "langchain-google-genai>=2.1.5,<3",
     "numpy>=1.22.4",
