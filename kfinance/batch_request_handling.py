@@ -124,7 +124,7 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
 @dataclass(kw_only=True)
 class Task:
     func: Callable
-    args: Any
+    args: Any = field(default_factory=tuple)
     kwargs: Any = field(default_factory=dict)
     result_key: Hashable
     future: Future | None = None

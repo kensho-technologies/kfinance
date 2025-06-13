@@ -5,6 +5,7 @@ from typing import NamedTuple, TypedDict
 
 from strenum import StrEnum
 
+COMPANY_ID_PREFIX = "C_"
 
 class LineItemType(TypedDict):
     name: str

@@ -994,11 +994,11 @@ class Tickers(set):
             if not isinstance(obj, Tickers):
                 raise ValueError("Can only intersect Tickers object with other Tickers object.")
 
-        self_triples = {t.id_triple for t in self}
+        self_triples = {t.fetch_id_triple for t in self}
         set_triples = []
 
         for ticker_set in s:
-            set_triples.append({t.id_triple for t in ticker_set})
+            set_triples.append({t.fetch_id_triple for t in ticker_set})
         common_triples = self_triples.intersection(*set_triples)
 
         return Tickers(kfinance_api_client=self.kfinance_api_client, id_triples=common_triples)

@@ -1,9 +1,10 @@
+from dataclasses import dataclass
 from typing import Any, Type
 
 from langchain_core.tools import BaseTool
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from kfinance.constants import Permission, ToolMode
+from kfinance.constants import Permission, ToolMode, COMPANY_ID_PREFIX
 from kfinance.kfinance import Client
 
 
@@ -42,3 +43,14 @@ class KfinanceTool(BaseTool):
     def _run(self, *args: Any, **kwargs: Any) -> Any:
         """The code to execute the tool"""
         ...
+
+class ToolArgsWithIdentifiers(BaseModel):
+    """Tool argument with a list of identifiers.
+
+    All tools using identifiers should subclass this model to ensure that the description
+    of identifiers is always the same.
+    """
+
+    identifiers: list[str] = Field(
+        description="The identifiers, which can be a list of ticker symbols, ISINs, or CUSIPs, or company_ids"
+    )

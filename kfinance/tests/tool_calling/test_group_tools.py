@@ -8,43 +8,43 @@ from kfinance.constants import BusinessRelationshipType, Capitalization, Stateme
 from kfinance.kfinance import Client
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
 from kfinance.tool_calling import (
-    GetCusipFromSecurityIds,
-    GetEarningsCallDatetimesFromCompanyIds,
-    GetFinancialStatementFromCompanyIds,
-    GetInfoFromCompanyIds,
-    GetIsinFromSecurityIds,
-    GetPricesFromTradingItemIds,
+    GetCusipFromIdentifiers,
+    GetEarningsCallDatetimesFromIdentifiers,
+    GetFinancialStatementFromIdentifiers,
+    GetInfoFromIdentifiers,
+    GetIsinFromIdentifiers,
+    GetPricesFromIdentifiers,
     ResolveIdentifiers,
 )
-from kfinance.tool_calling.group_tools.get_business_relationship_from_company_id import (
-    GetBusinessRelationshipFromCompanyId,
+from kfinance.tool_calling.group_tools.get_business_relationship_from_identifier import (
+    GetBusinessRelationshipFromIdentifiers,
     GetBusinessRelationshipFromCompanyIdArgs,
 )
-from kfinance.tool_calling.group_tools.get_capitalization_from_company_ids import (
-    GetCapitalizationFromCompanyIds,
+from kfinance.tool_calling.group_tools.get_capitalization_from_identifiers import (
+    GetCapitalizationFromIdentifiers,
     GetCapitalizationFromCompanyIdsArgs,
 )
-from kfinance.tool_calling.group_tools.get_cusip_from_security_ids import (
+from kfinance.tool_calling.group_tools.get_cusip_from_identifiers import (
     GetCusipFromSecurityIdsArgs,
 )
-from kfinance.tool_calling.group_tools.get_earnings_call_datetimes_from_company_ids import (
+from kfinance.tool_calling.group_tools.get_earnings_call_datetimes_from_identifiers import (
     GetEarningsCallDatetimesFromCompanyIdsArgs,
 )
-from kfinance.tool_calling.group_tools.get_financial_line_item_from_company_ids import (
-    GetFinancialLineItemFromCompanyIds,
-    GetFinancialLineItemFromCompanyIdsArgs,
+from kfinance.tool_calling.group_tools.get_financial_line_item_from_identifiers import (
+    GetFinancialLineItemFromIdentifiersIds,
+    GetFinancialLineItemFromIdentifiersArgs,
 )
-from kfinance.tool_calling.group_tools.get_financial_statement_from_company_ids import (
-    GetFinancialStatementFromCompanyIdsArgs,
+from kfinance.tool_calling.group_tools.get_financial_statement_from_identifiers import (
+    GetFinancialStatementFromIdentifiersArgs,
 )
-from kfinance.tool_calling.group_tools.get_history_metadata_from_trading_item_ids import (
-    GetHistoryMetadataFromTradingItemIds,
-    GetHistoryMetadataFromTradingItemIdsArgs,
+from kfinance.tool_calling.group_tools.get_history_metadata_from_identifiers import (
+    GetHistoryMetadataFromIdentifiers,
+    GetHistoryMetadataFromIdentifiersArgs,
 )
-from kfinance.tool_calling.group_tools.get_info_from_company_ids import GetInfoFromCompanyIdsArgs
-from kfinance.tool_calling.group_tools.get_isin_from_security_ids import GetIsinFromSecurityIdsArgs
-from kfinance.tool_calling.group_tools.get_prices_from_trading_item_ids import (
-    GetPricesFromTradingItemIdsArgs,
+from kfinance.tool_calling.group_tools.get_info_from_identifiers import GetInfoFromCompanyIdsArgs
+from kfinance.tool_calling.group_tools.get_isin_from_identifiers import GetIsinFromSecurityIdsArgs
+from kfinance.tool_calling.group_tools.get_prices_from_identifiers import (
+    GetPricesFromIdentifiersArgs,
 )
 from kfinance.tool_calling.group_tools.resolve_identifiers import ResolveIdentifiersArgs
 
@@ -69,7 +69,7 @@ class TestGetBusinessRelationshipFromCompanyId:
             json=supplier_resp,
         )
 
-        tool = GetBusinessRelationshipFromCompanyId(kfinance_client=mock_client)
+        tool = GetBusinessRelationshipFromIdentifiers(kfinance_client=mock_client)
         args = GetBusinessRelationshipFromCompanyIdArgs(
             company_id=SPGI_COMPANY_ID, business_relationship=BusinessRelationshipType.supplier
         )
@@ -113,7 +113,7 @@ class TestGetCapitalizationFromCompanyIds:
             "company_id: 21719": "| date       |   market_cap |\n|:-----------|-------------:|\n| 2024-04-10 |  1.32767e+11 |\n| 2024-04-11 |  1.32416e+11 |"
         }
 
-        tool = GetCapitalizationFromCompanyIds(kfinance_client=mock_client)
+        tool = GetCapitalizationFromIdentifiers(kfinance_client=mock_client)
         args = GetCapitalizationFromCompanyIdsArgs(
             company_ids=[SPGI_COMPANY_ID], capitalization=Capitalization.market_cap
         )
@@ -137,7 +137,7 @@ class TestGetCapitalizationFromCompanyIds:
                 url=f"https://kfinance.kensho.com/api/v1/market_cap/{company_id}/none/none",
                 json=self.market_caps_resp,
             )
-        tool = GetCapitalizationFromCompanyIds(kfinance_client=mock_client)
+        tool = GetCapitalizationFromIdentifiers(kfinance_client=mock_client)
         args = GetCapitalizationFromCompanyIdsArgs(
             company_ids=company_ids, capitalization=Capitalization.market_cap
         )
@@ -161,7 +161,7 @@ class TestGetCusipFromSecurityIds:
                 url=f"https://kfinance.kensho.com/api/v1/cusip/{security_id}",
                 json={"cusip": security_id},
             )
-        tool = GetCusipFromSecurityIds(kfinance_client=mock_client)
+        tool = GetCusipFromIdentifiers(kfinance_client=mock_client)
         resp = tool.run(
             GetCusipFromSecurityIdsArgs(security_ids=security_ids).model_dump(mode="json")
         )
@@ -183,7 +183,7 @@ class TestGetIsinFromSecurityIds:
                 url=f"https://kfinance.kensho.com/api/v1/isin/{security_id}",
                 json={"isin": security_id},
             )
-        tool = GetIsinFromSecurityIds(kfinance_client=mock_client)
+        tool = GetIsinFromIdentifiers(kfinance_client=mock_client)
         resp = tool.run(
             GetIsinFromSecurityIdsArgs(security_ids=security_ids).model_dump(mode="json")
         )
@@ -209,7 +209,7 @@ class TestGetEarningsCallDatetimesFromCompanyIds:
                 url=f"https://kfinance.kensho.com/api/v1/earnings/{company_id}/dates",
                 json={"earnings": ["2025-04-29T12:30:00", "2025-02-11T13:30:00"]},
             )
-        tool = GetEarningsCallDatetimesFromCompanyIds(kfinance_client=mock_client)
+        tool = GetEarningsCallDatetimesFromIdentifiers(kfinance_client=mock_client)
         response = tool.run(
             GetEarningsCallDatetimesFromCompanyIdsArgs(company_ids=company_ids).model_dump(
                 mode="json"
@@ -245,8 +245,8 @@ class TestGetFinancialLineItemFromCompanyIds:
             json=self.line_item_resp,
         )
 
-        tool = GetFinancialLineItemFromCompanyIds(kfinance_client=mock_client)
-        args = GetFinancialLineItemFromCompanyIdsArgs(
+        tool = GetFinancialLineItemFromIdentifiersIds(kfinance_client=mock_client)
+        args = GetFinancialLineItemFromIdentifiersArgs(
             company_ids=[SPGI_COMPANY_ID], line_item="revenue"
         )
         response = tool.run(args.model_dump(mode="json"))
@@ -269,8 +269,8 @@ class TestGetFinancialLineItemFromCompanyIds:
                 url=f"https://kfinance.kensho.com/api/v1/line_item/{company_id}/revenue/none/none/none/none/none",
                 json=self.line_item_resp,
             )
-        tool = GetFinancialLineItemFromCompanyIds(kfinance_client=mock_client)
-        args = GetFinancialLineItemFromCompanyIdsArgs(company_ids=company_ids, line_item="revenue")
+        tool = GetFinancialLineItemFromIdentifiersIds(kfinance_client=mock_client)
+        args = GetFinancialLineItemFromIdentifiersArgs(company_ids=company_ids, line_item="revenue")
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
 
@@ -280,7 +280,7 @@ class TestGetFinancialLineItemFromCompanyIds:
         WHEN we generate an openai schema from the tool
         THEN all line items and aliases are included in the line item enum
         """
-        tool = GetFinancialLineItemFromCompanyIds(kfinance_client=mock_client)
+        tool = GetFinancialLineItemFromIdentifiersIds(kfinance_client=mock_client)
         oai_schema = convert_to_openai_tool(tool)
         line_items = oai_schema["function"]["parameters"]["properties"]["line_item"]["enum"]
         # revenue is a line item
@@ -314,8 +314,8 @@ class TestGetFinancialStatementFromCompanyId:
             "company_id: 21719": "{'2020': {'Revenues': 7442000000.0, 'Total Revenues': 7442000000.0}, '2021': {'Revenues': 8243000000.0, 'Total Revenues': 8243000000.0}}"
         }
 
-        tool = GetFinancialStatementFromCompanyIds(kfinance_client=mock_client)
-        args = GetFinancialStatementFromCompanyIdsArgs(
+        tool = GetFinancialStatementFromIdentifiers(kfinance_client=mock_client)
+        args = GetFinancialStatementFromIdentifiersArgs(
             company_ids=[SPGI_COMPANY_ID], statement=StatementType.income_statement
         )
         response = tool.run(args.model_dump(mode="json"))
@@ -340,8 +340,8 @@ class TestGetFinancialStatementFromCompanyId:
                 json=self.statement_resp,
             )
 
-        tool = GetFinancialStatementFromCompanyIds(kfinance_client=mock_client)
-        args = GetFinancialStatementFromCompanyIdsArgs(
+        tool = GetFinancialStatementFromIdentifiers(kfinance_client=mock_client)
+        args = GetFinancialStatementFromIdentifiersArgs(
             company_ids=company_ids, statement=StatementType.income_statement
         )
         response = tool.run(args.model_dump(mode="json"))
@@ -379,9 +379,9 @@ class TestGetHistoryMetadataFromTradingItemIds:
                 json=metadata_resp,
             )
 
-        tool = GetHistoryMetadataFromTradingItemIds(kfinance_client=mock_client)
+        tool = GetHistoryMetadataFromIdentifiers(kfinance_client=mock_client)
         resp = tool.run(
-            GetHistoryMetadataFromTradingItemIdsArgs(trading_item_ids=trading_item_ids).model_dump(
+            GetHistoryMetadataFromIdentifiersArgs(trading_item_ids=trading_item_ids).model_dump(
                 mode="json"
             )
         )
@@ -405,7 +405,7 @@ class TestGetInfoFromCompanyIds:
             json=info_resp,
         )
 
-        tool = GetInfoFromCompanyIds(kfinance_client=mock_client)
+        tool = GetInfoFromIdentifiers(kfinance_client=mock_client)
         resp = tool.run(
             GetInfoFromCompanyIdsArgs(company_ids=[SPGI_COMPANY_ID]).model_dump(mode="json")
         )
@@ -449,9 +449,9 @@ class TestPricesFromTradingItemIds:
             "trading_item_id: 2629108": "| date       |   open |   high |    low |   close |      volume |\n|:-----------|-------:|-------:|-------:|--------:|------------:|\n| 2024-04-11 | 424.26 | 425.99 | 422.04 |  422.92 | 1.12916e+06 |\n| 2024-04-12 | 419.23 | 421.94 | 416.45 |  417.81 | 1.18223e+06 |"
         }
 
-        tool = GetPricesFromTradingItemIds(kfinance_client=mock_client)
+        tool = GetPricesFromIdentifiers(kfinance_client=mock_client)
         response = tool.run(
-            GetPricesFromTradingItemIdsArgs(trading_item_ids=[SPGI_TRADING_ITEM_ID]).model_dump(
+            GetPricesFromIdentifiersArgs(trading_item_ids=[SPGI_TRADING_ITEM_ID]).model_dump(
                 mode="json"
             )
         )
@@ -476,9 +476,9 @@ class TestPricesFromTradingItemIds:
             "trading_item_id: 1": expected_single_company_response,
             "trading_item_id: 2": expected_single_company_response,
         }
-        tool = GetPricesFromTradingItemIds(kfinance_client=mock_client)
+        tool = GetPricesFromIdentifiers(kfinance_client=mock_client)
         response = tool.run(
-            GetPricesFromTradingItemIdsArgs(trading_item_ids=trading_item_ids).model_dump(
+            GetPricesFromIdentifiersArgs(trading_item_ids=trading_item_ids).model_dump(
                 mode="json"
             )
         )
