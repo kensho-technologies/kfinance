@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.4.1
+- Fix SegmentsPermission typo
+
 ## v2.4.0
 - Add MCP server
 
