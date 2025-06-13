@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.4.2
+- Update missing permission warning
+
 ## v2.4.1
 - Fix SegmentsPermission typo
 
