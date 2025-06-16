@@ -25,6 +25,10 @@ from kfinance.tool_calling import (
     GetTranscript,
     ResolveIdentifier,
 )
+from kfinance.tool_calling.get_advisors_for_company_in_transaction_from_identifier import (
+    GetAdvisorsForCompanyInTransactionFromIdentifier,
+    GetAdvisorsForCompanyInTransactionFromIdentifierArgs,
+)
 from kfinance.tool_calling.get_business_relationship_from_identifier import (
     GetBusinessRelationshipFromIdentifier,
     GetBusinessRelationshipFromIdentifierArgs,
@@ -32,10 +36,6 @@ from kfinance.tool_calling.get_business_relationship_from_identifier import (
 from kfinance.tool_calling.get_capitalization_from_identifier import (
     GetCapitalizationFromIdentifier,
     GetCapitalizationFromIdentifierArgs,
-)
-from kfinance.tool_calling.get_companies_advising_company_in_transaction_from_identifier import (
-    GetCompaniesAdvisingCompanyInTransactionFromIdentifier,
-    GetCompaniesAdvisingCompanyInTransactionFromIdentifierArgs,
 )
 from kfinance.tool_calling.get_cusip_from_ticker import GetCusipFromTicker, GetCusipFromTickerArgs
 from kfinance.tool_calling.get_financial_line_item_from_identifier import (
@@ -79,8 +79,8 @@ class TestGetCompaniesAdvisingCompanyInTransactionFromIdentifier:
             url=f"https://kfinance.kensho.com/api/v1/merger/info/{transaction_id}/advisors/21835",
             json=expected_response,
         )
-        tool = GetCompaniesAdvisingCompanyInTransactionFromIdentifier(kfinance_client=mock_client)
-        args = GetCompaniesAdvisingCompanyInTransactionFromIdentifierArgs(
+        tool = GetAdvisorsForCompanyInTransactionFromIdentifier(kfinance_client=mock_client)
+        args = GetAdvisorsForCompanyInTransactionFromIdentifierArgs(
             identifier="MSFT", transaction_id=transaction_id
         )
         response = tool.run(args.model_dump(mode="json"))

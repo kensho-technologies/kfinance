@@ -7,14 +7,14 @@ from kfinance.kfinance import AdvisedCompany
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
-class GetCompaniesAdvisingCompanyInTransactionFromIdentifierArgs(ToolArgsWithIdentifier):
+class GetAdvisorsForCompanyInTransactionFromIdentifierArgs(ToolArgsWithIdentifier):
     transaction_id: int | None = Field(description="The ID of the merger.", default=None)
 
 
-class GetCompaniesAdvisingCompanyInTransactionFromIdentifier(KfinanceTool):
-    name: str = "get_companies_advising_company_in_transaction_from_identifier"
+class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
+    name: str = "get_advisors_for_company_in_transaction_from_identifier"
     description: str = 'Get the companies advising a company in a given transaction. For example, "Who advised S&P Global during their purchase of Kensho?"'
-    args_schema: Type[BaseModel] = GetCompaniesAdvisingCompanyInTransactionFromIdentifierArgs
+    args_schema: Type[BaseModel] = GetAdvisorsForCompanyInTransactionFromIdentifierArgs
     required_permission: Permission | None = Permission.MergersPermission
 
     def _run(self, identifier: str, transaction_id: int) -> list:
