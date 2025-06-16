@@ -4,7 +4,7 @@ from kfinance.tool_calling.shared_models import KfinanceTool
 
 class GetCompanyDescriptionFromIdentifier(KfinanceTool):
     name: str = "get_company_description_from_identifier"
-    description: str = "Retrieves a detailed description of the company broken down into sections"
+    description: str = "Gets a detailed description of a company, broken down into sections, which may include information about the company's Primary business, Segments (including Products and Services for each), Competition, Significant events, and History. Within the text, four spaces represent a new paragraph. Note that the description is divided into sections with headers, where each section has a new paragraph (four spaces) before and after the section header."
     required_permission: Permission | None = Permission.IntelligencePermission
 
     def _run(
@@ -12,6 +12,6 @@ class GetCompanyDescriptionFromIdentifier(KfinanceTool):
         identifier: str,
     ) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
-        return self.kfinance_client.kfinance_api_client.fetch_company_description(
+        return self.kfinance_client.kfinance_api_client.fetch_company_descriptions(
             company_id=ticker.company_id
-        )
+        )["description"]

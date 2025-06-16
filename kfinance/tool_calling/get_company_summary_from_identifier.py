@@ -4,7 +4,7 @@ from kfinance.tool_calling.shared_models import KfinanceTool
 
 class GetCompanySummaryFromIdentifier(KfinanceTool):
     name: str = "get_company_summary_from_identifier"
-    description: str = "Retrieves a list of competitors for a given company, optionally filtered by the source of the competitor information."
+    description: str = "Gets a one paragraph summary/short description of a company, including information about the company's primary business, products and services offered and their applications, business segment details, client/customer groups served, geographic markets served, distribution channels, strategic alliances/partnerships, founded/incorporated year, latest former name, and headquarters and additional offices."
     required_permission: Permission | None = Permission.IntelligencePermission
 
     def _run(
@@ -12,6 +12,6 @@ class GetCompanySummaryFromIdentifier(KfinanceTool):
         identifier: str,
     ) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
-        return self.kfinance_client.kfinance_api_client.fetch_company_summary(
+        return self.kfinance_client.kfinance_api_client.fetch_company_descriptions(
             company_id=ticker.company_id
-        )
+        )["summary"]

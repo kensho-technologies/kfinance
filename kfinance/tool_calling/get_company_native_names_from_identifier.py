@@ -4,7 +4,7 @@ from kfinance.tool_calling.shared_models import KfinanceTool
 
 class GetCompanyNativeNamesFromIdentifier(KfinanceTool):
     name: str = "get_company_native_names_from_identifier"
-    description: str = ""
+    description: str = "Gets the primary non-Latin character name for global companies, including languages such as Arabic, Russian, Greek, Japanese, etc. This also includes limited history on native name changes."
     required_permission: Permission | None = Permission.IntelligencePermission
 
     def _run(
@@ -12,7 +12,7 @@ class GetCompanyNativeNamesFromIdentifier(KfinanceTool):
         identifier: str,
     ) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
-        return self.kfinance_client.kfinance_api_client.fetch_company_native_names(
+        return self.kfinance_client.kfinance_api_client.fetch_company_other_names(
             company_id=ticker.company_id
-        )
+        )["native_names"]
         
