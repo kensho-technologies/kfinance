@@ -31,8 +31,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-# DEFAULT_API_HOST: str = "https://kfinance.kensho.com"
-DEFAULT_API_HOST: str = "http://localhost:8000"
+DEFAULT_API_HOST: str = "https://kfinance.kensho.com"
+# DEFAULT_API_HOST: str = "http://localhost:8000"
 DEFAULT_API_VERSION: int = 1
 DEFAULT_OKTA_HOST: str = "https://kensho.okta.com"
 DEFAULT_OKTA_AUTH_SERVER: str = "default"
@@ -581,10 +581,10 @@ class KFinanceApiClient:
 
     def fetch_company_descriptions(self, company_id: int) -> dict:
         """Get the short description (summary) and long description for a company"""
-        url = f"{self.url_base}/info/{company_id}/description"
+        url = f"{self.url_base}info/{company_id}/descriptions"
         return self.fetch(url)
 
     def fetch_company_other_names(self, company_id: int) -> dict:
         """Get the alternate, historical, and native names for a company"""
-        url = f"{self.url_base}/info/{company_id}/names"
+        url = f"{self.url_base}info/{company_id}/names"
         return self.fetch(url)

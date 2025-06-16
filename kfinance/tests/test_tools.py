@@ -23,6 +23,11 @@ from kfinance.tool_calling import (
     GetPricesFromIdentifier,
     GetTranscript,
     ResolveIdentifier,
+    GetCompanySummaryFromIdentifier,
+    GetCompanyDescriptionFromIdentifier,
+    GetCompanyAlternateNamesFromIdentifier,
+    GetCompanyHistoricalNamesFromIdentifier,
+    GetCompanyNativeNamesFromIdentifier,
 )
 from kfinance.tool_calling.get_business_relationship_from_identifier import (
     GetBusinessRelationshipFromIdentifier,
@@ -638,3 +643,52 @@ class TestGetTranscript:
         tool = GetTranscript(kfinance_client=mock_client)
         response = tool.run(GetTranscriptArgs(key_dev_id=12345).model_dump(mode="json"))
         assert response == expected_response
+
+class TestGetCompanyDescriptions:
+    def test_get_company_summary_from_identifier(self, mock_client: Client, requests_mock: Mocker):
+        """
+        GIVEN the GetCompanySummaryFromIdentifier tool
+        WHEN we request the company summary (short description) for SPGI
+        THEN we get back SPGI company's summary (short description)
+        """
+        descriptions_data = {
+            "summary": "S&P Global Inc., together with its subsidiaries, provides credit ratings, benchmarks, analytics, and workflow solutions in the global capital, commodity, and automotive markets. It operates through five segments: S&P Global Market Intelligence, S&P Global Ratings, S&P Global Commodity Insights, S&P Global Mobility, and S&P Dow Jones Indices.",
+            "description": "S&P Global Inc. (S&P Global), together with its subsidiaries, provides credit ratings, benchmarks, analytics, and workflow solutions in the global capital, commodity, and automotive markets.\r\n\r\nThe capital markets include asset managers, investment banks, commercial banks, insurance companies, exchanges, trading firms, and issuers; the commodity markets include producers, consumers, traders and intermediaries within energy, chemicals, shipping, metals, carbon, and agriculture; and the automotive markets include manufacturers, suppliers, dealerships, service shops, and customers.",
+        }
+
+        expected_summary_response = "S&P Global Inc., together with its subsidiaries, provides credit ratings, benchmarks, analytics, and workflow solutions in the global capital, commodity, and automotive markets. It operates through five segments: S&P Global Market Intelligence, S&P Global Ratings, S&P Global Commodity Insights, S&P Global Mobility, and S&P Dow Jones Indices."
+
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}/descriptions",
+            # truncated from the original API response
+            json=descriptions_data,
+        )
+
+        tool = GetCompanySummaryFromIdentifier(kfinance_client=mock_client)
+        args = ToolArgsWithIdentifier(identifier="SPGI")
+        response = tool.run(args.model_dump(mode="json"))
+        assert response == expected_summary_response
+    
+    def test_get_company_description_from_identifier(self, mock_client: Client, requests_mock: Mocker):
+        """
+        GIVEN the GetCompanyDescriptionFromIdentifier tool
+        WHEN we request the company description for SPGI
+        THEN we get back SPGI company's description
+        """
+        descriptions_data = {
+            "summary": "S&P Global Inc., together with its subsidiaries, provides credit ratings, benchmarks, analytics, and workflow solutions in the global capital, commodity, and automotive markets. It operates through five segments: S&P Global Market Intelligence, S&P Global Ratings, S&P Global Commodity Insights, S&P Global Mobility, and S&P Dow Jones Indices.",
+            "description": "S&P Global Inc. (S&P Global), together with its subsidiaries, provides credit ratings, benchmarks, analytics, and workflow solutions in the global capital, commodity, and automotive markets.\r\n\r\nThe capital markets include asset managers, investment banks, commercial banks, insurance companies, exchanges, trading firms, and issuers; the commodity markets include producers, consumers, traders and intermediaries within energy, chemicals, shipping, metals, carbon, and agriculture; and the automotive markets include manufacturers, suppliers, dealerships, service shops, and customers.",
+        }
+
+        expected_description_response = "S&P Global Inc. (S&P Global), together with its subsidiaries, provides credit ratings, benchmarks, analytics, and workflow solutions in the global capital, commodity, and automotive markets.\r\n\r\nThe capital markets include asset managers, investment banks, commercial banks, insurance companies, exchanges, trading firms, and issuers; the commodity markets include producers, consumers, traders and intermediaries within energy, chemicals, shipping, metals, carbon, and agriculture; and the automotive markets include manufacturers, suppliers, dealerships, service shops, and customers."
+
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}/descriptions",
+            # truncated from the original API response
+            json=descriptions_data,
+        )
+
+        tool = GetCompanyDescriptionFromIdentifier(kfinance_client=mock_client)
+        args = ToolArgsWithIdentifier(identifier="SPGI")
+        response = tool.run(args.model_dump(mode="json"))
+        assert response == expected_description_response
