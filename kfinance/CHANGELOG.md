@@ -1,7 +1,16 @@
 # Changelog
 
-## v2.4.0
+## v2.5.0
  - Add mergers & acquisitions.
+
+## v2.4.2
+- Update missing permission warning
+
+## v2.4.1
+- Fix SegmentsPermission typo
+
+## v2.4.0
+- Add MCP server
 
 ## v2.3.1
 - Add llm tools for retrieving earnings and transcripts
