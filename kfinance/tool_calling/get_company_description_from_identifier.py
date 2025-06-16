@@ -1,0 +1,17 @@
+from kfinance.constants import Permission
+from kfinance.tool_calling.shared_models import KfinanceTool
+
+
+class GetCompanyDescriptionFromIdentifier(KfinanceTool):
+    name: str = "get_company_description_from_identifier"
+    description: str = "Retrieves a detailed description of the company broken down into sections"
+    required_permission: Permission | None = Permission.IntelligencePermission
+
+    def _run(
+        self,
+        identifier: str,
+    ) -> dict:
+        ticker = self.kfinance_client.ticker(identifier)
+        return self.kfinance_client.kfinance_api_client.fetch_company_description(
+            company_id=ticker.company_id
+        )
