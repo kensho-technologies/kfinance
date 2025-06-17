@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import logging
+from threading import local
 from time import time
 from typing import Callable, Generator, Optional
 from uuid import uuid4
@@ -95,8 +96,7 @@ class KFinanceApiClient:
         self._batch_id: str | None = None
         self._batch_size: str | None = None
         self._user_permissions: set[Permission] | None = None
-        self.endpoint_urls: list[str] = []
-        self._tracking_enabled: bool = False
+        self._thread_local = local()
 
     @contextmanager
     def batch_request_header(self, batch_size: int) -> Generator:
@@ -213,17 +213,38 @@ class KFinanceApiClient:
     @contextmanager
     def track_endpoints(self):
         """Context manager to track endpoint URLs during execution."""
-        self.endpoint_urls = []  # Reset the list
-        self._tracking_enabled = True
+        # Initialize thread-local storage for this thread if not already done
+        if not hasattr(self._thread_local, 'endpoint_urls'):
+            self._thread_local.endpoint_urls = []
+        if not hasattr(self._thread_local, 'tracking_enabled'):
+            self._thread_local.tracking_enabled = False
+            
+        # Store original state
+        original_urls = self._thread_local.endpoint_urls
+        original_tracking = self._thread_local.tracking_enabled
+        
+        # Set up tracking for this context
+        self._thread_local.endpoint_urls = []
+        self._thread_local.tracking_enabled = True
+        
         try:
             yield
         finally:
-            self._tracking_enabled = False
+            # Restore original state
+            self._thread_local.endpoint_urls = original_urls
+            self._thread_local.tracking_enabled = original_tracking
+
+    @property
+    def endpoint_urls(self):
+        """Get the endpoint URLs for the current thread."""
+        if not hasattr(self._thread_local, 'endpoint_urls'):
+            self._thread_local.endpoint_urls = []
+        return self._thread_local.endpoint_urls
 
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
-        if self._tracking_enabled:
-            self.endpoint_urls.append(url)
+        if getattr(self._thread_local, 'tracking_enabled', False):
+            self._thread_local.endpoint_urls.append(url)
 
         headers = {
             "Content-Type": "application/json",
