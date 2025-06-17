@@ -16,7 +16,4 @@ class GetCompanyNativeNamesFromIdentifier(KfinanceTool):
         identifier: str,
     ) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
-        return self.kfinance_client.kfinance_api_client.fetch_company_other_names(
-            company_id=ticker.company_id
-        )["native_names"]
-        
+        return ticker.company.native_names()

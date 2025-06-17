@@ -16,6 +16,4 @@ class GetCompanyDescriptionFromIdentifier(KfinanceTool):
         identifier: str,
     ) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
-        return self.kfinance_client.kfinance_api_client.fetch_company_descriptions(
-            company_id=ticker.company_id
-        )["description"]
+        return ticker.company.description()
