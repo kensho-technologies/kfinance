@@ -219,7 +219,8 @@ class KFinanceApiClient:
         if not hasattr(self._thread_local, 'tracking_enabled'):
             self._thread_local.tracking_enabled = False
             
-        # Store original state
+        # Store and later restore original state.
+        # Important for nested contexts (when one tool calls another tool?)
         original_urls = self._thread_local.endpoint_urls
         original_tracking = self._thread_local.tracking_enabled
         
@@ -228,9 +229,10 @@ class KFinanceApiClient:
         self._thread_local.tracking_enabled = True
         
         try:
+            # Here is where the tool is actually called and the endpoint urls are collected
             yield
         finally:
-            # Restore original state
+            # Restore original state to what it was before the context manager was entered
             self._thread_local.endpoint_urls = original_urls
             self._thread_local.tracking_enabled = original_tracking
 
