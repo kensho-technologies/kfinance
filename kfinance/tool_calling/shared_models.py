@@ -46,6 +46,7 @@ class KfinanceTool(BaseTool):
         """
         with self.kfinance_client.kfinance_api_client.track_endpoints():
             data = self.run_without_langchain(*args, **kwargs)
+            print(f"Endpoint URLs: {self.kfinance_client.kfinance_api_client.endpoint_urls}")
             return {
                 "data": data,
                 "endpoint_urls": self.kfinance_client.kfinance_api_client.endpoint_urls

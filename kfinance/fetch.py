@@ -222,6 +222,8 @@ class KFinanceApiClient:
 
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
+        if self._tracking_enabled:
+            self.endpoint_urls.append(url)
 
         headers = {
             "Content-Type": "application/json",
