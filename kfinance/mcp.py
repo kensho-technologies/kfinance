@@ -1,44 +1,29 @@
-from textwrap import dedent
 from typing import Literal, Optional
 
 import click
 from fastmcp import FastMCP
+from fastmcp.tools import FunctionTool
 from fastmcp.utilities.logging import get_logger
+from langchain_core.tools import BaseTool
+from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from kfinance.kfinance import Client
-from kfinance.tool_calling.shared_models import KfinanceTool
 
 
 logger = get_logger(__name__)
 
 
-def build_doc_string(tool: KfinanceTool) -> str:
-    """Build a formatted documentation string for a Kfinance tool.
+def build_mcp_tool_from_langchain_tool(langchain_tool: BaseTool) -> FunctionTool:
+    """Build an MCP FunctionTool from a langchain BaseTool"""
 
-    This function takes a KfinanceTool object and constructs a comprehensive
-    documentation string that includes the tool's description and detailed
-    information about its arguments, including default values and descriptions.
-
-    :param tool: The Kfinance tool object containing metadata about the tool's functionality, description, and argument schema.
-    :type tool: KfinanceTool
-    :return: A formatted documentation string containing for the tool description with detailed argument information.
-    :rtype: str
-    """
-
-    description = dedent(f"""
-        {tool.description}
-
-        Args:
-    """).strip()
-
-    for arg_name, arg_field in tool.args_schema.model_fields.items():
-        default_value_description = (
-            f"Default: {arg_field.default}. " if not arg_field.is_required() else ""
-        )
-        param_description = f"\n    {arg_name}: {default_value_description}{arg_field.description}"
-        description += param_description
-
-    return description
+    return FunctionTool(
+        name=langchain_tool.name,
+        description=langchain_tool.description,
+        # MCP expects a JSON schema for tool params, which we
+        # can generate similar to how langchain generates openai json schemas.
+        parameters=convert_to_openai_tool(langchain_tool)["function"]["parameters"],
+        fn=langchain_tool._run,  # noqa:SLF001
+    )
 
 
 @click.command()
@@ -85,13 +70,9 @@ def run_mcp(
         kfinance_client = Client()
 
     kfinance_mcp: FastMCP = FastMCP("Kfinance")
-    for tool in kfinance_client.langchain_tools:
-        logger.info("Adding %s to server", tool.name)
-        kfinance_mcp.tool(
-            name_or_fn=getattr(tool, "_run"),
-            name=tool.name,
-            description=build_doc_string(tool),
-        )
+    for langchain_tool in kfinance_client.langchain_tools:
+        logger.info("Adding %s to server", langchain_tool.name)
+        kfinance_mcp.add_tool(build_mcp_tool_from_langchain_tool(langchain_tool))
 
     logger.info("Server starting")
     kfinance_mcp.run(transport=transport)
