@@ -4,25 +4,32 @@ import click
 from fastmcp import FastMCP
 from fastmcp.tools import FunctionTool
 from fastmcp.utilities.logging import get_logger
-from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from kfinance.kfinance import Client
+from kfinance.tool_calling import KfinanceTool
 
 
 logger = get_logger(__name__)
 
 
-def build_mcp_tool_from_langchain_tool(langchain_tool: BaseTool) -> FunctionTool:
-    """Build an MCP FunctionTool from a langchain BaseTool"""
+def build_mcp_tool_from_kfinance_tool(kfinance_tool: KfinanceTool) -> FunctionTool:
+    """Build an MCP FunctionTool from a langchain KfinanceTool."""
 
     return FunctionTool(
-        name=langchain_tool.name,
-        description=langchain_tool.description,
+        name=kfinance_tool.name,
+        description=kfinance_tool.description,
         # MCP expects a JSON schema for tool params, which we
         # can generate similar to how langchain generates openai json schemas.
-        parameters=convert_to_openai_tool(langchain_tool)["function"]["parameters"],
-        fn=langchain_tool._run,  # noqa:SLF001
+        parameters=convert_to_openai_tool(kfinance_tool)["function"]["parameters"],
+        # The langchain runner internally validates input arguments via the args_schema.
+        # When running with mcp, we need to reproduce that validation ourselves in
+        # run_without_langchain (which then calls _run).
+        # If we pass in the underlying _run method directly, mcp generates a schema from
+        # the _run type hints but bypasses our internal validation. This causes errors,
+        # for example with integer literals, which our args models allow but the
+        # mcp-internal validation disallows.
+        fn=kfinance_tool.run_without_langchain,
     )
 
 
@@ -72,7 +79,7 @@ def run_mcp(
     kfinance_mcp: FastMCP = FastMCP("Kfinance")
     for langchain_tool in kfinance_client.langchain_tools:
         logger.info("Adding %s to server", langchain_tool.name)
-        kfinance_mcp.add_tool(build_mcp_tool_from_langchain_tool(langchain_tool))
+        kfinance_mcp.add_tool(build_mcp_tool_from_kfinance_tool(langchain_tool))
 
     logger.info("Server starting")
     kfinance_mcp.run(transport=transport)
