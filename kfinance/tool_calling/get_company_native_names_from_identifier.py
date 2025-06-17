@@ -16,4 +16,4 @@ class GetCompanyNativeNamesFromIdentifier(KfinanceTool):
         identifier: str,
     ) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
-        return ticker.company.native_names()
+        return ticker.company.native_names

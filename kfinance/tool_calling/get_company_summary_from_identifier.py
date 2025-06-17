@@ -16,4 +16,4 @@ class GetCompanySummaryFromIdentifier(KfinanceTool):
         identifier: str,
     ) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
-        return ticker.company.summary()
+        return ticker.company.summary
