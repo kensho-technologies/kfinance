@@ -95,6 +95,8 @@ class KFinanceApiClient:
         self._batch_id: str | None = None
         self._batch_size: str | None = None
         self._user_permissions: set[Permission] | None = None
+        self.endpoint_urls: list[str] = []
+        self._tracking_enabled: bool = False
 
     @contextmanager
     def batch_request_header(self, batch_size: int) -> Generator:
@@ -207,6 +209,16 @@ class KFinanceApiClient:
                     permission_str,
                     permission_str,
                 )
+    
+    @contextmanager
+    def track_endpoints(self):
+        """Context manager to track endpoint URLs during execution."""
+        self.endpoint_urls = []  # Reset the list
+        self._tracking_enabled = True
+        try:
+            yield
+        finally:
+            self._tracking_enabled = False
 
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
