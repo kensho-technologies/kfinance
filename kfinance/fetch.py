@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import logging
+from queue import Queue
 from threading import local
 from time import time
 from typing import Callable, Generator, Optional
@@ -97,6 +98,7 @@ class KFinanceApiClient:
         self._batch_size: str | None = None
         self._user_permissions: set[Permission] | None = None
         self._thread_local = local()
+        self._endpoint_queue: Queue[str] | None = None
 
     @contextmanager
     def batch_request_header(self, batch_size: int) -> Generator:
@@ -212,41 +214,29 @@ class KFinanceApiClient:
     
     @contextmanager
     def track_endpoints(self):
-        """Context manager to track endpoint URLs during execution."""
-        # Initialize thread-local storage for this thread if not already done
-        if not hasattr(self._thread_local, 'endpoint_urls'):
-            self._thread_local.endpoint_urls = []
-        if not hasattr(self._thread_local, 'tracking_enabled'):
-            self._thread_local.tracking_enabled = False
-            
-        # Store and later restore original state.
-        # Important for nested contexts (when one tool calls another tool?)
-        original_urls = self._thread_local.endpoint_urls
-        original_tracking = self._thread_local.tracking_enabled
-        
-        # Set up tracking for this context
-        self._thread_local.endpoint_urls = []
+        """Context manager to track endpoint URLs during execution.
+        Since tools run in parallel threads and are never nested,
+        we just need to enable tracking and collect URLs in our thread-safe queue."""
+        self._endpoint_queue = Queue[str]()
         self._thread_local.tracking_enabled = True
         
         try:
-            # Here is where the tool is actually called and the endpoint urls are collected
             yield
         finally:
-            # Restore original state to what it was before the context manager was entered
-            self._thread_local.endpoint_urls = original_urls
-            self._thread_local.tracking_enabled = original_tracking
+            self._thread_local.tracking_enabled = False
 
     @property
     def endpoint_urls(self):
-        """Get the endpoint URLs for the current thread."""
-        if not hasattr(self._thread_local, 'endpoint_urls'):
-            self._thread_local.endpoint_urls = []
-        return self._thread_local.endpoint_urls
+        """Get all endpoint URLs collected from parallel tool executions."""
+        urls = []
+        while not self._endpoint_queue.empty():
+            urls.append(self._endpoint_queue.get())
+        return urls
 
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
         if getattr(self._thread_local, 'tracking_enabled', False):
-            self._thread_local.endpoint_urls.append(url)
+            self._endpoint_queue.put(url)
 
         headers = {
             "Content-Type": "application/json",
