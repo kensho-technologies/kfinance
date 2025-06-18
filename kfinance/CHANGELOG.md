@@ -1,8 +1,10 @@
 # Changelog
 
+## v2.5.0
+ - Add mergers & acquisitions.
+
 ## v2.4.4
 - Replace `cached_property` with `property` to enable batching
-
 
 ## v2.4.3
 - Improve MCP tool build process

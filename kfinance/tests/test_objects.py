@@ -1,3 +1,4 @@
+import copy
 from datetime import date, datetime, timezone
 from io import BytesIO
 import re
@@ -11,9 +12,11 @@ import time_machine
 
 from kfinance.constants import BusinessRelationshipType
 from kfinance.kfinance import (
+    AdvisedCompany,
     BusinessRelationships,
     Company,
     Earnings,
+    MergerOrAcquisition,
     Security,
     Ticker,
     TradingItem,
@@ -27,6 +30,7 @@ msft_security_id = "2630412"
 msft_isin = "US5949181045"
 msft_cusip = "594918104"
 msft_trading_item_id = "2630413"
+msft_buys_mongo = "517414"
 
 
 MOCK_TRADING_ITEM_DB = {
@@ -118,6 +122,31 @@ MOCK_COMPANY_DB = {
                 },
             }
         },
+        "mergers": {
+            "target": [
+                {"transaction_id": 10998717, "merger_title": "Closed M/A of Microsoft Corporation"},
+                {"transaction_id": 28237969, "merger_title": "Closed M/A of Microsoft Corporation"},
+            ],
+            "buyer": [
+                {"transaction_id": 517414, "merger_title": "Closed M/A of MongoMusic, Inc."},
+                {"transaction_id": 596722, "merger_title": "Closed M/A of Digital Anvil, Inc."},
+            ],
+            "seller": [
+                {"transaction_id": 455551, "merger_title": "Closed M/A of VacationSpot.com, Inc."},
+                {"transaction_id": 456045, "merger_title": "Closed M/A of TransPoint, LLC"},
+            ],
+        },
+        "advisors": {
+            msft_buys_mongo: {
+                "advisors": [
+                    {
+                        "advisor_company_id": 251994106,
+                        "advisor_company_name": "Kensho Technologies, Inc.",
+                        "advisor_type_name": "Professional Mongo Enjoyer",
+                    }
+                ]
+            }
+        },
         BusinessRelationshipType.supplier: RelationshipResponse(
             current=[CompanyIdAndName(company_name="foo", company_id=883103)],
             previous=[
@@ -125,7 +154,15 @@ MOCK_COMPANY_DB = {
                 CompanyIdAndName(company_name="baz", company_id=8182358),
             ],
         ),
-    }
+    },
+    31696: {"info": {"name": "MongoMusic, Inc."}},
+    21835: {"info": {"name": "Microsoft Corporation"}},
+    18805: {"info": {"name": "Angel Investors L.P."}},
+    20087: {"info": {"name": "Draper Richards, L.P."}},
+    22103: {"info": {"name": "BRV Partners, LLC"}},
+    23745: {"info": {"name": "Venture Frogs, LLC"}},
+    105902: {"info": {"name": "ARGUS Capital International Limited"}},
+    880300: {"info": {"name": "Sony Music Entertainment, Inc."}},
 }
 
 MOCK_TRANSCRIPT_DB = {
@@ -181,6 +218,51 @@ MOCK_CUSIP_DB = {
         "trading_item_id": msft_trading_item_id,
     }
 }
+
+MOCK_MERGERS_DB = {
+    msft_buys_mongo: {
+        "timeline": [
+            {"status": "Announced", "date": "2000-09-12"},
+            {"status": "Closed", "date": "2000-09-12"},
+        ],
+        "participants": {
+            "target": {"company_id": 31696, "company_name": "MongoMusic, Inc."},
+            "buyers": [{"company_id": 21835, "company_name": "Microsoft Corporation"}],
+            "sellers": [
+                {"company_id": 18805, "company_name": "Angel Investors L.P."},
+                {"company_id": 20087, "company_name": "Draper Richards, L.P."},
+                {"company_id": 22103, "company_name": "BRV Partners, LLC"},
+                {"company_id": 23745, "company_name": "Venture Frogs, LLC"},
+                {"company_id": 105902, "company_name": "ARGUS Capital International Limited"},
+                {"company_id": 880300, "company_name": "Sony Music Entertainment, Inc."},
+            ],
+        },
+        "consideration": {
+            "currency_name": "US Dollar",
+            "current_calculated_gross_total_transaction_value": "51609375.000000",
+            "current_calculated_implied_equity_value": "51609375.000000",
+            "current_calculated_implied_enterprise_value": "51609375.000000",
+            "details": [
+                {
+                    "scenario": "Stock Lump Sum",
+                    "subtype": "Common Equity",
+                    "cash_or_cash_equivalent_per_target_share_unit": None,
+                    "number_of_target_shares_sought": "1000000.000000",
+                    "current_calculated_gross_value_of_consideration": "51609375.000000",
+                }
+            ],
+        },
+    }
+}
+
+
+def ordered(obj):
+    if isinstance(obj, dict):
+        return sorted((k, ordered(v)) for k, v in obj.items())
+    if isinstance(obj, list):
+        return sorted(ordered(x) for x in obj)
+    else:
+        return obj
 
 
 class MockKFinanceApiClient:
@@ -291,6 +373,15 @@ class MockKFinanceApiClient:
         """Get the transcript for an earnings item."""
         return MOCK_TRANSCRIPT_DB[key_dev_id]
 
+    def fetch_mergers_for_company(self, company_id):
+        return copy.deepcopy(MOCK_COMPANY_DB[company_id]["mergers"])
+
+    def fetch_merger_info(self, transaction_id):
+        return copy.deepcopy(MOCK_MERGERS_DB[transaction_id])
+
+    def fetch_advisors_for_company_in_merger(self, transaction_id, advised_company_id):
+        return copy.deepcopy(MOCK_COMPANY_DB[advised_company_id]["advisors"][transaction_id])
+
 
 class TestTradingItem(TestCase):
     def setUp(self):
@@ -349,7 +440,9 @@ class TestCompany(TestCase):
     def setUp(self):
         """setup tests"""
         self.kfinance_api_client = MockKFinanceApiClient()
-        self.msft_company = Company(self.kfinance_api_client, msft_company_id)
+        self.msft_company = AdvisedCompany(
+            self.kfinance_api_client, company_id=msft_company_id, transaction_id=msft_buys_mongo
+        )
 
     def test_company_id(self) -> None:
         """test company id"""
@@ -441,6 +534,43 @@ class TestCompany(TestCase):
         # Fetching via property should return the same result
         suppliers_via_property = self.msft_company.supplier
         self.assertEqual(suppliers_via_property, suppliers_via_method)
+
+    def test_mergers(self) -> None:
+        expected_mergers = MOCK_COMPANY_DB[msft_company_id]["mergers"]
+        mergers = self.msft_company.mergers_and_acquisitions
+        mergers_json = {
+            "target": [
+                {"transaction_id": merger.transaction_id, "merger_title": merger.merger_title}
+                for merger in mergers["target"]
+            ],
+            "buyer": [
+                {"transaction_id": merger.transaction_id, "merger_title": merger.merger_title}
+                for merger in mergers["buyer"]
+            ],
+            "seller": [
+                {"transaction_id": merger.transaction_id, "merger_title": merger.merger_title}
+                for merger in mergers["seller"]
+            ],
+        }
+        self.assertEqual(ordered(expected_mergers), ordered(mergers_json))
+
+    def test_advisors(self) -> None:
+        expected_advisors_json = MOCK_COMPANY_DB[msft_company_id]["advisors"][msft_buys_mongo][
+            "advisors"
+        ]
+        expected_company_ids: list[int] = []
+        expected_advisor_type_names: list[str] = []
+        for advisor in expected_advisors_json:
+            expected_company_ids.append(int(advisor["advisor_company_id"]))
+            expected_advisor_type_names.append(str(advisor["advisor_type_name"]))
+        advisors = self.msft_company.advisors
+        company_ids: list[int] = []
+        advisor_type_names: list[str] = []
+        for advisor in advisors:
+            company_ids.append(advisor.company_id)
+            advisor_type_names.append(advisor.advisor_type_name)
+        self.assertListEqual(expected_company_ids, company_ids)
+        self.assertListEqual(expected_advisor_type_names, advisor_type_names)
 
 
 class TestSecurity(TestCase):
@@ -828,3 +958,63 @@ class TestCompanyEarnings(TestCase):
         """test company next_earnings property"""
         next_earnings = self.msft_company.next_earnings
         self.assertEqual(next_earnings.key_dev_id, 1916266380)
+
+
+class TestMerger(TestCase):
+    def setUp(self):
+        self.kfinance_api_client = MockKFinanceApiClient()
+        self.merger = MergerOrAcquisition(
+            self.kfinance_api_client,
+            transaction_id=msft_buys_mongo,
+            merger_title="Closed M/A of MongoMusic, Inc.",
+        )
+
+    def test_merger_info(self) -> None:
+        expected_merger_info = MOCK_MERGERS_DB[msft_buys_mongo]
+        merger_info = {
+            "timeline": [
+                {"status": timeline["status"], "date": timeline["date"].strftime("%Y-%m-%d")}
+                for timeline in self.merger.get_timeline.to_dict(orient="records")
+            ],
+            "participants": {
+                "target": {
+                    "company_id": self.merger.get_participants["target"].company_id,
+                    "company_name": self.merger.get_participants["target"].name,
+                },
+                "buyers": [
+                    {"company_id": company.company_id, "company_name": company.name}
+                    for company in self.merger.get_participants["buyers"]
+                ],
+                "sellers": [
+                    {"company_id": company.company_id, "company_name": company.name}
+                    for company in self.merger.get_participants["sellers"]
+                ],
+            },
+            "consideration": {
+                "currency_name": self.merger.get_consideration["currency_name"],
+                "current_calculated_gross_total_transaction_value": self.merger.get_consideration[
+                    "current_calculated_gross_total_transaction_value"
+                ],
+                "current_calculated_implied_equity_value": self.merger.get_consideration[
+                    "current_calculated_implied_equity_value"
+                ],
+                "current_calculated_implied_enterprise_value": self.merger.get_consideration[
+                    "current_calculated_implied_enterprise_value"
+                ],
+                "details": [
+                    {
+                        "scenario": detail["scenario"],
+                        "subtype": detail["subtype"],
+                        "cash_or_cash_equivalent_per_target_share_unit": detail[
+                            "cash_or_cash_equivalent_per_target_share_unit"
+                        ],
+                        "number_of_target_shares_sought": detail["number_of_target_shares_sought"],
+                        "current_calculated_gross_value_of_consideration": detail[
+                            "current_calculated_gross_value_of_consideration"
+                        ],
+                    }
+                    for detail in self.merger.get_consideration["details"].to_dict(orient="records")
+                ],
+            },
+        }
+        self.assertEqual(ordered(expected_merger_info), ordered(merger_info))

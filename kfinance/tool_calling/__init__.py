@@ -1,5 +1,8 @@
 from typing import Type
 
+from kfinance.tool_calling.get_advisors_for_company_in_transaction_from_identifier import (
+    GetAdvisorsForCompanyInTransactionFromIdentifier,
+)
 from kfinance.tool_calling.get_business_relationship_from_identifier import (
     GetBusinessRelationshipFromIdentifier,
 )
@@ -22,6 +25,8 @@ from kfinance.tool_calling.get_info_from_identifier import GetInfoFromIdentifier
 from kfinance.tool_calling.get_isin_from_ticker import GetIsinFromTicker
 from kfinance.tool_calling.get_latest import GetLatest
 from kfinance.tool_calling.get_latest_earnings import GetLatestEarnings
+from kfinance.tool_calling.get_merger_info_from_transaction_id import GetMergerInfoFromTransactionID
+from kfinance.tool_calling.get_mergers_from_identifier import GetMergersFromIdentifier
 from kfinance.tool_calling.get_n_quarters_ago import GetNQuartersAgo
 from kfinance.tool_calling.get_next_earnings import GetNextEarnings
 from kfinance.tool_calling.get_prices_from_identifier import GetPricesFromIdentifier
@@ -52,4 +57,7 @@ ALL_TOOLS: list[Type[KfinanceTool]] = [
     GetBusinessRelationshipFromIdentifier,
     ResolveIdentifier,
     GetSegmentsFromIdentifier,
+    GetAdvisorsForCompanyInTransactionFromIdentifier,
+    GetMergerInfoFromTransactionID,
+    GetMergersFromIdentifier,
 ]
