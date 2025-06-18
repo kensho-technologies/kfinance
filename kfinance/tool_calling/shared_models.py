@@ -1,7 +1,7 @@
-from typing import Any, Type
+from typing import Annotated, Any, Literal, Type
 
 from langchain_core.tools import BaseTool
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 from kfinance.constants import Permission
 from kfinance.kfinance import Client
@@ -67,3 +67,18 @@ class ToolArgsWithIdentifier(BaseModel):
     identifier: str = Field(
         description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
     )
+
+
+def convert_str_to_int(v: Any) -> Any:
+    """Convert strings to integers if possible."""
+    if isinstance(v, str) and v.isdigit():
+        return int(v)
+    return v
+
+
+# Valid Quarter is a literal type, which converts strings to int before
+# validating them.
+# Claude seems to often pass strings to int literals, which raise a
+# ValidationError during deserialization unless they have been converted
+# to int.
+ValidQuarter = Annotated[Literal[1, 2, 3, 4], BeforeValidator(convert_str_to_int)]

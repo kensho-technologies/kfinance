@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.4.4
+- Replace `cached_property` with `property` to enable batching
+
+
+## v2.4.3
+- Improve MCP tool build process
+
 ## v2.4.2
 - Update missing permission warning
 
