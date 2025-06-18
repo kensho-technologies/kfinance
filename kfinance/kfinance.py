@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import date, datetime, timezone
-from functools import cached_property
 from io import BytesIO
 import logging
 import re
@@ -80,8 +79,9 @@ class TradingItem:
         """
         self.kfinance_api_client = kfinance_api_client
         self.trading_item_id = trading_item_id
-        self.ticker: Optional[str] = None
-        self.exchange_code: Optional[str] = None
+
+        self._ticker: str | None = None
+        self._history_metadata: HistoryMetadata | None = None
 
     def __str__(self) -> str:
         """String representation for the company object"""
@@ -104,36 +104,35 @@ class TradingItem:
             "trading_item_id"
         ]
         trading_item = TradingItem(kfinance_api_client, trading_item_id)
-        trading_item.ticker = ticker
-        trading_item.exchange_code = exchange_code
+        trading_item._ticker = ticker
         return trading_item
 
-    @cached_property
-    def trading_item_id(self) -> int:
-        """Get the trading item id for the object
-
-        :return: the CIQ trading item id
-        :rtype: int
-        """
-        return self.trading_item_id
-
-    @cached_property
+    @property
     def history_metadata(self) -> HistoryMetadata:
         """Get information about exchange and quotation
 
         :return: A dict containing data about the currency, symbol, exchange, type of instrument, and the first trading date
         :rtype: HistoryMetadata
         """
-        metadata = self.kfinance_api_client.fetch_history_metadata(self.trading_item_id)
-        if self.exchange_code is None:
-            self.exchange_code = metadata["exchange_name"]
-        return {
-            "currency": metadata["currency"],
-            "symbol": metadata["symbol"],
-            "exchange_name": metadata["exchange_name"],
-            "instrument_type": metadata["instrument_type"],
-            "first_trade_date": datetime.strptime(metadata["first_trade_date"], "%Y-%m-%d").date(),
-        }
+        if self._history_metadata is None:
+            metadata = self.kfinance_api_client.fetch_history_metadata(self.trading_item_id)
+            self._history_metadata = HistoryMetadata(
+                currency=metadata["currency"],
+                symbol=metadata["symbol"],
+                exchange_name=metadata["exchange_name"],
+                instrument_type=metadata["instrument_type"],
+                first_trade_date=datetime.strptime(metadata["first_trade_date"], "%Y-%m-%d").date(),
+            )
+        return self._history_metadata
+
+    @property
+    def exchange_code(self) -> str:
+        """Return the exchange_code of the trading item
+
+        :return: The exchange code of the trading item.
+        :rtype: str
+        """
+        return self.history_metadata["exchange_name"]
 
     def history(
         self,
@@ -322,47 +321,69 @@ class Company(CompanyFunctionsMetaClass):
         """
         super().__init__()
         self.kfinance_api_client = kfinance_api_client
-        self.company_id = company_id
+        self._company_id = company_id
         self._all_earnings: list[Earnings] | None = None
         self._mergers_for_company: dict[str, MergersAndAcquisitions] | None = None
         self._company_name = company_name
+
+        self._securities: Securities | None = None
+        self._primary_security: Security | None = None
+        self._info: dict | None = None
+        self._earnings_call_datetimes: list[datetime] | None = None
+
+    @property
+    def company_id(self) -> int:
+        """Return the company_id of the company.
+
+        :return: the company_id of the company
+        :rtype: int
+        """
+        return self._company_id
 
     def __str__(self) -> str:
         """String representation for the company object"""
         return f"{type(self).__module__}.{type(self).__qualname__} of {self.company_id}"
 
-    @cached_property
+    @property
     def primary_security(self) -> Security:
         """Return the primary security item for the Company object
 
         :return: a Security object of the primary security of company_id
         :rtype: Security
         """
-        primary_security_id = self.kfinance_api_client.fetch_primary_security(self.company_id)[
-            "primary_security"
-        ]
-        return Security(
-            kfinance_api_client=self.kfinance_api_client, security_id=primary_security_id
-        )
+        if self._primary_security is None:
+            primary_security_id = self.kfinance_api_client.fetch_primary_security(self.company_id)[
+                "primary_security"
+            ]
+            self._primary_security = Security(
+                kfinance_api_client=self.kfinance_api_client, security_id=primary_security_id
+            )
+        return self._primary_security
 
-    @cached_property
+    @property
     def securities(self) -> Securities:
         """Return the security items for the Company object
 
         :return: a Securities object containing the list of securities of company_id
         :rtype: Securities
         """
-        security_ids = self.kfinance_api_client.fetch_securities(self.company_id)["securities"]
-        return Securities(kfinance_api_client=self.kfinance_api_client, security_ids=security_ids)
+        if self._securities is None:
+            security_ids = self.kfinance_api_client.fetch_securities(self.company_id)["securities"]
+            self._securities = Securities(
+                kfinance_api_client=self.kfinance_api_client, security_ids=security_ids
+            )
+        return self._securities
 
-    @cached_property
+    @property
     def info(self) -> dict:
         """Get the company info
 
         :return: a dict with containing: name, status, type, simple industry, number of employees (if available), founding date, webpage, address, city, zip code, state, country, & iso_country
         :rtype: dict
         """
-        return self.kfinance_api_client.fetch_info(self.company_id)
+        if self._info is None:
+            self._info = self.kfinance_api_client.fetch_info(self.company_id)
+        return self._info
 
     @property
     def name(self) -> str:
@@ -481,19 +502,21 @@ class Company(CompanyFunctionsMetaClass):
         """
         return self.info["iso_country"]
 
-    @cached_property
+    @property
     def earnings_call_datetimes(self) -> list[datetime]:
         """Get the datetimes of the companies earnings calls
 
         :return: a list of datetimes for the companies earnings calls
         :rtype: list[datetime]
         """
-        return [
-            datetime.fromisoformat(earnings_call).replace(tzinfo=timezone.utc)
-            for earnings_call in self.kfinance_api_client.fetch_earnings_dates(self.company_id)[
-                "earnings"
+        if self._earnings_call_datetimes is None:
+            self._earnings_call_datetimes = [
+                datetime.fromisoformat(earnings_call).replace(tzinfo=timezone.utc)
+                for earnings_call in self.kfinance_api_client.fetch_earnings_dates(self.company_id)[
+                    "earnings"
+                ]
             ]
-        ]
+        return self._earnings_call_datetimes
 
     @property
     def all_earnings(self) -> list[Earnings]:
@@ -732,57 +755,69 @@ class Security:
         self.kfinance_api_client = kfinance_api_client
         self.security_id = security_id
 
+        self._cusip: str | None = None
+        self._isin: str | None = None
+        self._primary_trading_item: TradingItem | None = None
+        self._trading_items: TradingItems | None = None
+
     def __str__(self) -> str:
         """String representation for the security object"""
         return f"{type(self).__module__}.{type(self).__qualname__} of {self.security_id}"
 
-    @cached_property
+    @property
     def isin(self) -> str:
         """Get the ISIN for the object
 
         :return: The ISIN
         :rtype: str
         """
-        return self.kfinance_api_client.fetch_isin(self.security_id)["isin"]
+        if self._isin is None:
+            self._isin = self.kfinance_api_client.fetch_isin(self.security_id)["isin"]
+        return self._isin
 
-    @cached_property
+    @property
     def cusip(self) -> str:
         """Get the CUSIP for the object
 
         :return: The CUSIP
         :rtype: str
         """
-        return self.kfinance_api_client.fetch_cusip(self.security_id)["cusip"]
+        if self._cusip is None:
+            self._cusip = self.kfinance_api_client.fetch_cusip(self.security_id)["cusip"]
+        return self._cusip
 
-    @cached_property
+    @property
     def primary_trading_item(self) -> TradingItem:
         """Return the primary trading item for the Security object
 
         :return: a TradingItem object of the primary trading item of security_id
         :rtype: TradingItem
         """
-        primary_trading_item_id = self.kfinance_api_client.fetch_primary_trading_item(
-            self.security_id
-        )["primary_trading_item"]
-        self.primary_trading_item = TradingItem(
-            kfinance_api_client=self.kfinance_api_client, trading_item_id=primary_trading_item_id
-        )
-        return self.primary_trading_item
+        if self._primary_trading_item is None:
+            primary_trading_item_id = self.kfinance_api_client.fetch_primary_trading_item(
+                self.security_id
+            )["primary_trading_item"]
+            self._primary_trading_item = TradingItem(
+                kfinance_api_client=self.kfinance_api_client,
+                trading_item_id=primary_trading_item_id,
+            )
+        return self._primary_trading_item
 
-    @cached_property
+    @property
     def trading_items(self) -> TradingItems:
         """Return the trading items for the Security object
 
         :return: a TradingItems object containing the list of trading items of security_id
         :rtype: TradingItems
         """
-        trading_item_ids = self.kfinance_api_client.fetch_trading_items(self.security_id)[
-            "trading_items"
-        ]
-        self.trading_items = TradingItems(
-            kfinance_api_client=self.kfinance_api_client, trading_item_ids=trading_item_ids
-        )
-        return self.trading_items
+        if self._trading_items is None:
+            trading_item_ids = self.kfinance_api_client.fetch_trading_items(self.security_id)[
+                "trading_items"
+            ]
+            self._trading_items = TradingItems(
+                kfinance_api_client=self.kfinance_api_client, trading_item_ids=trading_item_ids
+            )
+        return self._trading_items
 
 
 class Ticker(DelegatedCompanyFunctionsMetaClass):
@@ -843,6 +878,11 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
             raise RuntimeError(
                 "Neither an identifier nor an identification triple (company id, security id, & trading item id) were passed in"
             )
+
+        self._primary_security: Security | None = None
+        self._primary_trading_item: TradingItem | None = None
+        self._company: Company | None = None
+        self._history_metadata: HistoryMetadata | None = None
 
     @property
     def id_triple(self) -> IdentificationTriple:
@@ -927,44 +967,46 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         """
         return self.id_triple.trading_item_id
 
-    @cached_property
+    @property
     def primary_security(self) -> Security:
         """Set and return the primary security for the object
 
         :return: The primary security as a Security object
         :rtype: Security
         """
+        if self._primary_security is None:
+            self._primary_security = Security(
+                kfinance_api_client=self.kfinance_api_client, security_id=self.security_id
+            )
+        return self._primary_security
 
-        self.primary_security = Security(
-            kfinance_api_client=self.kfinance_api_client, security_id=self.security_id
-        )
-        return self.primary_security
-
-    @cached_property
+    @property
     def company(self) -> Company:
         """Set and return the company for the object
 
         :return: The company returned as Company object
         :rtype: Company
         """
-        self.company = Company(
-            kfinance_api_client=self.kfinance_api_client, company_id=self.company_id
-        )
-        return self.company
+        if self._company is None:
+            self._company = Company(
+                kfinance_api_client=self.kfinance_api_client, company_id=self.company_id
+            )
+        return self._company
 
-    @cached_property
+    @property
     def primary_trading_item(self) -> TradingItem:
         """Set and return the trading item for the object
 
         :return: The trading item returned as TradingItem object
         :rtype: TradingItem
         """
-        self.primary_trading_item = TradingItem(
-            kfinance_api_client=self.kfinance_api_client, trading_item_id=self.trading_item_id
-        )
-        return self.primary_trading_item
+        if self._primary_trading_item is None:
+            self._primary_trading_item = TradingItem(
+                kfinance_api_client=self.kfinance_api_client, trading_item_id=self.trading_item_id
+            )
+        return self._primary_trading_item
 
-    @cached_property
+    @property
     def isin(self) -> str:
         """Get the ISIN for the object
 
@@ -977,7 +1019,7 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         self._isin = isin
         return isin
 
-    @cached_property
+    @property
     def cusip(self) -> str:
         """Get the CUSIP for the object
 
@@ -990,7 +1032,7 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         self._cusip = cusip
         return cusip
 
-    @cached_property
+    @property
     def info(self) -> dict:
         """Get the company info for the ticker
 
@@ -1116,7 +1158,7 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         """
         return self.company.iso_country
 
-    @cached_property
+    @property
     def earnings_call_datetimes(self) -> list[datetime]:
         """Get the datetimes of the companies earnings calls
 
@@ -1125,7 +1167,7 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         """
         return self.company.earnings_call_datetimes
 
-    @cached_property
+    @property
     def history_metadata(self) -> HistoryMetadata:
         """Get information about exchange and quotation
 
@@ -1139,7 +1181,7 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
             self._ticker = metadata["symbol"]
         return metadata
 
-    @cached_property
+    @property
     def ticker(self) -> str:
         """Get the ticker if it isn't available from initialization"""
         if self._ticker is not None:
