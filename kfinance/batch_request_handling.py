@@ -1,6 +1,5 @@
 from concurrent.futures import Future
 import functools
-from functools import cached_property
 import threading
 from typing import Any, Callable, Iterable, Protocol, Sized, Type, TypeVar
 
@@ -17,7 +16,7 @@ throttle = threading.Semaphore(MAX_WORKERS_CAP)
 
 
 def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Callable:
-    """Returns a decorator that sets each method, property, and cached_property of"""
+    """Returns a decorator that adds methods and properties from a singular to a plural class."""
     "[singular_cls] as an attribute of the decorated class."
 
     class IterableKfinanceClass(Protocol, Sized, Iterable[T]):
@@ -32,7 +31,7 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
         """Adds functions from a singular class to an iterable class.
 
         This decorator modifies the [iterable_cls] so that when an attribute
-        (method, property, or cached property) added by the decorator is accessed,
+        (method or property) added by the decorator is accessed,
         it returns a dictionary. This dictionary maps each object in [iterable_cls]
         to the result of invoking the attribute on that specific object.
 
@@ -108,19 +107,6 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
                     return prop_wrapper
 
                 setattr(iterable_cls, method_name, property(create_prop_wrapper(method)))
-
-            elif isinstance(method, cached_property):
-
-                def create_cached_prop_wrapper(method: cached_property) -> cached_property:
-                    @functools.wraps(method.func)
-                    def cached_prop_wrapper(self: IterableKfinanceClass) -> Any:
-                        return process_in_batch(method.func, self)
-
-                    wrapped_cached_property = cached_property(cached_prop_wrapper)
-                    wrapped_cached_property.__set_name__(iterable_cls, method_name)
-                    return wrapped_cached_property
-
-                setattr(iterable_cls, method_name, create_cached_prop_wrapper(method))
 
         return iterable_cls
 
