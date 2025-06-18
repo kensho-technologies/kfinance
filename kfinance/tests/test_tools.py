@@ -1,6 +1,10 @@
+import contextlib
+from contextlib import nullcontext as does_not_raise
 from datetime import date, datetime
 
 from langchain_core.utils.function_calling import convert_to_openai_tool
+from pydantic import BaseModel, ValidationError
+import pytest
 from pytest import raises
 from requests_mock import Mocker
 import time_machine
@@ -48,7 +52,7 @@ from kfinance.tool_calling.get_segments_from_identifier import (
     GetSegmentsFromIdentifierArgs,
 )
 from kfinance.tool_calling.get_transcript import GetTranscriptArgs
-from kfinance.tool_calling.shared_models import ToolArgsWithIdentifier
+from kfinance.tool_calling.shared_models import ToolArgsWithIdentifier, ValidQuarter
 
 
 class TestGetBusinessRelationshipFromIdentifier:
@@ -638,3 +642,33 @@ class TestGetTranscript:
         tool = GetTranscript(kfinance_client=mock_client)
         response = tool.run(GetTranscriptArgs(key_dev_id=12345).model_dump(mode="json"))
         assert response == expected_response
+
+
+class TestValidQuarter:
+    class QuarterModel(BaseModel):
+        quarter: ValidQuarter | None
+
+    @pytest.mark.parametrize(
+        "input_quarter, expectation, expected_quarter",
+        [
+            pytest.param(1, does_not_raise(), 1, id="int input works"),
+            pytest.param("1", does_not_raise(), 1, id="str input works"),
+            pytest.param(None, does_not_raise(), None, id="None input works"),
+            pytest.param(5, pytest.raises(ValidationError), None, id="invalid int raises"),
+            pytest.param("5", pytest.raises(ValidationError), None, id="invalid str raises"),
+        ],
+    )
+    def test_valid_quarter(
+        self,
+        input_quarter: int | str | None,
+        expectation: contextlib.AbstractContextManager,
+        expected_quarter: int | None,
+    ) -> None:
+        """
+        GIVEN a model that uses `ValidQuarter`
+        WHEN we deserialize with int, str, or None
+        THEN valid str get coerced to int. Invalid values raise.
+        """
+        with expectation:
+            res = self.QuarterModel.model_validate(dict(quarter=input_quarter))
+            assert res.quarter == expected_quarter
