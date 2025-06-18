@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 class CompanyFunctionsMetaClass:
     kfinance_api_client: KFinanceApiClient
 
+    def __init__(self):
+        self._company_descriptions: dict[str, str] | None = None
+        self._company_other_names: dict[str, str] | None = None
+
     @cached_property
     def company_id(self) -> Any:
         """Set and return the company id for the object"""
@@ -415,6 +419,37 @@ class CompanyFunctionsMetaClass:
             start_quarter=start_quarter,
             end_quarter=end_quarter,
         )
+
+    @property
+    def summary(self):
+        if not self._company_descriptions:
+            self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(company_id=self.company_id)
+        return self._company_descriptions["summary"]
+
+    @property
+    def description(self):
+        if not self._company_descriptions:
+            self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(company_id=self.company_id)
+        return self._company_descriptions["description"]
+    
+    @property
+    def alternate_names(self):
+        if not self._company_other_names:
+            self._company_other_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)
+        return self._company_other_names["alternate_names"]
+    
+    @property
+    def historical_names(self):
+        if not self._company_other_names:
+            self._company_other_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)
+        return self._company_other_names["historical_names"]
+    
+
+    @property
+    def native_names(self):
+        if not self._company_other_names:
+            self._company_other_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)
+        return self._company_other_names["native_names"]
 
 
 for line_item in LINE_ITEMS:

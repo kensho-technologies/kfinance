@@ -319,11 +319,6 @@ class Company(CompanyFunctionsMetaClass):
         self.kfinance_api_client = kfinance_api_client
         self.company_id = company_id
         self._all_earnings: list[Earnings] | None = None
-        self._summary: str | None = None
-        self._description: str | None = None
-        self._alternate_names: list[str] | None = None
-        self._historical_names: list[str] | None = None
-        self._native_names: list[str] | None = None
 
     def __str__(self) -> str:
         """String representation for the company object"""
@@ -607,37 +602,6 @@ class Company(CompanyFunctionsMetaClass):
 
         # Sort by datetime ascending and get the earliest
         return min(future_earnings, key=lambda x: x.datetime)
-    
-    @property
-    def summary(self):
-        if not self._summary:
-            self._summary = self.kfinance_api_client.fetch_company_descriptions(company_id=self.company_id)["summary"]
-        return self._summary
-
-    @property
-    def description(self):
-        if not self._description:
-            self._description = self.kfinance_api_client.fetch_company_descriptions(company_id=self.company_id)["description"]
-        return self._description
-    
-    @property
-    def alternate_names(self):
-        if not self._alternate_names:
-            self._alternate_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)["alternate_names"]
-        return self._alternate_names
-    
-    @property
-    def historical_names(self):
-        if not self._native_names:
-            self._native_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)["historical_names"]
-        return self._native_names
-    
-
-    @property
-    def native_names(self, company_id: str):
-        if not self._native_names:
-            self._native_names = self.kfinance_api_client.fetch_company_other_names(company_id=company_id)["native_names"]
-        return self._native_names
 
 
 class Security:

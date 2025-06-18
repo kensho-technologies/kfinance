@@ -17,4 +17,4 @@ class GetCompanyHistoricalNamesFromIdentifier(KfinanceTool):
         identifier: str,
     ) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
-        return ticker.company.historical_names
+        return ticker.historical_names
