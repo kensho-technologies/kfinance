@@ -7,14 +7,14 @@ from kfinance.kfinance import MergerOrAcquisition
 from kfinance.tool_calling.shared_models import KfinanceTool
 
 
-class GetMergerInfoFromTransactionIDArgs(BaseModel):
+class GetMergerInfoFromTransactionIdArgs(BaseModel):
     transaction_id: int | None = Field(description="The ID of the merger.", default=None)
 
 
-class GetMergerInfoFromTransactionID(KfinanceTool):
+class GetMergerInfoFromTransactionId(KfinanceTool):
     name: str = "get_merger_info_from_transaction_id"
     description: str = 'Get the timeline, the participants, and the consideration of the merger or acquisition from the given transaction ID. For example, "How much was Ben & Jerrys purchased for?" or "What was the price per share for LinkedIn?" or "When did S&P purchase Kensho?"'
-    args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIDArgs
+    args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIdArgs
     required_permission: Permission | None = Permission.MergersPermission
 
     def _run(self, transaction_id: int) -> dict:

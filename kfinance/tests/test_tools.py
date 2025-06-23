@@ -51,8 +51,8 @@ from kfinance.tool_calling.get_financial_statement_from_identifier import (
 from kfinance.tool_calling.get_isin_from_ticker import GetIsinFromTickerArgs
 from kfinance.tool_calling.get_latest import GetLatestArgs
 from kfinance.tool_calling.get_merger_info_from_transaction_id import (
-    GetMergerInfoFromTransactionID,
-    GetMergerInfoFromTransactionIDArgs,
+    GetMergerInfoFromTransactionId,
+    GetMergerInfoFromTransactionIdArgs,
 )
 from kfinance.tool_calling.get_mergers_from_identifier import GetMergersFromIdentifier
 from kfinance.tool_calling.get_n_quarters_ago import GetNQuartersAgoArgs
@@ -91,7 +91,7 @@ class TestGetCompaniesAdvisingCompanyInTransactionFromIdentifier:
         assert response == expected_response["advisors"]
 
 
-class TestGetMergerInfoFromTransactionID:
+class TestGetMergerInfoFromTransactionId:
     def test_get_merger_info_from_transaction_id(self, requests_mock: Mocker, mock_client: Client):
         expected_response = MOCK_MERGERS_DB["517414"]
         transaction_id = 517414
@@ -99,8 +99,8 @@ class TestGetMergerInfoFromTransactionID:
             url=f"https://kfinance.kensho.com/api/v1/merger/info/{transaction_id}",
             json=expected_response,
         )
-        tool = GetMergerInfoFromTransactionID(kfinance_client=mock_client)
-        args = GetMergerInfoFromTransactionIDArgs(transaction_id=transaction_id)
+        tool = GetMergerInfoFromTransactionId(kfinance_client=mock_client)
+        args = GetMergerInfoFromTransactionIdArgs(transaction_id=transaction_id)
         response = tool.run(args.model_dump(mode="json"))
         assert ordered(response) == ordered(expected_response)
 
