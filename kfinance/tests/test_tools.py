@@ -680,6 +680,7 @@ class TestGetCompetitorsFromIdentifier:
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_competitors_response
 
+
 class TestValidQuarter:
     class QuarterModel(BaseModel):
         quarter: ValidQuarter | None
