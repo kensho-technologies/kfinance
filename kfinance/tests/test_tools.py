@@ -18,6 +18,7 @@ from kfinance.constants import (
 )
 from kfinance.kfinance import Client, NoEarningsDataError
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
+from kfinance.tests.test_objects import MOCK_COMPANY_DB, MOCK_MERGERS_DB, ordered
 from kfinance.tool_calling import (
     GetCompetitorsFromIdentifier,
     GetEarnings,
@@ -34,6 +35,10 @@ from kfinance.tool_calling import (
     GetPricesFromIdentifier,
     GetTranscript,
     ResolveIdentifier,
+)
+from kfinance.tool_calling.get_advisors_for_company_in_transaction_from_identifier import (
+    GetAdvisorsForCompanyInTransactionFromIdentifier,
+    GetAdvisorsForCompanyInTransactionFromIdentifierArgs,
 )
 from kfinance.tool_calling.get_business_relationship_from_identifier import (
     GetBusinessRelationshipFromIdentifier,
@@ -55,6 +60,11 @@ from kfinance.tool_calling.get_financial_statement_from_identifier import (
 )
 from kfinance.tool_calling.get_isin_from_ticker import GetIsinFromTickerArgs
 from kfinance.tool_calling.get_latest import GetLatestArgs
+from kfinance.tool_calling.get_merger_info_from_transaction_id import (
+    GetMergerInfoFromTransactionId,
+    GetMergerInfoFromTransactionIdArgs,
+)
+from kfinance.tool_calling.get_mergers_from_identifier import GetMergersFromIdentifier
 from kfinance.tool_calling.get_n_quarters_ago import GetNQuartersAgoArgs
 from kfinance.tool_calling.get_prices_from_identifier import GetPricesFromIdentifierArgs
 from kfinance.tool_calling.get_segments_from_identifier import (
@@ -63,6 +73,59 @@ from kfinance.tool_calling.get_segments_from_identifier import (
 )
 from kfinance.tool_calling.get_transcript import GetTranscriptArgs
 from kfinance.tool_calling.shared_models import ToolArgsWithIdentifier, ValidQuarter
+
+
+class TestGetCompaniesAdvisingCompanyInTransactionFromIdentifier:
+    def test_get_companies_advising_company_in_transaction_from_identifier(
+        self, requests_mock: Mocker, mock_client: Client
+    ):
+        expected_response = {
+            "advisors": [
+                {
+                    "advisor_company_id": 251994106,
+                    "advisor_company_name": "Kensho Technologies, Inc.",
+                    "advisor_type_name": "Professional Mongo Enjoyer",
+                }
+            ]
+        }
+        transaction_id = 517414
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/merger/info/{transaction_id}/advisors/21835",
+            json=expected_response,
+        )
+        tool = GetAdvisorsForCompanyInTransactionFromIdentifier(kfinance_client=mock_client)
+        args = GetAdvisorsForCompanyInTransactionFromIdentifierArgs(
+            identifier="MSFT", transaction_id=transaction_id
+        )
+        response = tool.run(args.model_dump(mode="json"))
+        assert response == expected_response["advisors"]
+
+
+class TestGetMergerInfoFromTransactionId:
+    def test_get_merger_info_from_transaction_id(self, requests_mock: Mocker, mock_client: Client):
+        expected_response = MOCK_MERGERS_DB["517414"]
+        transaction_id = 517414
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/merger/info/{transaction_id}",
+            json=expected_response,
+        )
+        tool = GetMergerInfoFromTransactionId(kfinance_client=mock_client)
+        args = GetMergerInfoFromTransactionIdArgs(transaction_id=transaction_id)
+        response = tool.run(args.model_dump(mode="json"))
+        assert ordered(response) == ordered(expected_response)
+
+
+class TestGetMergersFromIdentifier:
+    def test_get_mergers_from_identifier(self, requests_mock: Mocker, mock_client: Client):
+        expected_response = MOCK_COMPANY_DB["21835"]["mergers"]
+        company_id = 21835
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/mergers/{company_id}", json=expected_response
+        )
+        tool = GetMergersFromIdentifier(kfinance_client=mock_client)
+        args = ToolArgsWithIdentifier(identifier="MSFT")
+        response = tool.run(args.model_dump(mode="json"))
+        assert ordered(response) == ordered(expected_response)
 
 
 class TestGetBusinessRelationshipFromIdentifier:

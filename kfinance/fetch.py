@@ -585,3 +585,51 @@ class KFinanceApiClient:
         if competitor_source is not CompetitorSource.all:
             url = url + f"/{competitor_source}"
         return self.fetch(url)
+
+    def fetch_mergers_for_company(
+        self,
+        company_id: int,
+    ) -> dict[str, list[dict[str, int | str]]]:
+        """Fetches the mergers and acquisitions the given company was involved in.
+
+        Returns a dictionary of shape {"target", [{"transaction_id": <transaction_id>, "merger_title": <merger short title>}], "buyer": [...], "seller": [...]}
+        :param company_id: The company ID to filter on.
+        :type company_id: int
+        :return: A dictionary containing transaction IDs and 'merger titles' for each of the three kinds of roles the given company could be party to.
+        :rtype: dict[str, list[dict[str, int | str]]]
+        """
+        url = f"{self.url_base}mergers/{company_id}"
+        return self.fetch(url)
+
+    def fetch_merger_info(
+        self,
+        transaction_id: int,
+    ) -> dict:
+        """Fetches information about the given merger or acquisition, including the timeline, the participants, and the considerations.
+
+        Returns a complex dictionary.
+        :param transaction_id: The transaction ID to filter on.
+        :type transaction_id: int
+        :return: A dictionary containing the timeline, the participants, and the considerations (eith their details) of the transaction.
+        :rtype: dict
+        """
+        url = f"{self.url_base}merger/info/{transaction_id}"
+        return self.fetch(url)
+
+    def fetch_advisors_for_company_in_merger(
+        self,
+        transaction_id: int,
+        advised_company_id: int,
+    ) -> dict[str, list[dict[str, int | str]]]:
+        """Fetch information about the advisors of a given company involved in a given merger or acquisition.
+
+        Returns a dictionary of shape {"advisors": [{"advisor_company_id": <advisor_company_id>, "advisor_company_name": <advisor_company_name>, "advisor_type_name": <advisor_type_name>},...]}
+        :param transaction_id: The transaction ID to filter on.
+        :type transaction_id: int
+        :param advised_company_id: The company ID involved with the transaction.
+        :type advised_company_id: int
+        :return: A dictionary containing the list of companies advising a company involved with a merger or acquisition, along with their advisor type.
+        :rtype: dict[str, list[dict[str, int | str]]]
+        """
+        url = f"{self.url_base}merger/info/{transaction_id}/advisors/{advised_company_id}"
+        return self.fetch(url)

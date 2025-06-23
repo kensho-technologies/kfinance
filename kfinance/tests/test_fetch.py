@@ -272,6 +272,27 @@ class TestFetchItem(TestCase):
         )
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
 
+    def test_fetch_mergers_for_company(self) -> None:
+        company_id = 21719
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}mergers/{company_id}"
+        self.kfinance_api_client.fetch_mergers_for_company(company_id=company_id)
+        self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
+
+    def test_fetch_merger_info(self) -> None:
+        transaction_id = 554979212
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}merger/info/{transaction_id}"
+        self.kfinance_api_client.fetch_merger_info(transaction_id=transaction_id)
+        self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
+
+    def test_fetch_advisors_for_company_in_merger(self) -> None:
+        transaction_id = 554979212
+        advised_company_id = 251994106
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}merger/info/{transaction_id}/advisors/{advised_company_id}"
+        self.kfinance_api_client.fetch_advisors_for_company_in_merger(
+            transaction_id=transaction_id, advised_company_id=advised_company_id
+        )
+        self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
+
 
 class TestMarketCap:
     @pytest.mark.parametrize(

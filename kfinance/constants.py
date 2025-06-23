@@ -101,6 +101,7 @@ class Permission(StrEnum):
     RelationshipPermission = "RelationshipPermission"
     StatementsPermission = "StatementsPermission"
     SegmentsPermission = "SegmentsPermission"
+    MergersPermission = "MergersPermission"
     CompetitorsPermission = "CompetitorsPermission"
 
 
