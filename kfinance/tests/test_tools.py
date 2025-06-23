@@ -9,11 +9,18 @@ from pytest import raises
 from requests_mock import Mocker
 import time_machine
 
-from kfinance.constants import BusinessRelationshipType, Capitalization, SegmentType, StatementType
+from kfinance.constants import (
+    BusinessRelationshipType,
+    Capitalization,
+    CompetitorSource,
+    SegmentType,
+    StatementType,
+)
 from kfinance.kfinance import Client, NoEarningsDataError
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
 from kfinance.tests.test_objects import MOCK_COMPANY_DB, MOCK_MERGERS_DB, ordered
 from kfinance.tool_calling import (
+    GetCompetitorsFromIdentifier,
     GetEarnings,
     GetEarningsCallDatetimesFromIdentifier,
     GetFinancialLineItemFromIdentifier,
@@ -40,6 +47,9 @@ from kfinance.tool_calling.get_business_relationship_from_identifier import (
 from kfinance.tool_calling.get_capitalization_from_identifier import (
     GetCapitalizationFromIdentifier,
     GetCapitalizationFromIdentifierArgs,
+)
+from kfinance.tool_calling.get_competitors_from_identifier import (
+    GetCompetitorsFromIdentifierArgs,
 )
 from kfinance.tool_calling.get_cusip_from_ticker import GetCusipFromTicker, GetCusipFromTickerArgs
 from kfinance.tool_calling.get_financial_line_item_from_identifier import (
@@ -705,6 +715,33 @@ class TestGetTranscript:
         tool = GetTranscript(kfinance_client=mock_client)
         response = tool.run(GetTranscriptArgs(key_dev_id=12345).model_dump(mode="json"))
         assert response == expected_response
+
+
+class TestGetCompetitorsFromIdentifier:
+    def test_get_competitors_from_identifier(self, mock_client: Client, requests_mock: Mocker):
+        """
+        GIVEN the GetCompetitorsFromIdentifier tool
+        WHEN we request the SPGI competitors that are named by competitors
+        THEN we get back the SPGI competitors that are named by competitors
+        """
+        expected_competitors_response = {
+            "companies": [
+                {"company_id": 35352, "company_name": "The Descartes Systems Group Inc."},
+                {"company_id": 4003514, "company_name": "London Stock Exchange Group plc"},
+            ]
+        }
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/competitors/{SPGI_COMPANY_ID}/named_by_competitor",
+            # truncated from the original API response
+            json=expected_competitors_response,
+        )
+
+        tool = GetCompetitorsFromIdentifier(kfinance_client=mock_client)
+        args = GetCompetitorsFromIdentifierArgs(
+            identifier="SPGI", competitor_source=CompetitorSource.named_by_competitor
+        )
+        response = tool.run(args.model_dump(mode="json"))
+        assert response == expected_competitors_response
 
 
 class TestValidQuarter:
