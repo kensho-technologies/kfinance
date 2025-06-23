@@ -3,6 +3,18 @@
 ## v2.5.0
 - Add competitors function and llm tools
 
+## v2.4.4
+- Replace `cached_property` with `property` to enable batching
+
+## v2.4.3
+- Improve MCP tool build process
+
+## v2.4.2
+- Update missing permission warning
+
+## v2.4.1
+- Fix SegmentsPermission typo
+
 ## v2.4.0
 - Add MCP server
 

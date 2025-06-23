@@ -3,7 +3,7 @@ from typing import Literal, Type
 from pydantic import BaseModel, Field
 
 from kfinance.constants import PeriodType, Permission, StatementType
-from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
+from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier, ValidQuarter
 
 
 class GetFinancialStatementFromIdentifierArgs(ToolArgsWithIdentifier):
@@ -12,8 +12,8 @@ class GetFinancialStatementFromIdentifierArgs(ToolArgsWithIdentifier):
     period_type: PeriodType | None = Field(default=None, description="The period type")
     start_year: int | None = Field(default=None, description="The starting year for the data range")
     end_year: int | None = Field(default=None, description="The ending year for the data range")
-    start_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Starting quarter")
-    end_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Ending quarter")
+    start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
+    end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
 
 
 class GetFinancialStatementFromIdentifier(KfinanceTool):

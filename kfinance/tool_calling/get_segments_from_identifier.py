@@ -3,7 +3,7 @@ from typing import Literal, Type
 from pydantic import BaseModel, Field
 
 from kfinance.constants import PeriodType, Permission, SegmentType
-from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
+from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier, ValidQuarter
 
 
 class GetSegmentsFromIdentifierArgs(ToolArgsWithIdentifier):
@@ -12,15 +12,15 @@ class GetSegmentsFromIdentifierArgs(ToolArgsWithIdentifier):
     period_type: PeriodType | None = Field(default=None, description="The period type")
     start_year: int | None = Field(default=None, description="The starting year for the data range")
     end_year: int | None = Field(default=None, description="The ending year for the data range")
-    start_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Starting quarter")
-    end_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Ending quarter")
+    start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
+    end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
 
 
 class GetSegmentsFromIdentifier(KfinanceTool):
     name: str = "get_segments_from_identifier"
     description: str = "Get the templated segments associated with an identifier."
     args_schema: Type[BaseModel] = GetSegmentsFromIdentifierArgs
-    required_permission: Permission | None = Permission.StatementsPermission
+    required_permission: Permission | None = Permission.SegmentsPermission
 
     def _run(
         self,

@@ -201,9 +201,9 @@ class KFinanceApiClient:
                 self._user_permissions.add(Permission[permission_str])
             except KeyError:
                 logger.warning(
-                    "Could not resolve %s to a member of the Permission enum. "
-                    "%s may be a new type of permission that still needs to be "
-                    "added to the enum.",
+                    "You have access to functions using %s. However, functions using "
+                    "%s have not yet been added in this version of the client. To access "
+                    "all functions that you have access to, you may need to update the client.",
                     permission_str,
                     permission_str,
                 )

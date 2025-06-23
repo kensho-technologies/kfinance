@@ -1,5 +1,5 @@
+from abc import abstractmethod
 from datetime import datetime
-from functools import cached_property
 import logging
 from typing import TYPE_CHECKING, Any, Callable, Literal, Optional
 
@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 class CompanyFunctionsMetaClass:
     kfinance_api_client: KFinanceApiClient
 
-    @cached_property
+    @property
+    @abstractmethod
     def company_id(self) -> Any:
         """Set and return the company id for the object"""
         raise NotImplementedError("child classes must implement company id property")
@@ -219,6 +220,7 @@ class CompanyFunctionsMetaClass:
             .set_index(pd.Index([line_item]))
         )
 
+    @cached(cache=LRUCache(maxsize=100))
     def relationships(self, relationship_type: BusinessRelationshipType) -> "BusinessRelationships":
         """Returns a BusinessRelationships object that includes the current and previous Companies associated with company_id and filtered by relationship_type. The function calls fetch_companies_from_business_relationship.
 
@@ -518,7 +520,7 @@ class DelegatedCompanyFunctionsMetaClass(CompanyFunctionsMetaClass):
                 delegated_function(company_function_name),
             )
 
-    @cached_property
+    @property
     def company(self) -> Any:
         """Set and return the company for the object"""
         raise NotImplementedError("child classes must implement company property")
@@ -526,8 +528,8 @@ class DelegatedCompanyFunctionsMetaClass(CompanyFunctionsMetaClass):
 
 for relationship in BusinessRelationshipType:
 
-    def _relationship_outer_wrapper(relationship_type: BusinessRelationshipType) -> cached_property:
-        """Creates a cached property for a relationship type.
+    def _relationship_outer_wrapper(relationship_type: BusinessRelationshipType) -> property:
+        """Creates a property for a relationship type.
 
         This function returns a property that retrieves the associated company's current and previous
         relationships of the specified type.
@@ -536,7 +538,7 @@ for relationship in BusinessRelationshipType:
             relationship_type (BusinessRelationshipType): The type of relationship to be wrapped.
 
         Returns:
-            property: A cached property that calls the inner wrapper to retrieve the relationship data.
+            property: A property that calls the inner wrapper to retrieve the relationship data.
         """
 
         def relationship_inner_wrapper(
@@ -557,12 +559,11 @@ for relationship in BusinessRelationshipType:
         relationship_inner_wrapper.__doc__ = doc
         relationship_inner_wrapper.__name__ = relationship
 
-        return cached_property(relationship_inner_wrapper)
+        return property(relationship_inner_wrapper)
 
-    relationship_cached_property = _relationship_outer_wrapper(relationship)
-    relationship_cached_property.__set_name__(CompanyFunctionsMetaClass, relationship)
+    relationship_property = _relationship_outer_wrapper(relationship)
     setattr(
         CompanyFunctionsMetaClass,
         relationship,
-        relationship_cached_property,
+        relationship_property,
     )
