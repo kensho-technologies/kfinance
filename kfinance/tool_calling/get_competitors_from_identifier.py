@@ -9,7 +9,7 @@ class GetCompetitorsFromIdentifierArgs(ToolArgsWithIdentifier):
 
 class GetCompetitorsFromIdentifier(KfinanceTool):
     name: str = "get_competitors_from_identifier"
-    description: str = "Retrieves a list of competitors for a given company, optionally filtered by the source of the competitor information."
+    description: str = "Retrieves a list of company_id and company_name that are competitors for a given company, optionally filtered by the source of the competitor information."
     args_schema = GetCompetitorsFromIdentifierArgs
     required_permission: Permission | None = Permission.CompetitorsPermission
 

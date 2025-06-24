@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.6.1
+ - Add competitor company_name
+
 ## v2.6.0
  - Add mergers & acquisitions.
 
