@@ -1,11 +1,11 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import logging
+from queue import Queue
+from threading import local
 from time import time
 from typing import Callable, Generator, Optional
 from uuid import uuid4
-from queue import Queue
-from threading import local
 
 import jwt
 from pydantic import ValidationError
@@ -213,29 +213,27 @@ class KFinanceApiClient:
                 )
 
     @contextmanager
-    def track_endpoints(self):
-        """Context manager to track endpoint URLs during execution.
-        Since tools run in parallel threads and are never nested,
-        we just need to enable tracking and collect URLs in our thread-safe queue."""
+    def track_endpoints(self) -> Generator:
+        """Context manager to track and collect endpoint URLs in our thread-safe queue during execution."""
         self._endpoint_queue = Queue[str]()
         self._thread_local.tracking_enabled = True
-        
+
         try:
             yield
         finally:
             self._thread_local.tracking_enabled = False
 
     @property
-    def endpoint_urls(self):
+    def endpoint_urls(self) -> list[str]:
         """Get all endpoint URLs collected from parallel tool executions."""
         urls = []
-        while not self._endpoint_queue.empty():
+        while self._endpoint_queue and not self._endpoint_queue.empty():
             urls.append(self._endpoint_queue.get())
         return urls
 
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
-        if getattr(self._thread_local, 'tracking_enabled', False):
+        if getattr(self._thread_local, "tracking_enabled", False) and self._endpoint_queue:
             self._endpoint_queue.put(url)
 
         headers = {

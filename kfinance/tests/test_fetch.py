@@ -376,46 +376,65 @@ class TestFetchCompaniesFromBusinessRelationship:
 
 
 class TestEndpointTracking(TestCase):
-    def setUp(self):
-        self.kfinance_api_client = KFinanceApiClient()
-    
     def test_parallel_endpoint_tracking(self):
         """Test that parallel threads can track endpoints independently using the same queue."""
         from concurrent.futures import ThreadPoolExecutor
         import threading
-        
-        def make_api_call(url: str):
+
+        self.kfinance_client = Client()
+
+        def make_api_call(args: dict):
             # Each thread should start with tracking disabled
             self.assertFalse(
-                getattr(self.kfinance_api_client._thread_local, 'tracking_enabled', False),
+                getattr(self.kfinance_client.kfinance_api_client._thread_local, "tracking_enabled", False),  # noqa: SLF001
                 f"Thread {threading.current_thread().name} should start with tracking disabled"
             )
-            #self.kfinance_api_client.fetch(url)
-            print("finished executing: ", url)
-            return url
-        
-        with self.kfinance_api_client.track_endpoints():
-            # Create a thread pool and submit multiple API calls
-            with ThreadPoolExecutor(max_workers=3) as executor:
-                futures = [
-                    executor.submit(make_api_call, f"https://api.example.com/endpoint{i}")
-                    for i in range(3)
-                ]
-                
-                # Wait for all threads to complete
-                for future in futures:
-                    future.result()
+            ret = self.kfinance_client.grounding_tools['get_info_from_identifier'](**args)
+            return {
+                'args': args,
+                'result': ret['data'],
+                'endpoint_urls': ret['endpoint_urls'],
+                'thread': threading.current_thread().name
+            }
+
+        arguments = [
+            {'identifier': 'AAPL'},
+            {'identifier': 'META'},
+            {'identifier': 'SPGI'},
+        ]
             
-            # Verify all URLs were collected in the queue
-            collected_urls = self.kfinance_api_client.endpoint_urls
-            self.assertEqual(len(collected_urls), 3)
-            self.assertTrue(all(
-                f"https://api.example.com/endpoint{i}" in collected_urls 
-                for i in range(3)
-            ))
-        
+        # Create a thread pool and submit multiple API calls
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = [
+                executor.submit(make_api_call, args)
+                for args in arguments
+            ]
+
+            # Collect all results and aggregate endpoint URLs
+            all_results = []
+            all_endpoint_urls = []
+            
+            for future in futures:
+                result = future.result()
+                all_results.append(result)
+                # Extend the list with endpoint URLs from this call
+                all_endpoint_urls.extend(result['endpoint_urls'])
+
+        # Verify the aggregated endpoint URLs count
+        self.assertEqual(len(all_endpoint_urls), 4, 
+                        f"Expected 4 endpoint URLs total, but got {len(all_endpoint_urls)}: {all_endpoint_urls}")
+
+        # Optional: Print results for debugging
+        for result in all_results:
+            print(f"Thread {result['thread']} processed {result['args']}: "
+                f"URLs: {result['endpoint_urls']}")
+
+        # Verify all URLs were collected in the queue (if this is still relevant)
+        collected_urls = self.kfinance_client.kfinance_api_client.endpoint_urls
+        self.assertEqual(len(collected_urls), 3)
+
         # Verify tracking is disabled after context ends
         self.assertFalse(
-            getattr(self.kfinance_api_client._thread_local, 'tracking_enabled', False),
+            getattr(self.kfinance_client.kfinance_api_client._thread_local, "tracking_enabled", False),  # noqa: SLF001
             "Main thread should have tracking disabled after context"
         )
