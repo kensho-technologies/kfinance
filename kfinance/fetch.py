@@ -1,7 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import logging
-from queue import Queue
 from threading import local
 from time import time
 from typing import Callable, Generator, Optional
@@ -97,8 +96,6 @@ class KFinanceApiClient:
         self._batch_id: str | None = None
         self._batch_size: str | None = None
         self._user_permissions: set[Permission] | None = None
-        self._thread_local = local()
-        self._endpoint_queue: Queue[str] | None = None
 
     @contextmanager
     def batch_request_header(self, batch_size: int) -> Generator:
@@ -211,32 +208,9 @@ class KFinanceApiClient:
                     permission_str,
                     permission_str,
                 )
-    
-    @contextmanager
-    def track_endpoints(self):
-        """Context manager to track endpoint URLs during execution.
-        Since tools run in parallel threads and are never nested,
-        we just need to enable tracking and collect URLs in our thread-safe queue."""
-        self._endpoint_queue = Queue[str]()
-        self._thread_local.tracking_enabled = True
-        
-        try:
-            yield
-        finally:
-            self._thread_local.tracking_enabled = False
-
-    @property
-    def endpoint_urls(self):
-        """Get all endpoint URLs collected from parallel tool executions."""
-        urls = []
-        while not self._endpoint_queue.empty():
-            urls.append(self._endpoint_queue.get())
-        return urls
 
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
-        if getattr(self._thread_local, 'tracking_enabled', False):
-            self._endpoint_queue.put(url)
 
         headers = {
             "Content-Type": "application/json",

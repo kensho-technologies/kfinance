@@ -38,20 +38,6 @@ class KfinanceTool(BaseTool):
         args_dict = {k: v for k, v in args_dict.items() if k in kwargs}
         return self._run(**args_dict)
 
-    def run_with_grounding(self, *args: Any, **kwargs: Any) -> Any:
-        """Execute a Kfinance tool with grounding.
-        
-        This is a wrapper around the `run_without_langchain` method that adds grounding 
-        support, for returning the endpoint urls along with the data.
-        """
-        with self.kfinance_client.kfinance_api_client.track_endpoints():
-            data = self.run_without_langchain(*args, **kwargs)
-            print(f"Endpoint URLs: {self.kfinance_client.kfinance_api_client.endpoint_urls}")
-            return {
-                "data": data,
-                "endpoint_urls": self.kfinance_client.kfinance_api_client.endpoint_urls
-            }
-
     def _run(self, *args: Any, **kwargs: Any) -> Any:
         """The code to execute the tool"""
         ...

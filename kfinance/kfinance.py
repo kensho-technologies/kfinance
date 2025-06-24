@@ -1400,11 +1400,6 @@ class Client:
         use `langchain_tools`.
         """
         return {t.name: t.run_without_langchain for t in self.langchain_tools}
-
-    @property
-    def grounding_tools(self) -> dict[str, Callable]:
-        """Return a mapping of tool calling function names to the corresponding functions for the grounding agent."""
-        return {t.name: t.run_with_grounding for t in self.langchain_tools}
     
     @property
     def anthropic_tool_descriptions(self) -> list[dict[str, Any]]:
