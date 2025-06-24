@@ -7,9 +7,6 @@ from kfinance.tool_calling.get_capitalization_from_identifier import GetCapitali
 from kfinance.tool_calling.get_competitors_from_identifier import GetCompetitorsFromIdentifier
 from kfinance.tool_calling.get_cusip_from_ticker import GetCusipFromTicker
 from kfinance.tool_calling.get_earnings import GetEarnings
-from kfinance.tool_calling.get_earnings_call_datetimes_from_identifier import (
-    GetEarningsCallDatetimesFromIdentifier,
-)
 from kfinance.tool_calling.get_financial_line_item_from_identifier import (
     GetFinancialLineItemFromIdentifier,
 )
@@ -40,7 +37,6 @@ ALL_TOOLS: list[Type[KfinanceTool]] = [
     GetIsinFromTicker,
     GetCusipFromTicker,
     GetInfoFromIdentifier,
-    GetEarningsCallDatetimesFromIdentifier,
     GetEarnings,
     GetLatestEarnings,
     GetNextEarnings,
