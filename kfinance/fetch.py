@@ -1,7 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import logging
-from threading import local
 from time import time
 from typing import Callable, Generator, Optional
 from uuid import uuid4
@@ -33,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 
 DEFAULT_API_HOST: str = "https://kfinance.kensho.com"
-# DEFAULT_API_HOST: str = "http://localhost:8000"
 DEFAULT_API_VERSION: int = 1
 DEFAULT_OKTA_HOST: str = "https://kensho.okta.com"
 DEFAULT_OKTA_AUTH_SERVER: str = "default"

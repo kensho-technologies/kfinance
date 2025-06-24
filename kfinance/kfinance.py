@@ -1400,7 +1400,7 @@ class Client:
         use `langchain_tools`.
         """
         return {t.name: t.run_without_langchain for t in self.langchain_tools}
-    
+
     @property
     def anthropic_tool_descriptions(self) -> list[dict[str, Any]]:
         """Return tool descriptions for anthropic"""
