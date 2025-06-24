@@ -373,3 +373,49 @@ class TestFetchCompaniesFromBusinessRelationship:
             company_id=SPGI_COMPANY_ID, relationship_type=BusinessRelationshipType.supplier
         )
         assert resp == expected_result
+
+
+class TestEndpointTracking(TestCase):
+    def setUp(self):
+        self.kfinance_api_client = KFinanceApiClient()
+    
+    def test_parallel_endpoint_tracking(self):
+        """Test that parallel threads can track endpoints independently using the same queue."""
+        from concurrent.futures import ThreadPoolExecutor
+        import threading
+        
+        def make_api_call(url: str):
+            # Each thread should start with tracking disabled
+            self.assertFalse(
+                getattr(self.kfinance_api_client._thread_local, 'tracking_enabled', False),
+                f"Thread {threading.current_thread().name} should start with tracking disabled"
+            )
+            #self.kfinance_api_client.fetch(url)
+            print("finished executing: ", url)
+            return url
+        
+        with self.kfinance_api_client.track_endpoints():
+            # Create a thread pool and submit multiple API calls
+            with ThreadPoolExecutor(max_workers=3) as executor:
+                futures = [
+                    executor.submit(make_api_call, f"https://api.example.com/endpoint{i}")
+                    for i in range(3)
+                ]
+                
+                # Wait for all threads to complete
+                for future in futures:
+                    future.result()
+            
+            # Verify all URLs were collected in the queue
+            collected_urls = self.kfinance_api_client.endpoint_urls
+            self.assertEqual(len(collected_urls), 3)
+            self.assertTrue(all(
+                f"https://api.example.com/endpoint{i}" in collected_urls 
+                for i in range(3)
+            ))
+        
+        # Verify tracking is disabled after context ends
+        self.assertFalse(
+            getattr(self.kfinance_api_client._thread_local, 'tracking_enabled', False),
+            "Main thread should have tracking disabled after context"
+        )
