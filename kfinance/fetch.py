@@ -596,7 +596,9 @@ class KFinanceApiClient:
             return cast(CompanyOtherNames, result)
 
         # If not mocked request, validate the structure of result
-        if not all(key in result for key in ["alternate_names", "historical_names", "native_names"]):
+        if not all(
+            key in result for key in ["alternate_names", "historical_names", "native_names"]
+        ):
             raise ValueError("Invalid structure for company other names")
 
         return cast(CompanyOtherNames, result)

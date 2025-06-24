@@ -8,7 +8,9 @@ from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdenti
 
 class GetCompanyHistoricalNamesFromIdentifier(KfinanceTool):
     name: str = "get_company_historical_names_from_identifier"
-    description: str = "Gets all known historical names if the company's name has changed over time."
+    description: str = (
+        "Gets all known historical names if the company's name has changed over time."
+    )
     args_schema: Type[BaseModel] = ToolArgsWithIdentifier
     required_permission: Permission | None = Permission.IntelligencePermission
 

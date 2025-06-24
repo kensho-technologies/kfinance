@@ -435,35 +435,45 @@ class CompanyFunctionsMetaClass:
     def summary(self) -> str:
         """Lazily fetch and return a company's summary"""
         if not self._company_descriptions:
-            self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(company_id=self.company_id)
+            self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(
+                company_id=self.company_id
+            )
         return self._company_descriptions["summary"]
 
     @property
     def description(self) -> str:
         """Lazily fetch and return a company's description"""
         if not self._company_descriptions:
-            self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(company_id=self.company_id)
+            self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(
+                company_id=self.company_id
+            )
         return self._company_descriptions["description"]
 
     @property
     def alternate_names(self) -> list[str]:
         """Lazily fetch and return a company's alternate names"""
         if not self._company_other_names:
-            self._company_other_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)
+            self._company_other_names = self.kfinance_api_client.fetch_company_other_names(
+                company_id=self.company_id
+            )
         return self._company_other_names["alternate_names"]
 
     @property
     def historical_names(self) -> list[str]:
         """Lazily fetch and return a company's historical names"""
         if not self._company_other_names:
-            self._company_other_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)
+            self._company_other_names = self.kfinance_api_client.fetch_company_other_names(
+                company_id=self.company_id
+            )
         return self._company_other_names["historical_names"]
 
     @property
     def native_names(self) -> list[NativeName]:
         """Lazily fetch and return a company's native names"""
         if not self._company_other_names:
-            self._company_other_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)
+            self._company_other_names = self.kfinance_api_client.fetch_company_other_names(
+                company_id=self.company_id
+            )
         return self._company_other_names["native_names"]
 
     def competitors(

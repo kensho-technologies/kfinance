@@ -747,7 +747,9 @@ class TestGetCompanyDescriptions:
         response = tool.run(args.model_dump(mode="json"))
         assert response == self.summary
 
-    def test_get_company_description_from_identifier(self, mock_client: Client, requests_mock: Mocker):
+    def test_get_company_description_from_identifier(
+        self, mock_client: Client, requests_mock: Mocker
+    ):
         """
         GIVEN the GetCompanyDescriptionFromIdentifier tool
         WHEN we request the company description for SPGI
@@ -766,26 +768,24 @@ class TestGetCompanyDescriptions:
 
 
 class TestGetCompanyOtherNames:
-    alternate_names = [
-        "S&P Global",
-        "S&P Global, Inc.",
-        "S&P"
-    ]
+    alternate_names = ["S&P Global", "S&P Global, Inc.", "S&P"]
     historical_names = [
         "McGraw-Hill Publishing Company, Inc.",
         "McGraw-Hill Book Company",
         "McGraw Hill Financial, Inc.",
-        "The McGraw-Hill Companies, Inc."
+        "The McGraw-Hill Companies, Inc.",
     ]
     native_names = []
 
     company_other_names_info = {
         "alternate_names": alternate_names,
         "historical_names": historical_names,
-        "native_names": native_names
+        "native_names": native_names,
     }
 
-    def test_get_company_alternate_names_from_identifier(self, mock_client: Client, requests_mock: Mocker):
+    def test_get_company_alternate_names_from_identifier(
+        self, mock_client: Client, requests_mock: Mocker
+    ):
         """
         GIVEN the GetCompanyAlternateNamesFromIdentifier tool
         WHEN we request the alternate names for SPGI
@@ -801,7 +801,9 @@ class TestGetCompanyOtherNames:
         response = tool.run(args.model_dump(mode="json"))
         assert response == self.alternate_names
 
-    def test_get_company_historical_names_from_identifier(self, mock_client: Client, requests_mock: Mocker):
+    def test_get_company_historical_names_from_identifier(
+        self, mock_client: Client, requests_mock: Mocker
+    ):
         """
         GIVEN the GetCompanyHistoricalNamesFromIdentifier tool
         WHEN we request the historical names for SPGI
@@ -817,7 +819,9 @@ class TestGetCompanyOtherNames:
         response = tool.run(args.model_dump(mode="json"))
         assert response == self.historical_names
 
-    def test_get_company_native_names_from_identifier(self, mock_client: Client, requests_mock: Mocker):
+    def test_get_company_native_names_from_identifier(
+        self, mock_client: Client, requests_mock: Mocker
+    ):
         """
         GIVEN the GetCompanyNativeNamesFromIdentifier tool
         WHEN we request the native names for SPGI
