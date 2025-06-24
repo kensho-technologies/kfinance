@@ -1,6 +1,6 @@
 from datetime import date
 from itertools import chain
-from typing import NamedTuple, TypedDict, List
+from typing import List, NamedTuple, TypedDict
 
 from strenum import StrEnum
 

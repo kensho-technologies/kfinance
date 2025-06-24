@@ -20,6 +20,11 @@ from kfinance.kfinance import Client, NoEarningsDataError
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
 from kfinance.tests.test_objects import MOCK_COMPANY_DB, MOCK_MERGERS_DB, ordered
 from kfinance.tool_calling import (
+    GetCompanyAlternateNamesFromIdentifier,
+    GetCompanyDescriptionFromIdentifier,
+    GetCompanyHistoricalNamesFromIdentifier,
+    GetCompanyNativeNamesFromIdentifier,
+    GetCompanySummaryFromIdentifier,
     GetCompetitorsFromIdentifier,
     GetEarnings,
     GetEarningsCallDatetimesFromIdentifier,
@@ -35,11 +40,6 @@ from kfinance.tool_calling import (
     GetPricesFromIdentifier,
     GetTranscript,
     ResolveIdentifier,
-    GetCompanySummaryFromIdentifier,
-    GetCompanyDescriptionFromIdentifier,
-    GetCompanyAlternateNamesFromIdentifier,
-    GetCompanyHistoricalNamesFromIdentifier,
-    GetCompanyNativeNamesFromIdentifier,
 )
 from kfinance.tool_calling.get_advisors_for_company_in_transaction_from_identifier import (
     GetAdvisorsForCompanyInTransactionFromIdentifier,
@@ -729,7 +729,7 @@ class TestGetCompanyDescriptions:
         "summary": summary,
         "description": description,
     }
-    
+
     def test_get_company_summary_from_identifier(self, mock_client: Client, requests_mock: Mocker):
         """
         GIVEN the GetCompanySummaryFromIdentifier tool
@@ -746,7 +746,7 @@ class TestGetCompanyDescriptions:
         args = ToolArgsWithIdentifier(identifier="SPGI")
         response = tool.run(args.model_dump(mode="json"))
         assert response == self.summary
-    
+
     def test_get_company_description_from_identifier(self, mock_client: Client, requests_mock: Mocker):
         """
         GIVEN the GetCompanyDescriptionFromIdentifier tool
@@ -800,7 +800,7 @@ class TestGetCompanyOtherNames:
         args = ToolArgsWithIdentifier(identifier="SPGI")
         response = tool.run(args.model_dump(mode="json"))
         assert response == self.alternate_names
-    
+
     def test_get_company_historical_names_from_identifier(self, mock_client: Client, requests_mock: Mocker):
         """
         GIVEN the GetCompanyHistoricalNamesFromIdentifier tool
@@ -816,7 +816,7 @@ class TestGetCompanyOtherNames:
         args = ToolArgsWithIdentifier(identifier="SPGI")
         response = tool.run(args.model_dump(mode="json"))
         assert response == self.historical_names
-    
+
     def test_get_company_native_names_from_identifier(self, mock_client: Client, requests_mock: Mocker):
         """
         GIVEN the GetCompanyNativeNamesFromIdentifier tool

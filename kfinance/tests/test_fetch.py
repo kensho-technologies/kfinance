@@ -271,13 +271,13 @@ class TestFetchItem(TestCase):
             end_quarter=end_quarter,
         )
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
-    
+
     def test_fetch_company_descriptions(self) -> None:
         company_id = 21719
         expected_fetch_url = f"{self.kfinance_api_client.url_base}info/{company_id}/descriptions"
         self.kfinance_api_client.fetch_company_descriptions(company_id=company_id)
         self.kfinance_api_client.fetch.assert_called_once_with(expected_fetch_url)
-    
+
     def test_fetch_company_other_names(self) -> None:
         company_id = 21719
         expected_fetch_url = f"{self.kfinance_api_client.url_base}info/{company_id}/names"

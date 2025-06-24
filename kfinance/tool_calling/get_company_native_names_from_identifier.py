@@ -2,8 +2,9 @@ from typing import Type
 
 from pydantic import BaseModel
 
-from kfinance.constants import Permission, NativeName
+from kfinance.constants import NativeName, Permission
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
+
 
 class GetCompanyNativeNamesFromIdentifier(KfinanceTool):
     name: str = "get_company_native_names_from_identifier"

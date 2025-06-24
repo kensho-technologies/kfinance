@@ -10,11 +10,11 @@ import pandas as pd
 from .constants import (
     LINE_ITEMS,
     BusinessRelationshipType,
+    CompanyOtherNames,
     CompetitorSource,
+    NativeName,
     PeriodType,
     SegmentType,
-    CompanyOtherNames,
-    NativeName,
 )
 from .fetch import KFinanceApiClient
 from .pydantic_models import RelationshipResponse
@@ -30,6 +30,7 @@ class CompanyFunctionsMetaClass:
     kfinance_api_client: KFinanceApiClient
 
     def __init__(self) -> None:
+        """Initialize the CompanyFunctionsMetaClass object"""
         self._company_descriptions: dict[str, str] | None = None
         self._company_other_names: CompanyOtherNames | None = None
 
@@ -432,30 +433,35 @@ class CompanyFunctionsMetaClass:
 
     @property
     def summary(self) -> str:
+        """Lazily fetch and return a company's summary"""
         if not self._company_descriptions:
             self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(company_id=self.company_id)
         return self._company_descriptions["summary"]
 
     @property
     def description(self) -> str:
+        """Lazily fetch and return a company's description"""
         if not self._company_descriptions:
             self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(company_id=self.company_id)
         return self._company_descriptions["description"]
 
     @property
     def alternate_names(self) -> list[str]:
+        """Lazily fetch and return a company's alternate names"""
         if not self._company_other_names:
             self._company_other_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)
         return self._company_other_names["alternate_names"]
 
     @property
     def historical_names(self) -> list[str]:
+        """Lazily fetch and return a company's historical names"""
         if not self._company_other_names:
             self._company_other_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)
         return self._company_other_names["historical_names"]
 
     @property
     def native_names(self) -> list[NativeName]:
+        """Lazily fetch and return a company's native names"""
         if not self._company_other_names:
             self._company_other_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)
         return self._company_other_names["native_names"]
