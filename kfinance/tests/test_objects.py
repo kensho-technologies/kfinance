@@ -22,6 +22,7 @@ from kfinance.kfinance import (
     TradingItem,
     Transcript,
 )
+from kfinance.models.capitalization_models import Capitalizations
 from kfinance.pydantic_models import CompanyIdAndName, RelationshipResponse
 
 
@@ -329,23 +330,26 @@ class MockKFinanceApiClient:
         company_id: int,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-    ) -> dict:
-        return {
-            "market_caps": [
-                {
-                    "date": "2025-01-01",
-                    "market_cap": "3133802247084.000000",
-                    "tev": "3152211247084.000000",
-                    "shares_outstanding": 7434880776,
-                },
-                {
-                    "date": "2025-01-02",
-                    "market_cap": "3112092395218.000000",
-                    "tev": "3130501395218.000000",
-                    "shares_outstanding": 7434880776,
-                },
-            ]
-        }
+    ) -> Capitalizations:
+        return Capitalizations.model_validate(
+            {
+                "currency": "USD",
+                "market_caps": [
+                    {
+                        "date": "2025-01-01",
+                        "market_cap": "3133802247084.000000",
+                        "tev": "3152211247084.000000",
+                        "shares_outstanding": 7434880776,
+                    },
+                    {
+                        "date": "2025-01-02",
+                        "market_cap": "3112092395218.000000",
+                        "tev": "3130501395218.000000",
+                        "shares_outstanding": 7434880776,
+                    },
+                ],
+            }
+        )
 
     def fetch_segments(
         self,
@@ -843,12 +847,14 @@ class TestTicker(TestCase):
         THEN the Ticker object can correctly extract market caps from the dict.
         """
 
-        expected_dataframe = pd.DataFrame(
-            {"market_cap": {"2025-01-01": 3133802247084.0, "2025-01-02": 3112092395218.0}}
-        )
-        expected_dataframe.index.name = "date"
+        expected_response = {
+            "market_cap": [
+                {"2025-01-01": {"unit": "USD", "value": "3133802247084.00"}},
+                {"2025-01-02": {"unit": "USD", "value": "3112092395218.00"}},
+            ]
+        }
         market_caps = self.msft_ticker_from_ticker.market_cap()
-        pd.testing.assert_frame_equal(expected_dataframe, market_caps)
+        assert market_caps == expected_response
 
 
 class TestTranscript(TestCase):

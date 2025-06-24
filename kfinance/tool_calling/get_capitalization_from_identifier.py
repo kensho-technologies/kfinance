@@ -29,8 +29,6 @@ class GetCapitalizationFromIdentifier(KfinanceTool):
         capitalization: Capitalization,
         start_date: str | None = None,
         end_date: str | None = None,
-    ) -> str:
+    ) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
-        return getattr(ticker, capitalization.value)(
-            start_date=start_date, end_date=end_date
-        ).to_markdown()
+        return getattr(ticker, capitalization.value)(start_date=start_date, end_date=end_date)
