@@ -35,11 +35,11 @@ class GetPricesFromIdentifier(KfinanceTool):
         end_date: date | None = None,
         periodicity: Periodicity = Periodicity.day,
         adjusted: bool = True,
-    ) -> str:
+    ) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
         return ticker.history(
             start_date=start_date.isoformat() if start_date else None,
             end_date=end_date.isoformat() if end_date else None,
             periodicity=periodicity,
             adjusted=adjusted,
-        ).to_markdown()
+        ).model_dump(mode="json")
