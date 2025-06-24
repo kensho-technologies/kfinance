@@ -13,6 +13,8 @@ from .constants import (
     CompetitorSource,
     PeriodType,
     SegmentType,
+    CompanyOtherNames,
+    NativeName,
 )
 from .fetch import KFinanceApiClient
 from .pydantic_models import RelationshipResponse
@@ -27,9 +29,9 @@ logger = logging.getLogger(__name__)
 class CompanyFunctionsMetaClass:
     kfinance_api_client: KFinanceApiClient
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._company_descriptions: dict[str, str] | None = None
-        self._company_other_names: dict[str, str] | None = None
+        self._company_other_names: CompanyOtherNames | None = None
 
     @property
     @abstractmethod
@@ -429,31 +431,31 @@ class CompanyFunctionsMetaClass:
         )
 
     @property
-    def summary(self):
+    def summary(self) -> str:
         if not self._company_descriptions:
             self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(company_id=self.company_id)
         return self._company_descriptions["summary"]
 
     @property
-    def description(self):
+    def description(self) -> str:
         if not self._company_descriptions:
             self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(company_id=self.company_id)
         return self._company_descriptions["description"]
 
     @property
-    def alternate_names(self):
+    def alternate_names(self) -> list[str]:
         if not self._company_other_names:
             self._company_other_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)
         return self._company_other_names["alternate_names"]
 
     @property
-    def historical_names(self):
+    def historical_names(self) -> list[str]:
         if not self._company_other_names:
             self._company_other_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)
         return self._company_other_names["historical_names"]
 
     @property
-    def native_names(self):
+    def native_names(self) -> list[NativeName]:
         if not self._company_other_names:
             self._company_other_names = self.kfinance_api_client.fetch_company_other_names(company_id=self.company_id)
         return self._company_other_names["native_names"]

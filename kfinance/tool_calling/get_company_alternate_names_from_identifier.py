@@ -15,6 +15,6 @@ class GetCompanyAlternateNamesFromIdentifier(KfinanceTool):
     def _run(
         self,
         identifier: str,
-    ) -> dict:
+    ) -> list[str]:
         ticker = self.kfinance_client.ticker(identifier)
         return ticker.alternate_names

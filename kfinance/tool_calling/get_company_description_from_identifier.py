@@ -14,6 +14,6 @@ class GetCompanyDescriptionFromIdentifier(KfinanceTool):
     def _run(
         self,
         identifier: str,
-    ) -> dict:
+    ) -> str:
         ticker = self.kfinance_client.ticker(identifier)
         return ticker.description
