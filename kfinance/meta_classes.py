@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from datetime import datetime
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Literal, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from cachetools import LRUCache, cached
 import numpy as np
@@ -10,6 +10,7 @@ import pandas as pd
 from .constants import (
     LINE_ITEMS,
     BusinessRelationshipType,
+    Capitalization,
     CompetitorSource,
     PeriodType,
     SegmentType,
@@ -262,73 +263,73 @@ class CompanyFunctionsMetaClass:
         self,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-    ) -> pd.DataFrame:
+    ) -> dict:
         """Retrieves market caps for a company between start and end date.
 
         :param start_date: The start date in format "YYYY-MM-DD", default to None
         :type start_date: str, optional
         :param end_date: The end date in format "YYYY-MM-DD", default to None
         :type end_date: str, optional
-        :return: A DataFrame with a `market_cap` column. The dates are the index.
-        :rtype: pd.DataFrame
+        :return: A dict with market_cap
+        :rtype: dict
         """
 
         return self._fetch_market_cap_tev_or_shares_outstanding(
-            column_to_extract="market_cap", start_date=start_date, end_date=end_date
+            capitalization_to_extract=Capitalization.market_cap,
+            start_date=start_date,
+            end_date=end_date,
         )
 
     def tev(
         self,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-    ) -> pd.DataFrame:
+    ) -> dict:
         """Retrieves TEV (total enterprise value) for a company between start and end date.
 
         :param start_date: The start date in format "YYYY-MM-DD", default to None
         :type start_date: str, optional
         :param end_date: The end date in format "YYYY-MM-DD", default to None
         :type end_date: str, optional
-        :return: A DataFrame with a `tev` column. The dates are the index.
-        :rtype: pd.DataFrame
+        :return: A dict with TEV
+        :rtype: dict
         """
 
         return self._fetch_market_cap_tev_or_shares_outstanding(
-            column_to_extract="tev", start_date=start_date, end_date=end_date
+            Capitalization.tev, start_date=start_date, end_date=end_date
         )
 
     def shares_outstanding(
         self,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-    ) -> pd.DataFrame:
+    ) -> dict:
         """Retrieves shares outstanding for a company between start and end date.
 
         :param start_date: The start date in format "YYYY-MM-DD", default to None
         :type start_date: str, optional
         :param end_date: The end date in format "YYYY-MM-DD", default to None
         :type end_date: str, optional
-        :return: A DataFrame with a `shares_outstanding` column. The dates are the index.
-        :rtype: pd.DataFrame
+        :return: A dict with outstanding shares
+        :rtype: dict
         """
 
         return self._fetch_market_cap_tev_or_shares_outstanding(
-            column_to_extract="shares_outstanding", start_date=start_date, end_date=end_date
+            Capitalization.shares_outstanding, start_date=start_date, end_date=end_date
         )
 
     def _fetch_market_cap_tev_or_shares_outstanding(
         self,
-        column_to_extract: Literal["market_cap", "tev", "shares_outstanding"],
+        capitalization_to_extract: Capitalization,
         start_date: str | None,
         end_date: str | None,
-    ) -> pd.DataFrame:
+    ) -> dict:
         """Helper function to fetch market cap, TEV, and shares outstanding."""
 
-        df = pd.DataFrame(
-            self.kfinance_api_client.fetch_market_caps_tevs_and_shares_outstanding(
-                company_id=self.company_id, start_date=start_date, end_date=end_date
-            )["market_caps"]
+        capitalizations = self.kfinance_api_client.fetch_market_caps_tevs_and_shares_outstanding(
+            company_id=self.company_id, start_date=start_date, end_date=end_date
         )
-        return df.set_index("date")[[column_to_extract]].apply(pd.to_numeric).replace(np.nan, None)
+        return capitalizations.jsonify_single_attribute(capitalization_to_extract)
 
     def _segments(
         self,

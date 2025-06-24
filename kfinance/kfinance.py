@@ -15,12 +15,11 @@ import webbrowser
 import google.ai.generativelanguage_v1beta.types as gapic
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_google_genai._function_utils import convert_to_genai_function_declarations
-import numpy as np
 import pandas as pd
 from PIL.Image import Image, open as image_open
 
-from .batch_request_handling import add_methods_of_singular_class_to_iterable_class
-from .constants import (
+from kfinance.batch_request_handling import add_methods_of_singular_class_to_iterable_class
+from kfinance.constants import (
     HistoryMetadata,
     IdentificationTriple,
     IndustryClassification,
@@ -28,20 +27,21 @@ from .constants import (
     Periodicity,
     YearAndQuarter,
 )
-from .fetch import (
+from kfinance.fetch import (
     DEFAULT_API_HOST,
     DEFAULT_API_VERSION,
     DEFAULT_OKTA_AUTH_SERVER,
     DEFAULT_OKTA_HOST,
     KFinanceApiClient,
 )
-from .meta_classes import (
+from kfinance.meta_classes import (
     CompanyFunctionsMetaClass,
     DelegatedCompanyFunctionsMetaClass,
 )
-from .prompt import PROMPT
-from .pydantic_models import TranscriptComponent
-from .server_thread import ServerThread
+from kfinance.models.price_models import PriceHistory
+from kfinance.prompt import PROMPT
+from kfinance.pydantic_models import TranscriptComponent
+from kfinance.server_thread import ServerThread
 
 
 if TYPE_CHECKING:
@@ -140,36 +140,29 @@ class TradingItem:
         adjusted: bool = True,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-    ) -> pd.DataFrame:
+    ) -> PriceHistory:
         """Retrieves the historical price data for a given asset over a specified date range.
 
         :param periodicity: Determines the frequency of the historical data returned. Defaults to Periodicity.day.
         :param Optional[bool] adjusted: Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits, it defaults True
         :param Optional[str] start_date: The start date for historical price retrieval in format "YYYY-MM-DD", default to None
         :param Optional[str] end_date: The end date for historical price retrieval in format "YYYY-MM-DD", default to None
-        :return: A pd.DataFrame containing historical price data with columns corresponding to the specified periodicity, with Date as the index, and columns "open", "high", "low", "close", "volume" in type decimal. The Date index is a string that depends on the periodicity. If Periodicity.day, the Date index is the day in format "YYYY-MM-DD", eg "2024-05-13" If Periodicity.week, the Date index is the week number of the year in format "YYYY Week ##", eg "2024 Week 2" If Periodicity.month, the Date index is the month name of the year in format "<Month> YYYY", eg "January 2024". If Periodicity.year, the Date index is the year in format "YYYY", eg "2024".
-        :rtype: pd.DataFrame
+        :return: A PriceHistory containing historical price data including "open", "high", "low", "close", "volume" in type decimal. The date value is a string that depends on the periodicity. If Periodicity.day, the Date index is the day in format "YYYY-MM-DD", eg "2024-05-13" If Periodicity.week, the Date index is the week number of the year in format "YYYY Week ##", eg "2024 Week 2" If Periodicity.month, the Date index is the month name of the year in format "<Month> YYYY", eg "January 2024". If Periodicity.year, the Date index is the year in format "YYYY", eg "2024".
+        :rtype: PriceHistory
         """
         if start_date and end_date:
             if (
                 datetime.strptime(start_date, "%Y-%m-%d").date()
                 > datetime.strptime(end_date, "%Y-%m-%d").date()
             ):
-                return pd.DataFrame()
+                return PriceHistory(prices=[])
 
-        return (
-            pd.DataFrame(
-                self.kfinance_api_client.fetch_history(
-                    trading_item_id=self.trading_item_id,
-                    is_adjusted=adjusted,
-                    start_date=start_date,
-                    end_date=end_date,
-                    periodicity=periodicity,
-                )["prices"]
-            )
-            .set_index("date")
-            .apply(pd.to_numeric)
-            .replace(np.nan, None)
+        return self.kfinance_api_client.fetch_history(
+            trading_item_id=self.trading_item_id,
+            is_adjusted=adjusted,
+            start_date=start_date,
+            end_date=end_date,
+            periodicity=periodicity,
         )
 
     def price_chart(
@@ -815,7 +808,11 @@ class Security:
                 "trading_items"
             ]
             self._trading_items = TradingItems(
-                kfinance_api_client=self.kfinance_api_client, trading_item_ids=trading_item_ids
+                kfinance_api_client=self.kfinance_api_client,
+                trading_items=[
+                    TradingItem(kfinance_api_client=self.kfinance_api_client, trading_item_id=tii)
+                    for tii in trading_item_ids
+                ],
             )
         return self._trading_items
 
@@ -1194,7 +1191,7 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         adjusted: bool = True,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-    ) -> pd.DataFrame:
+    ) -> PriceHistory:
         """Retrieves the historical price data for a given asset over a specified date range.
 
         :param periodicity: Determines the frequency of the historical data returned. Defaults to Periodicity.day.
@@ -1205,8 +1202,8 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         :type start_date: str, optional
         :param end_date: The end date for historical price retrieval in format "YYYY-MM-DD", default to None
         :type end_date: str, optional
-        :return: A pd.DataFrame containing historical price data with columns corresponding to the specified periodicity, with Date as the index, and columns "open", "high", "low", "close", "volume" in type decimal. The Date index is a string that depends on the periodicity. If Periodicity.day, the Date index is the day in format "YYYY-MM-DD", eg "2024-05-13" If Periodicity.week, the Date index is the week number of the year in format "YYYY Week ##", eg "2024 Week 2" If Periodicity.month, the Date index is the month name of the year in format "<Month> YYYY", eg "January 2024". If Periodicity.year, the Date index is the year in format "YYYY", eg "2024".
-        :rtype: pd.DataFrame
+        :return: A PriceHistory containing historical price data including "open", "high", "low", "close", "volume" in type decimal. The date value is a string that depends on the periodicity. If Periodicity.day, the Date index is the day in format "YYYY-MM-DD", eg "2024-05-13" If Periodicity.week, the Date index is the week number of the year in format "YYYY Week ##", eg "2024 Week 2" If Periodicity.month, the Date index is the month name of the year in format "<Month> YYYY", eg "January 2024". If Periodicity.year, the Date index is the year in format "YYYY", eg "2024".
+        :rtype: PriceHistory
         """
         return self.primary_trading_item.history(
             periodicity,
@@ -1425,20 +1422,17 @@ class TradingItems(set):
     """Base class for representing a set of Trading Items"""
 
     def __init__(
-        self, kfinance_api_client: KFinanceApiClient, trading_item_ids: Iterable[int]
+        self, kfinance_api_client: KFinanceApiClient, trading_items: Iterable[TradingItem]
     ) -> None:
         """Initialize the Trading Items
 
         :param kfinance_api_client: The KFinanceApiClient used to fetch data
         :type kfinance_api_client: KFinanceApiClient
-        :param company_ids: An iterable of S&P CIQ Company ids
-        :type company_ids: Iterable[int]
+        :param trading_items: An iterable of TradingItem
+        :type trading_items: Iterable[TradingItem]
         """
         self.kfinance_api_client = kfinance_api_client
-        super().__init__(
-            TradingItem(kfinance_api_client, trading_item_id)
-            for trading_item_id in trading_item_ids
-        )
+        super().__init__(trading_items)
 
 
 @add_methods_of_singular_class_to_iterable_class(Ticker)
@@ -1515,7 +1509,14 @@ class Tickers(set):
         :rtype: TradingItems
         """
         return TradingItems(
-            self.kfinance_api_client, (ticker.trading_item_id for ticker in self.__iter__())
+            self.kfinance_api_client,
+            [
+                TradingItem(
+                    kfinance_api_client=self.kfinance_api_client,
+                    trading_item_id=ticker.trading_item_id,
+                )
+                for ticker in self.__iter__()
+            ],
         )
 
 

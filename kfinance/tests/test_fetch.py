@@ -1,6 +1,7 @@
 from unittest import TestCase
 from unittest.mock import MagicMock
 
+from pydantic import ValidationError
 import pytest
 from requests_mock import Mocker
 
@@ -53,21 +54,28 @@ class TestFetchItem(TestCase):
         expected_fetch_url = (
             f"{self.kfinance_api_client.url_base}pricing/{trading_item_id}/none/none/none/adjusted"
         )
-        self.kfinance_api_client.fetch_history(trading_item_id=trading_item_id)
+        # Validation error is ok, we only care that the function was called with the correct url
+        with pytest.raises(ValidationError):
+            self.kfinance_api_client.fetch_history(trading_item_id=trading_item_id)
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
 
+    def test_fetch_history_with_dates(self) -> None:
+        trading_item_id = 2629108
         start_date = "2025-01-01"
         end_date = "2025-01-31"
         is_adjusted = False
         periodicity = Periodicity.day
         expected_fetch_url = f"{self.kfinance_api_client.url_base}pricing/{trading_item_id}/{start_date}/{end_date}/{periodicity.value}/unadjusted"
-        self.kfinance_api_client.fetch_history(
-            trading_item_id=trading_item_id,
-            is_adjusted=is_adjusted,
-            start_date=start_date,
-            end_date=end_date,
-            periodicity=periodicity,
-        )
+
+        # Validation error is ok, we only care that the function was called with the correct url
+        with pytest.raises(ValidationError):
+            self.kfinance_api_client.fetch_history(
+                trading_item_id=trading_item_id,
+                is_adjusted=is_adjusted,
+                start_date=start_date,
+                end_date=end_date,
+                periodicity=periodicity,
+            )
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
 
     def test_fetch_history_metadata(self) -> None:
@@ -310,9 +318,11 @@ class TestMarketCap:
         expected_fetch_url = (
             f"{client.url_base}market_cap/{company_id}/{start_date_url}/{end_date_url}"
         )
-        client.fetch_market_caps_tevs_and_shares_outstanding(
-            company_id=company_id, start_date=start_date, end_date=end_date
-        )
+        # Validation error is ok, we only care that the function was called with the correct url
+        with pytest.raises(ValidationError):
+            client.fetch_market_caps_tevs_and_shares_outstanding(
+                company_id=company_id, start_date=start_date, end_date=end_date
+            )
         client.fetch.assert_called_with(expected_fetch_url)
 
     def test_fetch_permissions(self):

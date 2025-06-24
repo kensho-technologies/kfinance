@@ -164,6 +164,7 @@ class TestGetCapitalizationFromIdentifier:
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/market_cap/{SPGI_COMPANY_ID}/none/none",
             json={
+                "currency": "USD",
                 "market_caps": [
                     {
                         "date": "2024-04-10",
@@ -177,11 +178,16 @@ class TestGetCapitalizationFromIdentifier:
                         "tev": "147105066761.000000",
                         "shares_outstanding": 313099562,
                     },
-                ]
+                ],
             },
         )
 
-        expected_response = "| date       |   market_cap |\n|:-----------|-------------:|\n| 2024-04-10 |  1.32767e+11 |\n| 2024-04-11 |  1.32416e+11 |"
+        expected_response = {
+            "market_cap": [
+                {"2024-04-10": {"unit": "USD", "value": "132766738270.00"}},
+                {"2024-04-11": {"unit": "USD", "value": "132416066761.00"}},
+            ]
+        }
 
         tool = GetCapitalizationFromIdentifier(kfinance_client=mock_client)
         args = GetCapitalizationFromIdentifierArgs(
@@ -442,6 +448,7 @@ class TestPricesFromIdentifier:
             url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/none/none/day/adjusted",
             # truncated response
             json={
+                "currency": "USD",
                 "prices": [
                     {
                         "date": "2024-04-11",
@@ -459,10 +466,29 @@ class TestPricesFromIdentifier:
                         "close": "417.810000",
                         "volume": "1182229",
                     },
-                ]
+                ],
             },
         )
-        expected_response = "| date       |   open |   high |    low |   close |      volume |\n|:-----------|-------:|-------:|-------:|--------:|------------:|\n| 2024-04-11 | 424.26 | 425.99 | 422.04 |  422.92 | 1.12916e+06 |\n| 2024-04-12 | 419.23 | 421.94 | 416.45 |  417.81 | 1.18223e+06 |"
+        expected_response = {
+            "prices": [
+                {
+                    "date": "2024-04-11",
+                    "open": {"value": "424.26", "unit": "USD"},
+                    "high": {"value": "425.99", "unit": "USD"},
+                    "low": {"value": "422.04", "unit": "USD"},
+                    "close": {"value": "422.92", "unit": "USD"},
+                    "volume": {"value": "1129158", "unit": "Shares"},
+                },
+                {
+                    "date": "2024-04-12",
+                    "open": {"value": "419.23", "unit": "USD"},
+                    "high": {"value": "421.94", "unit": "USD"},
+                    "low": {"value": "416.45", "unit": "USD"},
+                    "close": {"value": "417.81", "unit": "USD"},
+                    "volume": {"value": "1182229", "unit": "Shares"},
+                },
+            ]
+        }
 
         tool = GetPricesFromIdentifier(kfinance_client=mock_client)
         response = tool.run(GetPricesFromIdentifierArgs(identifier="SPGI").model_dump(mode="json"))
