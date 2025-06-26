@@ -44,6 +44,18 @@ class KfinanceTool(BaseTool):
         """The code to execute the tool"""
         ...
 
+
+class ToolArgsWithIdentifier(BaseModel):
+    """Tool argument with an identifier.
+
+    All tools using identifiers should subclass this model to ensure that the description
+    of identifiers is always the same.
+    """
+
+    identifier: str = Field(
+        description="The identifier, which can be a ticker symbol, ISIN, CUSIP, or company_id"
+    )
+
 class ToolArgsWithIdentifiers(BaseModel):
     """Tool argument with a list of identifiers.
 
@@ -51,6 +63,6 @@ class ToolArgsWithIdentifiers(BaseModel):
     of identifiers is always the same.
     """
 
-    identifiers: list[str] = Field(
-        description="The identifiers, which can be a list of ticker symbols, ISINs, or CUSIPs, or company_ids"
+    identifier: str = Field(
+        description="The identifier, which can be a list of ticker symbols, ISINs, or CUSIPs, or company_ids"
     )

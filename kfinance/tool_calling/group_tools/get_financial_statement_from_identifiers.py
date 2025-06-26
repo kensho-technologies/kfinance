@@ -32,7 +32,7 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         - To fetch the most recent value for the statement, leave start_year, start_quarter, end_year, and end_quarter as None.
 
         Example:
-        Query: "Fetch the balance sheets of BAC ash GS for 2024"
+        Query: "Fetch the balance sheets of BAC and GS for 2024"
         Function: get_financial_statement_from_company_ids(identifiers=["BAC", "GS"], statement=StatementType.balance_sheet, start_year=2024, end_year=2024)
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialStatementFromIdentifiersArgs
