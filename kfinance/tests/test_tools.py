@@ -753,7 +753,7 @@ class TestGetEndpointsFromToolCallsWithGroundings:
 
         # truncated from the original
         resp_data = "{'name': 'S&P Global Inc.', 'status': 'Operating'}"
-        resp_endpoint = ['https://kfinance.kensho.com/api/v1/id/SPGI', 'https://kfinance.kensho.com/api/v1/info/21719']
+        resp_endpoint = ["https://kfinance.kensho.com/api/v1/id/SPGI", "https://kfinance.kensho.com/api/v1/info/21719"]
         expected_resp = {
             "data": resp_data,
             "endpoint_urls": resp_endpoint
@@ -767,7 +767,7 @@ class TestGetEndpointsFromToolCallsWithGroundings:
         tool = GetInfoFromIdentifier(kfinance_client=mock_client)
         resp = tool.run_with_grounding(identifier="SPGI")
         assert resp == expected_resp
-    
+
     def test_get_competitors_from_identifier_groundings(self, mock_client: Client, requests_mock: Mocker):
         """
         GIVEN the GetCompetitorsFromIdentifier tool
@@ -780,7 +780,7 @@ class TestGetEndpointsFromToolCallsWithGroundings:
                 {"company_id": 4003514, "company_name": "London Stock Exchange Group plc"},
             ]
         }
-        resp_endpoints = ['https://kfinance.kensho.com/api/v1/id/SPGI', 'https://kfinance.kensho.com/api/v1/competitors/21719/named_by_competitor']
+        resp_endpoints = ["https://kfinance.kensho.com/api/v1/id/SPGI", "https://kfinance.kensho.com/api/v1/competitors/21719/named_by_competitor"]
         expected_resp = {
             "data": resp_data,
             "endpoint_urls": resp_endpoints
