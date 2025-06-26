@@ -31,3 +31,25 @@ class RelationshipResponse(BaseModel):
 
     current: list[CompanyIdAndName]
     previous: list[CompanyIdAndName]
+
+
+class CompanyDescriptions(BaseModel):
+    """A company summary and description"""
+
+    summary: str
+    description: str
+
+
+class NativeName(BaseModel):
+    """A company's native name's name and language"""
+
+    name: str
+    language: str
+
+
+class CompanyOtherNames(BaseModel):
+    """A company's alternate, historical, and native names"""
+
+    alternate_names: list[str]
+    historical_names: list[str]
+    native_names: list[NativeName]

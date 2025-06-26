@@ -10,14 +10,12 @@ import pandas as pd
 from .constants import (
     LINE_ITEMS,
     BusinessRelationshipType,
-    CompanyOtherNames,
     CompetitorSource,
-    NativeName,
     PeriodType,
     SegmentType,
 )
 from .fetch import KFinanceApiClient
-from .pydantic_models import RelationshipResponse
+from .pydantic_models import RelationshipResponse, NativeName, CompanyDescriptions, CompanyOtherNames
 
 
 if TYPE_CHECKING:
@@ -31,7 +29,7 @@ class CompanyFunctionsMetaClass:
 
     def __init__(self) -> None:
         """Initialize the CompanyFunctionsMetaClass object"""
-        self._company_descriptions: dict[str, str] | None = None
+        self._company_descriptions: CompanyDescriptions | None = None
         self._company_other_names: CompanyOtherNames | None = None
 
     @property
@@ -438,7 +436,7 @@ class CompanyFunctionsMetaClass:
             self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(
                 company_id=self.company_id
             )
-        return self._company_descriptions["summary"]
+        return self._company_descriptions.summary
 
     @property
     def description(self) -> str:
@@ -447,7 +445,7 @@ class CompanyFunctionsMetaClass:
             self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(
                 company_id=self.company_id
             )
-        return self._company_descriptions["description"]
+        return self._company_descriptions.description
 
     @property
     def alternate_names(self) -> list[str]:
@@ -456,7 +454,7 @@ class CompanyFunctionsMetaClass:
             self._company_other_names = self.kfinance_api_client.fetch_company_other_names(
                 company_id=self.company_id
             )
-        return self._company_other_names["alternate_names"]
+        return self._company_other_names.alternate_names
 
     @property
     def historical_names(self) -> list[str]:
@@ -465,7 +463,7 @@ class CompanyFunctionsMetaClass:
             self._company_other_names = self.kfinance_api_client.fetch_company_other_names(
                 company_id=self.company_id
             )
-        return self._company_other_names["historical_names"]
+        return self._company_other_names.historical_names
 
     @property
     def native_names(self) -> list[NativeName]:
@@ -474,7 +472,7 @@ class CompanyFunctionsMetaClass:
             self._company_other_names = self.kfinance_api_client.fetch_company_other_names(
                 company_id=self.company_id
             )
-        return self._company_other_names["native_names"]
+        return self._company_other_names.native_names
 
     def competitors(
         self, competitor_source: CompetitorSource = CompetitorSource.all

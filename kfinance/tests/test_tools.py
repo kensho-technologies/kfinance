@@ -723,8 +723,8 @@ class TestGetTranscript:
 
 
 class TestGetCompanyDescriptions:
-    description = "S&P Global Inc. (S&P Global), together with its subsidiaries, provides credit ratings, benchmarks, analytics, and workflow solutions in the global capital, commodity, and automotive markets.\r\n\r\nThe capital markets include asset managers, investment banks, commercial banks, insurance companies, exchanges, trading firms, and issuers; the commodity markets include producers, consumers, traders and intermediaries within energy, chemicals, shipping, metals, carbon, and agriculture; and the automotive markets include manufacturers, suppliers, dealerships, service shops, and customers."
-    summary = "S&P Global Inc., together with its subsidiaries, provides credit ratings, benchmarks, analytics, and workflow solutions in the global capital, commodity, and automotive markets. It operates through five segments: S&P Global Market Intelligence, S&P Global Ratings, S&P Global Commodity Insights, S&P Global Mobility, and S&P Dow Jones Indices."
+    description = "S&P Global Inc. (S&P Global), together... [description]"
+    summary = "S&P Global Inc., together... [summary]"
     descriptions_data = {
         "summary": summary,
         "description": description,
@@ -775,7 +775,20 @@ class TestGetCompanyOtherNames:
         "McGraw Hill Financial, Inc.",
         "The McGraw-Hill Companies, Inc.",
     ]
-    native_names = []
+    native_names = [
+        {
+            "name": "KLab Venture Partners 株式会社",
+            "language": "Japanese"
+        },
+        {
+            "name": "株式会社ANOBAKA",
+            "language": "Japanese"
+        },
+        {
+            "name": "株式会社KVP",
+            "language": "Japanese"
+        }
+    ]
 
     company_other_names_info = {
         "alternate_names": alternate_names,
@@ -835,6 +848,7 @@ class TestGetCompanyOtherNames:
         tool = GetCompanyNativeNamesFromIdentifier(kfinance_client=mock_client)
         args = ToolArgsWithIdentifier(identifier="SPGI")
         response = tool.run(args.model_dump(mode="json"))
+        print("response type", type(response))
         assert response == self.native_names
 
 

@@ -1,6 +1,6 @@
 from datetime import date
 from itertools import chain
-from typing import List, NamedTuple, TypedDict
+from typing import NamedTuple, TypedDict
 
 from strenum import StrEnum
 
@@ -154,17 +154,6 @@ class IndustryClassification(StrEnum):
     spratings = "spratings"
     gics = "gics"
     simple = "simple"
-
-
-class NativeName(TypedDict):
-    name: str
-    language: str
-
-
-class CompanyOtherNames(TypedDict):
-    alternate_names: List[str]
-    historical_names: List[str]
-    native_names: List[NativeName]
 
 
 # all of these values must be lower case keys
