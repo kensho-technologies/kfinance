@@ -743,8 +743,8 @@ class TestGetCompetitorsFromIdentifier:
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_competitors_response
 
-class TestGetEndpointsFromToolCallsWithGroundings:
-    def test_get_info_from_identifier_groundings(self, mock_client: Client, requests_mock: Mocker):
+class TestGetEndpointsFromToolCallsWithGrounding:
+    def test_get_info_from_identifier_grounding(self, mock_client: Client, requests_mock: Mocker):
         """
         GIVEN the GetInfoFromIdentifier tool
         WHEN request info for SPGI with run_with_grounding
@@ -768,7 +768,7 @@ class TestGetEndpointsFromToolCallsWithGroundings:
         resp = tool.run_with_grounding(identifier="SPGI")
         assert resp == expected_resp
 
-    def test_get_competitors_from_identifier_groundings(self, mock_client: Client, requests_mock: Mocker):
+    def test_get_competitors_from_identifier_grounding(self, mock_client: Client, requests_mock: Mocker):
         """
         GIVEN the GetCompetitorsFromIdentifier tool
         WHEN we request the SPGI competitors that are named by competitors with run_with_grounding
