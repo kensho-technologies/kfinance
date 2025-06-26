@@ -5,7 +5,6 @@ from pydantic import BaseModel
 
 from kfinance.constants import Permission, ToolMode
 from kfinance.tool_calling import GetEarningsCallDatetimesFromIdentifiers
-
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
