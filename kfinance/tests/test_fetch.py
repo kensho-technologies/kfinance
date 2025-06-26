@@ -432,11 +432,6 @@ class TestFetchCompanyOtherNames:
                 "language": "Japanese"
             }
         ]
-        
-        expected_native_names = []
-        for native_name in native_names:
-            name, language = native_name.get("name"), native_name.get("language")
-            expected_native_names.append(NativeName(name=name, language=language))
 
         http_resp = {
             "alternate_names": alternate_names,
@@ -447,7 +442,7 @@ class TestFetchCompanyOtherNames:
         expected_resp = CompanyOtherNames(
             alternate_names=alternate_names,
             historical_names=historical_names,
-            native_names=expected_native_names
+            native_names=native_names
         )
 
         requests_mock.get(
