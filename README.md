@@ -56,7 +56,7 @@ Transport Layers:
 
 ## Working with Local Package Version
 
-If you need to develop using a local version of the kFinance package in another project, follow these steps:
+If you need to develop using a local version of the kFinance package in another project that uses [poetry](https://python-poetry.org/) for package and dependency management, follow these steps:
 
 1. In your dependent project's `pyproject.toml`, replace the kFinance package version specification:
 
