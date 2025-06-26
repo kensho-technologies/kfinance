@@ -1283,7 +1283,10 @@ class MergerOrAcquisition:
                 timeline = pd.DataFrame(self._merger_info["timeline"])
                 timeline["date"] = pd.to_datetime(timeline["date"])
                 self._merger_info["timeline"] = timeline
-            if "consideration" in self._merger_info and "details" in self._merger_info["consideration"]:
+            if (
+                "consideration" in self._merger_info
+                and "details" in self._merger_info["consideration"]
+            ):
                 details = pd.DataFrame(self._merger_info["consideration"]["details"])
                 self._merger_info["consideration"]["details"] = details
         return self._merger_info
