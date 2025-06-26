@@ -776,18 +776,9 @@ class TestGetCompanyOtherNames:
         "The McGraw-Hill Companies, Inc.",
     ]
     native_names = [
-        {
-            "name": "KLab Venture Partners 株式会社",
-            "language": "Japanese"
-        },
-        {
-            "name": "株式会社ANOBAKA",
-            "language": "Japanese"
-        },
-        {
-            "name": "株式会社KVP",
-            "language": "Japanese"
-        }
+        {"name": "KLab Venture Partners 株式会社", "language": "Japanese"},
+        {"name": "株式会社ANOBAKA", "language": "Japanese"},
+        {"name": "株式会社KVP", "language": "Japanese"},
     ]
 
     company_other_names_info = {
@@ -848,7 +839,6 @@ class TestGetCompanyOtherNames:
         tool = GetCompanyNativeNamesFromIdentifier(kfinance_client=mock_client)
         args = ToolArgsWithIdentifier(identifier="SPGI")
         response = tool.run(args.model_dump(mode="json"))
-        print("response type", type(response))
         assert response == self.native_names
 
 

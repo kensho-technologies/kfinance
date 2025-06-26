@@ -8,12 +8,11 @@ from kfinance.constants import BusinessRelationshipType, Periodicity, PeriodType
 from kfinance.fetch import KFinanceApiClient
 from kfinance.kfinance import Client
 from kfinance.pydantic_models import (
+    CompanyDescriptions,
     CompanyIdAndName,
+    CompanyOtherNames,
     RelationshipResponse,
     RelationshipResponseNoName,
-    CompanyDescriptions,
-    CompanyOtherNames,
-    NativeName,
 )
 from kfinance.tests.conftest import SPGI_COMPANY_ID
 
@@ -377,6 +376,7 @@ class TestFetchCompaniesFromBusinessRelationship:
         )
         assert resp == expected_result
 
+
 class TestFetchCompanyDescriptions:
     def test_fetch_company_descriptions(self, requests_mock: Mocker, mock_client: Client) -> None:
         """
@@ -384,16 +384,16 @@ class TestFetchCompanyDescriptions:
         WHEN the api returns a response
         THEN the response can successfully be parsed into a CompanyDescriptions object.
         """
-        
+
         # Truncated from actual http response
         http_resp = {
             "summary": "S&P Global Inc., together... [summary]",
-            "description":  "S&P Global Inc. (S&P Global), together... [description]"
+            "description": "S&P Global Inc. (S&P Global), together... [description]",
         }
 
         expected_result = CompanyDescriptions(
             summary="S&P Global Inc., together... [summary]",
-            description="S&P Global Inc. (S&P Global), together... [description]"
+            description="S&P Global Inc. (S&P Global), together... [description]",
         )
 
         requests_mock.get(
@@ -401,8 +401,11 @@ class TestFetchCompanyDescriptions:
             json=http_resp,
         )
 
-        resp = mock_client.kfinance_api_client.fetch_company_descriptions(company_id=SPGI_COMPANY_ID)
+        resp = mock_client.kfinance_api_client.fetch_company_descriptions(
+            company_id=SPGI_COMPANY_ID
+        )
         assert resp == expected_result
+
 
 class TestFetchCompanyOtherNames:
     def test_fetch_company_other_names(self, requests_mock: Mocker, mock_client: Client) -> None:
@@ -419,18 +422,9 @@ class TestFetchCompanyOtherNames:
             "The McGraw-Hill Companies, Inc.",
         ]
         native_names = [
-            {
-                "name": "KLab Venture Partners 株式会社",
-                "language": "Japanese"
-            },
-            {
-                "name": "株式会社ANOBAKA",
-                "language": "Japanese"
-            },
-            {
-                "name": "株式会社KVP",
-                "language": "Japanese"
-            }
+            {"name": "KLab Venture Partners 株式会社", "language": "Japanese"},
+            {"name": "株式会社ANOBAKA", "language": "Japanese"},
+            {"name": "株式会社KVP", "language": "Japanese"},
         ]
 
         http_resp = {
@@ -442,7 +436,7 @@ class TestFetchCompanyOtherNames:
         expected_resp = CompanyOtherNames(
             alternate_names=alternate_names,
             historical_names=historical_names,
-            native_names=native_names
+            native_names=native_names,
         )
 
         requests_mock.get(

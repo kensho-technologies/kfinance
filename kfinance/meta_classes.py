@@ -15,7 +15,12 @@ from .constants import (
     SegmentType,
 )
 from .fetch import KFinanceApiClient
-from .pydantic_models import RelationshipResponse, NativeName, CompanyDescriptions, CompanyOtherNames
+from .pydantic_models import (
+    CompanyDescriptions,
+    CompanyOtherNames,
+    NativeName,
+    RelationshipResponse,
+)
 
 
 if TYPE_CHECKING:
