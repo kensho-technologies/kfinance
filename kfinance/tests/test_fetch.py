@@ -441,13 +441,13 @@ class TestFetchCompanyOtherNames:
         http_resp = {
             "alternate_names": alternate_names,
             "historical_names": historical_names,
-            "native_names": expected_native_names,
+            "native_names": native_names,
         }
 
         expected_resp = CompanyOtherNames(
             alternate_names=alternate_names,
             historical_names=historical_names,
-            native_names=native_names
+            native_names=expected_native_names
         )
 
         requests_mock.get(
