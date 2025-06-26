@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.6.2
+ - Safely check for incomplete merger information
+
 ## v2.6.1
  - Remove get_earnings_call_datetimes_from_identifier tool
 
