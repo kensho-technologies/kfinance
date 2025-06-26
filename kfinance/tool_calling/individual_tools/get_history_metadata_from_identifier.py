@@ -13,7 +13,7 @@ from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdenti
 
 
 class GetHistoryMetadataFromIdentifier(KfinanceTool):
-    name: str = "get_history_metadata_from_identifiers"
+    name: str = "get_history_metadata_from_identifier"
     description: str = dedent("""
         Get the history metadata associated with an identifier. History metadata includes currency, symbol, exchange name, instrument type, and first trade date.
     """).strip()
