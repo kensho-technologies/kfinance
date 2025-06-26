@@ -48,7 +48,7 @@ class KfinanceTool(BaseTool):
             data = self.run_without_langchain(*args, **kwargs)
             return {
                 "data": data,
-                "endpoint_urls": self.kfinance_client.kfinance_api_client.endpoint_urls
+                "endpoint_urls": self.kfinance_client.kfinance_api_client.endpoint_urls,
             }
 
     def _run(self, *args: Any, **kwargs: Any) -> Any:
