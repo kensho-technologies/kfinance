@@ -1279,12 +1279,13 @@ class MergerOrAcquisition:
         """Property for the combined information in the merger."""
         if not self._merger_info:
             self._merger_info = self.kfinance_api_client.fetch_merger_info(self.transaction_id)
-            if "timeline" in self._merger_info:
+            if "timeline" in self._merger_info and self._merger_info["timeline"]:
                 timeline = pd.DataFrame(self._merger_info["timeline"])
                 timeline["date"] = pd.to_datetime(timeline["date"])
                 self._merger_info["timeline"] = timeline
             if (
                 "consideration" in self._merger_info
+                and self._merger_info["consideration"]
                 and "details" in self._merger_info["consideration"]
             ):
                 details = pd.DataFrame(self._merger_info["consideration"]["details"])
