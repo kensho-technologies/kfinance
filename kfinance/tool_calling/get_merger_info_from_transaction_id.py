@@ -31,7 +31,9 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
             "timeline": [
                 {"status": timeline["status"], "date": timeline["date"].strftime("%Y-%m-%d")}
                 for timeline in merger_timeline.to_dict(orient="records")
-            ],
+            ]
+            if merger_timeline is not None
+            else None,
             "participants": {
                 "target": {
                     "company_id": merger_participants["target"].company_id,
@@ -45,7 +47,9 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
                     {"company_id": seller.company_id, "company_name": seller.name}
                     for seller in merger_participants["sellers"]
                 ],
-            },
+            }
+            if merger_participants is not None
+            else None,
             "consideration": {
                 "currency_name": merger_consideration["currency_name"],
                 "current_calculated_gross_total_transaction_value": merger_consideration[
@@ -58,5 +62,7 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
                     "current_calculated_implied_enterprise_value"
                 ],
                 "details": merger_consideration["details"].to_dict(orient="records"),
-            },
+            }
+            if merger_consideration is not None
+            else None,
         }
