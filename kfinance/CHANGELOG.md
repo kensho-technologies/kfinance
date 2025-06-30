@@ -1,5 +1,8 @@
 # Changelog
 
+# v2.6.3
+- Bump urllib3 to 2.5 to  address CVEs
+
 ## v2.6.2
  - Safely check for incomplete merger information
 
