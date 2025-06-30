@@ -63,6 +63,6 @@ class ToolArgsWithIdentifiers(BaseModel):
     of identifiers is always the same.
     """
 
-    identifier: str = Field(
-        description="The identifier, which can be a list of ticker symbols, ISINs, or CUSIPs, or company_ids"
+    identifiers: list[str] = Field(
+        description="The identifiers, which can be a list of ticker symbols, ISINs, or CUSIPs, or company_ids"
     )
