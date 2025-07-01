@@ -3,6 +3,12 @@
 ## v2.6.4
 - Add transcript permission and update required_permissions type to set[Permission]
 
+## v2.6.3
+- Bump urllib3 to 2.5 to  address CVEs
+
+## v2.6.2
+ - Safely check for incomplete merger information
+
 ## v2.6.1
  - Remove get_earnings_call_datetimes_from_identifier tool
 
