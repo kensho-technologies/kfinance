@@ -16,7 +16,7 @@ class KfinanceTool(BaseTool):
 
     kfinance_client: Client
     args_schema: Type[BaseModel]
-    required_permission: Permission | None
+    required_permission: set[Permission] | None
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 

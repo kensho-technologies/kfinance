@@ -16,7 +16,7 @@ class GetTranscript(KfinanceTool):
     name: str = "get_transcript"
     description: str = "Get the raw transcript text for an earnings call by key dev ID."
     args_schema: Type[BaseModel] = GetTranscriptArgs
-    required_permission: Permission | None = Permission.TranscriptsPermission
+    required_permission: set[Permission] | None = {Permission.TranscriptsPermission}
 
     def _run(self, key_dev_id: int) -> str:
         transcript = self.kfinance_client.transcript(key_dev_id)

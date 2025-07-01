@@ -15,7 +15,7 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
     name: str = "get_merger_info_from_transaction_id"
     description: str = 'Get the timeline, the participants, and the consideration of the merger or acquisition from the given transaction ID. For example, "How much was Ben & Jerrys purchased for?" or "What was the price per share for LinkedIn?" or "When did S&P purchase Kensho?"'
     args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIdArgs
-    required_permission: Permission | None = Permission.MergersPermission
+    required_permission: set[Permission] | None = {Permission.MergersPermission}
 
     def _run(self, transaction_id: int) -> dict:
         merger_or_acquisition = MergerOrAcquisition(

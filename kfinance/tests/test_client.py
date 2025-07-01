@@ -6,8 +6,12 @@ from kfinance.constants import Permission
 from kfinance.kfinance import Client
 from kfinance.tool_calling import (
     GetBusinessRelationshipFromIdentifier,
+    GetEarnings,
     GetFinancialStatementFromIdentifier,
     GetLatest,
+    GetLatestEarnings,
+    GetNextEarnings,
+    GetTranscript,
 )
 
 
@@ -48,6 +52,26 @@ class TestLangchainTools:
         tool_classes = [type(t) for t in mock_client.langchain_tools]
         # User should have access to GetBusinessRelationshipFromIdentifier
         assert GetBusinessRelationshipFromIdentifier in tool_classes
+        # User should have access to functions that don't require permissions
+        assert GetLatest in tool_classes
+        # User should not have access to functions that require statement permissions
+        assert GetFinancialStatementFromIdentifier not in tool_classes
+
+    def test_permission_set_handling(self, mock_client: Client):
+        """
+        GIVEN a user with a permission that is in a set of required permission for a tool
+        WHEN we filter tools by permissions
+        THEN we successfully return the correct tools that either don't require permissions or tools that the user
+            specifically has access to.
+        """
+
+        mock_client.kfinance_api_client._user_permissions = {Permission.TranscriptsPermission}  # noqa: SLF001
+        tool_classes = [type(t) for t in mock_client.langchain_tools]
+        # User should have access to GetEarnings, GetNextEarnings, GetLatestEarnings, GetTranscript
+        assert GetEarnings in tool_classes
+        assert GetNextEarnings in tool_classes
+        assert GetLatestEarnings in tool_classes
+        assert GetTranscript in tool_classes
         # User should have access to functions that don't require permissions
         assert GetLatest in tool_classes
         # User should not have access to functions that require statement permissions

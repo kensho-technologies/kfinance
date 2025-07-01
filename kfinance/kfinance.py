@@ -1639,7 +1639,10 @@ class Client:
                 tool = tool_cls(kfinance_client=self)  # type: ignore[call-arg]
                 if (
                     tool.required_permission is None
-                    or tool.required_permission in self.kfinance_api_client.user_permissions
+                    # if one or more of the required permission for a tool is a permission the user has
+                    or tool.required_permission.intersection(
+                        self.kfinance_api_client.user_permissions
+                    )
                 ):
                     self._tools.append(tool)
 

@@ -12,7 +12,7 @@ class ResolveIdentifier(KfinanceTool):
         "Get the company_id, security_id, and trading_item_id associated with an identifier."
     )
     args_schema: Type[BaseModel] = ToolArgsWithIdentifier
-    required_permission: Permission | None = None
+    required_permission: set[Permission] | None = None
 
     def _run(self, identifier: str) -> dict[str, int]:
         return self.kfinance_client.ticker(identifier).id_triple._asdict()

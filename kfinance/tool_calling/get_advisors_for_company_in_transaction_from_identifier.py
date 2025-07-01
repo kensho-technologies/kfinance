@@ -15,7 +15,7 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
     name: str = "get_advisors_for_company_in_transaction_from_identifier"
     description: str = 'Get the companies advising a company in a given transaction. For example, "Who advised S&P Global during their purchase of Kensho?"'
     args_schema: Type[BaseModel] = GetAdvisorsForCompanyInTransactionFromIdentifierArgs
-    required_permission: Permission | None = Permission.MergersPermission
+    required_permission: set[Permission] | None = {Permission.MergersPermission}
 
     def _run(self, identifier: str, transaction_id: int) -> list:
         ticker = self.kfinance_client.ticker(identifier)

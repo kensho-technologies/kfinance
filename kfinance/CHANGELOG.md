@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.6.4
+- Add transcript permission and update required_permissions type to set[Permission]
+
 ## v2.6.1
  - Remove get_earnings_call_datetimes_from_identifier tool
 
