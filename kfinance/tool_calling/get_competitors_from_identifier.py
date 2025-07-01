@@ -11,7 +11,7 @@ class GetCompetitorsFromIdentifier(KfinanceTool):
     name: str = "get_competitors_from_identifier"
     description: str = "Retrieves a list of competitors for a given company, optionally filtered by the source of the competitor information."
     args_schema = GetCompetitorsFromIdentifierArgs
-    required_permission: set[Permission] | None = {Permission.CompetitorsPermission}
+    accepted_permissions: set[Permission] | None = {Permission.CompetitorsPermission}
 
     def _run(
         self,

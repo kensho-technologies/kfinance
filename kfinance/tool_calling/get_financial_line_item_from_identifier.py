@@ -24,7 +24,7 @@ class GetFinancialLineItemFromIdentifier(KfinanceTool):
     name: str = "get_financial_line_item_from_identifier"
     description: str = "Get the financial line item associated with an identifier."
     args_schema: Type[BaseModel] = GetFinancialLineItemFromIdentifierArgs
-    required_permission: set[Permission] | None = {Permission.StatementsPermission}
+    accepted_permissions: set[Permission] | None = {Permission.StatementsPermission}
 
     def _run(
         self,

@@ -20,7 +20,7 @@ class GetSegmentsFromIdentifier(KfinanceTool):
     name: str = "get_segments_from_identifier"
     description: str = "Get the templated segments associated with an identifier."
     args_schema: Type[BaseModel] = GetSegmentsFromIdentifierArgs
-    required_permission: set[Permission] | None = {Permission.SegmentsPermission}
+    accepted_permissions: set[Permission] | None = {Permission.SegmentsPermission}
 
     def _run(
         self,

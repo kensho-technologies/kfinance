@@ -20,7 +20,7 @@ class GetFinancialStatementFromIdentifier(KfinanceTool):
     name: str = "get_financial_statement_from_identifier"
     description: str = "Get the financial statement associated with an identifier."
     args_schema: Type[BaseModel] = GetFinancialStatementFromIdentifierArgs
-    required_permission: set[Permission] | None = {Permission.StatementsPermission}
+    accepted_permissions: set[Permission] | None = {Permission.StatementsPermission}
 
     def _run(
         self,

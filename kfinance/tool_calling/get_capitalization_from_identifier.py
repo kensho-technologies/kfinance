@@ -21,7 +21,7 @@ class GetCapitalizationFromIdentifier(KfinanceTool):
     name: str = "get_capitalization_from_identifier"
     description: str = "Get the historical market cap, tev (Total Enterprise Value), or shares outstanding of an identifier between inclusive start_date and inclusive end date. When requesting the most recent values, leave start_date and end_date empty."
     args_schema = GetCapitalizationFromIdentifierArgs
-    required_permission: set[Permission] | None = {Permission.PricingPermission}
+    accepted_permissions: set[Permission] | None = {Permission.PricingPermission}
 
     def _run(
         self,

@@ -14,7 +14,7 @@ class GetIsinFromTicker(KfinanceTool):
     name: str = "get_isin_from_ticker"
     description: str = "Get the ISIN associated with a ticker."
     args_schema: Type[BaseModel] = GetIsinFromTickerArgs
-    required_permission: set[Permission] | None = {Permission.IDPermission}
+    accepted_permissions: set[Permission] | None = {Permission.IDPermission}
 
     def _run(self, ticker_str: str) -> str:
         return self.kfinance_client.ticker(ticker_str).isin
