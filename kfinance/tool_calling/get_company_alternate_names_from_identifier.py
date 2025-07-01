@@ -8,7 +8,7 @@ from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdenti
 
 class GetCompanyAlternateNamesFromIdentifier(KfinanceTool):
     name: str = "get_company_alternate_names_from_identifier"
-    description: str = "Gets all known alternate names a company might go by (for example, Hewlett-Packard Company also goes by the name HP)."
+    description: str = "Gets all known alternate names a company might go by (for example, Hewlett-Packard Company also goes by the name HP). This tool does not get historical names or native names."
     args_schema: Type[BaseModel] = ToolArgsWithIdentifier
     required_permission: Permission | None = Permission.IntelligencePermission
 
