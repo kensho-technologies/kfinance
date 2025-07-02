@@ -22,7 +22,6 @@ from kfinance.tests.test_objects import MOCK_COMPANY_DB, MOCK_MERGERS_DB, ordere
 from kfinance.tool_calling import (
     GetCompetitorsFromIdentifier,
     GetEarnings,
-    GetEarningsCallDatetimesFromIdentifier,
     GetFinancialLineItemFromIdentifier,
     GetFinancialStatementFromIdentifier,
     GetHistoryMetadataFromIdentifier,
@@ -208,27 +207,6 @@ class TestGetCusipFromTicker:
         tool = GetCusipFromTicker(kfinance_client=mock_client)
         resp = tool.run(GetCusipFromTickerArgs(ticker_str="SPGI").model_dump(mode="json"))
         assert resp == spgi_cusip
-
-
-class TestGetEarningsCallDatetimesFromTicker:
-    def test_get_earnings_call_datetimes_from_ticker(
-        self, requests_mock: Mocker, mock_client: Client
-    ):
-        """
-        GIVEN the GetEarningsCallDatetimesFromIdentifier tool
-        WHEN we request earnings call datetimes for SPGI
-        THEN we get back the expected SPGI earnings call datetimes
-        """
-
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}/dates",
-            json={"earnings": ["2025-04-29T12:30:00", "2025-02-11T13:30:00"]},
-        )
-        expected_response = '["2025-04-29T12:30:00+00:00", "2025-02-11T13:30:00+00:00"]'
-
-        tool = GetEarningsCallDatetimesFromIdentifier(kfinance_client=mock_client)
-        response = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
-        assert response == expected_response
 
 
 class TestGetFinancialLineItemFromIdentifier:

@@ -1279,11 +1279,17 @@ class MergerOrAcquisition:
         """Property for the combined information in the merger."""
         if not self._merger_info:
             self._merger_info = self.kfinance_api_client.fetch_merger_info(self.transaction_id)
-            timeline = pd.DataFrame(self.merger_info["timeline"])
-            timeline["date"] = pd.to_datetime(timeline["date"])
-            self._merger_info["timeline"] = timeline
-            details = pd.DataFrame(self.merger_info["consideration"]["details"])
-            self._merger_info["consideration"]["details"] = details
+            if "timeline" in self._merger_info and self._merger_info["timeline"]:
+                timeline = pd.DataFrame(self._merger_info["timeline"])
+                timeline["date"] = pd.to_datetime(timeline["date"])
+                self._merger_info["timeline"] = timeline
+            if (
+                "consideration" in self._merger_info
+                and self._merger_info["consideration"]
+                and "details" in self._merger_info["consideration"]
+            ):
+                details = pd.DataFrame(self._merger_info["consideration"]["details"])
+                self._merger_info["consideration"]["details"] = details
         return self._merger_info
 
     @property
@@ -1638,8 +1644,11 @@ class Client:
             for tool_cls in ALL_TOOLS:
                 tool = tool_cls(kfinance_client=self)  # type: ignore[call-arg]
                 if (
-                    tool.required_permission is None
-                    or tool.required_permission in self.kfinance_api_client.user_permissions
+                    tool.accepted_permissions is None
+                    # if one or more of the required permission for a tool is a permission the user has
+                    or tool.accepted_permissions.intersection(
+                        self.kfinance_api_client.user_permissions
+                    )
                 ):
                     self._tools.append(tool)
 

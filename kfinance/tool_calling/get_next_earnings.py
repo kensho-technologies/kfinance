@@ -11,7 +11,10 @@ class GetNextEarnings(KfinanceTool):
     name: str = "get_next_earnings"
     description: str = "Get the next earnings for a given identifier. Returns a dictionary with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes."
     args_schema: Type[BaseModel] = ToolArgsWithIdentifier
-    required_permission: Permission | None = Permission.EarningsPermission
+    accepted_permissions: set[Permission] | None = {
+        Permission.EarningsPermission,
+        Permission.TranscriptsPermission,
+    }
 
     def _run(self, identifier: str) -> dict:
         ticker = self.kfinance_client.ticker(identifier)

@@ -10,7 +10,7 @@ class GetMergersFromIdentifier(KfinanceTool):
     name: str = "get_mergers_from_identifier"
     description: str = 'Get the transaction IDs that involve the given identifier. For example, "Which companies did Microsoft purchase?" or "Which company bought Ben & Jerrys?"'
     args_schema: Type[BaseModel] = ToolArgsWithIdentifier
-    required_permission: Permission | None = Permission.MergersPermission
+    accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
     def _run(self, identifier: str) -> dict:
         ticker = self.kfinance_client.ticker(identifier)

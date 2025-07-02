@@ -16,7 +16,9 @@ class KfinanceTool(BaseTool):
 
     kfinance_client: Client
     args_schema: Type[BaseModel]
-    required_permission: Permission | None
+    accepted_permissions: set[Permission] | None = Field(
+        description="The set of accepted permissions needed to access the tool. Only one of the permissions is required (or None)."
+    )
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 

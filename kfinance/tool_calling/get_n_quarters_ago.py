@@ -16,7 +16,7 @@ class GetNQuartersAgo(KfinanceTool):
         "Get the year and quarter corresponding to [n] quarters before the current quarter."
     )
     args_schema: Type[BaseModel] = GetNQuartersAgoArgs
-    required_permission: Permission | None = None
+    accepted_permissions: set[Permission] | None = None
 
     def _run(self, n: int) -> YearAndQuarter:
         return self.kfinance_client.get_n_quarters_ago(n)

@@ -15,7 +15,7 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
     name: str = "get_merger_info_from_transaction_id"
     description: str = 'Get the timeline, the participants, and the consideration of the merger or acquisition from the given transaction ID. For example, "How much was Ben & Jerrys purchased for?" or "What was the price per share for LinkedIn?" or "When did S&P purchase Kensho?"'
     args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIdArgs
-    required_permission: Permission | None = Permission.MergersPermission
+    accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
     def _run(self, transaction_id: int) -> dict:
         merger_or_acquisition = MergerOrAcquisition(
@@ -31,7 +31,9 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
             "timeline": [
                 {"status": timeline["status"], "date": timeline["date"].strftime("%Y-%m-%d")}
                 for timeline in merger_timeline.to_dict(orient="records")
-            ],
+            ]
+            if merger_timeline is not None
+            else None,
             "participants": {
                 "target": {
                     "company_id": merger_participants["target"].company_id,
@@ -45,7 +47,9 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
                     {"company_id": seller.company_id, "company_name": seller.name}
                     for seller in merger_participants["sellers"]
                 ],
-            },
+            }
+            if merger_participants is not None
+            else None,
             "consideration": {
                 "currency_name": merger_consideration["currency_name"],
                 "current_calculated_gross_total_transaction_value": merger_consideration[
@@ -58,5 +62,7 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
                     "current_calculated_implied_enterprise_value"
                 ],
                 "details": merger_consideration["details"].to_dict(orient="records"),
-            },
+            }
+            if merger_consideration is not None
+            else None,
         }
