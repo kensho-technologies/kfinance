@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.6.5
+ - Add competitor company_name
+
 ## v2.6.4
 - Add transcript permission and update accepted_permissions type to set[Permission]
 

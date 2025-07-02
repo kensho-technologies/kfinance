@@ -427,19 +427,26 @@ class CompanyFunctionsMetaClass:
     def competitors(
         self, competitor_source: CompetitorSource = CompetitorSource.all
     ) -> "Companies":
-        """Get the list of companies that are competitors of company_id, optionally filtered by the competitor_source type.
+        """Get the list of company_id and company_name that are competitors of company_id, optionally filtered by the competitor_source type.
 
-        :return: The list of companies that are competitors of company_id, optionally filtered by the competitor_source type
+        :return: The list of company_id and company_name that are competitors of company_id, optionally filtered by the competitor_source type
         :rtype: Companies
         """
-        from .kfinance import Companies
+        from .kfinance import Companies, Company
 
         competitors_data = self.kfinance_api_client.fetch_competitors(
             company_id=self.company_id, competitor_source=competitor_source
-        )["companies"]
+        )["competitors"]
         return Companies(
             kfinance_api_client=self.kfinance_api_client,
-            company_ids=[company["company_id"] for company in competitors_data],
+            companies=[
+                Company(
+                    kfinance_api_client=self.kfinance_api_client,
+                    company_id=company["company_id"],
+                    company_name=company["company_name"],
+                )
+                for company in competitors_data
+            ],
         )
 
 
