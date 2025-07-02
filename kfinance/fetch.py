@@ -97,8 +97,6 @@ class KFinanceApiClient:
         self._batch_id: str | None = None
         self._batch_size: str | None = None
         self._user_permissions: set[Permission] | None = None
-        self._thread_local = local()
-        self._thread_local.tracking_enabled = False
         self._endpoint_queue: Queue[str] | None = None
 
     @contextmanager
@@ -214,32 +212,18 @@ class KFinanceApiClient:
                 )
 
     @contextmanager
-    def track_endpoints(self) -> Generator:
-        """Context manager to track and collect endpoint URLs in our thread-safe queue during execution."""
+    def endpoint_tracker(self) -> Generator:
+        """Context manager to track and return endpoint URLs in our thread-safe queue during execution."""
         self._endpoint_queue = Queue[str]()
-        self._thread_local.tracking_enabled = True
 
         try:
-            yield
+            yield self._endpoint_queue
         finally:
-            self._thread_local.tracking_enabled = False
-
-    @property
-    def endpoint_urls(self) -> list[str]:
-        """Get all endpoint URLs collected from parallel tool executions."""
-        urls = []
-        while self._endpoint_queue and not self._endpoint_queue.empty():
-            urls.append(self._endpoint_queue.get())
-        return urls
-
+            self._endpoint_queue = None
+    
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
-        # Safely initialize tracking_enabled if it doesn't exist in this thread
-        # When using batch processing, each thread does not automatically have tracking_enabled attribute initialized
-        if not hasattr(self._thread_local, "tracking_enabled"):
-            self._thread_local.tracking_enabled = False
-
-        if self._thread_local.tracking_enabled and self._endpoint_queue:
+        if self._endpoint_queue:
             self._endpoint_queue.put(url)
 
         headers = {

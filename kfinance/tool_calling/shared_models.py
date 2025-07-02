@@ -44,11 +44,16 @@ class KfinanceTool(BaseTool):
         This is a wrapper around the `run_without_langchain` method that adds grounding
         support, for returning the endpoint urls along with the data as citation info for the LRA Data Agent.
         """
-        with self.kfinance_client.kfinance_api_client.track_endpoints():
+        with self.kfinance_client.kfinance_api_client.endpoint_tracker() as endpoint_queue:
             data = self.run_without_langchain(*args, **kwargs)
+            
+            endpoint_urls = []
+            while not endpoint_queue.empty():
+                endpoint_urls.append(endpoint_queue.get())
+
             return {
                 "data": data,
-                "endpoint_urls": self.kfinance_client.kfinance_api_client.endpoint_urls,
+                "endpoint_urls": endpoint_urls,
             }
 
     def _run(self, *args: Any, **kwargs: Any) -> Any:
