@@ -94,6 +94,7 @@ class BusinessRelationshipType(StrEnum):
 
 class Permission(StrEnum):
     EarningsPermission = "EarningsPermission"
+    TranscriptsPermission = "TranscriptsPermission"
     GICSPermission = "GICSPermission"
     IDPermission = "IDPermission"
     ISCRSPermission = "ISCRSPermission"

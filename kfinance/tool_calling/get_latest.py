@@ -16,7 +16,7 @@ class GetLatest(KfinanceTool):
     name: str = "get_latest"
     description: str = "Get the latest annual reporting year, latest quarterly reporting quarter and year, and current date."
     args_schema: Type[BaseModel] = GetLatestArgs
-    required_permission: Permission | None = None
+    accepted_permissions: set[Permission] | None = None
 
     def _run(self, use_local_timezone: bool = True) -> LatestPeriods:
         return self.kfinance_client.get_latest(use_local_timezone=use_local_timezone)

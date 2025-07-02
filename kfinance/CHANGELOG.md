@@ -1,6 +1,9 @@
 # Changelog
 
-# v2.6.3
+## v2.6.4
+- Add transcript permission and update accepted_permissions type to set[Permission]
+
+## v2.6.3
 - Bump urllib3 to 2.5 to  address CVEs
 
 ## v2.6.2
