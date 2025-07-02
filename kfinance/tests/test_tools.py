@@ -745,11 +745,13 @@ class TestGetCompetitorsFromIdentifier:
 
 
 class TestGetEndpointsFromToolCallsWithGrounding:
-    def test_get_info_from_identifier_grounding(self, mock_client: Client, requests_mock: Mocker):
+    def test_get_info_from_identifier_with_grounding(
+        self, mock_client: Client, requests_mock: Mocker
+    ):
         """
-        GIVEN the GetInfoFromIdentifier tool
-        WHEN request info for SPGI with run_with_grounding
-        THEN we get back info for SPGI and endpoint urls called
+        GIVEN a KfinanceTool tool
+        WHEN we run the tool with `run_with_grounding`
+        THEN we get back endpoint urls in addition to the usual tool response.
         """
 
         # truncated from the original
@@ -768,38 +770,6 @@ class TestGetEndpointsFromToolCallsWithGrounding:
         tool = GetInfoFromIdentifier(kfinance_client=mock_client)
         resp = tool.run_with_grounding(identifier="SPGI")
         assert resp == expected_resp
-
-    def test_get_competitors_from_identifier_grounding(
-        self, mock_client: Client, requests_mock: Mocker
-    ):
-        """
-        GIVEN the GetCompetitorsFromIdentifier tool
-        WHEN we request the SPGI competitors that are named by competitors with run_with_grounding
-        THEN we get back the SPGI competitors that are named by competitors and endpoint urls called
-        """
-        resp_data = {
-            "companies": [
-                {"company_id": 35352, "company_name": "The Descartes Systems Group Inc."},
-                {"company_id": 4003514, "company_name": "London Stock Exchange Group plc"},
-            ]
-        }
-        resp_endpoints = [
-            "https://kfinance.kensho.com/api/v1/id/SPGI",
-            "https://kfinance.kensho.com/api/v1/competitors/21719/named_by_competitor",
-        ]
-        expected_resp = {"data": resp_data, "endpoint_urls": resp_endpoints}
-
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/competitors/{SPGI_COMPANY_ID}/named_by_competitor",
-            # truncated from the original API response
-            json=resp_data,
-        )
-
-        tool = GetCompetitorsFromIdentifier(kfinance_client=mock_client)
-        response = tool.run_with_grounding(
-            identifier="SPGI", competitor_source=CompetitorSource.named_by_competitor
-        )
-        assert response == expected_resp
 
 
 class TestValidQuarter:

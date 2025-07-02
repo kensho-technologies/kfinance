@@ -98,6 +98,7 @@ class KFinanceApiClient:
         self._batch_size: str | None = None
         self._user_permissions: set[Permission] | None = None
         self._thread_local = local()
+        self._thread_local.tracking_enabled = False
         self._endpoint_queue: Queue[str] | None = None
 
     @contextmanager
@@ -233,7 +234,12 @@ class KFinanceApiClient:
 
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
-        if getattr(self._thread_local, "tracking_enabled", False) and self._endpoint_queue:
+        # Safely initialize tracking_enabled if it doesn't exist in this thread
+        # When using batch processing, each thread does not automatically have tracking_enabled attribute initialized
+        if not hasattr(self._thread_local, "tracking_enabled"):
+            self._thread_local.tracking_enabled = False
+
+        if self._thread_local.tracking_enabled and self._endpoint_queue:
             self._endpoint_queue.put(url)
 
         headers = {
