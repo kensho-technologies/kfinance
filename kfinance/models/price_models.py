@@ -1,16 +1,25 @@
 from copy import deepcopy
-from typing import Any
+from datetime import date
+from typing import Any, TypedDict
 
 from pydantic import BaseModel, model_validator
 
 from kfinance.decimal_with_unit import Money, Shares
 
 
+class HistoryMetadata(TypedDict):
+    currency: str
+    symbol: str
+    exchange_name: str
+    instrument_type: str
+    first_trade_date: date
+
+
 class Prices(BaseModel):
     """Prices represents prices for a stock for a specific "date".
 
-    I'm putting "date" in quotes because dates can be daily, weekly,
-    monthly, or annual.
+    I'm putting "date" in quotes because dates can be daily ("2024-01-01"),
+    weekly ("2024 Week 2"), monthly ("January 2024"), or annual ("2024").
     """
 
     date: str

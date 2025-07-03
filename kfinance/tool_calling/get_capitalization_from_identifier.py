@@ -2,7 +2,8 @@ from datetime import date
 
 from pydantic import Field
 
-from kfinance.constants import Capitalization, Permission
+from kfinance.models.capitalization_models import Capitalization
+from kfinance.models.permission_models import Permission
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 

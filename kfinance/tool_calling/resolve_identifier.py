@@ -2,7 +2,7 @@ from typing import Type
 
 from pydantic import BaseModel
 
-from kfinance.constants import Permission
+from kfinance.models.permission_models import Permission
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 

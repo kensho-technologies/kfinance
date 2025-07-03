@@ -9,14 +9,12 @@ from pytest import raises
 from requests_mock import Mocker
 import time_machine
 
-from kfinance.constants import (
-    BusinessRelationshipType,
-    Capitalization,
-    CompetitorSource,
-    SegmentType,
-    StatementType,
-)
 from kfinance.kfinance import Client, NoEarningsDataError
+from kfinance.models.business_relationship_models import BusinessRelationshipType
+from kfinance.models.capitalization_models import Capitalization
+from kfinance.models.competitor_models import CompetitorSource
+from kfinance.models.segment_models import SegmentType
+from kfinance.models.statement_models import StatementType
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
 from kfinance.tests.test_objects import MOCK_COMPANY_DB, MOCK_MERGERS_DB, ordered
 from kfinance.tool_calling import (

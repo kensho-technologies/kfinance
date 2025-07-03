@@ -5,9 +5,10 @@ from pydantic import ValidationError
 import pytest
 from requests_mock import Mocker
 
-from kfinance.constants import BusinessRelationshipType, Periodicity, PeriodType
 from kfinance.fetch import KFinanceApiClient
 from kfinance.kfinance import Client
+from kfinance.models.business_relationship_models import BusinessRelationshipType
+from kfinance.models.date_and_period_models import Periodicity, PeriodType
 from kfinance.pydantic_models import (
     CompanyIdAndName,
     RelationshipResponse,

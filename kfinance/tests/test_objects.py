@@ -10,7 +10,6 @@ import pandas as pd
 from PIL.Image import open as image_open
 import time_machine
 
-from kfinance.constants import BusinessRelationshipType
 from kfinance.kfinance import (
     AdvisedCompany,
     BusinessRelationships,
@@ -22,6 +21,7 @@ from kfinance.kfinance import (
     TradingItem,
     Transcript,
 )
+from kfinance.models.business_relationship_models import BusinessRelationshipType
 from kfinance.models.capitalization_models import Capitalizations
 from kfinance.pydantic_models import CompanyIdAndName, RelationshipResponse
 
