@@ -3,9 +3,17 @@ from datetime import date
 from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
+from strenum import StrEnum
 
-from kfinance.constants import Capitalization
 from kfinance.decimal_with_unit import Money, Shares
+
+
+class Capitalization(StrEnum):
+    """The capitalization type"""
+
+    market_cap = "market_cap"
+    tev = "tev"
+    shares_outstanding = "shares_outstanding"
 
 
 class DailyCapitalization(BaseModel):

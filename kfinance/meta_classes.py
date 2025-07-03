@@ -7,15 +7,13 @@ from cachetools import LRUCache, cached
 import numpy as np
 import pandas as pd
 
-from .constants import (
-    LINE_ITEMS,
-    BusinessRelationshipType,
-    Capitalization,
-    CompetitorSource,
-    PeriodType,
-    SegmentType,
-)
 from .fetch import KFinanceApiClient
+from .models.business_relationship_models import BusinessRelationshipType
+from .models.capitalization_models import Capitalization
+from .models.competitor_models import CompetitorSource
+from .models.date_and_period_models import PeriodType
+from .models.line_item_models import LINE_ITEMS
+from .models.segment_models import SegmentType
 from .pydantic_models import RelationshipResponse
 
 
@@ -296,7 +294,7 @@ class CompanyFunctionsMetaClass:
         """
 
         return self._fetch_market_cap_tev_or_shares_outstanding(
-            Capitalization.tev, start_date=start_date, end_date=end_date
+            capitalization_to_extract=Capitalization.tev, start_date=start_date, end_date=end_date
         )
 
     def shares_outstanding(
@@ -315,7 +313,7 @@ class CompanyFunctionsMetaClass:
         """
 
         return self._fetch_market_cap_tev_or_shares_outstanding(
-            Capitalization.shares_outstanding, start_date=start_date, end_date=end_date
+            capitalization_to_extract=Capitalization.shares_outstanding, start_date=start_date, end_date=end_date
         )
 
     def _fetch_market_cap_tev_or_shares_outstanding(

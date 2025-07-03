@@ -5,14 +5,14 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self
 
-from kfinance.constants import ISO_CODE_TO_CURRENCY
+from kfinance.models.currency_models import ISO_CODE_TO_CURRENCY
 
 
 class DecimalWithUnit(BaseModel):
     """DecimalWithUnit (DWU) represents a decimal with a corresponding unit like $100 or 20 shares.
 
-    In addition to a value and unit, each DWU has a conventional_decimals numbers.
-    This indicates the number of decimals that should be represented.
+    In addition to a value and unit, each DWU has a `conventional_decimals` attribute,
+    which indicates the number of decimals that should be represented.
     For example, for USD, conventional_decimals is 2, which will display as "1.00".
     For shares, conventional_decimals is 0, which will display as "1"
 

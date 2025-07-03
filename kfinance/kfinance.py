@@ -22,10 +22,6 @@ from kfinance.batch_request_handling import add_methods_of_singular_class_to_ite
 from kfinance.constants import (
     HistoryMetadata,
     IdentificationTriple,
-    IndustryClassification,
-    LatestPeriods,
-    Periodicity,
-    YearAndQuarter,
 )
 from kfinance.fetch import (
     DEFAULT_API_HOST,
@@ -38,6 +34,8 @@ from kfinance.meta_classes import (
     CompanyFunctionsMetaClass,
     DelegatedCompanyFunctionsMetaClass,
 )
+from kfinance.models.date_and_period_models import LatestPeriods, Periodicity, YearAndQuarter
+from kfinance.models.industry_models import IndustryClassification
 from kfinance.models.price_models import PriceHistory
 from kfinance.prompt import PROMPT
 from kfinance.pydantic_models import TranscriptComponent

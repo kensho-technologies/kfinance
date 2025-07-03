@@ -1,9 +1,12 @@
 from datetime import date
 from decimal import Decimal
 
-from kfinance.constants import Capitalization
 from kfinance.decimal_with_unit import Money, Shares
-from kfinance.models.capitalization_models import Capitalizations, DailyCapitalization
+from kfinance.models.capitalization_models import (
+    Capitalization,
+    Capitalizations,
+    DailyCapitalization,
+)
 
 
 class TestCapitalizations:
