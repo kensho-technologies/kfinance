@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import logging
+from queue import Queue
 from time import time
 from typing import Callable, Generator, Optional
 from uuid import uuid4
@@ -95,6 +96,7 @@ class KFinanceApiClient:
         self._batch_id: str | None = None
         self._batch_size: str | None = None
         self._user_permissions: set[Permission] | None = None
+        self._endpoint_tracker_queue: Queue[str] | None = None
 
     @contextmanager
     def batch_request_header(self, batch_size: int) -> Generator:
@@ -208,8 +210,27 @@ class KFinanceApiClient:
                     permission_str,
                 )
 
+    @contextmanager
+    def endpoint_tracker(self) -> Generator:
+        """Context manager to track and return endpoint URLs in our thread-safe queue during execution.
+
+        endpoint_tracker yields a queue into which all endpoint URLs are written until the context manager gets exited.
+        It is up to the callers to dequeue the queue before the context manager gets exited and the queue gets wiped.
+        This functionality is currently used by `run_with_grounding` to collect and forward endpoint URLs.
+        """
+        self._endpoint_tracker_queue = Queue[str]()
+
+        try:
+            yield self._endpoint_tracker_queue
+        finally:
+            self._endpoint_tracker_queue = None
+
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
+
+        # _endpoint_tracker_queue will only be initialized if inside the endpoint_tracker context manager
+        if self._endpoint_tracker_queue:
+            self._endpoint_tracker_queue.put(url)
 
         headers = {
             "Content-Type": "application/json",

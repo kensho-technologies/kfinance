@@ -722,6 +722,34 @@ class TestGetCompetitorsFromIdentifier:
         assert response == expected_competitors_response
 
 
+class TestGetEndpointsFromToolCallsWithGrounding:
+    def test_get_info_from_identifier_with_grounding(
+        self, mock_client: Client, requests_mock: Mocker
+    ):
+        """
+        GIVEN a KfinanceTool tool
+        WHEN we run the tool with `run_with_grounding`
+        THEN we get back endpoint urls in addition to the usual tool response.
+        """
+
+        # truncated from the original
+        resp_data = "{'name': 'S&P Global Inc.', 'status': 'Operating'}"
+        resp_endpoint = [
+            "https://kfinance.kensho.com/api/v1/id/SPGI",
+            "https://kfinance.kensho.com/api/v1/info/21719",
+        ]
+        expected_resp = {"data": resp_data, "endpoint_urls": resp_endpoint}
+
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}",
+            json=resp_data,
+        )
+
+        tool = GetInfoFromIdentifier(kfinance_client=mock_client)
+        resp = tool.run_with_grounding(identifier="SPGI")
+        assert resp == expected_resp
+
+
 class TestValidQuarter:
     class QuarterModel(BaseModel):
         quarter: ValidQuarter | None
