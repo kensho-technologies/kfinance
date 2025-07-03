@@ -10,13 +10,11 @@ import jwt
 from pydantic import ValidationError
 import requests
 
-from kfinance.constants import (
-    IdentificationTriple,
-)
 from kfinance.models.business_relationship_models import BusinessRelationshipType
 from kfinance.models.capitalization_models import Capitalizations
 from kfinance.models.competitor_models import CompetitorSource
 from kfinance.models.date_and_period_models import Periodicity, PeriodType
+from kfinance.models.id_models import IdentificationTriple
 from kfinance.models.industry_models import IndustryClassification
 from kfinance.models.permission_models import Permission
 from kfinance.models.price_models import PriceHistory
