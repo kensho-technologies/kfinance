@@ -97,7 +97,7 @@ class KFinanceApiClient:
         self._batch_id: str | None = None
         self._batch_size: str | None = None
         self._user_permissions: set[Permission] | None = None
-        self._endpoint_queue: Queue[str] | None = None
+        self._endpoint_tracker_queue: Queue[str] | None = None
 
     @contextmanager
     def batch_request_header(self, batch_size: int) -> Generator:
@@ -214,17 +214,19 @@ class KFinanceApiClient:
     @contextmanager
     def endpoint_tracker(self) -> Generator:
         """Context manager to track and return endpoint URLs in our thread-safe queue during execution."""
-        self._endpoint_queue = Queue[str]()
+        self._endpoint_tracker_queue = Queue[str]() # Initialize _endpoint_tracker_queue only for tool calls made with run_with_grouding()
 
         try:
-            yield self._endpoint_queue
+            yield self._endpoint_tracker_queue # Yield _endpoint_tracker_queue to run_with_grounding()
         finally:
-            self._endpoint_queue = None
+            self._endpoint_tracker_queue = None # Set to None after context manager exits
     
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
-        if self._endpoint_queue:
-            self._endpoint_queue.put(url)
+
+        # _endpoint_tracker_queue will only be initialized if we're in the endpoint_tracker context manager, which is only accessible through run_with_grounding()
+        if self._endpoint_tracker_queue:
+            self._endpoint_tracker_queue.put(url)
 
         headers = {
             "Content-Type": "application/json",
