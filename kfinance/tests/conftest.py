@@ -33,15 +33,4 @@ def mock_client(requests_mock: Mocker) -> Client:
         url="https://kfinance.kensho.com/api/v1/id/MSFT",
         json={"trading_item_id": 2630413, "security_id": 2630412, "company_id": 21835},
     )
-
-    requests_mock.get(
-        url="https://kfinance.kensho.com/api/v1/id/AAPL",
-        json={"trading_item_id": 2590360, "security_id": 2590359, "company_id": 24937},
-    )
-
-    requests_mock.get(
-        url="https://kfinance.kensho.com/api/v1/id/GOOGL",
-        json={"trading_item_id": 11311662, "security_id": 11311638, "company_id": 29096},
-    )
-
     return client
