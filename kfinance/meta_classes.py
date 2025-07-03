@@ -313,7 +313,9 @@ class CompanyFunctionsMetaClass:
         """
 
         return self._fetch_market_cap_tev_or_shares_outstanding(
-            capitalization_to_extract=Capitalization.shares_outstanding, start_date=start_date, end_date=end_date
+            capitalization_to_extract=Capitalization.shares_outstanding,
+            start_date=start_date,
+            end_date=end_date,
         )
 
     def _fetch_market_cap_tev_or_shares_outstanding(

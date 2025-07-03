@@ -19,10 +19,6 @@ import pandas as pd
 from PIL.Image import Image, open as image_open
 
 from kfinance.batch_request_handling import add_methods_of_singular_class_to_iterable_class
-from kfinance.constants import (
-    HistoryMetadata,
-    IdentificationTriple,
-)
 from kfinance.fetch import (
     DEFAULT_API_HOST,
     DEFAULT_API_VERSION,
@@ -35,8 +31,9 @@ from kfinance.meta_classes import (
     DelegatedCompanyFunctionsMetaClass,
 )
 from kfinance.models.date_and_period_models import LatestPeriods, Periodicity, YearAndQuarter
+from kfinance.models.id_models import IdentificationTriple
 from kfinance.models.industry_models import IndustryClassification
-from kfinance.models.price_models import PriceHistory
+from kfinance.models.price_models import HistoryMetadata, PriceHistory
 from kfinance.prompt import PROMPT
 from kfinance.pydantic_models import TranscriptComponent
 from kfinance.server_thread import ServerThread
