@@ -2,7 +2,6 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import logging
 from queue import Queue
-from threading import local
 from time import time
 from typing import Callable, Generator, Optional
 from uuid import uuid4
@@ -214,13 +213,15 @@ class KFinanceApiClient:
     @contextmanager
     def endpoint_tracker(self) -> Generator:
         """Context manager to track and return endpoint URLs in our thread-safe queue during execution."""
-        self._endpoint_tracker_queue = Queue[str]() # Initialize _endpoint_tracker_queue only for tool calls made with run_with_grouding()
+        self._endpoint_tracker_queue = Queue[
+            str
+        ]()  # Initialize _endpoint_tracker_queue only for tool calls made with run_with_grouding()
 
         try:
-            yield self._endpoint_tracker_queue # Yield _endpoint_tracker_queue to run_with_grounding()
+            yield self._endpoint_tracker_queue  # Yield _endpoint_tracker_queue to run_with_grounding()
         finally:
-            self._endpoint_tracker_queue = None # Set to None after context manager exits
-    
+            self._endpoint_tracker_queue = None  # Set to None after context manager exits
+
     def fetch(self, url: str) -> dict:
         """Does the request and auth"""
 

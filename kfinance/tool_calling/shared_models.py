@@ -46,7 +46,7 @@ class KfinanceTool(BaseTool):
         """
         with self.kfinance_client.kfinance_api_client.endpoint_tracker() as endpoint_tracker_queue:
             data = self.run_without_langchain(*args, **kwargs)
-            
+
             # After completion of tool data fetching and within the endpoint_tracker context manager scope, dequeue the endpoint_tracker_queue
             endpoint_urls = []
             while not endpoint_tracker_queue.empty():
