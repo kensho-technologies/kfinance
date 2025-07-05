@@ -2,7 +2,8 @@ from typing import Type
 
 from pydantic import BaseModel, Field
 
-from kfinance.constants import Permission, YearAndQuarter
+from kfinance.models.date_and_period_models import YearAndQuarter
+from kfinance.models.permission_models import Permission
 from kfinance.tool_calling.shared_models import KfinanceTool
 
 

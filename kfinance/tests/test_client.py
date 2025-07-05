@@ -2,8 +2,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from kfinance.constants import Permission
 from kfinance.kfinance import Client
+from kfinance.models.permission_models import Permission
 from kfinance.tool_calling import (
     GetBusinessRelationshipFromIdentifier,
     GetEarnings,

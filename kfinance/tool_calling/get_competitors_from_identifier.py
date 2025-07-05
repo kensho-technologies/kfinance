@@ -1,4 +1,5 @@
-from kfinance.constants import CompetitorSource, Permission
+from kfinance.models.competitor_models import CompetitorSource
+from kfinance.models.permission_models import Permission
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 

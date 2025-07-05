@@ -2,7 +2,9 @@ from typing import Literal, Type
 
 from pydantic import BaseModel, Field
 
-from kfinance.constants import PeriodType, Permission, StatementType
+from kfinance.models.date_and_period_models import PeriodType
+from kfinance.models.permission_models import Permission
+from kfinance.models.statement_models import StatementType
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier, ValidQuarter
 
 
