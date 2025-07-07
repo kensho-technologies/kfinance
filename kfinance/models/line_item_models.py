@@ -1,8 +1,5 @@
-from datetime import date
 from itertools import chain
-from typing import NamedTuple, TypedDict
-
-from strenum import StrEnum
+from typing import TypedDict
 
 
 class LineItemType(TypedDict):
@@ -10,150 +7,6 @@ class LineItemType(TypedDict):
     aliases: set[str]
     dataitemid: int
     spgi_name: str
-
-
-class HistoryMetadata(TypedDict):
-    currency: str
-    symbol: str
-    exchange_name: str
-    instrument_type: str
-    first_trade_date: date
-
-
-class IdentificationTriple(NamedTuple):
-    trading_item_id: int
-    security_id: int
-    company_id: int
-
-
-class Capitalization(StrEnum):
-    """The capitalization type"""
-
-    market_cap = "market_cap"
-    tev = "tev"
-    shares_outstanding = "shares_outstanding"
-
-
-class PeriodType(StrEnum):
-    """The period type"""
-
-    annual = "annual"
-    quarterly = "quarterly"
-    ltm = "ltm"
-    ytd = "ytd"
-
-
-class Periodicity(StrEnum):
-    """The frequency or interval at which the historical data points are sampled or aggregated. Periodicity is not the same as the date range. The date range specifies the time span over which the data is retrieved, while periodicity determines how the data within that date range is aggregated."""
-
-    day = "day"
-    week = "week"
-    month = "month"
-    year = "year"
-
-
-class StatementType(StrEnum):
-    """The type of financial statement"""
-
-    balance_sheet = "balance_sheet"
-    income_statement = "income_statement"
-    cashflow = "cashflow"
-
-
-class SegmentType(StrEnum):
-    """The type of segment"""
-
-    business = "business"
-    geographic = "geographic"
-
-
-class BusinessRelationshipType(StrEnum):
-    """The type of business relationship"""
-
-    supplier = "supplier"
-    customer = "customer"
-    distributor = "distributor"
-    franchisor = "franchisor"
-    franchisee = "franchisee"
-    landlord = "landlord"
-    tenant = "tenant"
-    licensor = "licensor"
-    licensee = "licensee"
-    creditor = "creditor"
-    borrower = "borrower"
-    lessor = "lessor"
-    lessee = "lessee"
-    strategic_alliance = "strategic_alliance"
-    investor_relations_firm = "investor_relations_firm"
-    investor_relations_client = "investor_relations_client"
-    transfer_agent = "transfer_agent"
-    transfer_agent_client = "transfer_agent_client"
-    vendor = "vendor"
-    client_services = "client_services"
-
-
-class Permission(StrEnum):
-    EarningsPermission = "EarningsPermission"
-    TranscriptsPermission = "TranscriptsPermission"
-    GICSPermission = "GICSPermission"
-    IDPermission = "IDPermission"
-    ISCRSPermission = "ISCRSPermission"
-    PricingPermission = "PricingPermission"
-    RelationshipPermission = "RelationshipPermission"
-    StatementsPermission = "StatementsPermission"
-    SegmentsPermission = "SegmentsPermission"
-    MergersPermission = "MergersPermission"
-    CompetitorsPermission = "CompetitorsPermission"
-
-
-class CompetitorSource(StrEnum):
-    """The source type of the competitor information: 'filing' (from SEC filings), 'key_dev' (from key developments), 'contact' (from contact relationships), 'third_party' (from third-party sources), 'self_identified' (self-identified), 'named_by_competitor' (from competitor's perspective)."""
-
-    all = "all"
-    filing = "filing"
-    key_dev = "key_dev"
-    contact = "contact"
-    third_party = "third_party"
-    self_identified = "self_identified"
-    named_by_competitor = "named_by_competitor"
-
-
-class YearAndQuarter(TypedDict):
-    year: int
-    quarter: int
-
-
-class LatestAnnualPeriod(TypedDict):
-    latest_year: int
-
-
-class LatestQuarterlyPeriod(TypedDict):
-    latest_quarter: int
-    latest_year: int
-
-
-class CurrentPeriod(TypedDict):
-    current_year: int
-    current_quarter: int
-    current_month: int
-    current_date: str
-
-
-class LatestPeriods(TypedDict):
-    annual: LatestAnnualPeriod
-    quarterly: LatestQuarterlyPeriod
-    now: CurrentPeriod
-
-
-class IndustryClassification(StrEnum):
-    sic = "sic"
-    naics = "naics"
-    nace = "nace"
-    anzsic = "anzsic"
-    spcapiqetf = "spcapiqetf"
-    spratings = "spratings"
-    gics = "gics"
-    simple = "simple"
 
 
 # all of these values must be lower case keys
@@ -1740,23 +1593,6 @@ LINE_ITEMS: list[LineItemType] = [
         "spgi_name": "Total Debt/Equity",
     },
 ]
-
-
 LINE_ITEM_NAMES_AND_ALIASES: list[str] = list(
     chain(*[[line_item["name"]] + list(line_item["aliases"]) for line_item in LINE_ITEMS])
 )
-
-
-FINANCIAL_STATEMENTS: dict[str, int] = {
-    "income_statement": 1,
-    "balance_sheet": 2,
-    "cash_flow": 3,
-}
-
-FINANCIAL_STATEMENTS_SYNONYMS: dict[str, int] = {
-    "is": 1,
-    "bs": 2,
-    "cf": 3,
-    "income_stmt": 1,
-    "cashflow": 3,
-}

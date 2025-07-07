@@ -2,7 +2,8 @@ from datetime import date
 
 from pydantic import Field
 
-from kfinance.constants import Capitalization, Permission
+from kfinance.models.capitalization_models import Capitalization
+from kfinance.models.permission_models import Permission
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
 
@@ -29,8 +30,6 @@ class GetCapitalizationFromIdentifier(KfinanceTool):
         capitalization: Capitalization,
         start_date: str | None = None,
         end_date: str | None = None,
-    ) -> str:
+    ) -> dict:
         ticker = self.kfinance_client.ticker(identifier)
-        return getattr(ticker, capitalization.value)(
-            start_date=start_date, end_date=end_date
-        ).to_markdown()
+        return getattr(ticker, capitalization.value)(start_date=start_date, end_date=end_date)

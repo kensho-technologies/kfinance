@@ -3,8 +3,8 @@ from typing import Annotated, Any, Literal, Type
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
-from kfinance.constants import Permission
 from kfinance.kfinance import Client
+from kfinance.models.permission_models import Permission
 
 
 class KfinanceTool(BaseTool):

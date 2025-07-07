@@ -1,18 +1,19 @@
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 import time
 from typing import Any, Dict
 from unittest import TestCase
 from unittest.mock import PropertyMock, patch
 
-import numpy as np
-import pandas as pd
 import pytest
 import requests
 import requests_mock
 
 from kfinance.batch_request_handling import MAX_WORKERS_CAP
+from kfinance.decimal_with_unit import Money, Shares
 from kfinance.fetch import KFinanceApiClient
-from kfinance.kfinance import Companies, Company, Ticker, TradingItems
+from kfinance.kfinance import Companies, Company, Ticker, TradingItem, TradingItems
+from kfinance.models.price_models import PriceHistory, Prices
 
 
 @pytest.fixture(autouse=True)
@@ -77,46 +78,75 @@ class TestTradingItem(TestCase):
         m.get(
             "https://kfinance.kensho.com/api/v1/pricing/2/none/none/day/adjusted",
             json={
+                "currency": "USD",
                 "prices": [
-                    {"date": "2024-01-01", "close": "100.000000"},
-                    {"date": "2024-01-02", "close": "101.000000"},
-                ]
+                    {
+                        "date": "2024-04-11",
+                        "open": "1.0000",
+                        "high": "2.0000",
+                        "low": "3.0000",
+                        "close": "4.0000",
+                        "volume": "5",
+                    },
+                ],
             },
         )
         m.get(
             "https://kfinance.kensho.com/api/v1/pricing/3/none/none/day/adjusted",
             json={
+                "currency": "USD",
                 "prices": [
-                    {"date": "2024-01-01", "close": "200.000000"},
-                    {"date": "2024-01-02", "close": "201.000000"},
-                ]
+                    {
+                        "date": "2024-04-11",
+                        "open": "5.0000",
+                        "high": "6.0000",
+                        "low": "7.0000",
+                        "close": "8.0000",
+                        "volume": "9",
+                    },
+                ],
             },
         )
 
-        trading_items = TradingItems(self.kfinance_api_client, [2, 3])
+        trading_item_2 = TradingItem(
+            kfinance_api_client=self.kfinance_api_client, trading_item_id=2
+        )
+        trading_item_3 = TradingItem(
+            kfinance_api_client=self.kfinance_api_client, trading_item_id=3
+        )
+
+        trading_items = TradingItems(
+            self.kfinance_api_client, trading_items=[trading_item_2, trading_item_3]
+        )
+        expected_result = {
+            trading_item_2: PriceHistory(
+                prices=[
+                    Prices(
+                        date="2024-04-11",
+                        open=Money(value=Decimal("1.00"), unit="USD", conventional_decimals=2),
+                        high=Money(value=Decimal("2.00"), unit="USD", conventional_decimals=2),
+                        low=Money(value=Decimal("3.00"), unit="USD", conventional_decimals=2),
+                        close=Money(value=Decimal("4.00"), unit="USD", conventional_decimals=2),
+                        volume=Shares(value=Decimal("5"), unit="Shares", conventional_decimals=0),
+                    )
+                ]
+            ),
+            trading_item_3: PriceHistory(
+                prices=[
+                    Prices(
+                        date="2024-04-11",
+                        open=Money(value=Decimal("5.00"), unit="USD", conventional_decimals=2),
+                        high=Money(value=Decimal("6.00"), unit="USD", conventional_decimals=2),
+                        low=Money(value=Decimal("7.00"), unit="USD", conventional_decimals=2),
+                        close=Money(value=Decimal("8.00"), unit="USD", conventional_decimals=2),
+                        volume=Shares(value=Decimal("9"), unit="Shares", conventional_decimals=0),
+                    )
+                ]
+            ),
+        }
 
         result = trading_items.history()
-        expected_dictionary_based_result = {
-            2: [
-                {"date": "2024-01-01", "close": "100.000000"},
-                {"date": "2024-01-02", "close": "101.000000"},
-            ],
-            3: [
-                {"date": "2024-01-01", "close": "200.000000"},
-                {"date": "2024-01-02", "close": "201.000000"},
-            ],
-        }
-        self.assertEqual(len(result), len(expected_dictionary_based_result))
-
-        for k, v in result.items():
-            trading_item_id = k.trading_item_id
-            pd.testing.assert_frame_equal(
-                v,
-                pd.DataFrame(expected_dictionary_based_result[trading_item_id])
-                .set_index("date")
-                .apply(pd.to_numeric)
-                .replace(np.nan, None),
-            )
+        assert result == expected_result
 
     @requests_mock.Mocker()
     def test_large_batch_request_property(self, m):

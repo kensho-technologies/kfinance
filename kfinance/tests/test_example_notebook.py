@@ -118,6 +118,7 @@ def test_run_notebook(jupyter_kernel_name: str):
         )
 
         prices_resp = {
+            "currency": "USD",
             "prices": [
                 {
                     "date": "2024-05-20",
