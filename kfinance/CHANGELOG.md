@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.7.0
+ - Expose a new list of LLM tools `grounding_tools` that return a list of all endpoint urls called
+
 ## v2.6.5
  - Add competitor company_name
 
