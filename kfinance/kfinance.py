@@ -17,6 +17,7 @@ from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_google_genai._function_utils import convert_to_genai_function_declarations
 import pandas as pd
 from PIL.Image import Image, open as image_open
+from typing_extensions import Self
 
 from kfinance.batch_request_handling import add_methods_of_singular_class_to_iterable_class
 from kfinance.fetch import (
@@ -31,6 +32,7 @@ from kfinance.meta_classes import (
     DelegatedCompanyFunctionsMetaClass,
 )
 from kfinance.models.date_and_period_models import LatestPeriods, Periodicity, YearAndQuarter
+from kfinance.models.earnings_models import EarningsCall
 from kfinance.models.id_models import IdentificationTriple
 from kfinance.models.industry_models import IndustryClassification
 from kfinance.models.price_models import HistoryMetadata, PriceHistory
@@ -265,6 +267,15 @@ class Earnings:
         self.datetime = datetime
         self.key_dev_id = key_dev_id
         self._transcript: Transcript | None = None
+
+    @classmethod
+    def from_earnings_call(cls, earnings_call: EarningsCall, kfinance_api_client: KFinanceApiClient) -> Self:
+        return Earnings(
+            name=earnings_call.name,
+            datetime=earnings_call.datetime,
+            key_dev_id=earnings_call.key_dev_id,
+            kfinance_api_client=kfinance_api_client
+        )
 
     def __str__(self) -> str:
         """String representation for the earnings object"""
@@ -512,25 +523,13 @@ class Company(CompanyFunctionsMetaClass):
         if self._all_earnings is not None:
             return self._all_earnings
 
+
         earnings_data = self.kfinance_api_client.fetch_earnings(self.company_id)
-        self._all_earnings = []
 
-        for earnings in earnings_data["earnings"]:
-            if "keydevid" in earnings:
-                earnings["key_dev_id"] = deepcopy(earnings["keydevid"])
-                del earnings["keydevid"]
-            earnings_datetime = datetime.fromisoformat(
-                earnings["datetime"].replace("Z", "+00:00")
-            ).replace(tzinfo=timezone.utc)
-
-            self._all_earnings.append(
-                Earnings(
-                    kfinance_api_client=self.kfinance_api_client,
-                    name=earnings["name"],
-                    datetime=earnings_datetime,
-                    key_dev_id=earnings["key_dev_id"],
-                )
-            )
+        self._all_earnings = [
+            Earnings.from_earnings_call(earnings_call=earnings_call, kfinance_api_client=self.kfinance_api_client)
+            for earnings_call in earnings_data.earnings
+        ]
 
         return self._all_earnings
 
@@ -1409,6 +1408,7 @@ class Securities(set):
         :param security_ids: An iterable of S&P CIQ Security ids
         :type security_ids: Iterable[int]
         """
+        self.kfinance_api_client = kfinance_api_client
         super().__init__(Security(kfinance_api_client, security_id) for security_id in security_ids)
 
 

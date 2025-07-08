@@ -19,7 +19,7 @@ from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRAD
 from kfinance.tests.test_objects import MOCK_COMPANY_DB, MOCK_MERGERS_DB, ordered
 from kfinance.tool_calling import (
     GetCompetitorsFromIdentifier,
-    GetEarnings,
+    GetEarningsFromIdentifiers,
     GetFinancialLineItemFromIdentifier,
     GetFinancialStatementFromIdentifier,
     GetHistoryMetadataFromIdentifier,
@@ -37,7 +37,7 @@ from kfinance.tool_calling.get_advisors_for_company_in_transaction_from_identifi
     GetAdvisorsForCompanyInTransactionFromIdentifier,
     GetAdvisorsForCompanyInTransactionFromIdentifierArgs,
 )
-from kfinance.tool_calling.get_business_relationship_from_identifier import (
+from kfinance.tool_calling.get_business_relationship_from_identifiers import (
     GetBusinessRelationshipFromIdentifier,
     GetBusinessRelationshipFromIdentifierArgs,
 )
@@ -45,7 +45,7 @@ from kfinance.tool_calling.get_capitalization_from_identifier import (
     GetCapitalizationFromIdentifier,
     GetCapitalizationFromIdentifierArgs,
 )
-from kfinance.tool_calling.get_competitors_from_identifier import (
+from kfinance.tool_calling.get_competitors_from_identifiers import (
     GetCompetitorsFromIdentifierArgs,
 )
 from kfinance.tool_calling.get_cusip_from_ticker import GetCusipFromTicker, GetCusipFromTickerArgs
@@ -356,25 +356,6 @@ class TestGetHistoryMetadataFromIdentifier:
         assert resp == expected_resp
 
 
-class TestGetInfoFromIdentifier:
-    def test_get_info_from_identifier(self, mock_client: Client, requests_mock: Mocker):
-        """
-        GIVEN the GetInfoFromIdentifier tool
-        WHEN request info for SPGI
-        THEN we get back info for SPGI
-        """
-
-        # truncated from the original
-        info_resp = {"name": "S&P Global Inc.", "status": "Operating"}
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}",
-            json=info_resp,
-        )
-
-        tool = GetInfoFromIdentifier(kfinance_client=mock_client)
-        resp = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
-        assert resp == str(info_resp)
-
 
 class TestGetIsinFromTicker:
     def test_get_isin_from_ticker(self, requests_mock: Mocker, mock_client: Client):
@@ -661,7 +642,7 @@ class TestGetEarnings:
             },
         ]
 
-        tool = GetEarnings(kfinance_client=mock_client)
+        tool = GetEarningsFromIdentifiers(kfinance_client=mock_client)
         response = tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
         assert response == expected_response
 
@@ -678,7 +659,7 @@ class TestGetEarnings:
             json=earnings_data,
         )
 
-        tool = GetEarnings(kfinance_client=mock_client)
+        tool = GetEarningsFromIdentifiers(kfinance_client=mock_client)
         with raises(NoEarningsDataError, match="Earnings for SPGI not found"):
             tool.run(ToolArgsWithIdentifier(identifier="SPGI").model_dump(mode="json"))
 

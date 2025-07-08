@@ -21,9 +21,12 @@ from kfinance.kfinance import (
     TradingItem,
     Transcript,
 )
-from kfinance.models.business_relationship_models import BusinessRelationshipType
+from kfinance.models.business_relationship_models import (
+    BusinessRelationshipType,
+    RelationshipResponse,
+)
 from kfinance.models.capitalization_models import Capitalizations
-from kfinance.pydantic_models import CompanyIdAndName, RelationshipResponse
+from kfinance.models.company_models import CompanyIdAndName
 
 
 msft_company_id = "21835"

@@ -14,7 +14,6 @@ from .models.competitor_models import CompetitorSource
 from .models.date_and_period_models import PeriodType
 from .models.line_item_models import LINE_ITEMS
 from .models.segment_models import SegmentType
-from .pydantic_models import RelationshipResponse
 
 
 if TYPE_CHECKING:
@@ -234,28 +233,16 @@ class CompanyFunctionsMetaClass:
             company_id=self.company_id,
             relationship_type=relationship_type,
         )
-        if isinstance(relationship_resp, RelationshipResponse):
-            return BusinessRelationships(
-                current=Companies(
-                    kfinance_api_client=self.kfinance_api_client,
-                    company_ids=[c.company_id for c in relationship_resp.current],
-                ),
-                previous=Companies(
-                    kfinance_api_client=self.kfinance_api_client,
-                    company_ids=[c.company_id for c in relationship_resp.previous],
-                ),
-            )
-        else:
-            return BusinessRelationships(
-                current=Companies(
-                    kfinance_api_client=self.kfinance_api_client,
-                    company_ids=relationship_resp.current,
-                ),
-                previous=Companies(
-                    kfinance_api_client=self.kfinance_api_client,
-                    company_ids=relationship_resp.previous,
-                ),
-            )
+        return BusinessRelationships(
+            current=Companies(
+                kfinance_api_client=self.kfinance_api_client,
+                company_ids=[c.company_id for c in relationship_resp.current],
+            ),
+            previous=Companies(
+                kfinance_api_client=self.kfinance_api_client,
+                company_ids=[c.company_id for c in relationship_resp.previous],
+            ),
+        )
 
     def market_cap(
         self,
@@ -329,7 +316,9 @@ class CompanyFunctionsMetaClass:
         capitalizations = self.kfinance_api_client.fetch_market_caps_tevs_and_shares_outstanding(
             company_id=self.company_id, start_date=start_date, end_date=end_date
         )
-        return capitalizations.jsonify_single_attribute(capitalization_to_extract)
+        return capitalizations.model_dump_json_single_metric(
+            capitalization_metric=capitalization_to_extract
+        )
 
     def _segments(
         self,

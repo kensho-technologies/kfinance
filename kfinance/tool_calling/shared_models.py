@@ -20,7 +20,7 @@ class KfinanceTool(BaseTool):
         description="The set of accepted permissions needed to access the tool. Only one of the permissions is required (or None)."
     )
 
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+    model_config = ConfigDict(extra="forbid")
 
     def run_without_langchain(self, *args: Any, **kwargs: Any) -> Any:
         """Execute a Kfinance tool without langchain.
@@ -67,12 +67,24 @@ class KfinanceTool(BaseTool):
 class ToolArgsWithIdentifier(BaseModel):
     """Tool argument with an identifier.
 
-    All tools using an identifier should subclass this model to ensure that the description
-    of identifier is always the same.
+    All tools using identifiers should subclass this model to ensure that the description
+    of identifiers is always the same.
     """
 
     identifier: str = Field(
-        description="The identifier, which can be a ticker symbol, ISIN, or CUSIP"
+        description="The identifier, which can be a ticker symbol, ISIN, CUSIP, or company_id"
+    )
+
+
+class ToolArgsWithIdentifiers(BaseModel):
+    """Tool argument with a list of identifiers.
+
+    All tools using identifiers should subclass this model to ensure that the description
+    of identifiers is always the same.
+    """
+
+    identifiers: list[str] = Field(
+        description="The identifiers, which can be a list of ticker symbols, ISINs, or CUSIPs, or company_ids"
     )
 
 

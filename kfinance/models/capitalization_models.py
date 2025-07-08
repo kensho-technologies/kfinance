@@ -68,23 +68,30 @@ class Capitalizations(BaseModel):
                     capitalization[key] = dict(unit=currency, value=capitalization[key])
         return data
 
-    def jsonify_single_attribute(self, capitalization_to_extract: Capitalization) -> dict:
-        """Return a json representation of a single attribute like "market_cap".
+    def model_dump_json_single_metric(
+        self, capitalization_metric: Capitalization, only_include_most_recent_value: bool = False
+    ) -> dict:
+        """Dump only a single metric (market cap, tev, or shares outstanding) to json
 
-        Example response:
-        {
-            "market_cap": [
-                {'2024-06-24': {'unit': 'USD', 'value': '139231113000.00'}},
-                {'2024-06-25': {'unit': 'USD', 'value': '140423262000.00'}}
-            ]
-        }
+        If only_include_most_recent_value is set to True, only the most recent value gets included.
 
+        Sample response:
+        [
+            {
+                'date': datetime.date(2024, 4, 10),
+                'market_cap': {'value': Decimal('132766738270.00'), 'unit': 'USD'}
+            }
+        ]
         """
 
-        capitalizations = []
-        for capitalization in self.capitalizations:
-            attribute_val = getattr(capitalization, capitalization_to_extract.value)
-            capitalizations.append(
-                {capitalization.date.isoformat(): attribute_val.model_dump(mode="json")}
-            )
-        return {capitalization_to_extract: capitalizations}
+        return self.model_dump(
+            mode="json",
+            include={  # type: ignore[arg-type]
+                "capitalizations": {
+                    0 if only_include_most_recent_value else "__all__": {
+                        "date",
+                        capitalization_metric.value,
+                    }
+                }
+            },
+        )["capitalizations"]

@@ -1,4 +1,4 @@
-from kfinance.tool_calling import GetFinancialLineItemFromIdentifier, GetLatest
+from kfinance.tool_calling import GetFinancialLineItemFromIdentifiers, GetLatest
 
 
 BASE_PROMPT = f"""
@@ -7,7 +7,7 @@ BASE_PROMPT = f"""
 
     - Always use the `{GetLatest.model_fields["name"].default}` function when asked about the last or most recent quarter or
     when the time is unspecified in the question.
-    - Try to use `{GetFinancialLineItemFromIdentifier.model_fields["name"].default}` for questions about a company's
+    - Try to use `{GetFinancialLineItemFromIdentifiers.model_fields["name"].default}` for questions about a company's
     finances.
     - If the tools do not respond with data that answers the question, then respond by saying that
     you don't have the data available.

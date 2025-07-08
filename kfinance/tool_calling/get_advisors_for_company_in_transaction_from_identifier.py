@@ -11,8 +11,8 @@ class GetAdvisorsForCompanyInTransactionFromIdentifierArgs(ToolArgsWithIdentifie
     transaction_id: int | None = Field(description="The ID of the merger.", default=None)
 
 
-class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
-    name: str = "get_advisors_for_company_in_transaction_from_identifier"
+class GetAdvisorsForCompanyInTransactionFromIdentifiers(KfinanceTool):
+    name: str = "get_advisors_for_company_in_transaction_from_identifiers"
     description: str = 'Get the companies advising a company in a given transaction. For example, "Who advised S&P Global during their purchase of Kensho?"'
     args_schema: Type[BaseModel] = GetAdvisorsForCompanyInTransactionFromIdentifierArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}

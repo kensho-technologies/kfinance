@@ -7,13 +7,13 @@ from requests_mock import Mocker
 
 from kfinance.fetch import KFinanceApiClient
 from kfinance.kfinance import Client
-from kfinance.models.business_relationship_models import BusinessRelationshipType
-from kfinance.models.date_and_period_models import Periodicity, PeriodType
-from kfinance.pydantic_models import (
-    CompanyIdAndName,
+from kfinance.models.business_relationship_models import (
+    BusinessRelationshipType,
     RelationshipResponse,
     RelationshipResponseNoName,
 )
+from kfinance.models.company_models import CompanyIdAndName
+from kfinance.models.date_and_period_models import Periodicity, PeriodType
 from kfinance.tests.conftest import SPGI_COMPANY_ID
 
 

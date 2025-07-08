@@ -1,4 +1,7 @@
+from pydantic import BaseModel
 from strenum import StrEnum
+
+from kfinance.models.company_models import CompanyIdAndName
 
 
 class BusinessRelationshipType(StrEnum):
@@ -24,3 +27,20 @@ class BusinessRelationshipType(StrEnum):
     transfer_agent_client = "transfer_agent_client"
     vendor = "vendor"
     client_services = "client_services"
+
+
+class RelationshipResponseNoName(BaseModel):
+    """A response from the relationship endpoint before adding the company name.
+
+    Each element in `current` and `previous` is a company_id.
+    """
+
+    current: list[int]
+    previous: list[int]
+
+
+class RelationshipResponse(BaseModel):
+    """A response from the relationship endpoint that includes both company_id and name."""
+
+    current: list[CompanyIdAndName]
+    previous: list[CompanyIdAndName]
