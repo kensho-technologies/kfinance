@@ -14,43 +14,31 @@ from kfinance.tool_calling import (
     GetInfoFromIdentifiers,
     GetIsinFromIdentifiers,
     GetPricesFromIdentifiers,
-    ResolveIdentifiers,
 )
-from kfinance.tool_calling.group_tools.get_business_relationship_from_identifier import (
-    GetBusinessRelationshipFromIdentifiers,
-    GetBusinessRelationshipFromCompanyIdArgs,
+from kfinance.tool_calling.get_business_relationship_from_identifier import (
+    GetBusinessRelationshipFromIdentifiers, GetBusinessRelationshipFromIdentifiersArgs,
 )
-from kfinance.tool_calling.group_tools.get_capitalization_from_identifiers import (
-    GetCapitalizationFromIdentifiers,
-    GetCapitalizationFromCompanyIdsArgs,
+from kfinance.tool_calling.get_capitalization_from_identifiers import (
+    GetCapitalizationFromIdentifiers, GetCapitalizationFromIdentifiersArgs,
 )
-from kfinance.tool_calling.group_tools.get_cusip_from_identifiers import (
-    GetCusipFromSecurityIdsArgs,
-)
-from kfinance.tool_calling.group_tools.get_earnings_call_datetimes_from_identifiers import (
-    GetEarningsCallDatetimesFromCompanyIdsArgs,
-)
-from kfinance.tool_calling.group_tools.get_financial_line_item_from_identifiers import (
-    GetFinancialLineItemFromIdentifiersIds,
+
+from kfinance.tool_calling.get_financial_line_item_from_identifiers import (
     GetFinancialLineItemFromIdentifiersArgs,
 )
-from kfinance.tool_calling.group_tools.get_financial_statement_from_identifiers import (
+from kfinance.tool_calling.get_financial_statement_from_identifiers import (
     GetFinancialStatementFromIdentifiersArgs,
 )
-from kfinance.tool_calling.group_tools.get_history_metadata_from_identifiers import (
+from kfinance.tool_calling.get_history_metadata_from_identifiers import (
     GetHistoryMetadataFromIdentifiers,
-    GetHistoryMetadataFromIdentifiersArgs,
 )
-from kfinance.tool_calling.group_tools.get_info_from_identifiers import GetInfoFromCompanyIdsArgs
-from kfinance.tool_calling.group_tools.get_isin_from_identifiers import GetIsinFromSecurityIdsArgs
-from kfinance.tool_calling.group_tools.get_prices_from_identifiers import (
+from kfinance.tool_calling.get_isin_from_identifiers import GetIsinFromSecurityIdsArgs
+from kfinance.tool_calling.get_prices_from_identifiers import (
     GetPricesFromIdentifiersArgs,
 )
-from kfinance.tool_calling.group_tools.resolve_identifiers import ResolveIdentifiersArgs
 
 
 class TestGetBusinessRelationshipFromCompanyId:
-    def test_get_business_relationship_from_company_id(
+    def test_get_business_relationship_from_identifiers(
         self, requests_mock: Mocker, mock_client: Client
     ):
         """
@@ -58,11 +46,25 @@ class TestGetBusinessRelationshipFromCompanyId:
         WHEN we request SPGI suppliers
         THEN we get back the SPGI suppliers
         """
-        supplier_resp = {"current": [883103], "previous": [472898, 8182358]}
-        expected_result = {
-            "current": [{"company_id": 883103}],
-            "previous": [{"company_id": 472898}, {"company_id": 8182358}],
+        supplier_resp = {
+    "current": [
+        {
+            "company_id": 883103,
+            "company_name": "CRISIL Limited"
         }
+    ],
+    "previous": [
+        {
+            "company_id": 472898,
+            "company_name": "Morgan Stanley"
+        },
+        {
+            "company_id": 8182358,
+            "company_name": "Eloqua, Inc."
+        },
+        ]
+        }
+        expected_result = {'SPGI': {'current': [{'company_id': 'C_883103', 'company_name': 'CRISIL Limited'}], 'previous': [{'company_id': 'C_472898', 'company_name': 'Morgan Stanley'}, {'company_id': 'C_8182358', 'company_name': 'Eloqua, Inc.'}]}}
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/supplier",
@@ -70,18 +72,21 @@ class TestGetBusinessRelationshipFromCompanyId:
         )
 
         tool = GetBusinessRelationshipFromIdentifiers(kfinance_client=mock_client)
-        args = GetBusinessRelationshipFromCompanyIdArgs(
-            company_id=SPGI_COMPANY_ID, business_relationship=BusinessRelationshipType.supplier
+        args = GetBusinessRelationshipFromIdentifiersArgs(
+            identifiers=["SPGI"], business_relationship=BusinessRelationshipType.supplier
         )
         resp = tool.run(args.model_dump(mode="json"))
+
+        assert list(resp.keys()) == ["SPGI"]
         # Sort companies by ID to make the result deterministic
-        resp["current"].sort(key=lambda x: x["company_id"])
-        resp["previous"].sort(key=lambda x: x["company_id"])
+        resp["SPGI"]["current"].sort(key=lambda x: x["company_id"])
+        resp["SPGI"]["previous"].sort(key=lambda x: x["company_id"])
         assert resp == expected_result
 
 
 class TestGetCapitalizationFromCompanyIds:
     market_caps_resp = {
+        "currency": "USD",
         "market_caps": [
             {
                 "date": "2024-04-10",
@@ -98,7 +103,7 @@ class TestGetCapitalizationFromCompanyIds:
         ]
     }
 
-    def test_get_capitalization_from_company_ids(self, requests_mock: Mocker, mock_client: Client):
+    def test_get_capitalization_from_identifiers(self, requests_mock: Mocker, mock_client: Client):
         """
         GIVEN the GetCapitalizationFromCompanyIds tool
         WHEN we request the SPGI market cap
@@ -109,13 +114,11 @@ class TestGetCapitalizationFromCompanyIds:
             json=self.market_caps_resp,
         )
 
-        expected_response = {
-            "company_id: 21719": "| date       |   market_cap |\n|:-----------|-------------:|\n| 2024-04-10 |  1.32767e+11 |\n| 2024-04-11 |  1.32416e+11 |"
-        }
+        expected_response = {'SPGI': {'market_cap': {'2024-04-10': 132766738270.0, '2024-04-11': 132416066761.0}}}
 
         tool = GetCapitalizationFromIdentifiers(kfinance_client=mock_client)
-        args = GetCapitalizationFromCompanyIdsArgs(
-            company_ids=[SPGI_COMPANY_ID], capitalization=Capitalization.market_cap
+        args = GetCapitalizationFromIdentifiersArgs(
+            identifiers=["SPGI"], capitalization=Capitalization.market_cap
         )
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response

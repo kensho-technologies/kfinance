@@ -8,9 +8,7 @@ from pydantic import BaseModel, Field
 
 from kfinance.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.constants import Periodicity, Permission, ToolMode
-from kfinance.kfinance import TradingItem, TradingItems
-from kfinance.tool_calling.group_tools.company_identifiers import parse_identifiers
-from kfinance.tool_calling.group_tools.identifier_resolvers import \
+from kfinance.tool_calling.company_identifiers import parse_identifiers, \
     fetch_trading_item_ids_from_identifiers
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifiers
 

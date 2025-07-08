@@ -4,8 +4,8 @@ import time_machine
 
 from kfinance.kfinance import Client
 from kfinance.tool_calling import GetLatest, GetNQuartersAgo
-from kfinance.tool_calling.shared_tools.get_latest import GetLatestArgs
-from kfinance.tool_calling.shared_tools.get_n_quarters_ago import GetNQuartersAgoArgs
+from kfinance.tool_calling.get_latest import GetLatestArgs
+from kfinance.tool_calling.get_n_quarters_ago import GetNQuartersAgoArgs
 
 
 class TestGetLatest:

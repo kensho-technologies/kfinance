@@ -123,11 +123,19 @@ def add_methods_of_singular_class_to_iterable_class(singular_cls: Type[T]) -> Ca
 
 @dataclass(kw_only=True)
 class Task:
+    """A task for batch processing.
+
+    - args and kwargs are intended to be passed into the func as func(*args, **kwargs)
+    - results from batch processing are returned as dicts. The result_key is usually
+        a company_id or similar, used to map from that id to the corresponding result.
+    - The future is used to store the batch processing future. It should not be modified
+        directly outside of process_tasks_in_thread_pool_executor.
+    """
     func: Callable
     args: Any = field(default_factory=tuple)
     kwargs: Any = field(default_factory=dict)
     result_key: Hashable
-    future: Future | None = None
+    future: Future | None = field(init=False, default=None)
 
 
 def process_tasks_in_thread_pool_executor(api_client: KFinanceApiClient, tasks: list[Task]) -> dict:
