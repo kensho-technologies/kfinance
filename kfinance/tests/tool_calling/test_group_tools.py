@@ -4,7 +4,7 @@ from datetime import date
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from requests_mock import Mocker
 
-from kfinance.constants import BusinessRelationshipType, Capitalization, StatementType
+from kfinance.constants import BusinessRelationshipType, Capitalization, StatementType, COMPANY_ID_PREFIX
 from kfinance.kfinance import Client
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
 from kfinance.tool_calling import (
@@ -129,10 +129,7 @@ class TestGetCapitalizationFromCompanyIds:
         WHEN we request most recent market caps for multiple companies
         THEN we only get back the most recent market cap for each company
         """
-        expected_response = {
-            "company_id: 1": "{'market_cap': {'2024-04-11': 132416066761.0}}",
-            "company_id: 2": "{'market_cap': {'2024-04-11': 132416066761.0}}",
-        }
+        expected_response = {'C_1': {'market_cap': {'2024-04-11': 132416066761.0}}, 'C_2': {'market_cap': {'2024-04-11': 132416066761.0}}}
 
         company_ids = [1, 2]
         for company_id in company_ids:
@@ -141,8 +138,8 @@ class TestGetCapitalizationFromCompanyIds:
                 json=self.market_caps_resp,
             )
         tool = GetCapitalizationFromIdentifiers(kfinance_client=mock_client)
-        args = GetCapitalizationFromCompanyIdsArgs(
-            company_ids=company_ids, capitalization=Capitalization.market_cap
+        args = GetCapitalizationFromIdentifiersArgs(
+            identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids], capitalization=Capitalization.market_cap
         )
 
         response = tool.run(args.model_dump(mode="json"))
