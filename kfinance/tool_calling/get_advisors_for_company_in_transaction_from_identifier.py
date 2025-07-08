@@ -2,7 +2,7 @@ from typing import Type
 
 from pydantic import BaseModel, Field
 
-from kfinance.kfinance import AdvisedCompany
+from kfinance.kfinance import Company, ParticipantInMerger
 from kfinance.models.permission_models import Permission
 from kfinance.tool_calling.shared_models import KfinanceTool, ToolArgsWithIdentifier
 
@@ -19,18 +19,21 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
 
     def _run(self, identifier: str, transaction_id: int) -> list:
         ticker = self.kfinance_client.ticker(identifier)
-        advised_company = AdvisedCompany(
+        participant_in_merger = ParticipantInMerger(
             kfinance_api_client=ticker.kfinance_api_client,
-            company_id=ticker.company.company_id,
             transaction_id=transaction_id,
+            company=Company(
+                kfinance_api_client=ticker.kfinance_api_client,
+                company_id=ticker.company.company_id,
+            ),
         )
-        advisors = advised_company.advisors
+        advisors = participant_in_merger.advisors
 
         if advisors:
             return [
                 {
-                    "advisor_company_id": advisor.company_id,
-                    "advisor_company_name": advisor.name,
+                    "advisor_company_id": advisor.company.company_id,
+                    "advisor_company_name": advisor.company.name,
                     "advisor_type_name": advisor.advisor_type_name,
                 }
                 for advisor in advisors
