@@ -22,6 +22,7 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
             kfinance_api_client=self.kfinance_client.kfinance_api_client,
             transaction_id=transaction_id,
             merger_title=None,
+            closed_date=None,
         )
         merger_timeline = merger_or_acquisition.get_timeline
         merger_participants = merger_or_acquisition.get_participants
@@ -36,15 +37,15 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
             else None,
             "participants": {
                 "target": {
-                    "company_id": merger_participants["target"].company_id,
-                    "company_name": merger_participants["target"].name,
+                    "company_id": merger_participants["target"].company.company_id,
+                    "company_name": merger_participants["target"].company.name,
                 },
                 "buyers": [
-                    {"company_id": buyer.company_id, "company_name": buyer.name}
+                    {"company_id": buyer.company.company_id, "company_name": buyer.company.name}
                     for buyer in merger_participants["buyers"]
                 ],
                 "sellers": [
-                    {"company_id": seller.company_id, "company_name": seller.name}
+                    {"company_id": seller.company.company_id, "company_name": seller.company.name}
                     for seller in merger_participants["sellers"]
                 ],
             }

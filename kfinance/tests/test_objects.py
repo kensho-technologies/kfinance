@@ -11,11 +11,11 @@ from PIL.Image import open as image_open
 import time_machine
 
 from kfinance.kfinance import (
-    AdvisedCompany,
     BusinessRelationships,
     Company,
     Earnings,
     MergerOrAcquisition,
+    ParticipantInMerger,
     Security,
     Ticker,
     TradingItem,
@@ -125,16 +125,40 @@ MOCK_COMPANY_DB = {
         },
         "mergers": {
             "target": [
-                {"transaction_id": 10998717, "merger_title": "Closed M/A of Microsoft Corporation"},
-                {"transaction_id": 28237969, "merger_title": "Closed M/A of Microsoft Corporation"},
+                {
+                    "transaction_id": 10998717,
+                    "merger_title": "Closed M/A of Microsoft Corporation",
+                    "closed_date": "2021-01-01",
+                },
+                {
+                    "transaction_id": 28237969,
+                    "merger_title": "Closed M/A of Microsoft Corporation",
+                    "closed_date": "2022-01-01",
+                },
             ],
             "buyer": [
-                {"transaction_id": 517414, "merger_title": "Closed M/A of MongoMusic, Inc."},
-                {"transaction_id": 596722, "merger_title": "Closed M/A of Digital Anvil, Inc."},
+                {
+                    "transaction_id": 517414,
+                    "merger_title": "Closed M/A of MongoMusic, Inc.",
+                    "closed_date": "2023-01-01",
+                },
+                {
+                    "transaction_id": 596722,
+                    "merger_title": "Closed M/A of Digital Anvil, Inc.",
+                    "closed_date": "2023-01-01",
+                },
             ],
             "seller": [
-                {"transaction_id": 455551, "merger_title": "Closed M/A of VacationSpot.com, Inc."},
-                {"transaction_id": 456045, "merger_title": "Closed M/A of TransPoint, LLC"},
+                {
+                    "transaction_id": 455551,
+                    "merger_title": "Closed M/A of VacationSpot.com, Inc.",
+                    "closed_date": "2024-01-01",
+                },
+                {
+                    "transaction_id": 456045,
+                    "merger_title": "Closed M/A of TransPoint, LLC",
+                    "closed_date": "2025-01-01",
+                },
             ],
         },
         "advisors": {
@@ -380,8 +404,8 @@ class MockKFinanceApiClient:
     def fetch_mergers_for_company(self, company_id):
         return copy.deepcopy(MOCK_COMPANY_DB[company_id]["mergers"])
 
-    def fetch_merger_info(self, transaction_id):
-        return copy.deepcopy(MOCK_MERGERS_DB[transaction_id])
+    def fetch_merger_info(self, transaction_id: int):
+        return copy.deepcopy(MOCK_MERGERS_DB[str(transaction_id)])
 
     def fetch_advisors_for_company_in_merger(self, transaction_id, advised_company_id):
         return copy.deepcopy(MOCK_COMPANY_DB[advised_company_id]["advisors"][transaction_id])
@@ -444,26 +468,31 @@ class TestCompany(TestCase):
     def setUp(self):
         """setup tests"""
         self.kfinance_api_client = MockKFinanceApiClient()
-        self.msft_company = AdvisedCompany(
-            self.kfinance_api_client, company_id=msft_company_id, transaction_id=msft_buys_mongo
+        self.msft_company = ParticipantInMerger(
+            kfinance_api_client=self.kfinance_api_client,
+            transaction_id=msft_buys_mongo,
+            company=Company(
+                kfinance_api_client=self.kfinance_api_client,
+                company_id=msft_company_id,
+            ),
         )
 
     def test_company_id(self) -> None:
         """test company id"""
         expected_company_id = msft_company_id
-        company_id = self.msft_company.company_id
+        company_id = self.msft_company.company.company_id
         self.assertEqual(expected_company_id, company_id)
 
     def test_info(self) -> None:
         """test info"""
         expected_info = MOCK_COMPANY_DB[msft_company_id]["info"]
-        info = self.msft_company.info
+        info = self.msft_company.company.info
         self.assertEqual(expected_info, info)
 
     def test_name(self) -> None:
         """test name"""
         expected_name = MOCK_COMPANY_DB[msft_company_id]["info"]["name"]
-        name = self.msft_company.name
+        name = self.msft_company.company.name
         self.assertEqual(expected_name, name)
 
     def test_founding_date(self) -> None:
@@ -471,7 +500,7 @@ class TestCompany(TestCase):
         expected_founding_date = datetime.strptime(
             MOCK_COMPANY_DB[msft_company_id]["info"]["founding_date"], "%Y-%m-%d"
         ).date()
-        founding_date = self.msft_company.founding_date
+        founding_date = self.msft_company.company.founding_date
         self.assertEqual(expected_founding_date, founding_date)
 
     def test_earnings_call_datetimes(self) -> None:
@@ -481,7 +510,7 @@ class TestCompany(TestCase):
                 MOCK_COMPANY_DB[msft_company_id]["earnings_call_dates"]["earnings"][0]
             ).replace(tzinfo=timezone.utc)
         ]
-        earnings_call_datetimes = self.msft_company.earnings_call_datetimes
+        earnings_call_datetimes = self.msft_company.company.earnings_call_datetimes
         self.assertEqual(expected_earnings_call_datetimes, earnings_call_datetimes)
 
     def test_income_statement(self) -> None:
@@ -493,7 +522,7 @@ class TestCompany(TestCase):
             .apply(pd.to_numeric)
             .replace(np.nan, None)
         )
-        income_statement = self.msft_company.income_statement()
+        income_statement = self.msft_company.company.income_statement()
         pd.testing.assert_frame_equal(expected_income_statement, income_statement)
 
     def test_revenue(self) -> None:
@@ -505,14 +534,14 @@ class TestCompany(TestCase):
             .replace(np.nan, None)
             .set_index(pd.Index(["revenue"]))
         )
-        revenue = self.msft_company.revenue()
+        revenue = self.msft_company.company.revenue()
         pd.testing.assert_frame_equal(expected_revenue, revenue)
 
     def test_business_segments(self) -> None:
         """test business statement"""
         expected_segments = MOCK_COMPANY_DB[msft_company_id]["segments"]
 
-        business_segment = self.msft_company.business_segments()
+        business_segment = self.msft_company.company.business_segments()
         self.assertEqual(expected_segments, business_segment)
 
     def test_relationships(self) -> None:
@@ -523,7 +552,9 @@ class TestCompany(TestCase):
 
         expected_suppliers = MOCK_COMPANY_DB[msft_company_id][BusinessRelationshipType.supplier]
 
-        suppliers_via_method = self.msft_company.relationships(BusinessRelationshipType.supplier)
+        suppliers_via_method = self.msft_company.company.relationships(
+            BusinessRelationshipType.supplier
+        )
         self.assertIsInstance(suppliers_via_method, BusinessRelationships)
         # Company ids should match
         self.assertEqual(
@@ -536,23 +567,35 @@ class TestCompany(TestCase):
         )
 
         # Fetching via property should return the same result
-        suppliers_via_property = self.msft_company.supplier
+        suppliers_via_property = self.msft_company.company.supplier
         self.assertEqual(suppliers_via_property, suppliers_via_method)
 
     def test_mergers(self) -> None:
         expected_mergers = MOCK_COMPANY_DB[msft_company_id]["mergers"]
-        mergers = self.msft_company.mergers_and_acquisitions
+        mergers = self.msft_company.company.mergers_and_acquisitions
         mergers_json = {
             "target": [
-                {"transaction_id": merger.transaction_id, "merger_title": merger.merger_title}
+                {
+                    "transaction_id": merger.transaction_id,
+                    "merger_title": merger.merger_title,
+                    "closed_date": merger.closed_date,
+                }
                 for merger in mergers["target"]
             ],
             "buyer": [
-                {"transaction_id": merger.transaction_id, "merger_title": merger.merger_title}
+                {
+                    "transaction_id": merger.transaction_id,
+                    "merger_title": merger.merger_title,
+                    "closed_date": merger.closed_date,
+                }
                 for merger in mergers["buyer"]
             ],
             "seller": [
-                {"transaction_id": merger.transaction_id, "merger_title": merger.merger_title}
+                {
+                    "transaction_id": merger.transaction_id,
+                    "merger_title": merger.merger_title,
+                    "closed_date": merger.closed_date,
+                }
                 for merger in mergers["seller"]
             ],
         }
@@ -571,7 +614,7 @@ class TestCompany(TestCase):
         company_ids: list[int] = []
         advisor_type_names: list[str] = []
         for advisor in advisors:
-            company_ids.append(advisor.company_id)
+            company_ids.append(advisor.company.company_id)
             advisor_type_names.append(advisor.advisor_type_name)
         self.assertListEqual(expected_company_ids, company_ids)
         self.assertListEqual(expected_advisor_type_names, advisor_type_names)
@@ -970,9 +1013,10 @@ class TestMerger(TestCase):
     def setUp(self):
         self.kfinance_api_client = MockKFinanceApiClient()
         self.merger = MergerOrAcquisition(
-            self.kfinance_api_client,
-            transaction_id=msft_buys_mongo,
+            kfinance_api_client=self.kfinance_api_client,
+            transaction_id=int(msft_buys_mongo),
             merger_title="Closed M/A of MongoMusic, Inc.",
+            closed_date=date(2021, 1, 1),
         )
 
     def test_merger_info(self) -> None:
@@ -984,16 +1028,16 @@ class TestMerger(TestCase):
             ],
             "participants": {
                 "target": {
-                    "company_id": self.merger.get_participants["target"].company_id,
-                    "company_name": self.merger.get_participants["target"].name,
+                    "company_id": self.merger.get_participants["target"].company.company_id,
+                    "company_name": self.merger.get_participants["target"].company.name,
                 },
                 "buyers": [
-                    {"company_id": company.company_id, "company_name": company.name}
-                    for company in self.merger.get_participants["buyers"]
+                    {"company_id": buyer.company.company_id, "company_name": buyer.company.name}
+                    for buyer in self.merger.get_participants["buyers"]
                 ],
                 "sellers": [
-                    {"company_id": company.company_id, "company_name": company.name}
-                    for company in self.merger.get_participants["sellers"]
+                    {"company_id": seller.company.company_id, "company_name": seller.company.name}
+                    for seller in self.merger.get_participants["sellers"]
                 ],
             },
             "consideration": {

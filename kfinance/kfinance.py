@@ -641,82 +641,76 @@ class Company(CompanyFunctionsMetaClass):
         return self._mergers_for_company
 
 
-class AdvisedCompany(Company):
+class ParticipantInMerger:
     """A Company that has been involved in a transaction is a company that may have been advised."""
 
     def __init__(
-        self,
-        kfinance_api_client: KFinanceApiClient,
-        company_id: int,
-        transaction_id: int,
-        company_name: str | None = None,
+        self, kfinance_api_client: KFinanceApiClient, transaction_id: int, company: Company
     ):
         """Initialize the AdvisedCompany object
 
         :param kfinance_api_client: The KFinanceApiClient used to fetch data
         :type kfinance_api_client: KFinanceApiClient
-        :param company_id: The S&P Global CIQ Company Id
-        :type company_id: int
         :param transaction_id: The S&P Global CIP Transaction Id
         :type transaction_id: int
+        :param company: The company object
+        :type company: Company
         """
-
-        super().__init__(
-            kfinance_api_client=kfinance_api_client,
-            company_id=company_id,
-            company_name=company_name,
-        )
+        self.kfinance_api_client = kfinance_api_client
         self.transaction_id = transaction_id
+        self._company = company
 
     @property
-    def advisors(self) -> Companies | None:
+    def company(self) -> Company:
+        """Get the specific Company object."""
+        return self._company
+
+    @property
+    def advisors(self) -> list[Advisor] | None:
         """Get the companies that advised this company during the current transaction."""
         advisors = self.kfinance_api_client.fetch_advisors_for_company_in_merger(
-            transaction_id=self.transaction_id, advised_company_id=self.company_id
+            transaction_id=self.transaction_id, advised_company_id=self._company.company_id
         )["advisors"]
-        companies = [
-            AdvisorCompany(
-                kfinance_api_client=self.kfinance_api_client,
-                company_id=int(advisor["advisor_company_id"]),
-                company_name=str(advisor["advisor_company_name"]),
+        return [
+            Advisor(
                 advisor_type_name=str(advisor["advisor_type_name"]),
+                company=Company(
+                    kfinance_api_client=self.kfinance_api_client,
+                    company_id=int(advisor["advisor_company_id"]),
+                    company_name=str(advisor["advisor_company_name"]),
+                ),
             )
             for advisor in advisors
         ]
-        return Companies(kfinance_api_client=self.kfinance_api_client, companies=companies)
 
 
-class AdvisorCompany(Company):
+class Advisor:
     """A company that advised another company during a transaction."""
 
     def __init__(
         self,
-        kfinance_api_client: KFinanceApiClient,
-        company_id: int,
-        advisor_type_name: str,
-        company_name: str | None = None,
+        advisor_type_name: str | None,
+        company: Company,
     ):
         """Initialize the AdvisorCompany object
 
-        :param kfinance_api_client: The KFinanceApiClient used to fetch data
-        :type kfinance_api_client: KFinanceApiClient
-        :param company_id: The S&P Global CIQ Company Id
-        :type company_id: int
+        :param company: The company that advised
+        :type company: Company
         :param advisor_type_name: The type of the advisor company
         :type advisor_type_name: str
         """
-
-        super().__init__(
-            kfinance_api_client=kfinance_api_client,
-            company_id=company_id,
-            company_name=company_name,
-        )
         self._advisor_type_name = advisor_type_name
+        self._company = company
 
     @property
     def advisor_type_name(self) -> str | None:
         """When this company advised another during a transaction, get the advisor type name."""
         return self._advisor_type_name
+
+    @property
+    def company(self) -> Company:
+        """Get the Company object."""
+        return self._company
 
 
 class Security:
@@ -1253,7 +1247,11 @@ class MergerOrAcquisition:
     """An object that represents a merger or an acquisition of a company."""
 
     def __init__(
-        self, kfinance_api_client: KFinanceApiClient, transaction_id: int, merger_title: str | None
+        self,
+        kfinance_api_client: KFinanceApiClient,
+        transaction_id: int,
+        merger_title: str | None,
+        closed_date: date | None,
     ) -> None:
         """MergerOrAcqusition initializer.
 
@@ -1264,6 +1262,7 @@ class MergerOrAcquisition:
         self.kfinance_api_client = kfinance_api_client
         self.transaction_id = transaction_id
         self.merger_title = merger_title
+        self.closed_date = closed_date
         self._merger_info: dict | None = None
 
     @property
@@ -1301,36 +1300,39 @@ class MergerOrAcquisition:
         Each category is a single Company or a list of Companies.
         """
         return {
-            "target": AdvisedCompany(
+            "target": ParticipantInMerger(
                 kfinance_api_client=self.kfinance_api_client,
-                company_id=self.merger_info["participants"]["target"]["company_id"],
-                company_name=self.merger_info["participants"]["target"]["company_name"],
                 transaction_id=self.transaction_id,
+                company=Company(
+                    kfinance_api_client=self.kfinance_api_client,
+                    company_id=self.merger_info["participants"]["target"]["company_id"],
+                    company_name=self.merger_info["participants"]["target"]["company_name"],
+                ),
             ),
-            "buyers": Companies(
-                kfinance_api_client=self.kfinance_api_client,
-                companies=[
-                    AdvisedCompany(
+            "buyers": [
+                ParticipantInMerger(
+                    kfinance_api_client=self.kfinance_api_client,
+                    transaction_id=self.transaction_id,
+                    company=Company(
                         kfinance_api_client=self.kfinance_api_client,
                         company_id=company["company_id"],
                         company_name=company["company_name"],
-                        transaction_id=self.transaction_id,
-                    )
-                    for company in self.merger_info["participants"]["buyers"]
-                ],
-            ),
-            "sellers": Companies(
-                kfinance_api_client=self.kfinance_api_client,
-                companies=[
-                    AdvisedCompany(
+                    ),
+                )
+                for company in self.merger_info["participants"]["buyers"]
+            ],
+            "sellers": [
+                ParticipantInMerger(
+                    kfinance_api_client=self.kfinance_api_client,
+                    transaction_id=self.transaction_id,
+                    company=Company(
                         kfinance_api_client=self.kfinance_api_client,
                         company_id=company["company_id"],
                         company_name=company["company_name"],
-                        transaction_id=self.transaction_id,
-                    )
-                    for company in self.merger_info["participants"]["sellers"]
-                ],
-            ),
+                    ),
+                )
+                for company in self.merger_info["participants"]["sellers"]
+            ],
         }
 
     @property
@@ -1360,7 +1362,6 @@ class Companies(set):
         self,
         kfinance_api_client: KFinanceApiClient,
         company_ids: Optional[Iterable[int]] = None,
-        transaction_id: Optional[int] = None,
         companies: Optional[Iterable[Company]] = None,
     ) -> None:
         """Initialize the Companies object
@@ -1369,8 +1370,6 @@ class Companies(set):
         :type kfinance_api_client: KFinanceApiClient
         :param company_ids: An iterable of S&P CIQ Company ids
         :type company_ids: Iterable[int]
-        :param transaction_id: If the companies were party to a transaction, the S&P CIQ Transaction Id
-        :type transaction_id: Optional[int]
         :param companies: If there's already an iterable of Company objects
         :type companies: Iterable[Company]
         """
@@ -1378,23 +1377,13 @@ class Companies(set):
         if companies is not None:
             super().__init__(company for company in companies)
         elif company_ids is not None:
-            if transaction_id is not None:
-                super().__init__(
-                    AdvisedCompany(
-                        kfinance_api_client=kfinance_api_client,
-                        company_id=company_id,
-                        transaction_id=transaction_id,
-                    )
-                    for company_id in company_ids
+            super().__init__(
+                Company(
+                    kfinance_api_client=kfinance_api_client,
+                    company_id=company_id,
                 )
-            else:
-                super().__init__(
-                    Company(
-                        kfinance_api_client=kfinance_api_client,
-                        company_id=company_id,
-                    )
-                    for company_id in company_ids
-                )
+                for company_id in company_ids
+            )
 
 
 @add_methods_of_singular_class_to_iterable_class(Security)
@@ -1533,6 +1522,7 @@ class MergersAndAcquisitions(set):
                 kfinance_api_client=kfinance_api_client,
                 transaction_id=id_and_title["transaction_id"],
                 merger_title=id_and_title["merger_title"],
+                closed_date=id_and_title["closed_date"],
             )
             for id_and_title in ids_and_titles
         )
