@@ -55,7 +55,7 @@ def test_run_notebook(jupyter_kernel_name: str):
     # - mocks for all calls made by the client while executing the notebook
     startup_cell_code = dedent("""
         from datetime import datetime
-        from kfinance.kfinance import Client
+        from kfinance.client.kfinance import Client
         kfinance_client = Client(refresh_token="foo")
         api_client = kfinance_client.kfinance_api_client
         # Set access token so that the client doesn't try to fetch it.
@@ -161,8 +161,8 @@ def test_run_notebook(jupyter_kernel_name: str):
         )
         # Mock out image_open so that we don't have to return an actual png.
         from unittest.mock import MagicMock
-        import kfinance.kfinance
-        kfinance.kfinance.image_open = MagicMock()
+        import kfinance.client.kfinance
+        kfinance.client.kfinance.image_open = MagicMock()
     """)
 
     # Load the notebook

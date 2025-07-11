@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from kfinance.decimal_with_unit import DecimalWithUnit, Money, Shares
+from kfinance.client.models.decimal_with_unit import DecimalWithUnit, Money, Shares
 
 
 class TestDecimalWithUnit:
