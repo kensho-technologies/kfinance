@@ -5,8 +5,9 @@ from pathlib import Path
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from pydantic._internal._repr import display_as_type
 
-from kfinance.kfinance import Client
-from kfinance.tool_calling import ALL_TOOLS, KfinanceTool
+from kfinance.client.kfinance import Client
+from kfinance.integrations.tool_calling.all_tools import ALL_TOOLS
+from kfinance.integrations.tool_calling.tool_calling_models import KfinanceTool
 
 
 def add_tool_calling_docs_for_all_tools() -> None:
