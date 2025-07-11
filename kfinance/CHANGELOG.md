@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.0.0
+- Add tool calls that accept lists of identifiers.
+
 ## v2.8.0
 - Add currency to get_capitalization and get_prices tools.
 
