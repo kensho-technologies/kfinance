@@ -49,7 +49,7 @@ class GetEarningsFromIdentifiers(KfinanceTool):
             identifiers=identifiers, kfinance_api_client=self.kfinance_client.kfinance_api_client
         )
         return {
-            str(identifier): earnings.model_dump(mode="json")["earnings"]
+            str(identifier): earnings.model_dump(mode="json")["earnings_calls"]
             for identifier, earnings in earnings_responses.items()
         }
 
@@ -137,7 +137,7 @@ def get_earnings_from_identifiers(
 ) -> dict[CompanyIdentifier, EarningsCallResp]:
     """Return the earnings call response for all passed identifiers."""
 
-    parsed_identifiers = parse_identifiers(identifiers)
+    parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=kfinance_api_client)
     identifiers_to_company_ids = fetch_company_ids_from_identifiers(
         identifiers=parsed_identifiers, api_client=kfinance_api_client
     )

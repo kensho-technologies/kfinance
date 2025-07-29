@@ -49,14 +49,15 @@ class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
         }
         """
 
-        parsed_identifiers = parse_identifiers(identifiers)
+        api_client = self.kfinance_client.kfinance_api_client
+        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
         identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=self.kfinance_client.kfinance_api_client
+            identifiers=parsed_identifiers, api_client=api_client
         )
 
         tasks = [
             Task(
-                func=self.kfinance_client.kfinance_api_client.fetch_companies_from_business_relationship,
+                func=api_client.fetch_companies_from_business_relationship,
                 kwargs=dict(
                     company_id=company_id,
                     relationship_type=business_relationship,
@@ -67,7 +68,7 @@ class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
         ]
 
         relationship_responses = process_tasks_in_thread_pool_executor(
-            api_client=self.kfinance_client.kfinance_api_client, tasks=tasks
+            api_client=api_client, tasks=tasks
         )
 
         return {str(k): v.model_dump(mode="json") for k, v in relationship_responses.items()}

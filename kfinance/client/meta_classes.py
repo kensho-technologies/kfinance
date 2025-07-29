@@ -428,16 +428,16 @@ class CompanyFunctionsMetaClass:
 
         competitors_data = self.kfinance_api_client.fetch_competitors(
             company_id=self.company_id, competitor_source=competitor_source
-        )["competitors"]
+        )
         return Companies(
             kfinance_api_client=self.kfinance_api_client,
             companies=[
                 Company(
                     kfinance_api_client=self.kfinance_api_client,
-                    company_id=company["company_id"],
-                    company_name=company["company_name"],
+                    company_id=company.company_id,
+                    company_name=company.company_name,
                 )
-                for company in competitors_data
+                for company in competitors_data.competitors
             ],
         )
 

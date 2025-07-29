@@ -18,7 +18,7 @@ from kfinance.domains.business_relationships.business_relationship_models import
 )
 from kfinance.domains.capitalizations.capitalization_models import Capitalizations
 from kfinance.domains.companies.company_models import IdentificationTriple
-from kfinance.domains.competitors.competitor_models import CompetitorSource
+from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.prices.price_models import PriceHistory
 from kfinance.domains.segments.segment_models import SegmentType
@@ -591,12 +591,14 @@ class KFinanceApiClient:
         url = f"{self.url_base}transcript/{key_dev_id}"
         return self.fetch(url)
 
-    def fetch_competitors(self, company_id: int, competitor_source: CompetitorSource) -> dict:
+    def fetch_competitors(
+        self, company_id: int, competitor_source: CompetitorSource
+    ) -> CompetitorResponse:
         """Get the competitors for a company."""
         url = f"{self.url_base}competitors/{company_id}"
         if competitor_source is not CompetitorSource.all:
             url = url + f"/{competitor_source}"
-        return self.fetch(url)
+        return CompetitorResponse.model_validate(self.fetch(url))
 
     def fetch_mergers_for_company(
         self,

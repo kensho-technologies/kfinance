@@ -62,14 +62,15 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
             }
         }
         """
-        parsed_identifiers = parse_identifiers(identifiers)
+        api_client = self.kfinance_client.kfinance_api_client
+        parsed_identifiers = parse_identifiers(identifiers, api_client=api_client)
         identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=self.kfinance_client.kfinance_api_client
+            identifiers=parsed_identifiers, api_client=api_client
         )
 
         tasks = [
             Task(
-                func=self.kfinance_client.kfinance_api_client.fetch_statement,
+                func=api_client.fetch_statement,
                 kwargs=dict(
                     company_id=company_id,
                     statement_type=statement.value,
@@ -85,7 +86,7 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         ]
 
         statement_responses = process_tasks_in_thread_pool_executor(
-            api_client=self.kfinance_client.kfinance_api_client, tasks=tasks
+            api_client=api_client, tasks=tasks
         )
 
         output = dict()
@@ -97,7 +98,15 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
                 .transpose()
             )
             # If no date and multiple companies, only return the most recent value.
-            if start_year == end_year == start_quarter == end_quarter and len(identifiers) > 1:
+            # By default, we return 5 years of data, which can be too much when
+            # returning data for many companies.
+            if (
+                start_year is None
+                and end_year is None
+                and start_quarter is None
+                and end_quarter is None
+                and len(identifiers) > 1
+            ):
                 df = df.tail(1)
             output[str(identifier)] = df.to_dict()
 

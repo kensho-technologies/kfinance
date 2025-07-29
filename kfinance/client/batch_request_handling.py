@@ -108,7 +108,8 @@ class Task:
 
     - args and kwargs are intended to be passed into the func as func(*args, **kwargs)
     - results from batch processing are returned as dicts. The result_key is usually
-        a company_id or similar, used to map from that id to the corresponding result.
+        something that either is an id (e.g. company_id) or has an id (e.g. Company
+        or CompanyIdentifier), used to map from that key to the corresponding result.
     - The future is used to store the batch processing future. It should not be modified
         directly outside of process_tasks_in_thread_pool_executor.
     """
@@ -123,7 +124,7 @@ class Task:
 def process_tasks_in_thread_pool_executor(api_client: KFinanceApiClient, tasks: list[Task]) -> dict:
     """Execute a list of tasks in the api client's thread pool executor and return the results.
 
-    Returs a dict mapping from each task's key to the corresponding result.
+    Returns a dict mapping from each task's key to the corresponding result.
     """
 
     # Update access if necessary before submitting batch job.

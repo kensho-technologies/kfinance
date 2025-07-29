@@ -25,23 +25,22 @@ class GetCusipFromIdentifiers(KfinanceTool):
 
         {"SPGI": "78409V104"}
         """
-        parsed_identifiers = parse_identifiers(identifiers)
+        api_client = self.kfinance_client.kfinance_api_client
+        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
         identifiers_to_security_ids = fetch_security_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=self.kfinance_client.kfinance_api_client
+            identifiers=parsed_identifiers, api_client=api_client
         )
 
         tasks = [
             Task(
-                func=self.kfinance_client.kfinance_api_client.fetch_cusip,
+                func=api_client.fetch_cusip,
                 kwargs=dict(security_id=security_id),
                 result_key=identifier,
             )
             for identifier, security_id in identifiers_to_security_ids.items()
         ]
 
-        cusip_responses = process_tasks_in_thread_pool_executor(
-            api_client=self.kfinance_client.kfinance_api_client, tasks=tasks
-        )
+        cusip_responses = process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
 
         return {str(identifier): resp["cusip"] for identifier, resp in cusip_responses.items()}
 
@@ -61,23 +60,21 @@ class GetIsinFromIdentifiers(KfinanceTool):
 
         {"SPGI": "US78409V1044"}
         """
-
-        parsed_identifiers = parse_identifiers(identifiers)
+        api_client = self.kfinance_client.kfinance_api_client
+        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
         identifiers_to_security_ids = fetch_security_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=self.kfinance_client.kfinance_api_client
+            identifiers=parsed_identifiers, api_client=api_client
         )
 
         tasks = [
             Task(
-                func=self.kfinance_client.kfinance_api_client.fetch_isin,
+                func=api_client.fetch_isin,
                 kwargs=dict(security_id=security_id),
                 result_key=identifier,
             )
             for identifier, security_id in identifiers_to_security_ids.items()
         ]
 
-        isin_responses = process_tasks_in_thread_pool_executor(
-            api_client=self.kfinance_client.kfinance_api_client, tasks=tasks
-        )
+        isin_responses = process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
 
         return {str(identifier): resp["isin"] for identifier, resp in isin_responses.items()}

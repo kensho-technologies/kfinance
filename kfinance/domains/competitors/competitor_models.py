@@ -1,4 +1,7 @@
+from pydantic import AliasPath, BaseModel, Field
 from strenum import StrEnum
+
+from kfinance.domains.companies.company_models import CompanyIdAndName
 
 
 class CompetitorSource(StrEnum):
@@ -11,3 +14,7 @@ class CompetitorSource(StrEnum):
     third_party = "third_party"
     self_identified = "self_identified"
     named_by_competitor = "named_by_competitor"
+
+
+class CompetitorResponse(BaseModel):
+    competitors: list[CompanyIdAndName] = Field(validation_alias=AliasPath("companies"))

@@ -59,14 +59,15 @@ class GetCapitalizationFromIdentifiers(KfinanceTool):
             ]
         }
         """
-        parsed_identifiers = parse_identifiers(identifiers)
+        api_client = self.kfinance_client.kfinance_api_client
+        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
         identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=self.kfinance_client.kfinance_api_client
+            identifiers=parsed_identifiers, api_client=api_client
         )
 
         tasks = [
             Task(
-                func=self.kfinance_client.kfinance_api_client.fetch_market_caps_tevs_and_shares_outstanding,
+                func=api_client.fetch_market_caps_tevs_and_shares_outstanding,
                 kwargs=dict(company_id=company_id, start_date=start_date, end_date=end_date),
                 result_key=identifier,
             )
@@ -74,7 +75,7 @@ class GetCapitalizationFromIdentifiers(KfinanceTool):
         ]
 
         capitalization_responses = process_tasks_in_thread_pool_executor(
-            api_client=self.kfinance_client.kfinance_api_client, tasks=tasks
+            api_client=api_client, tasks=tasks
         )
 
         return {

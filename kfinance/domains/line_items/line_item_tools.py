@@ -43,7 +43,7 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
 
         Example:
         Query: "What are the revenues of Lowe's and Home Depot?"
-        Function: get_line_item(line_item="revenue", company_ids=["LW", "HD"])
+        Function: get_financial_line_item_from_identifiers(line_item="revenue", company_ids=["LW", "HD"])
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialLineItemFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.StatementsPermission}
@@ -68,14 +68,15 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
             }
         }
         """
-        parsed_identifiers = parse_identifiers(identifiers)
+        api_client = self.kfinance_client.kfinance_api_client
+        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
         identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=self.kfinance_client.kfinance_api_client
+            identifiers=parsed_identifiers, api_client=api_client
         )
 
         tasks = [
             Task(
-                func=self.kfinance_client.kfinance_api_client.fetch_line_item,
+                func=api_client.fetch_line_item,
                 kwargs=dict(
                     company_id=company_id,
                     line_item=line_item,
@@ -91,14 +92,22 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         ]
 
         line_item_responses = process_tasks_in_thread_pool_executor(
-            api_client=self.kfinance_client.kfinance_api_client, tasks=tasks
+            api_client=api_client, tasks=tasks
         )
 
         output = dict()
         for identifier, result in line_item_responses.items():
             df = pd.DataFrame(result).apply(pd.to_numeric).replace(np.nan, None)
             # If no date and multiple companies, only return the most recent value.
-            if start_year == end_year == start_quarter == end_quarter and len(identifiers) > 1:
+            # By default, we return 5 years of data, which can be too much when
+            # returning data for many companies.
+            if (
+                start_year is None
+                and end_year is None
+                and start_quarter is None
+                and end_quarter is None
+                and len(identifiers) > 1
+            ):
                 df = df.tail(1)
             output[str(identifier)] = df.transpose().set_index(pd.Index([line_item])).to_dict()
 

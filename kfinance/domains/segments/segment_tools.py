@@ -43,14 +43,15 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         start_quarter: Literal[1, 2, 3, 4] | None = None,
         end_quarter: Literal[1, 2, 3, 4] | None = None,
     ) -> dict:
-        parsed_identifiers = parse_identifiers(identifiers)
+        api_client = self.kfinance_client.kfinance_api_client
+        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
         identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=self.kfinance_client.kfinance_api_client
+            identifiers=parsed_identifiers, api_client=api_client
         )
 
         tasks = [
             Task(
-                func=self.kfinance_client.kfinance_api_client.fetch_segments,
+                func=api_client.fetch_segments,
                 kwargs=dict(
                     company_id=company_id,
                     segment_type=segment_type,
@@ -66,8 +67,23 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         ]
 
         segments_responses = process_tasks_in_thread_pool_executor(
-            api_client=self.kfinance_client.kfinance_api_client, tasks=tasks
+            api_client=api_client, tasks=tasks
         )
+
+        # If no date and multiple companies, only return the most recent value.
+        # By default, we return 5 years of data, which can be too much when
+        # returning data for many companies.
+        if (
+            start_year is None
+            and end_year is None
+            and start_quarter is None
+            and end_quarter is None
+            and len(identifiers) > 1
+        ):
+            for segments_response in segments_responses.values():
+                most_recent_year = max(segments_response["segments"].keys())
+                most_recent_year_data = segments_response["segments"][most_recent_year]
+                segments_response["segments"] = {most_recent_year: most_recent_year_data}
 
         return {
             str(identifier): segments["segments"]

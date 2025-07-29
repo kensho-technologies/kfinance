@@ -167,7 +167,7 @@ def test_run_notebook(jupyter_kernel_name: str):
 
     # Load the notebook
     notebook_path = Path(
-        Path(__file__).parent.parent.parent, "example_notebooks", "basic_usage.ipynb"
+        Path(__file__).parent.parent.parent.parent, "example_notebooks", "basic_usage.ipynb"
     )
     with notebook_path.open() as f:
         nb = nbformat.read(f, as_version=4)

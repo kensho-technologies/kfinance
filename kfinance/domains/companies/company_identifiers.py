@@ -18,13 +18,15 @@ class CompanyIdentifier(Protocol, Hashable):
     and leaves the implementation to sub classes.
     """
 
-    def fetch_company_id(self, api_client: KFinanceApiClient) -> int:
+    api_client: KFinanceApiClient
+
+    def fetch_company_id(self) -> int:
         """Return the company_id associated with the CompanyIdentifier."""
 
-    def fetch_security_id(self, api_client: KFinanceApiClient) -> int:
+    def fetch_security_id(self) -> int:
         """Return the security_id associated with the CompanyIdentifier."""
 
-    def fetch_trading_item_id(self, api_client: KFinanceApiClient) -> int:
+    def fetch_trading_item_id(self) -> int:
         """Return the trading_item_id associated with the CompanyIdentifier."""
 
 
@@ -36,6 +38,7 @@ class Identifier(CompanyIdentifier):
     """
 
     identifier: str
+    api_client: KFinanceApiClient
     _id_triple: IdentificationTriple | None = None
 
     def __str__(self) -> str:
@@ -44,9 +47,11 @@ class Identifier(CompanyIdentifier):
     def __hash__(self) -> int:
         return hash(self.identifier)
 
-    def _fetch_id_triple(self, api_client: KFinanceApiClient) -> IdentificationTriple:
+    @property
+    def id_triple(self) -> IdentificationTriple:
+        """Return the id triple of the company."""
         if self._id_triple is None:
-            id_triple_resp = api_client.fetch_id_triple(identifier=self.identifier)
+            id_triple_resp = self.api_client.fetch_id_triple(identifier=self.identifier)
             self._id_triple = IdentificationTriple(
                 trading_item_id=id_triple_resp["trading_item_id"],
                 security_id=id_triple_resp["security_id"],
@@ -54,17 +59,17 @@ class Identifier(CompanyIdentifier):
             )
         return self._id_triple
 
-    def fetch_company_id(self, api_client: KFinanceApiClient) -> int:
+    def fetch_company_id(self) -> int:
         """Return the company_id associated with the Identifier."""
-        return self._fetch_id_triple(api_client).company_id
+        return self.id_triple.company_id
 
-    def fetch_security_id(self, api_client: KFinanceApiClient) -> int:
+    def fetch_security_id(self) -> int:
         """Return the security_id associated with the Identifier."""
-        return self._fetch_id_triple(api_client).security_id
+        return self.id_triple.security_id
 
-    def fetch_trading_item_id(self, api_client: KFinanceApiClient) -> int:
+    def fetch_trading_item_id(self) -> int:
         """Return the trading_item_id associated with the Identifier."""
-        return self._fetch_id_triple(api_client).trading_item_id
+        return self.id_triple.trading_item_id
 
 
 @dataclass
@@ -76,6 +81,9 @@ class CompanyId(CompanyIdentifier):
     """
 
     company_id: int
+    api_client: KFinanceApiClient
+    _security_id: int | None = None
+    _trading_item_id: int | None = None
 
     def __str__(self) -> str:
         return f"{COMPANY_ID_PREFIX}{self.company_id}"
@@ -83,24 +91,30 @@ class CompanyId(CompanyIdentifier):
     def __hash__(self) -> int:
         return hash(self.company_id)
 
-    def fetch_company_id(self, api_client: KFinanceApiClient) -> int:
+    def fetch_company_id(self) -> int:
         """Return the company_id."""
         return self.company_id
 
-    def fetch_security_id(self, api_client: KFinanceApiClient) -> int:
+    def fetch_security_id(self) -> int:
         """Return the security_id associated with the CompanyId."""
-        security_resp = api_client.fetch_primary_security(company_id=self.company_id)
-        return security_resp["primary_security"]
+        if self._security_id is None:
+            security_resp = self.api_client.fetch_primary_security(company_id=self.company_id)
+            self._security_id = security_resp["primary_security"]
+        return self._security_id
 
-    def fetch_trading_item_id(self, api_client: KFinanceApiClient) -> int:
+    def fetch_trading_item_id(self) -> int:
         """Return the trading_item_id associated with the CompanyId."""
-        trading_item_resp = api_client.fetch_primary_trading_item(
-            security_id=self.fetch_security_id(api_client=api_client)
-        )
-        return trading_item_resp["primary_trading_item"]
+        if self._trading_item_id is None:
+            trading_item_resp = self.api_client.fetch_primary_trading_item(
+                security_id=self.fetch_security_id()
+            )
+            self._trading_item_id = trading_item_resp["primary_trading_item"]
+        return self._trading_item_id
 
 
-def parse_identifiers(identifiers: list[str]) -> list[CompanyIdentifier]:
+def parse_identifiers(
+    identifiers: list[str], api_client: KFinanceApiClient
+) -> list[CompanyIdentifier]:
     """Return a list of CompanyIdentifier based on a list of string identifiers."""
 
     parsed_identifiers: list[CompanyIdentifier] = []
@@ -108,11 +122,11 @@ def parse_identifiers(identifiers: list[str]) -> list[CompanyIdentifier]:
         if identifier.startswith(COMPANY_ID_PREFIX):
             parsed_identifiers.append(
                 CompanyId(
-                    company_id=int(identifier[len(COMPANY_ID_PREFIX) :]),
+                    company_id=int(identifier[len(COMPANY_ID_PREFIX) :]), api_client=api_client
                 )
             )
         else:
-            parsed_identifiers.append(Identifier(identifier=identifier))
+            parsed_identifiers.append(Identifier(identifier=identifier, api_client=api_client))
 
     return parsed_identifiers
 
@@ -126,7 +140,6 @@ def fetch_company_ids_from_identifiers(
         Task(
             func=identifier.fetch_company_id,
             result_key=identifier,
-            kwargs=dict(api_client=api_client),
         )
         for identifier in identifiers
     ]
@@ -142,7 +155,6 @@ def fetch_security_ids_from_identifiers(
         Task(
             func=identifier.fetch_security_id,
             result_key=identifier,
-            kwargs=dict(api_client=api_client),
         )
         for identifier in identifiers
     ]
@@ -157,7 +169,6 @@ def fetch_trading_item_ids_from_identifiers(
         Task(
             func=identifier.fetch_trading_item_id,
             result_key=identifier,
-            kwargs=dict(api_client=api_client),
         )
         for identifier in identifiers
     ]

@@ -533,7 +533,7 @@ class Company(CompanyFunctionsMetaClass):
             Earnings.from_earnings_call(
                 earnings_call=earnings_call, kfinance_api_client=self.kfinance_api_client
             )
-            for earnings_call in earnings_data.earnings
+            for earnings_call in earnings_data.earnings_calls
         ]
 
         return self._all_earnings

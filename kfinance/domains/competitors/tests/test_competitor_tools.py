@@ -23,10 +23,12 @@ class TestGetCompetitorsFromIdentifiers:
             ]
         }
         expected_response = {
-            "SPGI": [
-                {"company_id": 35352, "company_name": "The Descartes Systems Group Inc."},
-                {"company_id": 4003514, "company_name": "London Stock Exchange Group plc"},
-            ]
+            "SPGI": {
+                "competitors": [
+                    {"company_id": "C_35352", "company_name": "The Descartes Systems Group Inc."},
+                    {"company_id": "C_4003514", "company_name": "London Stock Exchange Group plc"},
+                ]
+            }
         }
 
         requests_mock.get(

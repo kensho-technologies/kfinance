@@ -84,14 +84,15 @@ class GetPricesFromIdentifiers(KfinanceTool):
             }
         }
         """
-        parsed_identifiers = parse_identifiers(identifiers)
+        api_client = self.kfinance_client.kfinance_api_client
+        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
         identifiers_to_trading_item_ids = fetch_trading_item_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=self.kfinance_client.kfinance_api_client
+            identifiers=parsed_identifiers, api_client=api_client
         )
 
         tasks = [
             Task(
-                func=self.kfinance_client.kfinance_api_client.fetch_history,
+                func=api_client.fetch_history,
                 kwargs=dict(
                     trading_item_id=trading_item_id,
                     start_date=start_date,
@@ -104,9 +105,7 @@ class GetPricesFromIdentifiers(KfinanceTool):
             for identifier, trading_item_id in identifiers_to_trading_item_ids.items()
         ]
 
-        price_responses = process_tasks_in_thread_pool_executor(
-            api_client=self.kfinance_client.kfinance_api_client, tasks=tasks
-        )
+        price_responses = process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
 
         # Only include most recent price if more than one identifier passed and start_date == end_date == None
         dump_include_filter = None
@@ -142,14 +141,15 @@ class GetHistoryMetadataFromIdentifiers(KfinanceTool):
             }
         }
         """
-        parsed_identifiers = parse_identifiers(identifiers)
+        api_client = self.kfinance_client.kfinance_api_client
+        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
         identifiers_to_trading_item_ids = fetch_trading_item_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=self.kfinance_client.kfinance_api_client
+            identifiers=parsed_identifiers, api_client=api_client
         )
 
         tasks = [
             Task(
-                func=self.kfinance_client.kfinance_api_client.fetch_history_metadata,
+                func=api_client.fetch_history_metadata,
                 kwargs=dict(trading_item_id=trading_item_id),
                 result_key=identifier,
             )
@@ -157,7 +157,7 @@ class GetHistoryMetadataFromIdentifiers(KfinanceTool):
         ]
 
         history_metadata_responses = process_tasks_in_thread_pool_executor(
-            api_client=self.kfinance_client.kfinance_api_client, tasks=tasks
+            api_client=api_client, tasks=tasks
         )
 
         return {

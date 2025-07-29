@@ -29,23 +29,22 @@ class GetMergersFromIdentifier(KfinanceTool):
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
     def _run(self, identifiers: list[str]) -> dict:
-        parsed_identifiers = parse_identifiers(identifiers)
+        api_client = self.kfinance_client.kfinance_api_client
+        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
         identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=self.kfinance_client.kfinance_api_client
+            identifiers=parsed_identifiers, api_client=api_client
         )
 
         tasks = [
             Task(
-                func=self.kfinance_client.kfinance_api_client.fetch_mergers_for_company,
+                func=api_client.fetch_mergers_for_company,
                 kwargs=dict(company_id=company_id),
                 result_key=identifier,
             )
             for identifier, company_id in identifiers_to_company_ids.items()
         ]
 
-        merger_responses = process_tasks_in_thread_pool_executor(
-            api_client=self.kfinance_client.kfinance_api_client, tasks=tasks
-        )
+        merger_responses = process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
 
         return {str(identifier): mergers for identifier, mergers in merger_responses.items()}
 
@@ -85,20 +84,33 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
             "participants": {
                 "target": {
                     "company_id": str(
-                        CompanyId(company_id=merger_participants["target"].company.company_id)
+                        CompanyId(
+                            company_id=merger_participants["target"].company.company_id,
+                            api_client=self.kfinance_client.kfinance_api_client,
+                        )
                     ),
                     "company_name": merger_participants["target"].company.name,
                 },
                 "buyers": [
                     {
-                        "company_id": str(CompanyId(buyer.company.company_id)),
+                        "company_id": str(
+                            CompanyId(
+                                buyer.company.company_id,
+                                api_client=self.kfinance_client.kfinance_api_client,
+                            )
+                        ),
                         "company_name": buyer.company.name,
                     }
                     for buyer in merger_participants["buyers"]
                 ],
                 "sellers": [
                     {
-                        "company_id": str(CompanyId(seller.company.company_id)),
+                        "company_id": str(
+                            CompanyId(
+                                seller.company.company_id,
+                                api_client=self.kfinance_client.kfinance_api_client,
+                            )
+                        ),
                         "company_name": seller.company.name,
                     }
                     for seller in merger_participants["sellers"]
@@ -149,7 +161,12 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
         if advisors:
             return [
                 {
-                    "advisor_company_id": str(CompanyId(company_id=advisor.company.company_id)),
+                    "advisor_company_id": str(
+                        CompanyId(
+                            company_id=advisor.company.company_id,
+                            api_client=self.kfinance_client.kfinance_api_client,
+                        )
+                    ),
                     "advisor_company_name": advisor.company.name,
                     "advisor_type_name": advisor.advisor_type_name,
                 }

@@ -1,10 +1,11 @@
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.permission_models import Permission
 from kfinance.domains.companies.company_identifiers import (
+    Identifier,
     fetch_company_ids_from_identifiers,
     parse_identifiers,
 )
-from kfinance.domains.competitors.competitor_models import CompetitorSource
+from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
@@ -31,30 +32,31 @@ class GetCompetitorsFromIdentifiers(KfinanceTool):
 
         {
             SPGI: {
-                {'company_id': 35352, 'company_name': 'The Descartes Systems Group Inc.'},
-                {'company_id': 4003514, 'company_name': 'London Stock Exchange Group plc'}
+                {'company_id': "C_35352", 'company_name': 'The Descartes Systems Group Inc.'},
+                {'company_id': "C_4003514", 'company_name': 'London Stock Exchange Group plc'}
             }
         }
         """
 
-        parsed_identifiers = parse_identifiers(identifiers)
+        api_client = self.kfinance_client.kfinance_api_client
+        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
         identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=self.kfinance_client.kfinance_api_client
+            identifiers=parsed_identifiers, api_client=api_client
         )
 
         tasks = [
             Task(
-                func=self.kfinance_client.kfinance_api_client.fetch_competitors,
+                func=api_client.fetch_competitors,
                 kwargs=dict(company_id=company_id, competitor_source=competitor_source),
                 result_key=identifier,
             )
             for identifier, company_id in identifiers_to_company_ids.items()
         ]
 
-        competitor_responses = process_tasks_in_thread_pool_executor(
-            api_client=self.kfinance_client.kfinance_api_client, tasks=tasks
+        competitor_responses: dict[Identifier, CompetitorResponse] = (
+            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
         )
         return {
-            str(identifier): competitors["companies"]
+            str(identifier): competitors.model_dump(mode="json")
             for identifier, competitors in competitor_responses.items()
         }
