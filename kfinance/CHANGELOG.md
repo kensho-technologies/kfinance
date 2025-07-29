@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.9.0
+- Add currency to get_capitalization and get_prices tools.
+
 ## v2.8.0
 - Add currency to get_capitalization and get_prices tools.
 
