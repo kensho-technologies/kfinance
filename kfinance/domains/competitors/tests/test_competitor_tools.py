@@ -17,7 +17,7 @@ class TestGetCompetitorsFromIdentifiers:
         THEN we get back the SPGI competitors that are named by competitors
         """
         competitors_response = {
-            "companies": [
+            "competitors": [
                 {"company_id": 35352, "company_name": "The Descartes Systems Group Inc."},
                 {"company_id": 4003514, "company_name": "London Stock Exchange Group plc"},
             ]
