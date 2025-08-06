@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.0.2
+- Add kfinance.mcp back to simplify transition to 3.0
+
 ## v3.0.1
 - Add Private Company Financials Permissions and descriptions
 
