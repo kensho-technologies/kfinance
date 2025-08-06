@@ -46,7 +46,10 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         Function: get_financial_line_item_from_identifiers(line_item="revenue", company_ids=["LW", "HD"])
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialLineItemFromIdentifiersArgs
-    accepted_permissions: set[Permission] | None = {Permission.StatementsPermission}
+    accepted_permissions: set[Permission] | None = {
+        Permission.StatementsPermission,
+        Permission.PrivateCompanyFinancialsPermission,
+    }
 
     def _run(
         self,

@@ -41,7 +41,10 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         Function: get_financial_statement_from_company_ids(identifiers=["BAC", "GS"], statement=StatementType.balance_sheet, start_year=2024, end_year=2024)
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialStatementFromIdentifiersArgs
-    accepted_permissions: set[Permission] | None = {Permission.StatementsPermission}
+    accepted_permissions: set[Permission] | None = {
+        Permission.StatementsPermission,
+        Permission.PrivateCompanyFinancialsPermission,
+    }
 
     def _run(
         self,

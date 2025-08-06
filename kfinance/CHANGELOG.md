@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.0.1
+- Add Private Company Financials Permissions and descriptions
+
 ## v3.0.0
 - Add tool calls that accept lists of identifiers.
 
