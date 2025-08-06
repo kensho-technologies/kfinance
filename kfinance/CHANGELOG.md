@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.0.0
+- Add tool calls that accept lists of identifiers.
+
 ## v2.9.0
 - Limit FastMCP version
 
