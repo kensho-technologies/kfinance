@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.0.3
+- Add LineItemResponse model
+
 ## v3.0.2
 - Add kfinance.mcp back to simplify transition to 3.0
 
@@ -25,7 +28,7 @@
 - Add transcript permission and update accepted_permissions type to set[Permission]
 
 ## v2.6.3
-- Bump urllib3 to 2.5 to  address CVEs
+- Bump urllib3 to 2.5 to address CVEs
 
 ## v2.6.2
  - Safely check for incomplete merger information

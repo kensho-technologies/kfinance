@@ -202,18 +202,17 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return pd.DataFrame()
 
+        line_item_response = self.kfinance_api_client.fetch_line_item(
+            company_id=self.company_id,
+            line_item=line_item,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )
         return (
-            pd.DataFrame(
-                self.kfinance_api_client.fetch_line_item(
-                    company_id=self.company_id,
-                    line_item=line_item,
-                    period_type=period_type,
-                    start_year=start_year,
-                    end_year=end_year,
-                    start_quarter=start_quarter,
-                    end_quarter=end_quarter,
-                )
-            )
+            pd.DataFrame({"line_item": line_item_response.line_item})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)
