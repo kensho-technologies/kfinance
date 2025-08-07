@@ -9,10 +9,14 @@ from kfinance.client.batch_request_handling import Task, process_tasks_in_thread
 from kfinance.client.models.date_and_period_models import PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.companies.company_identifiers import (
+    Identifier,
     fetch_company_ids_from_identifiers,
     parse_identifiers,
 )
-from kfinance.domains.line_items.line_item_models import LINE_ITEM_NAMES_AND_ALIASES
+from kfinance.domains.line_items.line_item_models import (
+    LINE_ITEM_NAMES_AND_ALIASES,
+    LineItemResponse,
+)
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
@@ -94,13 +98,17 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
             for identifier, company_id in identifiers_to_company_ids.items()
         ]
 
-        line_item_responses = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
+        line_item_responses: dict[Identifier, LineItemResponse] = (
+            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
         )
 
         output = dict()
         for identifier, result in line_item_responses.items():
-            df = pd.DataFrame(result).apply(pd.to_numeric).replace(np.nan, None)
+            df = (
+                pd.DataFrame({"line_item": result.line_item})
+                .apply(pd.to_numeric)
+                .replace(np.nan, None)
+            )
             # If no date and multiple companies, only return the most recent value.
             # By default, we return 5 years of data, which can be too much when
             # returning data for many companies.

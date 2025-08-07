@@ -1,5 +1,12 @@
+from decimal import Decimal
 from itertools import chain
 from typing import TypedDict
+
+from pydantic import BaseModel
+
+
+class LineItemResponse(BaseModel):
+    line_item: dict[str, Decimal]
 
 
 class LineItemType(TypedDict):

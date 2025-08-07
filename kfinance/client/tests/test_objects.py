@@ -28,6 +28,7 @@ from kfinance.domains.business_relationships.business_relationship_models import
 from kfinance.domains.capitalizations.capitalization_models import Capitalizations
 from kfinance.domains.companies.company_models import CompanyIdAndName
 from kfinance.domains.earnings.earning_models import EarningsCallResp
+from kfinance.domains.line_items.line_item_models import LineItemResponse
 
 
 msft_company_id = "21835"
@@ -106,15 +107,17 @@ MOCK_COMPANY_DB = {
             }
         },
         "line_items": {
-            "revenue": {
-                "line_item": {
-                    "2019": "125843000000.000000",
-                    "2020": "143015000000.000000",
-                    "2021": "168088000000.000000",
-                    "2022": "198270000000.000000",
-                    "2023": "211915000000.000000",
+            "revenue": LineItemResponse.model_validate(
+                {
+                    "line_item": {
+                        "2019": "125843000000.000000",
+                        "2020": "143015000000.000000",
+                        "2021": "168088000000.000000",
+                        "2022": "198270000000.000000",
+                        "2023": "211915000000.000000",
+                    }
                 }
-            }
+            )
         },
         "segments": {
             "2024": {
@@ -533,8 +536,11 @@ class TestCompany(TestCase):
 
     def test_revenue(self) -> None:
         """test revenue"""
+        line_item_response: LineItemResponse = MOCK_COMPANY_DB[msft_company_id]["line_items"][
+            "revenue"
+        ]
         expected_revenue = (
-            pd.DataFrame(MOCK_COMPANY_DB[msft_company_id]["line_items"]["revenue"])
+            pd.DataFrame({"line_item": line_item_response.line_item})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)
@@ -862,8 +868,11 @@ class TestTicker(TestCase):
 
     def test_revenue(self) -> None:
         """test revenue"""
+        line_item_response: LineItemResponse = MOCK_COMPANY_DB[msft_company_id]["line_items"][
+            "revenue"
+        ]
         expected_revenue = (
-            pd.DataFrame(MOCK_COMPANY_DB[msft_company_id]["line_items"]["revenue"])
+            pd.DataFrame({"line_item": line_item_response.line_item})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)
