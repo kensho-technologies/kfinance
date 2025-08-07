@@ -1,21 +1,16 @@
 from textwrap import dedent
 from typing import Literal, Type
 
-import numpy as np
-import pandas as pd
 from pydantic import BaseModel, Field
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.models.date_and_period_models import PeriodType
 from kfinance.client.permission_models import Permission
-from kfinance.domains.companies.company_identifiers import (
-    fetch_company_ids_from_identifiers,
-    parse_identifiers,
-)
-from kfinance.domains.statements.statement_models import StatementType
+from kfinance.domains.statements.statement_models import StatementsResp, StatementType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
+    ToolRespWithErrors,
 )
 
 
@@ -27,6 +22,10 @@ class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Starting quarter")
     end_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Ending quarter")
+
+
+class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, StatementsResp]
 
 
 class GetFinancialStatementFromIdentifiers(KfinanceTool):
@@ -59,23 +58,25 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         """Sample response:
 
         {
-            'SPGI': {
-                'Revenues': {'2020': 7442000000.0, '2021': 8243000000.0},
-                'Total Revenues': {'2020': 7442000000.0, '2021': 8243000000.0}
-            }
+            'results': {
+                'SPGI': {
+                    'statements': {
+                        '2020': {'Revenues': '7442000000.000000', 'Total Revenues': '7442000000.000000'},
+                        '2021': {'Revenues': '8243000000.000000', 'Total Revenues': '8243000000.000000'}
+                    }
+                }
+            },
+            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
         }
         """
         api_client = self.kfinance_client.kfinance_api_client
-        parsed_identifiers = parse_identifiers(identifiers, api_client=api_client)
-        identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=api_client
-        )
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
 
         tasks = [
             Task(
                 func=api_client.fetch_statement,
                 kwargs=dict(
-                    company_id=company_id,
+                    company_id=id_triple.company_id,
                     statement_type=statement.value,
                     period_type=period_type,
                     start_year=start_year,
@@ -85,32 +86,29 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
                 ),
                 result_key=identifier,
             )
-            for identifier, company_id in identifiers_to_company_ids.items()
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
         ]
 
-        statement_responses = process_tasks_in_thread_pool_executor(
+        statement_responses: dict[str, StatementsResp] = process_tasks_in_thread_pool_executor(
             api_client=api_client, tasks=tasks
         )
 
-        output = dict()
-        for identifier, result in statement_responses.items():
-            df = (
-                pd.DataFrame(result["statements"])
-                .apply(pd.to_numeric)
-                .replace(np.nan, None)
-                .transpose()
-            )
-            # If no date and multiple companies, only return the most recent value.
-            # By default, we return 5 years of data, which can be too much when
-            # returning data for many companies.
-            if (
-                start_year is None
-                and end_year is None
-                and start_quarter is None
-                and end_quarter is None
-                and len(identifiers) > 1
-            ):
-                df = df.tail(1)
-            output[str(identifier)] = df.to_dict()
+        # If no date and multiple companies, only return the most recent value.
+        # By default, we return 5 years of data, which can be too much when
+        # returning data for many companies.
+        if (
+            start_year is None
+            and end_year is None
+            and start_quarter is None
+            and end_quarter is None
+            and len(statement_responses) > 1
+        ):
+            for statement_response in statement_responses.values():
+                most_recent_year = max(statement_response.statements.keys())
+                most_recent_year_data = statement_response.statements[most_recent_year]
+                statement_response.statements = {most_recent_year: most_recent_year_data}
 
-        return output
+        output_model = GetFinancialStatementFromIdentifiersResp(
+            results=statement_responses, errors=list(id_triple_resp.errors.values())
+        )
+        return output_model.model_dump(mode="json")

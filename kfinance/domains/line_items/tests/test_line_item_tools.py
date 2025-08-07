@@ -24,8 +24,8 @@ class TestGetFinancialLineItemFromCompanyIds:
     ):
         """
         GIVEN the GetFinancialLineItemFromCompanyId tool
-        WHEN we request SPGI revenue
-        THEN we get back the SPGI revenue
+        WHEN we request revenue for SPGI and a non-existent company
+        THEN we get back the SPGI revenue and an error for the non-existent company
         """
 
         expected_response = {
@@ -35,6 +35,20 @@ class TestGetFinancialLineItemFromCompanyIds:
                 "2024": {"revenue": 14208000000.0},
             }
         }
+        expected_response = {
+            "results": {
+                "SPGI": {
+                    "line_item": {
+                        "2022": "11181000000.000000",
+                        "2023": "12497000000.000000",
+                        "2024": "14208000000.000000",
+                    }
+                }
+            },
+            "errors": [
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+        }
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/line_item/{SPGI_COMPANY_ID}/revenue/none/none/none/none/none",
@@ -42,7 +56,9 @@ class TestGetFinancialLineItemFromCompanyIds:
         )
 
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
-        args = GetFinancialLineItemFromIdentifiersArgs(identifiers=["SPGI"], line_item="revenue")
+        args = GetFinancialLineItemFromIdentifiersArgs(
+            identifiers=["SPGI", "non-existent"], line_item="revenue"
+        )
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
 
@@ -55,8 +71,10 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         company_ids = [1, 2]
         expected_response = {
-            "C_1": {"2024": {"revenue": 14208000000.0}},
-            "C_2": {"2024": {"revenue": 14208000000.0}},
+            "results": {
+                "C_1": {"line_item": {"2024": "14208000000.000000"}},
+                "C_2": {"line_item": {"2024": "14208000000.000000"}},
+            }
         }
         for company_id in company_ids:
             requests_mock.get(

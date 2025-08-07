@@ -26,28 +26,34 @@ from kfinance.domains.business_relationships.business_relationship_models import
     RelationshipResponse,
 )
 from kfinance.domains.capitalizations.capitalization_models import Capitalizations
-from kfinance.domains.companies.company_models import CompanyIdAndName
+from kfinance.domains.companies.company_models import CompanyIdAndName, IdentificationTriple
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.line_items.line_item_models import LineItemResponse
+from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import MergersResp
+from kfinance.domains.prices.price_models import HistoryMetadataResp
+from kfinance.domains.segments.segment_models import SegmentsResp
+from kfinance.domains.statements.statement_models import StatementsResp
 
 
-msft_company_id = "21835"
-msft_security_id = "2630412"
+msft_company_id = 21835
+msft_security_id = 2630412
 msft_isin = "US5949181045"
 msft_cusip = "594918104"
-msft_trading_item_id = "2630413"
+msft_trading_item_id = 2630413
 msft_buys_mongo = "517414"
 
 
 MOCK_TRADING_ITEM_DB = {
     msft_trading_item_id: {
-        "metadata": {
-            "currency": "USD",
-            "symbol": "MSFT",
-            "exchange_name": "NasdaqGS",
-            "instrument_type": "Equity",
-            "first_trade_date": "1986-03-13",
-        },
+        "metadata": HistoryMetadataResp.model_validate(
+            {
+                "currency": "USD",
+                "symbol": "MSFT",
+                "exchange_name": "NasdaqGS",
+                "instrument_type": "Equity",
+                "first_trade_date": "1986-03-13",
+            }
+        ),
         "price_chart": {
             "2020-01-01": {
                 "2021-01-01": b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\xcf\xc0\x00\x00\x03"
@@ -96,16 +102,6 @@ MOCK_COMPANY_DB = {
                 ]
             }
         ),
-        "statements": {
-            "income_statement": {
-                "statements": {
-                    "2019": {
-                        "Revenues": "125843000000.000000",
-                        "Total Revenues": "125843000000.000000",
-                    }
-                }
-            }
-        },
         "line_items": {
             "revenue": LineItemResponse.model_validate(
                 {
@@ -119,57 +115,26 @@ MOCK_COMPANY_DB = {
                 }
             )
         },
-        "segments": {
-            "2024": {
-                "Intelligent Cloud": {"Operating Income": 49584000000.0, "Revenue": 105362000000.0},
-                "More Personal Computing": {
-                    "Operating Income": 19309000000.0,
-                    "Revenue": 62032000000.0,
-                },
-                "Productivity and Business Processes": {
-                    "Operating Income": 40540000000.0,
-                    "Revenue": 77728000000.0,
-                },
+        "segments": SegmentsResp.model_validate(
+            {
+                "segments": {
+                    "2024": {
+                        "Intelligent Cloud": {
+                            "Operating Income": 49584000000.0,
+                            "Revenue": 105362000000.0,
+                        },
+                        "More Personal Computing": {
+                            "Operating Income": 19309000000.0,
+                            "Revenue": 62032000000.0,
+                        },
+                        "Productivity and Business Processes": {
+                            "Operating Income": 40540000000.0,
+                            "Revenue": 77728000000.0,
+                        },
+                    }
+                }
             }
-        },
-        "mergers": {
-            "target": [
-                {
-                    "transaction_id": 10998717,
-                    "merger_title": "Closed M/A of Microsoft Corporation",
-                    "closed_date": "2021-01-01",
-                },
-                {
-                    "transaction_id": 28237969,
-                    "merger_title": "Closed M/A of Microsoft Corporation",
-                    "closed_date": "2022-01-01",
-                },
-            ],
-            "buyer": [
-                {
-                    "transaction_id": 517414,
-                    "merger_title": "Closed M/A of MongoMusic, Inc.",
-                    "closed_date": "2023-01-01",
-                },
-                {
-                    "transaction_id": 596722,
-                    "merger_title": "Closed M/A of Digital Anvil, Inc.",
-                    "closed_date": "2023-01-01",
-                },
-            ],
-            "seller": [
-                {
-                    "transaction_id": 455551,
-                    "merger_title": "Closed M/A of VacationSpot.com, Inc.",
-                    "closed_date": "2024-01-01",
-                },
-                {
-                    "transaction_id": 456045,
-                    "merger_title": "Closed M/A of TransPoint, LLC",
-                    "closed_date": "2025-01-01",
-                },
-            ],
-        },
+        ),
         "advisors": {
             msft_buys_mongo: {
                 "advisors": [
@@ -190,7 +155,6 @@ MOCK_COMPANY_DB = {
         ),
     },
     31696: {"info": {"name": "MongoMusic, Inc."}},
-    21835: {"info": {"name": "Microsoft Corporation"}},
     18805: {"info": {"name": "Angel Investors L.P."}},
     20087: {"info": {"name": "Draper Richards, L.P."}},
     22103: {"info": {"name": "BRV Partners, LLC"}},
@@ -225,33 +189,69 @@ MOCK_TRANSCRIPT_DB = {
     },
 }
 
+INCOME_STATEMENT = StatementsResp.model_validate(
+    {
+        "statements": {
+            "2019": {
+                "Revenues": "125843000000.000000",
+                "Total Revenues": "125843000000.000000",
+            }
+        }
+    }
+)
+
+MERGERS_RESP = MergersResp.model_validate(
+    {
+        "target": [
+            {
+                "transaction_id": 10998717,
+                "merger_title": "Closed M/A of Microsoft Corporation",
+                "closed_date": "2021-01-01",
+            },
+            {
+                "transaction_id": 28237969,
+                "merger_title": "Closed M/A of Microsoft Corporation",
+                "closed_date": "2022-01-01",
+            },
+        ],
+        "buyer": [
+            {
+                "transaction_id": 517414,
+                "merger_title": "Closed M/A of MongoMusic, Inc.",
+                "closed_date": "2023-01-01",
+            },
+            {
+                "transaction_id": 596722,
+                "merger_title": "Closed M/A of Digital Anvil, Inc.",
+                "closed_date": "2023-01-01",
+            },
+        ],
+        "seller": [
+            {
+                "transaction_id": 455551,
+                "merger_title": "Closed M/A of VacationSpot.com, Inc.",
+                "closed_date": "2024-01-01",
+            },
+            {
+                "transaction_id": 456045,
+                "merger_title": "Closed M/A of TransPoint, LLC",
+                "closed_date": "2025-01-01",
+            },
+        ],
+    }
+)
 
 MOCK_SECURITY_DB = {msft_security_id: {"isin": msft_isin, "cusip": msft_cusip}}
 
+msft_id_triple = IdentificationTriple(
+    company_id=msft_company_id, security_id=msft_security_id, trading_item_id=msft_trading_item_id
+)
 
-MOCK_TICKER_DB = {
-    "MSFT": {
-        "company_id": msft_company_id,
-        "security_id": msft_security_id,
-        "trading_item_id": msft_trading_item_id,
-    }
-}
+MOCK_TICKER_DB = {"MSFT": msft_id_triple.model_dump(mode="json")}
 
-MOCK_ISIN_DB = {
-    msft_isin: {
-        "company_id": msft_company_id,
-        "security_id": msft_security_id,
-        "trading_item_id": msft_trading_item_id,
-    }
-}
+MOCK_ISIN_DB = {msft_isin: msft_id_triple.model_dump(mode="json")}
 
-MOCK_CUSIP_DB = {
-    msft_cusip: {
-        "company_id": msft_company_id,
-        "security_id": msft_security_id,
-        "trading_item_id": msft_trading_item_id,
-    }
-}
+MOCK_CUSIP_DB = {msft_cusip: msft_id_triple.model_dump(mode="json")}
 
 MOCK_MERGERS_DB = {
     msft_buys_mongo: {
@@ -350,7 +350,7 @@ class MockKFinanceApiClient:
         end_quarter,
     ):
         """Get a statement"""
-        return MOCK_COMPANY_DB[company_id]["statements"][statement_type]
+        return INCOME_STATEMENT
 
     def fetch_line_item(
         self, company_id, line_item, period_type, start_year, end_year, start_quarter, end_quarter
@@ -395,7 +395,7 @@ class MockKFinanceApiClient:
         end_quarter,
     ):
         """Get a segment"""
-        return MOCK_COMPANY_DB[company_id]
+        return MOCK_COMPANY_DB[company_id]["segments"]
 
     def fetch_companies_from_business_relationship(
         self, company_id: int, relationship_type: BusinessRelationshipType
@@ -411,7 +411,7 @@ class MockKFinanceApiClient:
         return MOCK_TRANSCRIPT_DB[key_dev_id]
 
     def fetch_mergers_for_company(self, company_id):
-        return copy.deepcopy(MOCK_COMPANY_DB[company_id]["mergers"])
+        return copy.deepcopy(MERGERS_RESP)
 
     def fetch_merger_info(self, transaction_id: int):
         return copy.deepcopy(MOCK_MERGERS_DB[str(transaction_id)])
@@ -424,14 +424,16 @@ class TestTradingItem(TestCase):
     def setUp(self):
         """setup tests"""
         self.kfinance_api_client = MockKFinanceApiClient()
-        self.msft_trading_item_from_id = TradingItem(self.kfinance_api_client, msft_trading_item_id)
+        self.msft_trading_item_from_id = TradingItem(
+            self.kfinance_api_client, int(msft_trading_item_id)
+        )
         self.msft_trading_item_from_ticker = TradingItem.from_ticker(
             self.kfinance_api_client, "MSFT"
         )
 
     def test_trading_item_id(self) -> None:
         """test trading item id"""
-        expected_trading_item_id = MOCK_TICKER_DB["MSFT"]["trading_item_id"]
+        expected_trading_item_id = int(msft_trading_item_id)
         trading_item_id = self.msft_trading_item_from_id.trading_item_id
         self.assertEqual(expected_trading_item_id, trading_item_id)
 
@@ -440,18 +442,11 @@ class TestTradingItem(TestCase):
 
     def test_history_metadata(self) -> None:
         """test history metadata"""
-        expected_history_metadata = MOCK_TRADING_ITEM_DB[msft_trading_item_id]["metadata"].copy()
-        expected_history_metadata["first_trade_date"] = datetime.strptime(
-            expected_history_metadata["first_trade_date"], "%Y-%m-%d"
-        ).date()
-        expected_exchange_code = "NasdaqGS"
+        expected_history_metadata: HistoryMetadataResp = MOCK_TRADING_ITEM_DB[msft_trading_item_id][
+            "metadata"
+        ].copy()
         history_metadata = self.msft_trading_item_from_id.history_metadata
-        self.assertEqual(expected_history_metadata, history_metadata)
-        self.assertEqual(expected_exchange_code, self.msft_trading_item_from_id.exchange_code)
-
-        history_metadata = self.msft_trading_item_from_ticker.history_metadata
-        self.assertEqual(expected_history_metadata, history_metadata)
-        self.assertEqual(expected_exchange_code, self.msft_trading_item_from_ticker.exchange_code)
+        assert history_metadata == expected_history_metadata
 
     def test_price_chart(self):
         """test price chart"""
@@ -525,12 +520,11 @@ class TestCompany(TestCase):
     def test_income_statement(self) -> None:
         """test income statement"""
         expected_income_statement = (
-            pd.DataFrame(
-                MOCK_COMPANY_DB[msft_company_id]["statements"]["income_statement"]["statements"]
-            )
+            pd.DataFrame(INCOME_STATEMENT.model_dump(mode="json")["statements"])
             .apply(pd.to_numeric)
             .replace(np.nan, None)
         )
+
         income_statement = self.msft_company.company.income_statement()
         pd.testing.assert_frame_equal(expected_income_statement, income_statement)
 
@@ -551,7 +545,9 @@ class TestCompany(TestCase):
 
     def test_business_segments(self) -> None:
         """test business statement"""
-        expected_segments = MOCK_COMPANY_DB[msft_company_id]["segments"]
+        expected_segments = MOCK_COMPANY_DB[msft_company_id]["segments"].model_dump(mode="json")[
+            "segments"
+        ]
 
         business_segment = self.msft_company.company.business_segments()
         self.assertEqual(expected_segments, business_segment)
@@ -583,7 +579,7 @@ class TestCompany(TestCase):
         self.assertEqual(suppliers_via_property, suppliers_via_method)
 
     def test_mergers(self) -> None:
-        expected_mergers = MOCK_COMPANY_DB[msft_company_id]["mergers"]
+        expected_mergers = MERGERS_RESP.model_dump(mode="json")
         mergers = self.msft_company.company.mergers_and_acquisitions
         mergers_json = {
             "target": [
@@ -730,9 +726,6 @@ class TestTicker(TestCase):
     def test_history_metadata(self) -> None:
         """test history metadata"""
         expected_history_metadata = MOCK_TRADING_ITEM_DB[msft_trading_item_id]["metadata"].copy()
-        expected_history_metadata["first_trade_date"] = datetime.strptime(
-            expected_history_metadata["first_trade_date"], "%Y-%m-%d"
-        ).date()
         history_metadata = self.msft_ticker_from_ticker.history_metadata
         expected_exchange_code = "NasdaqGS"
         self.assertEqual(expected_history_metadata, history_metadata)
@@ -848,12 +841,11 @@ class TestTicker(TestCase):
     def test_income_statement(self) -> None:
         """test income statement"""
         expected_income_statement = (
-            pd.DataFrame(
-                MOCK_COMPANY_DB[msft_company_id]["statements"]["income_statement"]["statements"]
-            )
+            pd.DataFrame(INCOME_STATEMENT.model_dump(mode="json")["statements"])
             .apply(pd.to_numeric)
             .replace(np.nan, None)
         )
+
         income_statement = self.msft_ticker_from_ticker.income_statement()
         pd.testing.assert_frame_equal(expected_income_statement, income_statement)
 

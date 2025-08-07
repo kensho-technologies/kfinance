@@ -33,8 +33,8 @@ class TestGetSegmentsFromIdentifier:
     def test_get_segments_from_identifier(self, mock_client: Client, requests_mock: Mocker):
         """
         GIVEN the GetSegmentsFromIdentifier tool
-        WHEN we request the SPGI business segment
-        THEN we get back the SPGI business segment
+        WHEN we request the business segment for SPGI and an non-existent company
+        THEN we get back the SPGI business segment and an error for the non-existent company.
         """
 
         requests_mock.get(
@@ -43,11 +43,16 @@ class TestGetSegmentsFromIdentifier:
             json=self.segments_response,
         )
 
-        expected_response = {"SPGI": self.segments_response["segments"]}
+        expected_response = {
+            "results": {"SPGI": self.segments_response},
+            "errors": [
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+        }
 
         tool = GetSegmentsFromIdentifiers(kfinance_client=mock_client)
         args = GetSegmentsFromIdentifiersArgs(
-            identifiers=["SPGI"], segment_type=SegmentType.business
+            identifiers=["SPGI", "non-existent"], segment_type=SegmentType.business
         )
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
@@ -61,8 +66,10 @@ class TestGetSegmentsFromIdentifier:
 
         company_ids = [1, 2]
         expected_response = {
-            "C_1": {"2021": self.segments_response["segments"]["2021"]},
-            "C_2": {"2021": self.segments_response["segments"]["2021"]},
+            "results": {
+                "C_1": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
+                "C_2": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
+            }
         }
 
         for company_id in company_ids:

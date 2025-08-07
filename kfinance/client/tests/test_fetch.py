@@ -83,16 +83,20 @@ class TestFetchItem(TestCase):
         expected_fetch_url = (
             f"{self.kfinance_api_client.url_base}pricing/{trading_item_id}/metadata"
         )
-        self.kfinance_api_client.fetch_history_metadata(trading_item_id=trading_item_id)
+        # Validation error is ok, we only care that the function was called with the correct url
+        with pytest.raises(ValidationError):
+            self.kfinance_api_client.fetch_history_metadata(trading_item_id=trading_item_id)
         self.kfinance_api_client.fetch.assert_called_once_with(expected_fetch_url)
 
     def test_fetch_statement(self) -> None:
         company_id = 21719
         statement_type = "BS"
         expected_fetch_url = f"{self.kfinance_api_client.url_base}statements/{company_id}/{statement_type}/none/none/none/none/none"
-        self.kfinance_api_client.fetch_statement(
-            company_id=company_id, statement_type=statement_type
-        )
+        # Validation error is ok, we only care that the function was called with the correct url
+        with pytest.raises(ValidationError):
+            self.kfinance_api_client.fetch_statement(
+                company_id=company_id, statement_type=statement_type
+            )
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
         period_type = PeriodType.quarterly
         start_year = 2024
@@ -100,15 +104,17 @@ class TestFetchItem(TestCase):
         start_quarter = 1
         end_quarter = 4
         expected_fetch_url = f"{self.kfinance_api_client.url_base}statements/{company_id}/{statement_type}/{period_type.value}/{start_year}/{end_year}/{start_quarter}/{end_quarter}"
-        self.kfinance_api_client.fetch_statement(
-            company_id=company_id,
-            statement_type=statement_type,
-            period_type=period_type,
-            start_year=start_year,
-            end_year=end_year,
-            start_quarter=start_quarter,
-            end_quarter=end_quarter,
-        )
+        # Validation error is ok, we only care that the function was called with the correct url
+        with pytest.raises(ValidationError):
+            self.kfinance_api_client.fetch_statement(
+                company_id=company_id,
+                statement_type=statement_type,
+                period_type=period_type,
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+            )
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
 
     def test_fetch_line_item(self) -> None:
@@ -267,7 +273,10 @@ class TestFetchItem(TestCase):
         company_id = 21719
         segment_type = "business"
         expected_fetch_url = f"{self.kfinance_api_client.url_base}segments/{company_id}/{segment_type}/none/none/none/none/none"
-        self.kfinance_api_client.fetch_segments(company_id=company_id, segment_type=segment_type)
+        with pytest.raises(ValidationError):
+            self.kfinance_api_client.fetch_segments(
+                company_id=company_id, segment_type=segment_type
+            )
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
         period_type = PeriodType.quarterly
         start_year = 2023
@@ -275,21 +284,24 @@ class TestFetchItem(TestCase):
         start_quarter = 1
         end_quarter = 4
         expected_fetch_url = f"{self.kfinance_api_client.url_base}segments/{company_id}/{segment_type}/{period_type.value}/{start_year}/{end_year}/{start_quarter}/{end_quarter}"
-        self.kfinance_api_client.fetch_segments(
-            company_id=company_id,
-            segment_type=segment_type,
-            period_type=period_type,
-            start_year=start_year,
-            end_year=end_year,
-            start_quarter=start_quarter,
-            end_quarter=end_quarter,
-        )
+        with pytest.raises(ValidationError):
+            self.kfinance_api_client.fetch_segments(
+                company_id=company_id,
+                segment_type=segment_type,
+                period_type=period_type,
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+            )
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
 
     def test_fetch_mergers_for_company(self) -> None:
         company_id = 21719
         expected_fetch_url = f"{self.kfinance_api_client.url_base}mergers/{company_id}"
-        self.kfinance_api_client.fetch_mergers_for_company(company_id=company_id)
+        # Validation error is ok, we only care that the function was called with the correct url
+        with pytest.raises(ValidationError):
+            self.kfinance_api_client.fetch_mergers_for_company(company_id=company_id)
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
 
     def test_fetch_merger_info(self) -> None:

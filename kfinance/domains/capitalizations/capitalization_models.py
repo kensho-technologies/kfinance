@@ -88,7 +88,7 @@ class Capitalizations(BaseModel):
             mode="json",
             include={  # type: ignore[arg-type]
                 "capitalizations": {
-                    0 if only_include_most_recent_value else "__all__": {
+                    -1 if only_include_most_recent_value else "__all__": {
                         "date",
                         capitalization_metric.value,
                     }

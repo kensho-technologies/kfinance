@@ -1,18 +1,10 @@
 from copy import deepcopy
 from datetime import date
-from typing import Any, TypedDict
+from typing import Any
 
 from pydantic import BaseModel, model_validator
 
 from kfinance.client.models.decimal_with_unit import Money, Shares
-
-
-class HistoryMetadata(TypedDict):
-    currency: str
-    symbol: str
-    exchange_name: str
-    instrument_type: str
-    first_trade_date: date
 
 
 class Prices(BaseModel):
@@ -68,3 +60,11 @@ class PriceHistory(BaseModel):
                 for key in ["open", "high", "low", "close"]:
                     capitalization[key] = dict(unit=currency, value=capitalization[key])
         return data
+
+
+class HistoryMetadataResp(BaseModel):
+    currency: str
+    symbol: str
+    exchange_name: str
+    instrument_type: str
+    first_trade_date: date

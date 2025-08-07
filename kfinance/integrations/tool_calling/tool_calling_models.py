@@ -1,7 +1,7 @@
-from typing import Annotated, Any, Literal, Type
+from typing import Annotated, Any, Callable, Dict, Literal, Type
 
 from langchain_core.tools import BaseTool
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_serializer
 
 from kfinance.client.kfinance import Client
 from kfinance.client.permission_models import Permission
@@ -65,9 +65,7 @@ class KfinanceTool(BaseTool):
         Where feasible and useful, tools should use batch processing to parallelize
         requests, usually by allowing callers to pass in multiple identifiers.
         The usual processing order for functions with multiple identifiers is:
-        - Parse string identifiers into `CompanyIdentifier`
-        - batch fetch the required id for the api call (company/security/trading item id) via
-            fetch_<relevant>_ids_from_identifiers
+        - batch fetch id triples via unified_fetch_id_triples
         - batch fetch the required info based on the ids via process_tasks_in_thread_pool_executor
         - format results for output
 
@@ -119,3 +117,24 @@ def convert_str_to_int(v: Any) -> Any:
 # ValidationError during deserialization unless they have been converted
 # to int.
 ValidQuarter = Annotated[Literal[1, 2, 3, 4], BeforeValidator(convert_str_to_int)]
+
+
+class ToolRespWithErrors(BaseModel):
+    """A tool response with an `errors` field.
+
+    - `errors` is always the last field in the response.
+    - `errors` is only included if there is at least one error.
+    """
+
+    errors: list[str] = Field(default_factory=list)
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, handler: Callable) -> Dict[str, Any]:
+        """Make `errors` the last response field and only include if there is at least one error."""
+        data = handler(self)
+        errors = data.pop("errors")
+        # data = copy(data)
+        # data.keys()
+        if errors:
+            data["errors"] = errors
+        return data

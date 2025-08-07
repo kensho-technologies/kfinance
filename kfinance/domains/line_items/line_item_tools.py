@@ -1,18 +1,11 @@
 from textwrap import dedent
 from typing import Literal, Type
 
-import numpy as np
-import pandas as pd
 from pydantic import BaseModel, Field
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.models.date_and_period_models import PeriodType
 from kfinance.client.permission_models import Permission
-from kfinance.domains.companies.company_identifiers import (
-    Identifier,
-    fetch_company_ids_from_identifiers,
-    parse_identifiers,
-)
 from kfinance.domains.line_items.line_item_models import (
     LINE_ITEM_NAMES_AND_ALIASES,
     LineItemResponse,
@@ -20,6 +13,7 @@ from kfinance.domains.line_items.line_item_models import (
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
+    ToolRespWithErrors,
 )
 
 
@@ -35,6 +29,10 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Starting quarter")
     end_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Ending quarter")
+
+
+class GetFinancialLineItemFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, LineItemResponse]
 
 
 class GetFinancialLineItemFromIdentifiers(KfinanceTool):
@@ -76,16 +74,13 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         }
         """
         api_client = self.kfinance_client.kfinance_api_client
-        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
-        identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=api_client
-        )
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
 
         tasks = [
             Task(
                 func=api_client.fetch_line_item,
                 kwargs=dict(
-                    company_id=company_id,
+                    company_id=id_triple.company_id,
                     line_item=line_item,
                     period_type=period_type,
                     start_year=start_year,
@@ -95,31 +90,29 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
                 ),
                 result_key=identifier,
             )
-            for identifier, company_id in identifiers_to_company_ids.items()
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
         ]
 
-        line_item_responses: dict[Identifier, LineItemResponse] = (
-            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
+        line_item_responses: dict[str, LineItemResponse] = process_tasks_in_thread_pool_executor(
+            api_client=api_client, tasks=tasks
         )
 
-        output = dict()
-        for identifier, result in line_item_responses.items():
-            df = (
-                pd.DataFrame({"line_item": result.line_item})
-                .apply(pd.to_numeric)
-                .replace(np.nan, None)
-            )
-            # If no date and multiple companies, only return the most recent value.
-            # By default, we return 5 years of data, which can be too much when
-            # returning data for many companies.
-            if (
-                start_year is None
-                and end_year is None
-                and start_quarter is None
-                and end_quarter is None
-                and len(identifiers) > 1
-            ):
-                df = df.tail(1)
-            output[str(identifier)] = df.transpose().set_index(pd.Index([line_item])).to_dict()
+        # If no date and multiple companies, only return the most recent value.
+        # By default, we return 5 years of data, which can be too much when
+        # returning data for many companies.
+        if (
+            start_year is None
+            and end_year is None
+            and start_quarter is None
+            and end_quarter is None
+            and len(line_item_responses) > 1
+        ):
+            for line_item_response in line_item_responses.values():
+                most_recent_year = max(line_item_response.line_item.keys())
+                most_recent_year_data = line_item_response.line_item[most_recent_year]
+                line_item_response.line_item = {most_recent_year: most_recent_year_data}
 
-        return output
+        output_model = GetFinancialLineItemFromIdentifiersResp(
+            results=line_item_responses, errors=list(id_triple_resp.errors.values())
+        )
+        return output_model.model_dump(mode="json")

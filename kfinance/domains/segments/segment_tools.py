@@ -5,14 +5,11 @@ from pydantic import BaseModel, Field
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.models.date_and_period_models import PeriodType
 from kfinance.client.permission_models import Permission
-from kfinance.domains.companies.company_identifiers import (
-    fetch_company_ids_from_identifiers,
-    parse_identifiers,
-)
-from kfinance.domains.segments.segment_models import SegmentType
+from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
+    ToolRespWithErrors,
     ValidQuarter,
 )
 
@@ -25,6 +22,10 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
     end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
+
+
+class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, SegmentsResp]
 
 
 class GetSegmentsFromIdentifiers(KfinanceTool):
@@ -43,17 +44,33 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         start_quarter: Literal[1, 2, 3, 4] | None = None,
         end_quarter: Literal[1, 2, 3, 4] | None = None,
     ) -> dict:
+        """Sample Response:
+
+        {
+            'results': {
+                'SPGI': {
+                    'segments': {
+                        '2021': {
+                            'Commodity Insights': {'CAPEX': -2000000.0, 'D&A': 12000000.0},
+                            'Unallocated Assets Held for Sale': {'Total Assets': 321000000.0}
+                        }
+                    }
+                }
+            },
+            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
+        }
+
+
+        """
+
         api_client = self.kfinance_client.kfinance_api_client
-        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
-        identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=api_client
-        )
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
 
         tasks = [
             Task(
                 func=api_client.fetch_segments,
                 kwargs=dict(
-                    company_id=company_id,
+                    company_id=id_triple.company_id,
                     segment_type=segment_type,
                     period_type=period_type,
                     start_year=start_year,
@@ -63,10 +80,10 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
                 ),
                 result_key=identifier,
             )
-            for identifier, company_id in identifiers_to_company_ids.items()
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
         ]
 
-        segments_responses = process_tasks_in_thread_pool_executor(
+        segments_responses: dict[str, SegmentsResp] = process_tasks_in_thread_pool_executor(
             api_client=api_client, tasks=tasks
         )
 
@@ -78,14 +95,14 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
             and end_year is None
             and start_quarter is None
             and end_quarter is None
-            and len(identifiers) > 1
+            and len(segments_responses) > 1
         ):
             for segments_response in segments_responses.values():
-                most_recent_year = max(segments_response["segments"].keys())
-                most_recent_year_data = segments_response["segments"][most_recent_year]
-                segments_response["segments"] = {most_recent_year: most_recent_year_data}
+                most_recent_year = max(segments_response.segments.keys())
+                most_recent_year_data = segments_response.segments[most_recent_year]
+                segments_response.segments = {most_recent_year: most_recent_year_data}
 
-        return {
-            str(identifier): segments["segments"]
-            for identifier, segments in segments_responses.items()
-        }
+        output_model = GetSegmentsFromIdentifiersResp(
+            results=segments_responses, errors=list(id_triple_resp.errors.values())
+        )
+        return output_model.model_dump(mode="json")

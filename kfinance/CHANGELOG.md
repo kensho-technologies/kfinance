@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.1.0
+- Use unified endpoint for company resolution
+
 ## v3.0.3
 - Add LineItemResponse model
 

@@ -17,8 +17,8 @@ class TestGetHistoryMetadataFromIdentifiers:
     ):
         """
         GIVEN the GetHistoryMetadataFromIdentifiers tool
-        WHEN we request the history metadata for SPGI
-        THEN we get back SPGI's history metadata
+        WHEN we request the history metadata for SPGI and a non-existent company
+        THEN we get back SPGI's history metadata and an error for the non-existent company.
         """
         metadata_resp = {
             "currency": "USD",
@@ -27,7 +27,12 @@ class TestGetHistoryMetadataFromIdentifiers:
             "instrument_type": "Equity",
             "symbol": "SPGI",
         }
-        expected_resp = {"SPGI": metadata_resp}
+        expected_resp = {
+            "results": {"SPGI": metadata_resp},
+            "errors": [
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+        }
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/metadata",
@@ -35,11 +40,13 @@ class TestGetHistoryMetadataFromIdentifiers:
         )
 
         tool = GetHistoryMetadataFromIdentifiers(kfinance_client=mock_client)
-        resp = tool.run(ToolArgsWithIdentifiers(identifiers=["SPGI"]).model_dump(mode="json"))
+        resp = tool.run(
+            ToolArgsWithIdentifiers(identifiers=["SPGI", "non-existent"]).model_dump(mode="json")
+        )
         assert resp == expected_resp
 
 
-class TestPricesFromIdentifiers:
+class TestGetPricesFromIdentifiers:
     prices_resp = {
         "currency": "USD",
         "prices": [
@@ -65,8 +72,8 @@ class TestPricesFromIdentifiers:
     def test_get_prices_from_identifiers(self, mock_client: Client, requests_mock: Mocker):
         """
         GIVEN the GetPricesFromIdentifiers tool
-        WHEN we request prices for SPGI
-        THEN we get back prices for SPGI
+        WHEN we request prices for SPGI and a non-existent company
+        THEN we get back prices for SPGI and an erro for the non-existent company
         """
 
         requests_mock.get(
@@ -74,31 +81,38 @@ class TestPricesFromIdentifiers:
             json=self.prices_resp,
         )
         expected_response = {
-            "SPGI": {
-                "prices": [
-                    {
-                        "date": "2024-04-11",
-                        "open": {"value": "424.26", "unit": "USD"},
-                        "high": {"value": "425.99", "unit": "USD"},
-                        "low": {"value": "422.04", "unit": "USD"},
-                        "close": {"value": "422.92", "unit": "USD"},
-                        "volume": {"value": "1129158", "unit": "Shares"},
-                    },
-                    {
-                        "date": "2024-04-12",
-                        "open": {"value": "419.23", "unit": "USD"},
-                        "high": {"value": "421.94", "unit": "USD"},
-                        "low": {"value": "416.45", "unit": "USD"},
-                        "close": {"value": "417.81", "unit": "USD"},
-                        "volume": {"value": "1182229", "unit": "Shares"},
-                    },
-                ]
-            }
+            "results": {
+                "SPGI": {
+                    "prices": [
+                        {
+                            "date": "2024-04-11",
+                            "open": {"value": "424.26", "unit": "USD"},
+                            "high": {"value": "425.99", "unit": "USD"},
+                            "low": {"value": "422.04", "unit": "USD"},
+                            "close": {"value": "422.92", "unit": "USD"},
+                            "volume": {"value": "1129158", "unit": "Shares"},
+                        },
+                        {
+                            "date": "2024-04-12",
+                            "open": {"value": "419.23", "unit": "USD"},
+                            "high": {"value": "421.94", "unit": "USD"},
+                            "low": {"value": "416.45", "unit": "USD"},
+                            "close": {"value": "417.81", "unit": "USD"},
+                            "volume": {"value": "1182229", "unit": "Shares"},
+                        },
+                    ]
+                }
+            },
+            "errors": [
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
         }
 
         tool = GetPricesFromIdentifiers(kfinance_client=mock_client)
         response = tool.run(
-            GetPricesFromIdentifiersArgs(identifiers=["SPGI"]).model_dump(mode="json")
+            GetPricesFromIdentifiersArgs(identifiers=["SPGI", "non-existent"]).model_dump(
+                mode="json"
+            )
         )
         assert response == expected_response
 
@@ -119,18 +133,20 @@ class TestPricesFromIdentifiers:
         expected_single_company_response = {
             "prices": [
                 {
-                    "date": "2024-04-11",
-                    "open": {"value": "424.26", "unit": "USD"},
-                    "high": {"value": "425.99", "unit": "USD"},
-                    "low": {"value": "422.04", "unit": "USD"},
-                    "close": {"value": "422.92", "unit": "USD"},
-                    "volume": {"value": "1129158", "unit": "Shares"},
+                    "date": "2024-04-12",
+                    "open": {"value": "419.23", "unit": "USD"},
+                    "high": {"value": "421.94", "unit": "USD"},
+                    "low": {"value": "416.45", "unit": "USD"},
+                    "close": {"value": "417.81", "unit": "USD"},
+                    "volume": {"value": "1182229", "unit": "Shares"},
                 }
             ]
         }
         expected_response = {
-            "C_1": expected_single_company_response,
-            "C_2": expected_single_company_response,
+            "results": {
+                "C_1": expected_single_company_response,
+                "C_2": expected_single_company_response,
+            },
         }
         tool = GetPricesFromIdentifiers(kfinance_client=mock_client)
         response = tool.run(
