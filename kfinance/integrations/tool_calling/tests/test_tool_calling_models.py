@@ -24,10 +24,10 @@ class TestGetEndpointsFromToolCallsWithGrounding:
         # truncated from the original
         resp_data = {"name": "S&P Global Inc.", "status": "Operating"}
         resp_endpoint = [
-            "https://kfinance.kensho.com/api/v1/id/SPGI",
+            "https://kfinance.kensho.com/api/v1/ids",
             "https://kfinance.kensho.com/api/v1/info/21719",
         ]
-        expected_resp = {"data": {"SPGI": resp_data}, "endpoint_urls": resp_endpoint}
+        expected_resp = {"data": {"results": {"SPGI": resp_data}}, "endpoint_urls": resp_endpoint}
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}",

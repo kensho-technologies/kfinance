@@ -7,13 +7,11 @@ from pydantic import BaseModel, Field
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.models.date_and_period_models import Periodicity
 from kfinance.client.permission_models import Permission
-from kfinance.domains.companies.company_identifiers import (
-    fetch_trading_item_ids_from_identifiers,
-    parse_identifiers,
-)
+from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
+    ToolRespWithErrors,
 )
 
 
@@ -30,6 +28,10 @@ class GetPricesFromIdentifiersArgs(ToolArgsWithIdentifiers):
         description="Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits.",
         default=True,
     )
+
+
+class GetPricesFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, PriceHistory]
 
 
 class GetPricesFromIdentifiers(KfinanceTool):
@@ -81,20 +83,20 @@ class GetPricesFromIdentifiers(KfinanceTool):
                         'volume': {'value': '1182229', 'unit': 'Shares'}
                     }
                 ]
-            }
+            },
+            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
         }
         """
+
         api_client = self.kfinance_client.kfinance_api_client
-        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
-        identifiers_to_trading_item_ids = fetch_trading_item_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=api_client
-        )
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
+        id_triple_resp.filter_out_companies_without_trading_item_ids()
 
         tasks = [
             Task(
                 func=api_client.fetch_history,
                 kwargs=dict(
-                    trading_item_id=trading_item_id,
+                    trading_item_id=id_triple.trading_item_id,
                     start_date=start_date,
                     end_date=end_date,
                     periodicity=periodicity,
@@ -102,20 +104,26 @@ class GetPricesFromIdentifiers(KfinanceTool):
                 ),
                 result_key=identifier,
             )
-            for identifier, trading_item_id in identifiers_to_trading_item_ids.items()
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
         ]
 
-        price_responses = process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
+        price_responses: dict[str, PriceHistory] = process_tasks_in_thread_pool_executor(
+            api_client=api_client, tasks=tasks
+        )
+        # If we return results for more than one company and the start and end dates are unset,
+        # truncate data to only return the most recent datapoint.
+        if len(price_responses) > 1 and start_date is None and end_date is None:
+            for price_response in price_responses.values():
+                price_response.prices = price_response.prices[-1:]
 
-        # Only include most recent price if more than one identifier passed and start_date == end_date == None
-        dump_include_filter = None
-        if len(identifiers) > 1 and start_date == end_date is None:
-            dump_include_filter = {"prices": {0: True}}
+        output_model = GetPricesFromIdentifiersResp(
+            results=price_responses, errors=list(id_triple_resp.errors.values())
+        )
+        return output_model.model_dump(mode="json")
 
-        return {
-            str(identifier): prices.model_dump(mode="json", include=dump_include_filter)
-            for identifier, prices in price_responses.items()
-        }
+
+class GetHistoryMetadataFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, HistoryMetadataResp]
 
 
 class GetHistoryMetadataFromIdentifiers(KfinanceTool):
@@ -132,34 +140,37 @@ class GetHistoryMetadataFromIdentifiers(KfinanceTool):
         """Sample response:
 
         {
-            'SPGI': {
-                'currency': 'USD',
-                'exchange_name': 'NYSE',
-                'first_trade_date': '1968-01-02',
-                'instrument_type': 'Equity',
-                'symbol': 'SPGI'
-            }
+            'results': {
+                'SPGI': {
+                    'currency': 'USD',
+                    'exchange_name': 'NYSE',
+                    'first_trade_date': '1968-01-02',
+                    'instrument_type': 'Equity',
+                    'symbol': 'SPGI'
+                }
+            },
+            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
         }
         """
+
         api_client = self.kfinance_client.kfinance_api_client
-        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
-        identifiers_to_trading_item_ids = fetch_trading_item_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=api_client
-        )
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
+        id_triple_resp.filter_out_companies_without_trading_item_ids()
 
         tasks = [
             Task(
                 func=api_client.fetch_history_metadata,
-                kwargs=dict(trading_item_id=trading_item_id),
+                kwargs=dict(trading_item_id=id_triple.trading_item_id),
                 result_key=identifier,
             )
-            for identifier, trading_item_id in identifiers_to_trading_item_ids.items()
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
         ]
 
-        history_metadata_responses = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
+        history_metadata_responses: dict[str, HistoryMetadataResp] = (
+            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
+        )
+        output_model = GetHistoryMetadataFromIdentifiersResp(
+            results=history_metadata_responses, errors=list(id_triple_resp.errors.values())
         )
 
-        return {
-            str(identifier): result for identifier, result in history_metadata_responses.items()
-        }
+        return output_model.model_dump(mode="json")

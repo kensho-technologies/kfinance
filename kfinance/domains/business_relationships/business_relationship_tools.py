@@ -7,10 +7,7 @@ from kfinance.client.batch_request_handling import Task, process_tasks_in_thread
 from kfinance.client.permission_models import Permission
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
-)
-from kfinance.domains.companies.company_identifiers import (
-    fetch_company_ids_from_identifiers,
-    parse_identifiers,
+    RelationshipResponse,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -21,6 +18,12 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 class GetBusinessRelationshipFromIdentifiersArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
     business_relationship: BusinessRelationshipType
+
+
+class GetBusinessRelationshipFromIdentifiersResp(BaseModel):
+    business_relationship: BusinessRelationshipType
+    results: dict[str, RelationshipResponse]
+    errors: list[str]
 
 
 class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
@@ -39,36 +42,44 @@ class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
         """Sample response:
 
         {
-            "SPGI": {
-                "current": [{"company_id": "C_883103", "company_name": "CRISIL Limited"}],
-                "previous": [
-                    {"company_id": "C_472898", "company_name": "Morgan Stanley"},
-                    {"company_id": "C_8182358", "company_name": "Eloqua, Inc."},
-                ],
-            }
-        }
+            'business_relationship': 'supplier',
+            'results': {
+                'SPGI': {
+                    'current': [
+                        {'company_id': 'C_883103', 'company_name': 'CRISIL Limited'}
+                    ],
+                    'previous': [
+                        {'company_id': 'C_472898', 'company_name': 'Morgan Stanley'},
+                        {'company_id': 'C_8182358', 'company_name': 'Eloqua, Inc.'}
+                    ]
+                }
+            },
+            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']}
         """
 
         api_client = self.kfinance_client.kfinance_api_client
-        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
-        identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=api_client
-        )
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
 
         tasks = [
             Task(
                 func=api_client.fetch_companies_from_business_relationship,
                 kwargs=dict(
-                    company_id=company_id,
+                    company_id=id_triple.company_id,
                     relationship_type=business_relationship,
                 ),
                 result_key=identifier,
             )
-            for identifier, company_id in identifiers_to_company_ids.items()
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
         ]
 
         relationship_responses = process_tasks_in_thread_pool_executor(
             api_client=api_client, tasks=tasks
         )
 
-        return {str(k): v.model_dump(mode="json") for k, v in relationship_responses.items()}
+        output_model = GetBusinessRelationshipFromIdentifiersResp(
+            business_relationship=business_relationship,
+            results=relationship_responses,
+            errors=list(id_triple_resp.errors.values()),
+        )
+
+        return output_model.model_dump(mode="json")

@@ -17,8 +17,8 @@ class TestGetBusinessRelationshipFromIdentifiers:
     ):
         """
         GIVEN the GetBusinessRelationshipFromIdentifiers tool
-        WHEN we request SPGI suppliers
-        THEN we get back the SPGI suppliers
+        WHEN we request suppliers for SPGI and a non-existent company
+        THEN we get back the SPGI suppliers and an error message
         """
         supplier_resp = {
             "current": [{"company_id": 883103, "company_name": "CRISIL Limited"}],
@@ -28,13 +28,19 @@ class TestGetBusinessRelationshipFromIdentifiers:
             ],
         }
         expected_result = {
-            "SPGI": {
-                "current": [{"company_id": "C_883103", "company_name": "CRISIL Limited"}],
-                "previous": [
-                    {"company_id": "C_472898", "company_name": "Morgan Stanley"},
-                    {"company_id": "C_8182358", "company_name": "Eloqua, Inc."},
-                ],
-            }
+            "business_relationship": "supplier",
+            "results": {
+                "SPGI": {
+                    "current": [{"company_id": "C_883103", "company_name": "CRISIL Limited"}],
+                    "previous": [
+                        {"company_id": "C_472898", "company_name": "Morgan Stanley"},
+                        {"company_id": "C_8182358", "company_name": "Eloqua, Inc."},
+                    ],
+                }
+            },
+            "errors": [
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
         }
 
         requests_mock.get(
@@ -44,12 +50,9 @@ class TestGetBusinessRelationshipFromIdentifiers:
 
         tool = GetBusinessRelationshipFromIdentifiers(kfinance_client=mock_client)
         args = GetBusinessRelationshipFromIdentifiersArgs(
-            identifiers=["SPGI"], business_relationship=BusinessRelationshipType.supplier
+            identifiers=["SPGI", "non-existent"],
+            business_relationship=BusinessRelationshipType.supplier,
         )
         resp = tool.run(args.model_dump(mode="json"))
-
-        assert list(resp.keys()) == ["SPGI"]
-        # Sort companies by ID to make the result deterministic
-        resp["SPGI"]["current"].sort(key=lambda x: x["company_id"])
-        resp["SPGI"]["previous"].sort(key=lambda x: x["company_id"])
+        resp["results"]["SPGI"]["previous"].sort(key=lambda x: x["company_id"])
         assert resp == expected_result

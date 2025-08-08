@@ -85,7 +85,7 @@ class CompanyFunctionsMetaClass:
                     end_year=end_year,
                     start_quarter=start_quarter,
                     end_quarter=end_quarter,
-                )["statements"]
+                ).model_dump(mode="json")["statements"]
             )
             .apply(pd.to_numeric)
             .replace(np.nan, None)
@@ -349,7 +349,7 @@ class CompanyFunctionsMetaClass:
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
-        )["segments"]
+        ).model_dump(mode="json")["segments"]
 
     def business_segments(
         self,

@@ -32,8 +32,8 @@ class TestGetCapitalizationFromCompanyIds:
     def test_get_capitalization_from_identifiers(self, requests_mock: Mocker, mock_client: Client):
         """
         GIVEN the GetCapitalizationFromIdentifiers tool
-        WHEN we request the SPGI market cap
-        THEN we get back the SPGI market cap
+        WHEN we request the market cap for SPGI and a non-existent company
+        THEN we get back the SPGI market cap and error for the non-existent company
         """
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/market_cap/{SPGI_COMPANY_ID}/none/none",
@@ -41,15 +41,28 @@ class TestGetCapitalizationFromCompanyIds:
         )
 
         expected_response = {
-            "SPGI": [
-                {"date": "2024-04-10", "market_cap": {"unit": "USD", "value": "132766738270.00"}},
-                {"date": "2024-04-11", "market_cap": {"unit": "USD", "value": "132416066761.00"}},
-            ]
+            "results": {
+                "SPGI": {
+                    "capitalizations": [
+                        {
+                            "date": "2024-04-10",
+                            "market_cap": {"value": "132766738270.00", "unit": "USD"},
+                        },
+                        {
+                            "date": "2024-04-11",
+                            "market_cap": {"value": "132416066761.00", "unit": "USD"},
+                        },
+                    ]
+                }
+            },
+            "errors": [
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
         }
 
         tool = GetCapitalizationFromIdentifiers(kfinance_client=mock_client)
         args = GetCapitalizationFromIdentifiersArgs(
-            identifiers=["SPGI"], capitalization=Capitalization.market_cap
+            identifiers=["SPGI", "non-existent"], capitalization=Capitalization.market_cap
         )
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
@@ -61,12 +74,24 @@ class TestGetCapitalizationFromCompanyIds:
         THEN we only get back the most recent market cap for each company
         """
         expected_response = {
-            "C_1": [
-                {"date": "2024-04-10", "market_cap": {"unit": "USD", "value": "132766738270.00"}}
-            ],
-            "C_2": [
-                {"date": "2024-04-10", "market_cap": {"unit": "USD", "value": "132766738270.00"}}
-            ],
+            "results": {
+                "C_1": {
+                    "capitalizations": [
+                        {
+                            "date": "2024-04-11",
+                            "market_cap": {"unit": "USD", "value": "132416066761.00"},
+                        }
+                    ]
+                },
+                "C_2": {
+                    "capitalizations": [
+                        {
+                            "date": "2024-04-11",
+                            "market_cap": {"unit": "USD", "value": "132416066761.00"},
+                        }
+                    ]
+                },
+            }
         }
 
         company_ids = [1, 2]

@@ -6,14 +6,11 @@ from pydantic import BaseModel, Field
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.permission_models import Permission
-from kfinance.domains.capitalizations.capitalization_models import Capitalization
-from kfinance.domains.companies.company_identifiers import (
-    fetch_company_ids_from_identifiers,
-    parse_identifiers,
-)
+from kfinance.domains.capitalizations.capitalization_models import Capitalization, Capitalizations
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
+    ToolRespWithErrors,
 )
 
 
@@ -26,6 +23,10 @@ class GetCapitalizationFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_date: date | None = Field(
         description="The end date for historical capitalization retrieval", default=None
     )
+
+
+class GetCapitalizationFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, Capitalizations]
 
 
 class GetCapitalizationFromIdentifiers(KfinanceTool):
@@ -53,37 +54,53 @@ class GetCapitalizationFromIdentifiers(KfinanceTool):
         """Sample response:
 
         {
-            'SPGI': [
-                {'date': '2024-04-10', 'market_cap': {'unit': 'USD', 'value': '132766738270.00'}},
-                {'date': '2024-04-11', 'market_cap': {'unit': 'USD', 'value': '132416066761.00'}}
-            ]
+            'results': {
+                'SPGI': {
+                    'capitalizations': [
+                        {'date': '2024-04-10', 'market_cap': {'value': '132766738270.00', 'unit': 'USD'}},
+                        {'date': '2024-04-11', 'market_cap': {'value': '132416066761.00', 'unit': 'USD'}}
+                    ]
+                }
+            },
+            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
         }
         """
         api_client = self.kfinance_client.kfinance_api_client
-        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
-        identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=api_client
-        )
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
 
         tasks = [
             Task(
                 func=api_client.fetch_market_caps_tevs_and_shares_outstanding,
-                kwargs=dict(company_id=company_id, start_date=start_date, end_date=end_date),
+                kwargs=dict(
+                    company_id=id_triple.company_id, start_date=start_date, end_date=end_date
+                ),
                 result_key=identifier,
             )
-            for identifier, company_id in identifiers_to_company_ids.items()
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
         ]
 
         capitalization_responses = process_tasks_in_thread_pool_executor(
             api_client=api_client, tasks=tasks
         )
 
-        return {
-            str(identifier): capitalization_response.model_dump_json_single_metric(
-                capitalization_metric=capitalization,
-                only_include_most_recent_value=True
-                if (len(identifiers) > 1 and start_date == end_date is None)
-                else False,
-            )
-            for identifier, capitalization_response in capitalization_responses.items()
-        }
+        for capitalization_response in capitalization_responses.values():
+            # If we return results for more than one company and the start and end dates are unset,
+            # truncate data to only return the most recent datapoint.
+            if len(capitalization_responses) > 1 and start_date is None and end_date is None:
+                capitalization_response.capitalizations = capitalization_response.capitalizations[
+                    -1:
+                ]
+            # Set capitalizations that were not requested to None.
+            # That way, they can be skipped for serialization via `exclude_none=True`
+            for daily_capitalization in capitalization_response.capitalizations:
+                if capitalization is not Capitalization.market_cap:
+                    daily_capitalization.market_cap = None
+                if capitalization is not Capitalization.tev:
+                    daily_capitalization.tev = None
+                if capitalization is not Capitalization.shares_outstanding:
+                    daily_capitalization.shares_outstanding = None
+
+        resp_model = GetCapitalizationFromIdentifiersResp(
+            results=capitalization_responses, errors=list(id_triple_resp.errors.values())
+        )
+        return resp_model.model_dump(mode="json", exclude_none=True)

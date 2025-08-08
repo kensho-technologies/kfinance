@@ -3,30 +3,43 @@ from copy import deepcopy
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
-from kfinance.client.tests.test_objects import MOCK_COMPANY_DB, ordered
+from kfinance.client.tests.test_objects import (
+    MERGERS_RESP,
+    ordered,
+)
+from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools import (
     GetAdvisorsForCompanyInTransactionFromIdentifier,
     GetAdvisorsForCompanyInTransactionFromIdentifierArgs,
     GetMergerInfoFromTransactionId,
     GetMergerInfoFromTransactionIdArgs,
-    GetMergersFromIdentifier,
+    GetMergersFromIdentifiers,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import ToolArgsWithIdentifiers
 
 
 class TestGetMergersFromIdentifiers:
     def test_get_mergers_from_identifiers(self, requests_mock: Mocker, mock_client: Client):
-        msft_mergers = MOCK_COMPANY_DB["21835"]["mergers"]
-        expected_response = {"MSFT": msft_mergers}
-        company_id = 21835
+        """
+        GIVEN the GetMergersFromIdentifiers tool
+        WHEN we request mergers for SPGI and a non-existent company
+        THEN we get back the SPGI mergers and an error for the non-existent company"""
+
+        merger_data = MERGERS_RESP.model_dump(mode="json")
+        expected_response = {
+            "results": {"SPGI": merger_data},
+            "errors": [
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+        }
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/mergers/{company_id}", json=msft_mergers
+            url=f"https://kfinance.kensho.com/api/v1/mergers/{SPGI_COMPANY_ID}", json=merger_data
         )
-        tool = GetMergersFromIdentifier(kfinance_client=mock_client)
-        args = ToolArgsWithIdentifiers(identifiers=["MSFT"])
+        tool = GetMergersFromIdentifiers(kfinance_client=mock_client)
+        args = ToolArgsWithIdentifiers(identifiers=["SPGI", "non-existent"])
         response = tool.run(args.model_dump(mode="json"))
-        assert ordered(response) == ordered(expected_response)
+        assert response == expected_response
 
 
 class TestGetCompaniesAdvisingCompanyInTransactionFromIdentifier:

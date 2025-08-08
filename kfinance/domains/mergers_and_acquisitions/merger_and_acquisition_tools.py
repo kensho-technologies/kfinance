@@ -6,19 +6,21 @@ from pydantic import BaseModel, Field
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.kfinance import Company, MergerOrAcquisition, ParticipantInMerger
 from kfinance.client.permission_models import Permission
-from kfinance.domains.companies.company_identifiers import (
-    CompanyId,
-    fetch_company_ids_from_identifiers,
-    parse_identifiers,
-)
+from kfinance.domains.companies.company_models import prefix_company_id
+from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import MergersResp
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifier,
     ToolArgsWithIdentifiers,
+    ToolRespWithErrors,
 )
 
 
-class GetMergersFromIdentifier(KfinanceTool):
+class GetMergersFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, MergersResp]
+
+
+class GetMergersFromIdentifiers(KfinanceTool):
     name: str = "get_mergers_from_identifiers"
     description: str = dedent("""
         Get the transaction IDs that involve the given identifiers.
@@ -29,24 +31,57 @@ class GetMergersFromIdentifier(KfinanceTool):
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
     def _run(self, identifiers: list[str]) -> dict:
+        """Sample Response:
+
+        {
+            'results': {
+                'SPGI': {
+                    'target': [
+                        {
+                            'transaction_id': 10998717,
+                            'merger_title': 'Closed M/A of Microsoft Corporation',
+                            'closed_date': '2021-01-01'
+                        }
+                    ],
+                    'buyer': [
+                        {
+                           'transaction_id': 517414,
+                           'merger_title': 'Closed M/A of MongoMusic, Inc.',
+                           'closed_date': '2023-01-01'
+                        },
+                    'seller': [
+                        {
+                            'transaction_id': 455551,
+                            'merger_title': 'Closed M/A of VacationSpot.com, Inc.',
+                            'closed_date': '2024-01-01'
+                        },
+                    ]
+                }
+            },
+            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
+        }
+
+        """
+
         api_client = self.kfinance_client.kfinance_api_client
-        parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=api_client)
-        identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-            identifiers=parsed_identifiers, api_client=api_client
-        )
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
 
         tasks = [
             Task(
                 func=api_client.fetch_mergers_for_company,
-                kwargs=dict(company_id=company_id),
+                kwargs=dict(company_id=id_triple.company_id),
                 result_key=identifier,
             )
-            for identifier, company_id in identifiers_to_company_ids.items()
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
         ]
 
-        merger_responses = process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
-
-        return {str(identifier): mergers for identifier, mergers in merger_responses.items()}
+        merger_responses: dict[str, MergersResp] = process_tasks_in_thread_pool_executor(
+            api_client=api_client, tasks=tasks
+        )
+        output_model = GetMergersFromIdentifiersResp(
+            results=merger_responses, errors=list(id_triple_resp.errors.values())
+        )
+        return output_model.model_dump(mode="json")
 
 
 class GetMergerInfoFromTransactionIdArgs(BaseModel):
@@ -83,34 +118,21 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
             else None,
             "participants": {
                 "target": {
-                    "company_id": str(
-                        CompanyId(
-                            company_id=merger_participants["target"].company.company_id,
-                            api_client=self.kfinance_client.kfinance_api_client,
-                        )
+                    "company_id": prefix_company_id(
+                        merger_participants["target"].company.company_id
                     ),
                     "company_name": merger_participants["target"].company.name,
                 },
                 "buyers": [
                     {
-                        "company_id": str(
-                            CompanyId(
-                                buyer.company.company_id,
-                                api_client=self.kfinance_client.kfinance_api_client,
-                            )
-                        ),
+                        "company_id": prefix_company_id(buyer.company.company_id),
                         "company_name": buyer.company.name,
                     }
                     for buyer in merger_participants["buyers"]
                 ],
                 "sellers": [
                     {
-                        "company_id": str(
-                            CompanyId(
-                                seller.company.company_id,
-                                api_client=self.kfinance_client.kfinance_api_client,
-                            )
-                        ),
+                        "company_id": prefix_company_id(seller.company.company_id),
                         "company_name": seller.company.name,
                     }
                     for seller in merger_participants["sellers"]
@@ -161,12 +183,7 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
         if advisors:
             return [
                 {
-                    "advisor_company_id": str(
-                        CompanyId(
-                            company_id=advisor.company.company_id,
-                            api_client=self.kfinance_client.kfinance_api_client,
-                        )
-                    ),
+                    "advisor_company_id": prefix_company_id(advisor.company.company_id),
                     "advisor_company_name": advisor.company.name,
                     "advisor_type_name": advisor.advisor_type_name,
                 }

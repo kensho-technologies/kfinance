@@ -34,8 +34,8 @@ class TestGetEarnings:
     def test_get_earnings_from_identifiers(self, requests_mock: Mocker, mock_client: Client):
         """
         GIVEN the GetEarnings tool
-        WHEN we request all earnings for SPGI
-        THEN we get back all SPGI earnings
+        WHEN we request all earnings for SPGI and a non-existent company
+        THEN we get back all SPGI earnings and an error for the non-existent company
         """
 
         requests_mock.get(
@@ -44,22 +44,31 @@ class TestGetEarnings:
         )
 
         expected_response = {
-            "SPGI": [
-                {
-                    "datetime": "2025-04-29T12:30:00Z",
-                    "key_dev_id": 12346,
-                    "name": "SPGI Q1 2025 Earnings Call",
-                },
-                {
-                    "datetime": "2025-02-11T13:30:00Z",
-                    "key_dev_id": 12345,
-                    "name": "SPGI Q4 2024 Earnings Call",
-                },
-            ]
+            "results": {
+                "SPGI": {
+                    "earnings_calls": [
+                        {
+                            "name": "SPGI Q1 2025 Earnings Call",
+                            "key_dev_id": 12346,
+                            "datetime": "2025-04-29T12:30:00Z",
+                        },
+                        {
+                            "name": "SPGI Q4 2024 Earnings Call",
+                            "key_dev_id": 12345,
+                            "datetime": "2025-02-11T13:30:00Z",
+                        },
+                    ]
+                }
+            },
+            "errors": [
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
         }
 
         tool = GetEarningsFromIdentifiers(kfinance_client=mock_client)
-        response = tool.run(ToolArgsWithIdentifiers(identifiers=["SPGI"]).model_dump(mode="json"))
+        response = tool.run(
+            ToolArgsWithIdentifiers(identifiers=["SPGI", "non-existent"]).model_dump(mode="json")
+        )
         assert response == expected_response
 
     @time_machine.travel(
@@ -72,41 +81,35 @@ class TestGetEarnings:
     def test_get_latest_earnings_from_identifiers(self, requests_mock: Mocker, mock_client: Client):
         """
         GIVEN the GetLatestEarnings tool
-        WHEN we request the latest earnings for SPGI
-        THEN we get back the latest SPGI earnings
+        WHEN we request the latest earnings for SPGI and a private company without earnings
+        THEN we get back the latest SPGI earnings and an error for the private company.
         """
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
             json=self.earnings_response,
         )
+        # private company without earnings
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/earnings/1",
+            json={"earnings": []},
+        )
 
         expected_response = {
-            "SPGI": {
-                "datetime": "2025-04-29T12:30:00Z",
-                "key_dev_id": 12346,
-                "name": "SPGI Q1 2025 Earnings Call",
-            }
+            "results": {
+                "SPGI": {
+                    "name": "SPGI Q1 2025 Earnings Call",
+                    "key_dev_id": 12346,
+                    "datetime": "2025-04-29T12:30:00Z",
+                }
+            },
+            "errors": ["No latest earnings available for private_company."],
         }
 
         tool = GetLatestEarningsFromIdentifiers(kfinance_client=mock_client)
-        response = tool.run(ToolArgsWithIdentifiers(identifiers=["SPGI"]).model_dump(mode="json"))
-        assert response == expected_response
-
-    def test_get_latest_earnings_no_data(self, requests_mock: Mocker, mock_client: Client):
-        """
-        GIVEN the GetLatestEarnings tool
-        WHEN we request the latest earnings for a company with no data
-        THEN we get a `No latest earnings available` message.
-        """
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json={"earnings": []},
+        response = tool.run(
+            ToolArgsWithIdentifiers(identifiers=["SPGI", "private_company"]).model_dump(mode="json")
         )
-        expected_response = {"SPGI": "No latest earnings available."}
-
-        tool = GetLatestEarningsFromIdentifiers(kfinance_client=mock_client)
-        response = tool.run(ToolArgsWithIdentifiers(identifiers=["SPGI"]).model_dump(mode="json"))
         assert response == expected_response
 
     @time_machine.travel(
@@ -119,43 +122,35 @@ class TestGetEarnings:
     def test_get_next_earnings(self, requests_mock: Mocker, mock_client: Client):
         """
         GIVEN the GetNextEarningsFromIdentifiers tool
-        WHEN we request the next earnings for SPGI
-        THEN we get back the next SPGI earnings
+        WHEN we request the next earnings for SPGI and a private company
+        THEN we get back the next SPGI earnings and an error for the private company
         """
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
             json=self.earnings_response,
         )
+        # private company without earnings
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/earnings/1",
+            json={"earnings": []},
+        )
 
         expected_response = {
-            "SPGI": {
-                "datetime": "2025-04-29T12:30:00Z",
-                "key_dev_id": 12346,
-                "name": "SPGI Q1 2025 Earnings Call",
-            }
+            "results": {
+                "SPGI": {
+                    "datetime": "2025-04-29T12:30:00Z",
+                    "key_dev_id": 12346,
+                    "name": "SPGI Q1 2025 Earnings Call",
+                }
+            },
+            "errors": ["No next earnings available for private_company."],
         }
 
         tool = GetNextEarningsFromIdentifiers(kfinance_client=mock_client)
-        response = tool.run(ToolArgsWithIdentifiers(identifiers=["SPGI"]).model_dump(mode="json"))
-        assert response == expected_response
-
-    def test_get_next_earnings_no_data(self, requests_mock: Mocker, mock_client: Client):
-        """
-        GIVEN the GetNextEarnings tool
-        WHEN we request the next earnings for a company with no data
-        THEN we get a `No next earnings available` message.
-        """
-        earnings_data = {"earnings": []}
-
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_COMPANY_ID}",
-            json=earnings_data,
+        response = tool.run(
+            ToolArgsWithIdentifiers(identifiers=["SPGI", "private_company"]).model_dump(mode="json")
         )
-        expected_response = {"SPGI": "No next earnings available."}
-
-        tool = GetNextEarningsFromIdentifiers(kfinance_client=mock_client)
-        response = tool.run(ToolArgsWithIdentifiers(identifiers=["SPGI"]).model_dump(mode="json"))
         assert response == expected_response
 
 

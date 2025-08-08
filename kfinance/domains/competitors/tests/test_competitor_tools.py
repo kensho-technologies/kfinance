@@ -14,7 +14,9 @@ class TestGetCompetitorsFromIdentifiers:
         """
         GIVEN the GetCompetitorsFromIdentifiers tool
         WHEN we request the SPGI competitors that are named by competitors
+            and competitors for a non-existent company
         THEN we get back the SPGI competitors that are named by competitors
+            and an error for the non-existent company
         """
         competitors_response = {
             "competitors": [
@@ -23,12 +25,23 @@ class TestGetCompetitorsFromIdentifiers:
             ]
         }
         expected_response = {
-            "SPGI": {
-                "competitors": [
-                    {"company_id": "C_35352", "company_name": "The Descartes Systems Group Inc."},
-                    {"company_id": "C_4003514", "company_name": "London Stock Exchange Group plc"},
-                ]
-            }
+            "results": {
+                "SPGI": {
+                    "competitors": [
+                        {
+                            "company_id": "C_35352",
+                            "company_name": "The Descartes Systems Group Inc.",
+                        },
+                        {
+                            "company_id": "C_4003514",
+                            "company_name": "London Stock Exchange Group plc",
+                        },
+                    ]
+                }
+            },
+            "errors": [
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
         }
 
         requests_mock.get(
@@ -39,7 +52,8 @@ class TestGetCompetitorsFromIdentifiers:
 
         tool = GetCompetitorsFromIdentifiers(kfinance_client=mock_client)
         args = GetCompetitorsFromIdentifiersArgs(
-            identifiers=["SPGI"], competitor_source=CompetitorSource.named_by_competitor
+            identifiers=["SPGI", "non-existent"],
+            competitor_source=CompetitorSource.named_by_competitor,
         )
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response

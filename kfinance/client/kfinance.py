@@ -38,7 +38,7 @@ from kfinance.client.models.date_and_period_models import (
 from kfinance.client.server_thread import ServerThread
 from kfinance.domains.companies.company_models import IdentificationTriple
 from kfinance.domains.earnings.earning_models import EarningsCall, TranscriptComponent
-from kfinance.domains.prices.price_models import HistoryMetadata, PriceHistory
+from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
 
 
 if TYPE_CHECKING:
@@ -78,7 +78,7 @@ class TradingItem:
         self.trading_item_id = trading_item_id
 
         self._ticker: str | None = None
-        self._history_metadata: HistoryMetadata | None = None
+        self._history_metadata: HistoryMetadataResp | None = None
 
     def __str__(self) -> str:
         """String representation for the company object"""
@@ -105,20 +105,15 @@ class TradingItem:
         return trading_item
 
     @property
-    def history_metadata(self) -> HistoryMetadata:
+    def history_metadata(self) -> HistoryMetadataResp:
         """Get information about exchange and quotation
 
         :return: A dict containing data about the currency, symbol, exchange, type of instrument, and the first trading date
         :rtype: HistoryMetadata
         """
         if self._history_metadata is None:
-            metadata = self.kfinance_api_client.fetch_history_metadata(self.trading_item_id)
-            self._history_metadata = HistoryMetadata(
-                currency=metadata["currency"],
-                symbol=metadata["symbol"],
-                exchange_name=metadata["exchange_name"],
-                instrument_type=metadata["instrument_type"],
-                first_trade_date=datetime.strptime(metadata["first_trade_date"], "%Y-%m-%d").date(),
+            self._history_metadata = self.kfinance_api_client.fetch_history_metadata(
+                self.trading_item_id
             )
         return self._history_metadata
 
@@ -129,7 +124,7 @@ class TradingItem:
         :return: The exchange code of the trading item.
         :rtype: str
         """
-        return self.history_metadata["exchange_name"]
+        return self.history_metadata.exchange_name
 
     def history(
         self,
@@ -635,7 +630,7 @@ class Company(CompanyFunctionsMetaClass):
         if self._mergers_for_company is None:
             mergers_for_company = self.kfinance_api_client.fetch_mergers_for_company(
                 company_id=self.company_id
-            )
+            ).model_dump(mode="json")
             output: dict = {}
             for literal in ["target", "buyer", "seller"]:
                 output[literal] = MergersAndAcquisitions(
@@ -872,7 +867,7 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         self._primary_security: Security | None = None
         self._primary_trading_item: TradingItem | None = None
         self._company: Company | None = None
-        self._history_metadata: HistoryMetadata | None = None
+        self._history_metadata: HistoryMetadataResp | None = None
 
     @property
     def id_triple(self) -> IdentificationTriple:
@@ -946,6 +941,8 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         :return: the CIQ security id
         :rtype: int
         """
+        if self.id_triple.security_id is None:
+            raise ValueError(f"Ticker {self.ticker} does not have a security_id.")
         return self.id_triple.security_id
 
     @property
@@ -955,6 +952,8 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         :return: the CIQ trading item id
         :rtype: int
         """
+        if self.id_triple.trading_item_id is None:
+            raise ValueError(f"Ticker {self.ticker} does not have a trading_item_id.")
         return self.id_triple.trading_item_id
 
     @property
@@ -1158,7 +1157,7 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         return self.company.earnings_call_datetimes
 
     @property
-    def history_metadata(self) -> HistoryMetadata:
+    def history_metadata(self) -> HistoryMetadataResp:
         """Get information about exchange and quotation
 
         :return: A dict containing data about the currency, symbol, exchange, type of instrument, and the first trading date
@@ -1166,9 +1165,9 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         """
         metadata = self.primary_trading_item.history_metadata
         if self.exchange_code is None:
-            self.exchange_code = metadata["exchange_name"]
+            self.exchange_code = metadata.exchange_name
         if self._ticker is None:
-            self._ticker = metadata["symbol"]
+            self._ticker = metadata.symbol
         return metadata
 
     @property
@@ -1176,7 +1175,7 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         """Get the ticker if it isn't available from initialization"""
         if self._ticker is not None:
             return self._ticker
-        return self.history_metadata["symbol"]
+        return self.history_metadata.symbol
 
     def history(
         self,
@@ -1870,7 +1869,7 @@ class Client:
         """
         mergers_for_company = self.kfinance_api_client.fetch_mergers_for_company(
             company_id=company_id
-        )
+        ).model_dump(mode="json")
         output: dict = {}
         for literal in ["target", "buyer", "seller"]:
             output[literal] = MergersAndAcquisitions(

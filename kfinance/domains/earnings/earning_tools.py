@@ -6,16 +6,20 @@ from pydantic import BaseModel, Field
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.fetch import KFinanceApiClient
 from kfinance.client.permission_models import Permission
-from kfinance.domains.companies.company_identifiers import (
-    CompanyIdentifier,
-    fetch_company_ids_from_identifiers,
-    parse_identifiers,
-)
-from kfinance.domains.earnings.earning_models import EarningsCallResp
+from kfinance.domains.earnings.earning_models import EarningsCall, EarningsCallResp
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
+    ToolRespWithErrors,
 )
+
+
+class GetEarningsFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, EarningsCallResp]
+
+
+class GetNextOrLatestEarningsFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, EarningsCall]
 
 
 class GetEarningsFromIdentifiers(KfinanceTool):
@@ -35,23 +39,23 @@ class GetEarningsFromIdentifiers(KfinanceTool):
         """Sample response:
 
         {
-            'SPGI': [
-                {
-                    'datetime': '2025-04-29T12:30:00Z',
-                    'key_dev_id': 12346,
-                    'name': 'SPGI Q1 2025 Earnings Call'
-                }
-            ]
+            "results": {
+                'SPGI': [
+                    {
+                        'datetime': '2025-04-29T12:30:00Z',
+                        'key_dev_id': 12346,
+                        'name': 'SPGI Q1 2025 Earnings Call'
+                    }
+                ]
+            },
+            "errors": ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
         }
 
         """
         earnings_responses = get_earnings_from_identifiers(
             identifiers=identifiers, kfinance_api_client=self.kfinance_client.kfinance_api_client
         )
-        return {
-            str(identifier): earnings.model_dump(mode="json")["earnings_calls"]
-            for identifier, earnings in earnings_responses.items()
-        }
+        return earnings_responses.model_dump(mode="json")
 
 
 class GetLatestEarningsFromIdentifiers(KfinanceTool):
@@ -71,26 +75,27 @@ class GetLatestEarningsFromIdentifiers(KfinanceTool):
         """Sample response:
 
         {
-            'JPM': {
-                'datetime': '2025-04-29T12:30:00Z',
-                'key_dev_id': 12346,
-                'name': 'SPGI Q1 2025 Earnings Call'
+            "results": {
+                'JPM': {
+                    'datetime': '2025-04-29T12:30:00Z',
+                    'key_dev_id': 12346,
+                    'name': 'SPGI Q1 2025 Earnings Call'
+                },
             },
-            'SPGI': 'No latest earnings available.'
+            "errors": ["No latest earnings available for Kensho."]
         }
         """
         earnings_responses = get_earnings_from_identifiers(
             identifiers=identifiers, kfinance_api_client=self.kfinance_client.kfinance_api_client
         )
-        output = {}
-        for identifier, earnings in earnings_responses.items():
+        output_model = GetNextOrLatestEarningsFromIdentifiersResp(results=dict(), errors=list())
+        for identifier, earnings in earnings_responses.results.items():
             most_recent_earnings = earnings.most_recent_earnings
             if most_recent_earnings:
-                identifier_output: str | dict = most_recent_earnings.model_dump(mode="json")
+                output_model.results[identifier] = most_recent_earnings
             else:
-                identifier_output = f"No latest earnings available."
-            output[str(identifier)] = identifier_output
-        return output
+                output_model.errors.append(f"No latest earnings available for {identifier}.")
+        return output_model.model_dump(mode="json")
 
 
 class GetNextEarningsFromIdentifiers(KfinanceTool):
@@ -110,51 +115,53 @@ class GetNextEarningsFromIdentifiers(KfinanceTool):
         """Sample response:
 
         {
-            'JPM': {
-                'datetime': '2025-04-29T12:30:00Z',
-                'key_dev_id': 12346,
-                'name': 'SPGI Q1 2025 Earnings Call'
+            "results": {
+                'JPM': {
+                    'datetime': '2025-04-29T12:30:00Z',
+                    'key_dev_id': 12346,
+                    'name': 'SPGI Q1 2025 Earnings Call'
+                },
             },
-            'SPGI': 'No next earnings available.'
+            "errors": ["No next earnings available for Kensho."]
         }
         """
         earnings_responses = get_earnings_from_identifiers(
             identifiers=identifiers, kfinance_api_client=self.kfinance_client.kfinance_api_client
         )
-        output = {}
-        for identifier, earnings in earnings_responses.items():
+        output_model = GetNextOrLatestEarningsFromIdentifiersResp(results=dict(), errors=list())
+        for identifier, earnings in earnings_responses.results.items():
             next_earnings = earnings.next_earnings
             if next_earnings:
-                identifier_output: str | dict = next_earnings.model_dump(mode="json")
+                output_model.results[identifier] = next_earnings
             else:
-                identifier_output = f"No next earnings available."
-            output[str(identifier)] = identifier_output
-        return output
+                output_model.errors.append(f"No next earnings available for {identifier}.")
+        return output_model.model_dump(mode="json")
 
 
 def get_earnings_from_identifiers(
     identifiers: list[str], kfinance_api_client: KFinanceApiClient
-) -> dict[CompanyIdentifier, EarningsCallResp]:
+) -> GetEarningsFromIdentifiersResp:
     """Return the earnings call response for all passed identifiers."""
 
-    parsed_identifiers = parse_identifiers(identifiers=identifiers, api_client=kfinance_api_client)
-    identifiers_to_company_ids = fetch_company_ids_from_identifiers(
-        identifiers=parsed_identifiers, api_client=kfinance_api_client
-    )
+    api_client = kfinance_api_client
+    id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
 
     tasks = [
         Task(
             func=kfinance_api_client.fetch_earnings,
-            kwargs=dict(company_id=company_id),
+            kwargs=dict(company_id=id_triple.company_id),
             result_key=identifier,
         )
-        for identifier, company_id in identifiers_to_company_ids.items()
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
     ]
 
     earnings_responses = process_tasks_in_thread_pool_executor(
         api_client=kfinance_api_client, tasks=tasks
     )
-    return earnings_responses
+    resp_model = GetEarningsFromIdentifiersResp(
+        results=earnings_responses, errors=list(id_triple_resp.errors.values())
+    )
+    return resp_model
 
 
 class GetTranscriptFromKeyDevIdArgs(BaseModel):
