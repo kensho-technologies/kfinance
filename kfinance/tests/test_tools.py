@@ -20,10 +20,8 @@ from kfinance.kfinance import Client, NoEarningsDataError
 from kfinance.tests.conftest import SPGI_COMPANY_ID, SPGI_SECURITY_ID, SPGI_TRADING_ITEM_ID
 from kfinance.tests.test_objects import MOCK_COMPANY_DB, MOCK_MERGERS_DB, ordered
 from kfinance.tool_calling import (
-    GetCompanyAlternateNamesFromIdentifier,
     GetCompanyDescriptionFromIdentifier,
-    GetCompanyHistoricalNamesFromIdentifier,
-    GetCompanyNativeNamesFromIdentifier,
+    GetCompanyOtherNamesFromIdentifier,
     GetCompanySummaryFromIdentifier,
     GetCompetitorsFromIdentifier,
     GetEarnings,
@@ -787,59 +785,23 @@ class TestGetCompanyOtherNames:
         "native_names": native_names,
     }
 
-    def test_get_company_alternate_names_from_identifier(
+    def test_get_company_other_names_from_identifier(
         self, mock_client: Client, requests_mock: Mocker
     ):
         """
-        GIVEN the GetCompanyAlternateNamesFromIdentifier tool
-        WHEN we request the alternate names for SPGI
-        THEN we get back SPGI's alternate names
+        GIVEN the GetCompanyOtherNamesFromIdentifier tool
+        WHEN we request the other names for SPGI
+        THEN we get back SPGI's other names
         """
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}/names",
             json=self.company_other_names_info,
         )
 
-        tool = GetCompanyAlternateNamesFromIdentifier(kfinance_client=mock_client)
+        tool = GetCompanyOtherNamesFromIdentifier(kfinance_client=mock_client)
         args = ToolArgsWithIdentifier(identifier="SPGI")
         response = tool.run(args.model_dump(mode="json"))
-        assert response == self.alternate_names
-
-    def test_get_company_historical_names_from_identifier(
-        self, mock_client: Client, requests_mock: Mocker
-    ):
-        """
-        GIVEN the GetCompanyHistoricalNamesFromIdentifier tool
-        WHEN we request the historical names for SPGI
-        THEN we get back SPGI's historical names
-        """
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}/names",
-            json=self.company_other_names_info,
-        )
-
-        tool = GetCompanyHistoricalNamesFromIdentifier(kfinance_client=mock_client)
-        args = ToolArgsWithIdentifier(identifier="SPGI")
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == self.historical_names
-
-    def test_get_company_native_names_from_identifier(
-        self, mock_client: Client, requests_mock: Mocker
-    ):
-        """
-        GIVEN the GetCompanyNativeNamesFromIdentifier tool
-        WHEN we request the native names for SPGI
-        THEN we get back SPGI's native names
-        """
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}/names",
-            json=self.company_other_names_info,
-        )
-
-        tool = GetCompanyNativeNamesFromIdentifier(kfinance_client=mock_client)
-        args = ToolArgsWithIdentifier(identifier="SPGI")
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == self.native_names
+        assert response == self.company_other_names_info
 
 
 class TestGetCompetitorsFromIdentifier:

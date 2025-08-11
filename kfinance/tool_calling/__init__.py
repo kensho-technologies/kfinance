@@ -4,17 +4,11 @@ from kfinance.tool_calling.get_business_relationship_from_identifier import (
     GetBusinessRelationshipFromIdentifier,
 )
 from kfinance.tool_calling.get_capitalization_from_identifier import GetCapitalizationFromIdentifier
-from kfinance.tool_calling.get_company_alternate_names_from_identifier import (
-    GetCompanyAlternateNamesFromIdentifier,
-)
 from kfinance.tool_calling.get_company_description_from_identifier import (
     GetCompanyDescriptionFromIdentifier,
 )
-from kfinance.tool_calling.get_company_historical_names_from_identifier import (
-    GetCompanyHistoricalNamesFromIdentifier,
-)
-from kfinance.tool_calling.get_company_native_names_from_identifier import (
-    GetCompanyNativeNamesFromIdentifier,
+from kfinance.tool_calling.get_company_other_names_from_identifier import (
+    GetCompanyOtherNamesFromIdentifier,
 )
 from kfinance.tool_calling.get_company_summary_from_identifier import (
     GetCompanySummaryFromIdentifier,
@@ -70,8 +64,6 @@ ALL_TOOLS: list[Type[KfinanceTool]] = [
     GetSegmentsFromIdentifier,
     GetCompanySummaryFromIdentifier,
     GetCompanyDescriptionFromIdentifier,
-    GetCompanyAlternateNamesFromIdentifier,
-    GetCompanyHistoricalNamesFromIdentifier,
-    GetCompanyNativeNamesFromIdentifier,
+    GetCompanyOtherNamesFromIdentifier,
     GetCompetitorsFromIdentifier,
 ]
