@@ -17,7 +17,12 @@ from kfinance.domains.business_relationships.business_relationship_models import
     RelationshipResponse,
 )
 from kfinance.domains.capitalizations.capitalization_models import Capitalizations
-from kfinance.domains.companies.company_models import IdentificationTriple, UnifiedIdTripleResponse, CompanyDescriptions, CompanyOtherNames
+from kfinance.domains.companies.company_models import (
+    CompanyDescriptions,
+    CompanyOtherNames,
+    IdentificationTriple,
+    UnifiedIdTripleResponse,
+)
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.line_items.line_item_models import LineItemResponse

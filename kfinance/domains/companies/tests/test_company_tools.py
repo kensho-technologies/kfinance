@@ -2,7 +2,12 @@ from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_COMPANY_ID
-from kfinance.domains.companies.company_tools import GetInfoFromIdentifiers
+from kfinance.domains.companies.company_tools import (
+    GetCompanyDescriptionFromIdentifiers,
+    GetCompanyOtherNamesFromIdentifiers,
+    GetCompanySummaryFromIdentifiers,
+    GetInfoFromIdentifiers,
+)
 from kfinance.integrations.tool_calling.tool_calling_models import ToolArgsWithIdentifiers
 
 
@@ -53,8 +58,8 @@ class TestGetCompanyDescriptions:
             json=self.descriptions_data,
         )
 
-        tool = GetCompanySummaryFromIdentifier(kfinance_client=mock_client)
-        args = ToolArgsWithIdentifier(identifier="SPGI")
+        tool = GetCompanySummaryFromIdentifiers(kfinance_client=mock_client)
+        args = ToolArgsWithIdentifiers(identifiers=["SPGI"])
         response = tool.run(args.model_dump(mode="json"))
         assert response == self.summary
 
@@ -72,8 +77,8 @@ class TestGetCompanyDescriptions:
             json=self.descriptions_data,
         )
 
-        tool = GetCompanyDescriptionFromIdentifier(kfinance_client=mock_client)
-        args = ToolArgsWithIdentifier(identifier="SPGI")
+        tool = GetCompanyDescriptionFromIdentifiers(kfinance_client=mock_client)
+        args = ToolArgsWithIdentifiers(identifiers=["SPGI"])
         response = tool.run(args.model_dump(mode="json"))
         assert response == self.description
 
@@ -111,7 +116,7 @@ class TestGetCompanyOtherNames:
             json=self.company_other_names_info,
         )
 
-        tool = GetCompanyOtherNamesFromIdentifier(kfinance_client=mock_client)
-        args = ToolArgsWithIdentifier(identifier="SPGI")
+        tool = GetCompanyOtherNamesFromIdentifiers(kfinance_client=mock_client)
+        args = ToolArgsWithIdentifiers(identifiers=["SPGI"])
         response = tool.run(args.model_dump(mode="json"))
         assert response == self.company_other_names_info

@@ -13,7 +13,11 @@ from kfinance.domains.business_relationships.business_relationship_models import
     BusinessRelationshipType,
     RelationshipResponse,
 )
-from kfinance.domains.companies.company_models import CompanyIdAndName, CompanyDescriptions, CompanyOtherNames
+from kfinance.domains.companies.company_models import (
+    CompanyDescriptions,
+    CompanyIdAndName,
+    CompanyOtherNames,
+)
 
 
 def build_mock_api_client() -> KFinanceApiClient:

@@ -14,3 +14,4 @@ class Permission(StrEnum):
     StatementsPermission = "StatementsPermission"
     TranscriptsPermission = "TranscriptsPermission"
     PrivateCompanyFinancialsPermission = "PrivateCompanyFinancialsPermission"
+    CompanyIntelligencePermission = "CompanyIntelligencePermission"

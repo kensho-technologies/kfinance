@@ -119,6 +119,7 @@ class UnifiedIdTripleResponse(BaseModel):
             )
             self.identifiers_to_id_triples.pop(identifier)
 
+
 class CompanyDescriptions(BaseModel):
     """A company summary and description"""
 
