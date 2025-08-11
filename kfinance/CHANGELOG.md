@@ -1,5 +1,44 @@
 # Changelog
 
+## v3.1.0
+- Use unified endpoint for company resolution
+
+## v3.0.3
+- Add LineItemResponse model
+
+## v3.0.2
+- Add kfinance.mcp back to simplify transition to 3.0
+
+## v3.0.1
+- Add Private Company Financials Permissions and descriptions
+
+## v3.0.0
+- Add tool calls that accept lists of identifiers.
+
+## v2.9.0
+- Limit FastMCP version
+
+## v2.8.0
+- Add currency to get_capitalization and get_prices tools.
+
+## v2.7.0
+ - Expose a new list of LLM tools `grounding_tools` that return a list of all endpoint urls called
+
+## v2.6.5
+ - Add competitor company_name
+
+## v2.6.4
+- Add transcript permission and update accepted_permissions type to set[Permission]
+
+## v2.6.3
+- Bump urllib3 to 2.5 to address CVEs
+
+## v2.6.2
+ - Safely check for incomplete merger information
+
+## v2.6.1
+ - Remove get_earnings_call_datetimes_from_identifier tool
+
 ## v2.6.0
  - Add mergers & acquisitions.
 

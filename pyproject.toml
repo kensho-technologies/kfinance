@@ -20,7 +20,7 @@ classifiers = [
 dependencies = [
     "cachetools>=5.5,<6",
     "click>=8.2.1,<=9",
-    "fastmcp>=2,<3",
+    "fastmcp>=2.9,<2.10",
     "langchain-core>=0.3.15",
     "langchain-google-genai>=2.1.5,<3",
     "numpy>=1.22.4",
@@ -33,7 +33,7 @@ dependencies = [
     "tabulate>=0.9.0",  # required for turning dataframes into markdown
     "types-requests>=2.22.0,<3",
     "requests>=2.22.0,<3",
-    "urllib3>=1.21.1",
+    "urllib3>=2.5",
 ]
 
 [project.optional-dependencies]
