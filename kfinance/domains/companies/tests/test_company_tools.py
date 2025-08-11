@@ -61,9 +61,7 @@ class TestGetCompanyDescriptions:
         tool = GetCompanySummaryFromIdentifiers(kfinance_client=mock_client)
         args = ToolArgsWithIdentifiers(identifiers=["SPGI"])
         response = tool.run(args.model_dump(mode="json"))
-        expected_response = {
-            "results": {"SPGI": self.summary}
-        }
+        expected_response = {"results": {"SPGI": self.summary}}
         assert response == expected_response
 
     def test_get_company_description_from_identifier(
@@ -83,9 +81,7 @@ class TestGetCompanyDescriptions:
         tool = GetCompanyDescriptionFromIdentifiers(kfinance_client=mock_client)
         args = ToolArgsWithIdentifiers(identifiers=["SPGI"])
         response = tool.run(args.model_dump(mode="json"))
-        expected_response = {
-            "results": {"SPGI": self.description}
-        }
+        expected_response = {"results": {"SPGI": self.description}}
         assert response == expected_response
 
 
@@ -125,7 +121,5 @@ class TestGetCompanyOtherNames:
         tool = GetCompanyOtherNamesFromIdentifiers(kfinance_client=mock_client)
         args = ToolArgsWithIdentifiers(identifiers=["SPGI"])
         response = tool.run(args.model_dump(mode="json"))
-        expected_response = {
-            "results": {"SPGI": self.company_other_names_info}
-        }
+        expected_response = {"results": {"SPGI": self.company_other_names_info}}
         assert response == expected_response
