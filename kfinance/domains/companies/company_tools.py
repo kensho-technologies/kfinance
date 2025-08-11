@@ -83,7 +83,7 @@ class GetCompanyOtherNamesFromIdentifiers(KfinanceTool):
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
-    required_permission: set[Permission] | None = {Permission.CompanyIntelligencePermission}
+    accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
 
     def _run(
         self,
@@ -120,7 +120,7 @@ class GetCompanySummaryFromIdentifiers(KfinanceTool):
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
-    required_permission: set[Permission] | None = {Permission.CompanyIntelligencePermission}
+    accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
 
     def _run(
         self,
@@ -165,7 +165,7 @@ class GetCompanyDescriptionFromIdentifiers(KfinanceTool):
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
-    required_permission: Permission | None = Permission.CompanyIntelligencePermission
+    accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
 
     def _run(
         self,
