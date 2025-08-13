@@ -78,7 +78,7 @@ class GetCompanyOtherNamesFromIdentifiersResp(ToolRespWithErrors):
 class GetCompanyOtherNamesFromIdentifiers(KfinanceTool):
     name: str = "get_company_other_names_from_identifiers"
     description: str = dedent("""
-        Gets company's alternate, historical, and native names associated with a list of identifiers. Alternate names are additional names a company might go by (for example, Hewlett-Packard Company also goes by the name HP). Historical names are previous names for the company if it has changed over time. Native names are primary non-Latin character native names for global companies, including languages such as Arabic, Russian, Greek, Japanese, etc. This also includes limited history on native name changes.
+        Given a list of identifiers, fetch the alternate, historical, and native names associated with each identifier. Alternate names are additional names a company might go by (for example, Hewlett-Packard Company also goes by the name HP). Historical names are previous names for the company if it has changed over time. Native names are primary non-Latin character native names for global companies, including languages such as Arabic, Russian, Greek, Japanese, etc. This also includes limited history on native name changes.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
     """).strip()
