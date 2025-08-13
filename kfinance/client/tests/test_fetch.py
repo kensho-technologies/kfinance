@@ -13,7 +13,11 @@ from kfinance.domains.business_relationships.business_relationship_models import
     BusinessRelationshipType,
     RelationshipResponse,
 )
-from kfinance.domains.companies.company_models import CompanyIdAndName
+from kfinance.domains.companies.company_models import (
+    CompanyDescriptions,
+    CompanyIdAndName,
+    CompanyOtherNames,
+)
 
 
 def build_mock_api_client() -> KFinanceApiClient:
@@ -383,3 +387,75 @@ class TestFetchCompaniesFromBusinessRelationship:
             company_id=SPGI_COMPANY_ID, relationship_type=BusinessRelationshipType.supplier
         )
         assert resp == expected_result
+
+
+class TestFetchCompanyDescriptions:
+    def test_fetch_company_descriptions(self, requests_mock: Mocker, mock_client: Client) -> None:
+        """
+        GIVEN a request to fetch company descriptions
+        WHEN the api returns a response
+        THEN the response can successfully be parsed into a CompanyDescriptions object.
+        """
+
+        # Truncated from actual http response
+        http_resp = {
+            "summary": "S&P Global Inc., together... [summary]",
+            "description": "S&P Global Inc. (S&P Global), together... [description]",
+        }
+
+        expected_result = CompanyDescriptions(
+            summary="S&P Global Inc., together... [summary]",
+            description="S&P Global Inc. (S&P Global), together... [description]",
+        )
+
+        requests_mock.get(
+            url=f"{mock_client.kfinance_api_client.url_base}info/{SPGI_COMPANY_ID}/descriptions",
+            json=http_resp,
+        )
+
+        resp = mock_client.kfinance_api_client.fetch_company_descriptions(
+            company_id=SPGI_COMPANY_ID
+        )
+        assert resp == expected_result
+
+
+class TestFetchCompanyOtherNames:
+    def test_fetch_company_other_names(self, requests_mock: Mocker, mock_client: Client) -> None:
+        """
+        GIVEN a request to fetch a company's other names (alternate, historical, and native)
+        WHEN the api returns a response
+        THEN the response can be successfully parsed into a CompanyOtherNames object
+        """
+        alternate_names = ["S&P Global", "S&P Global, Inc.", "S&P"]
+        historical_names = [
+            "McGraw-Hill Publishing Company, Inc.",
+            "McGraw-Hill Book Company",
+            "McGraw Hill Financial, Inc.",
+            "The McGraw-Hill Companies, Inc.",
+        ]
+        native_names = [
+            {"name": "KLab Venture Partners 株式会社", "language": "Japanese"},
+            {"name": "株式会社ANOBAKA", "language": "Japanese"},
+            {"name": "株式会社KVP", "language": "Japanese"},
+        ]
+
+        http_resp = {
+            "alternate_names": alternate_names,
+            "historical_names": historical_names,
+            "native_names": native_names,
+        }
+
+        expected_resp = CompanyOtherNames(
+            alternate_names=alternate_names,
+            historical_names=historical_names,
+            native_names=native_names,
+        )
+
+        requests_mock.get(
+            url=f"{mock_client.kfinance_api_client.url_base}info/{SPGI_COMPANY_ID}/names",
+            json=http_resp,
+        )
+
+        resp = mock_client.kfinance_api_client.fetch_company_other_names(company_id=SPGI_COMPANY_ID)
+
+        assert resp == expected_resp

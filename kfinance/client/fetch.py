@@ -17,7 +17,12 @@ from kfinance.domains.business_relationships.business_relationship_models import
     RelationshipResponse,
 )
 from kfinance.domains.capitalizations.capitalization_models import Capitalizations
-from kfinance.domains.companies.company_models import IdentificationTriple, UnifiedIdTripleResponse
+from kfinance.domains.companies.company_models import (
+    CompanyDescriptions,
+    CompanyOtherNames,
+    IdentificationTriple,
+    UnifiedIdTripleResponse,
+)
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.line_items.line_item_models import LineItemResponse
@@ -601,6 +606,18 @@ class KFinanceApiClient:
         """Get the transcript for an earnings item."""
         url = f"{self.url_base}transcript/{key_dev_id}"
         return self.fetch(url)
+
+    def fetch_company_descriptions(self, company_id: int) -> CompanyDescriptions:
+        """Get the short description (summary) and long description for a company"""
+        url = f"{self.url_base}info/{company_id}/descriptions"
+        result = self.fetch(url)
+        return CompanyDescriptions.model_validate(result)
+
+    def fetch_company_other_names(self, company_id: int) -> CompanyOtherNames:
+        """Get the alternate, historical, and native names for a company"""
+        url = f"{self.url_base}info/{company_id}/names"
+        result = self.fetch(url)
+        return CompanyOtherNames.model_validate(result)
 
     def fetch_competitors(
         self, company_id: int, competitor_source: CompetitorSource

@@ -13,6 +13,11 @@ from kfinance.domains.business_relationships.business_relationship_models import
     BusinessRelationshipType,
 )
 from kfinance.domains.capitalizations.capitalization_models import Capitalization
+from kfinance.domains.companies.company_models import (
+    CompanyDescriptions,
+    CompanyOtherNames,
+    NativeName,
+)
 from kfinance.domains.competitors.competitor_models import CompetitorSource
 from kfinance.domains.line_items.line_item_models import LINE_ITEMS
 from kfinance.domains.segments.segment_models import SegmentType
@@ -26,6 +31,11 @@ logger = logging.getLogger(__name__)
 
 class CompanyFunctionsMetaClass:
     kfinance_api_client: KFinanceApiClient
+
+    def __init__(self) -> None:
+        """Initialize the CompanyFunctionsMetaClass object"""
+        self._company_descriptions: CompanyDescriptions | None = None
+        self._company_other_names: CompanyOtherNames | None = None
 
     @property
     @abstractmethod
@@ -414,6 +424,51 @@ class CompanyFunctionsMetaClass:
             start_quarter=start_quarter,
             end_quarter=end_quarter,
         )
+
+    @property
+    def summary(self) -> str:
+        """Lazily fetch and return a company's summary"""
+        if not self._company_descriptions:
+            self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(
+                company_id=self.company_id
+            )
+        return self._company_descriptions.summary
+
+    @property
+    def description(self) -> str:
+        """Lazily fetch and return a company's description"""
+        if not self._company_descriptions:
+            self._company_descriptions = self.kfinance_api_client.fetch_company_descriptions(
+                company_id=self.company_id
+            )
+        return self._company_descriptions.description
+
+    @property
+    def alternate_names(self) -> list[str]:
+        """Lazily fetch and return a company's alternate names"""
+        if not self._company_other_names:
+            self._company_other_names = self.kfinance_api_client.fetch_company_other_names(
+                company_id=self.company_id
+            )
+        return self._company_other_names.alternate_names
+
+    @property
+    def historical_names(self) -> list[str]:
+        """Lazily fetch and return a company's historical names"""
+        if not self._company_other_names:
+            self._company_other_names = self.kfinance_api_client.fetch_company_other_names(
+                company_id=self.company_id
+            )
+        return self._company_other_names.historical_names
+
+    @property
+    def native_names(self) -> list[NativeName]:
+        """Lazily fetch and return a company's native names"""
+        if not self._company_other_names:
+            self._company_other_names = self.kfinance_api_client.fetch_company_other_names(
+                company_id=self.company_id
+            )
+        return self._company_other_names.native_names
 
     def competitors(
         self, competitor_source: CompetitorSource = CompetitorSource.all
