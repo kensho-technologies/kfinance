@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.2.0
+- Add Company Intelligence tools
+
 ## v3.1.1
 - Update client base prompt
 
