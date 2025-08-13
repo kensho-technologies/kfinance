@@ -34,6 +34,9 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetCapitalizationFromIdentifiers,
     # Companies
     GetInfoFromIdentifiers,
+    GetCompanyOtherNamesFromIdentifiers,
+    GetCompanySummaryFromIdentifiers,
+    GetCompanyDescriptionFromIdentifiers,
     # Competitors
     GetCompetitorsFromIdentifiers,
     # Cusip and Isin
