@@ -2,7 +2,12 @@ from kfinance.domains.business_relationships.business_relationship_tools import 
     GetBusinessRelationshipFromIdentifiers,
 )
 from kfinance.domains.capitalizations.capitalization_tools import GetCapitalizationFromIdentifiers
-from kfinance.domains.companies.company_tools import GetInfoFromIdentifiers
+from kfinance.domains.companies.company_tools import (
+    GetCompanyDescriptionFromIdentifiers,
+    GetCompanyOtherNamesFromIdentifiers,
+    GetCompanySummaryFromIdentifiers,
+    GetInfoFromIdentifiers,
+)
 from kfinance.domains.competitors.competitor_tools import GetCompetitorsFromIdentifiers
 from kfinance.domains.cusip_and_isin.cusip_and_isin_tools import (
     GetCusipFromIdentifiers,
@@ -34,6 +39,9 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetCapitalizationFromIdentifiers,
     # Companies
     GetInfoFromIdentifiers,
+    GetCompanyOtherNamesFromIdentifiers,
+    GetCompanySummaryFromIdentifiers,
+    GetCompanyDescriptionFromIdentifiers,
     # Competitors
     GetCompetitorsFromIdentifiers,
     # Cusip and Isin

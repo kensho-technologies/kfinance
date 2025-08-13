@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.2.1
+- Add Company Intelligence tools to ALL_TOOLS
+
 ## v3.2.0
 - Add Company Intelligence tools
 
