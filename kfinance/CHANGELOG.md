@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.2.2
+- Use ValidQuarter for statement and line item tools
+
 ## v3.2.1
 - Add Company Intelligence tools to ALL_TOOLS
 
@@ -8,9 +11,6 @@
 
 ## v3.1.1
 - Update client base prompt
-
-## v3.1.1
-- Use ValidQuarter for statement and line item tools
 
 ## v3.1.0
 - Use unified endpoint for company resolution
