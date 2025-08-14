@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.2.2
+- Use ValidQuarter for statement and line item tools
+
 ## v3.2.1
 - Add Company Intelligence tools to ALL_TOOLS
 
