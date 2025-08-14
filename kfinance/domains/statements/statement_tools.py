@@ -11,6 +11,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
     ToolRespWithErrors,
+    ValidQuarter,
 )
 
 
@@ -20,8 +21,8 @@ class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers):
     period_type: PeriodType | None = Field(default=None, description="The period type")
     start_year: int | None = Field(default=None, description="The starting year for the data range")
     end_year: int | None = Field(default=None, description="The ending year for the data range")
-    start_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Starting quarter")
-    end_quarter: Literal[1, 2, 3, 4] | None = Field(default=None, description="Ending quarter")
+    start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
+    end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
 
 
 class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
