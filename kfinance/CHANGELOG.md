@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.2.3
+- Disable low level MCP SDK input validation
+
 ## v3.2.2
 - Use ValidQuarter for statement and line item tools
 

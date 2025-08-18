@@ -1,12 +1,12 @@
 from typing import Literal, Optional
 
 import click
-from fastmcp import FastMCP
 from fastmcp.tools import FunctionTool
 from fastmcp.utilities.logging import get_logger
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from kfinance.client.kfinance import Client
+from kfinance.integrations.local_mcp.kfinance_mcp import KfinanceMcp
 from kfinance.integrations.tool_calling.tool_calling_models import KfinanceTool
 
 
@@ -76,7 +76,7 @@ def run_mcp(
         logger.info("The client will be authenticated using a browser")
         kfinance_client = Client()
 
-    kfinance_mcp: FastMCP = FastMCP("Kfinance")
+    kfinance_mcp: KfinanceMcp = KfinanceMcp("Kfinance")
     for langchain_tool in kfinance_client.langchain_tools:
         logger.info("Adding %s to server", langchain_tool.name)
         kfinance_mcp.add_tool(build_mcp_tool_from_kfinance_tool(langchain_tool))
