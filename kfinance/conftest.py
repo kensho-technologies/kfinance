@@ -52,7 +52,18 @@ def mock_client(requests_mock: Mocker) -> Client:
         additional_matcher=lambda req: req.json().get("identifiers") == ["SPGI"],
         json={"data": {"SPGI": spgi_id_triple}},
     )
-
+    # Fetch a non-existent company (which will include an error)
+    requests_mock.post(
+        url="https://kfinance.kensho.com/api/v1/ids",
+        additional_matcher=lambda req: req.json().get("identifiers") == ["non-existent"],
+        json={
+            "data": {
+                "non-existent": {
+                    "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                },
+            }
+        },
+    )
     # Fetch SPGI and a non-existent company (which will include an error)
     requests_mock.post(
         url="https://kfinance.kensho.com/api/v1/ids",

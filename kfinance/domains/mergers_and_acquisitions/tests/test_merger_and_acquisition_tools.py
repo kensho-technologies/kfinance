@@ -46,28 +46,44 @@ class TestGetCompaniesAdvisingCompanyInTransactionFromIdentifier:
     def test_get_companies_advising_company_in_transaction_from_identifier(
         self, requests_mock: Mocker, mock_client: Client
     ):
-        api_response = {
-            "advisors": [
-                {
-                    "advisor_company_id": 251994106,
-                    "advisor_company_name": "Kensho Technologies, Inc.",
-                    "advisor_type_name": "Professional Mongo Enjoyer",
-                }
-            ]
+        advisor_data = {
+            "advisor_company_id": 251994106,
+            "advisor_company_name": "Kensho Technologies, Inc.",
+            "advisor_type_name": "Professional Mongo Enjoyer",
         }
-        expected_response = deepcopy(api_response)
-        expected_response["advisors"][0]["advisor_company_id"] = f"{COMPANY_ID_PREFIX}251994106"
-        transaction_id = 517414
+        api_response = {"advisors": [deepcopy(advisor_data)]}
+        expected_response = {"results": {"SPGI": [deepcopy(advisor_data)]}}
+        expected_response["results"]["SPGI"][0]["advisor_company_id"] = (
+            f"{COMPANY_ID_PREFIX}251994106"
+        )
+        transaction_id = 554979212
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/merger/info/{transaction_id}/advisors/21835",
+            url=f"https://kfinance.kensho.com/api/v1/merger/info/{transaction_id}/advisors/{SPGI_COMPANY_ID}",
             json=api_response,
         )
         tool = GetAdvisorsForCompanyInTransactionFromIdentifier(kfinance_client=mock_client)
         args = GetAdvisorsForCompanyInTransactionFromIdentifierArgs(
-            identifier="MSFT", transaction_id=transaction_id
+            identifier="SPGI", transaction_id=transaction_id
         )
         response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response["advisors"]
+        assert response == expected_response
+
+    def test_get_companies_advising_company_in_transaction_from_bad_identifier(
+        self, requests_mock: Mocker, mock_client: Client
+    ):
+        expected_response = {
+            "results": {},
+            "errors": [
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+        }
+        transaction_id = 554979212
+        tool = GetAdvisorsForCompanyInTransactionFromIdentifier(kfinance_client=mock_client)
+        args = GetAdvisorsForCompanyInTransactionFromIdentifierArgs(
+            identifier="non-existent", transaction_id=transaction_id
+        )
+        response = tool.run(args.model_dump(mode="json"))
+        assert response == expected_response
 
 
 class TestGetMergerInfoFromTransactionId:
