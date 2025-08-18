@@ -20,6 +20,11 @@ from kfinance.domains.earnings.earning_tools import (
     GetTranscriptFromKeyDevId,
 )
 from kfinance.domains.line_items.line_item_tools import GetFinancialLineItemFromIdentifiers
+from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools import (
+    GetAdvisorsForCompanyInTransactionFromIdentifier,
+    GetMergerInfoFromTransactionId,
+    GetMergersFromIdentifiers,
+)
 from kfinance.domains.prices.price_tools import GetPricesFromIdentifiers
 from kfinance.domains.segments.segment_tools import GetSegmentsFromIdentifiers
 from kfinance.domains.statements.statement_tools import GetFinancialStatementFromIdentifiers
@@ -60,4 +65,8 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetSegmentsFromIdentifiers,
     # Statements
     GetFinancialStatementFromIdentifiers,
+    # Mergers & Acquisitions
+    GetAdvisorsForCompanyInTransactionFromIdentifier,
+    GetMergerInfoFromTransactionId,
+    GetMergersFromIdentifiers,
 ]

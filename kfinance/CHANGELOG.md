@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.2.3
+- Add Mergers & Acquisitions tools to ALL_TOOLS
+
 ## v3.2.2
 - Use ValidQuarter for statement and line item tools
 
