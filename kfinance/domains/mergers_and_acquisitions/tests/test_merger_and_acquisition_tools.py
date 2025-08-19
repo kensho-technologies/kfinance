@@ -52,10 +52,8 @@ class TestGetCompaniesAdvisingCompanyInTransactionFromIdentifier:
             "advisor_type_name": "Professional Mongo Enjoyer",
         }
         api_response = {"advisors": [deepcopy(advisor_data)]}
-        expected_response = {"results": {"SPGI": [deepcopy(advisor_data)]}}
-        expected_response["results"]["SPGI"][0]["advisor_company_id"] = (
-            f"{COMPANY_ID_PREFIX}251994106"
-        )
+        expected_response = {"results": [deepcopy(advisor_data)]}
+        expected_response["results"][0]["advisor_company_id"] = f"{COMPANY_ID_PREFIX}251994106"
         transaction_id = 554979212
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/merger/info/{transaction_id}/advisors/{SPGI_COMPANY_ID}",
@@ -72,7 +70,7 @@ class TestGetCompaniesAdvisingCompanyInTransactionFromIdentifier:
         self, requests_mock: Mocker, mock_client: Client
     ):
         expected_response = {
-            "results": {},
+            "results": [],
             "errors": [
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],

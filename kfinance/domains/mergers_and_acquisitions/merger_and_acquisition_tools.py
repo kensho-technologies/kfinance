@@ -6,9 +6,9 @@ from pydantic import BaseModel, Field
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.kfinance import Company, MergerOrAcquisition, ParticipantInMerger
 from kfinance.client.permission_models import Permission
-from kfinance.domains.companies.company_models import IdentificationTriple, prefix_company_id
+from kfinance.domains.companies.company_models import prefix_company_id
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
-    AdvisorsResp,
+    AdvisorResp,
     MergersResp,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
@@ -162,7 +162,7 @@ class GetAdvisorsForCompanyInTransactionFromIdentifierArgs(ToolArgsWithIdentifie
 
 
 class GetAdvisorsForCompanyInTransactionFromIdentifierResp(ToolRespWithErrors):
-    results: dict[str, list[AdvisorsResp]]
+    results: list[AdvisorResp]
 
 
 class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
@@ -176,19 +176,14 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
     def _run(self, identifier: str, transaction_id: int) -> dict:
         api_client = self.kfinance_client.kfinance_api_client
         id_triple_resp = api_client.unified_fetch_id_triples(identifiers=[identifier])
-        resp_identifiers_to_id_triples: list[tuple[str, IdentificationTriple]] = list(
-            id_triple_resp.identifiers_to_id_triples.items()
-        )
-        if resp_identifiers_to_id_triples:
-            _, id_triple = resp_identifiers_to_id_triples[0]
-        else:
-            id_triple = None
-
-        if not id_triple:
+        # If the identifier cannot be resolved, return the associated error.
+        if id_triple_resp.errors:
             output_model = GetAdvisorsForCompanyInTransactionFromIdentifierResp(
-                results={}, errors=list(id_triple_resp.errors.values())
+                results=[], errors=list(id_triple_resp.errors.values())
             )
             return output_model.model_dump(mode="json")
+
+        id_triple = id_triple_resp.identifiers_to_id_triples[identifier]
 
         participant_in_merger = ParticipantInMerger(
             kfinance_api_client=api_client,
@@ -201,11 +196,11 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
 
         advisors = participant_in_merger.advisors
 
-        advisors_response: list[AdvisorsResp] = []
+        advisors_response: list[AdvisorResp] = []
         if advisors:
             for advisor in advisors:
                 advisors_response.append(
-                    AdvisorsResp(
+                    AdvisorResp(
                         advisor_company_id=prefix_company_id(advisor.company.company_id),
                         advisor_company_name=advisor.company.name,
                         advisor_type_name=advisor.advisor_type_name,
@@ -213,6 +208,6 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
                 )
 
         output_model = GetAdvisorsForCompanyInTransactionFromIdentifierResp(
-            results={identifier: advisors_response}, errors=list(id_triple_resp.errors.values())
+            results=advisors_response, errors=list(id_triple_resp.errors.values())
         )
         return output_model.model_dump(mode="json")

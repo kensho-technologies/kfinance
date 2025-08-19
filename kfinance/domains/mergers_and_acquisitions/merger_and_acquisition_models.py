@@ -15,7 +15,7 @@ class MergersResp(BaseModel):
     seller: list[MergerSummary]
 
 
-class AdvisorsResp(BaseModel):
+class AdvisorResp(BaseModel):
     advisor_company_id: str
     advisor_company_name: str
     advisor_type_name: str | None
