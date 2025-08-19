@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.2.4
+- Add requested EV ratio line items
+
 ## v3.2.3
 - Disable low level MCP SDK input validation
 
