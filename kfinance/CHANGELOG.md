@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.2.3
+## v3.2.4
 - Add Mergers & Acquisitions tools to ALL_TOOLS
+
+## v3.2.3
+- Disable low level MCP SDK input validation
 
 ## v3.2.2
 - Use ValidQuarter for statement and line item tools
