@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.2.5
+- Add requested EV ratio line items
+
 ## v3.2.4
 - Add Mergers & Acquisitions tools to ALL_TOOLS
 
