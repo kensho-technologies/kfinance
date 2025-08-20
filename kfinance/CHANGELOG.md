@@ -1,7 +1,10 @@
 # Changelog
 
-## v3.2.4
+## v3.2.5
 - Add requested EV ratio line items
+
+## v3.2.4
+- Add Mergers & Acquisitions tools to ALL_TOOLS
 
 ## v3.2.3
 - Disable low level MCP SDK input validation

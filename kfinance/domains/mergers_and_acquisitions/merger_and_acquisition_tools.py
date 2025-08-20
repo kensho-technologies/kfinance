@@ -7,7 +7,10 @@ from kfinance.client.batch_request_handling import Task, process_tasks_in_thread
 from kfinance.client.kfinance import Company, MergerOrAcquisition, ParticipantInMerger
 from kfinance.client.permission_models import Permission
 from kfinance.domains.companies.company_models import prefix_company_id
-from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import MergersResp
+from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
+    AdvisorResp,
+    MergersResp,
+)
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifier,
@@ -23,9 +26,7 @@ class GetMergersFromIdentifiersResp(ToolRespWithErrors):
 class GetMergersFromIdentifiers(KfinanceTool):
     name: str = "get_mergers_from_identifiers"
     description: str = dedent("""
-        Get the transaction IDs that involve the given identifiers.
-
-        For example, "Which companies did Microsoft purchase?" or "Which company bought Ben & Jerrys?"
+        "Retrieves all merger and acquisition transactions involving the specified company identifier for each specified company identifier. The results are categorized by the company's role in each transaction: target, buyer, or seller. Provides the transaction_id, merger_title, and transaction closed_date (finalization) . Use this tool to answer questions like 'Which companies did Microsoft purchase?', 'Which company acquired Ben & Jerry's?', and 'Who did Pfizer acquire?'"
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -91,9 +92,7 @@ class GetMergerInfoFromTransactionIdArgs(BaseModel):
 class GetMergerInfoFromTransactionId(KfinanceTool):
     name: str = "get_merger_info_from_transaction_id"
     description: str = dedent("""
-        Get the timeline, the participants, and the consideration of the merger or acquisition from the given transaction ID.
-
-        For example, "How much was Ben & Jerrys purchased for?" or "What was the price per share for LinkedIn?" or "When did S&P purchase Kensho?"
+        "Provides comprehensive information about a specific merger or acquisition transaction, including its timeline (announced date, closed date), participants' company_name and company_id (target, buyers, sellers), and financial consideration details (including monetary values). Use this tool to answer questions like 'When was the acquisition Ben & Jerry's announced?', 'What was the transaction size of Vodafone's acquisition of Mannesmann?', 'How much did S&P purchase Kensho for?'. Always call this for announcement related questions"
     """).strip()
     args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIdArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -162,32 +161,53 @@ class GetAdvisorsForCompanyInTransactionFromIdentifierArgs(ToolArgsWithIdentifie
     transaction_id: int | None = Field(description="The ID of the merger.", default=None)
 
 
+class GetAdvisorsForCompanyInTransactionFromIdentifierResp(ToolRespWithErrors):
+    results: list[AdvisorResp]
+
+
 class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
     name: str = "get_advisors_for_company_in_transaction_from_identifier"
-    description: str = 'Get the companies advising a company in a given transaction. For example, "Who advised S&P Global during their purchase of Kensho?"'
+    description: str = dedent("""
+        "Returns a list of advisor companies that provided advisory services to the specified company during a particular merger or acquisition transaction. Use this tool to answer questions like 'Who advised S&P Global during their purchase of Kensho?', 'Which firms advised Ben & Jerry's in their acquisition?'."
+    """).strip()
     args_schema: Type[BaseModel] = GetAdvisorsForCompanyInTransactionFromIdentifierArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    def _run(self, identifier: str, transaction_id: int) -> list:
-        ticker = self.kfinance_client.ticker(identifier)
+    def _run(self, identifier: str, transaction_id: int) -> dict:
+        api_client = self.kfinance_client.kfinance_api_client
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=[identifier])
+        # If the identifier cannot be resolved, return the associated error.
+        if id_triple_resp.errors:
+            output_model = GetAdvisorsForCompanyInTransactionFromIdentifierResp(
+                results=[], errors=list(id_triple_resp.errors.values())
+            )
+            return output_model.model_dump(mode="json")
+
+        id_triple = id_triple_resp.identifiers_to_id_triples[identifier]
+
         participant_in_merger = ParticipantInMerger(
-            kfinance_api_client=ticker.kfinance_api_client,
+            kfinance_api_client=api_client,
             transaction_id=transaction_id,
             company=Company(
-                kfinance_api_client=ticker.kfinance_api_client,
-                company_id=ticker.company.company_id,
+                kfinance_api_client=api_client,
+                company_id=id_triple.company_id,
             ),
         )
+
         advisors = participant_in_merger.advisors
 
+        advisors_response: list[AdvisorResp] = []
         if advisors:
-            return [
-                {
-                    "advisor_company_id": prefix_company_id(advisor.company.company_id),
-                    "advisor_company_name": advisor.company.name,
-                    "advisor_type_name": advisor.advisor_type_name,
-                }
-                for advisor in advisors
-            ]
-        else:
-            return []
+            for advisor in advisors:
+                advisors_response.append(
+                    AdvisorResp(
+                        advisor_company_id=prefix_company_id(advisor.company.company_id),
+                        advisor_company_name=advisor.company.name,
+                        advisor_type_name=advisor.advisor_type_name,
+                    )
+                )
+
+        output_model = GetAdvisorsForCompanyInTransactionFromIdentifierResp(
+            results=advisors_response, errors=list(id_triple_resp.errors.values())
+        )
+        return output_model.model_dump(mode="json")
