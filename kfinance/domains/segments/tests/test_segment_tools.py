@@ -63,8 +63,8 @@ class TestGetSegmentsFromIdentifier:
     def test_most_recent_request(self, requests_mock: Mocker, mock_client: Client) -> None:
         """
         GIVEN the GetFinancialLineItemFromIdentifiers tool
-        WHEN we request most recent statement for multiple companies
-        THEN we only get back the most recent statement for each company
+        WHEN we request most recent segment for multiple companies
+        THEN we only get back the most recent segment for each company
         """
 
         company_ids = [1, 2]
@@ -82,6 +82,41 @@ class TestGetSegmentsFromIdentifier:
                 url=f"https://kfinance.kensho.com/api/v1/segments/{company_id}/business/none/none/none/none/none",
                 json=self.segments_response,
             )
+
+        tool = GetSegmentsFromIdentifiers(kfinance_client=mock_client)
+        args = GetSegmentsFromIdentifiersArgs(
+            identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
+            segment_type=SegmentType.business,
+        )
+        response = tool.run(args.model_dump(mode="json"))
+        assert response == expected_response
+
+    def test_empty_most_recent_request(self, requests_mock: Mocker, mock_client: Client) -> None:
+        """
+        GIVEN the GetFinancialLineItemFromIdentifiers tool
+        WHEN we request most recent segment for multiple companies
+        THEN we only get back the most recent segment for each company
+        UNLESS no segments exist
+        """
+
+        company_ids = [1, 2]
+        expected_response = GetSegmentsFromIdentifiersResp.model_validate(
+            {
+                "results": {
+                    "C_1": {"segments": {}},
+                    "C_2": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
+                }
+            }
+        )
+
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/segments/1/business/none/none/none/none/none",
+            json={"segments": {}},
+        )
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/segments/2/business/none/none/none/none/none",
+            json=self.segments_response,
+        )
 
         tool = GetSegmentsFromIdentifiers(kfinance_client=mock_client)
         args = GetSegmentsFromIdentifiersArgs(

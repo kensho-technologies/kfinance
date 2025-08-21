@@ -105,3 +105,45 @@ class TestGetFinancialStatementFromIdentifiers:
         )
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
+
+    def test_empty_most_recent_request(self, requests_mock: Mocker, mock_client: Client) -> None:
+        """
+        GIVEN the GetFinancialStatementFromIdentifiers tool
+        WHEN we request most recent statement for multiple companies
+        THEN we only get back the most recent statement for each company
+        UNLESS no statements exist
+        """
+
+        company_ids = [1, 2]
+        expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
+            {
+                "results": {
+                    "C_1": {"statements": {}},
+                    "C_2": {
+                        "statements": {
+                            "2021": {
+                                "Revenues": "8243000000.000000",
+                                "Total Revenues": "8243000000.000000",
+                            }
+                        }
+                    },
+                }
+            }
+        )
+
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/statements/1/income_statement/none/none/none/none/none",
+            json={"statements": {}},
+        )
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/statements/2/income_statement/none/none/none/none/none",
+            json=self.statement_resp,
+        )
+
+        tool = GetFinancialStatementFromIdentifiers(kfinance_client=mock_client)
+        args = GetFinancialStatementFromIdentifiersArgs(
+            identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
+            statement=StatementType.income_statement,
+        )
+        response = tool.run(args.model_dump(mode="json"))
+        assert response == expected_response

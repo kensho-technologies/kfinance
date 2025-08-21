@@ -105,9 +105,10 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
             and len(statement_responses) > 1
         ):
             for statement_response in statement_responses.values():
-                most_recent_year = max(statement_response.statements.keys())
-                most_recent_year_data = statement_response.statements[most_recent_year]
-                statement_response.statements = {most_recent_year: most_recent_year_data}
+                if statement_response.statements:
+                    most_recent_year = max(statement_response.statements.keys())
+                    most_recent_year_data = statement_response.statements[most_recent_year]
+                    statement_response.statements = {most_recent_year: most_recent_year_data}
 
         return GetFinancialStatementFromIdentifiersResp(
             results=statement_responses, errors=list(id_triple_resp.errors.values())
