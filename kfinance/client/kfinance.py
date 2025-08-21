@@ -31,13 +31,21 @@ from kfinance.client.meta_classes import (
     DelegatedCompanyFunctionsMetaClass,
 )
 from kfinance.client.models.date_and_period_models import (
+    CurrentPeriod,
+    LatestAnnualPeriod,
     LatestPeriods,
+    LatestQuarterlyPeriod,
     Periodicity,
     YearAndQuarter,
 )
 from kfinance.client.server_thread import ServerThread
 from kfinance.domains.companies.company_models import IdentificationTriple
 from kfinance.domains.earnings.earning_models import EarningsCall, TranscriptComponent
+from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
+    MergerConsideration,
+    MergerInfo,
+    MergerTimelineElement,
+)
 from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
 
 
@@ -1266,24 +1274,13 @@ class MergerOrAcquisition:
         self.transaction_id = transaction_id
         self.merger_title = merger_title
         self.closed_date = closed_date
-        self._merger_info: dict | None = None
+        self._merger_info: MergerInfo | None = None
 
     @property
-    def merger_info(self) -> dict:
+    def merger_info(self) -> MergerInfo:
         """Property for the combined information in the merger."""
         if not self._merger_info:
             self._merger_info = self.kfinance_api_client.fetch_merger_info(self.transaction_id)
-            if "timeline" in self._merger_info and self._merger_info["timeline"]:
-                timeline = pd.DataFrame(self._merger_info["timeline"])
-                timeline["date"] = pd.to_datetime(timeline["date"])
-                self._merger_info["timeline"] = timeline
-            if (
-                "consideration" in self._merger_info
-                and self._merger_info["consideration"]
-                and "details" in self._merger_info["consideration"]
-            ):
-                details = pd.DataFrame(self._merger_info["consideration"]["details"])
-                self._merger_info["consideration"]["details"] = details
         return self._merger_info
 
     @property
@@ -1292,9 +1289,9 @@ class MergerOrAcquisition:
         return self.merger_title
 
     @property
-    def get_timeline(self) -> pd.DataFrame:
+    def get_timeline(self) -> list[MergerTimelineElement]:
         """The timeline of the merger includes every new status, along with the dates of each status change."""
-        return self.merger_info["timeline"]
+        return self.merger_info.timeline
 
     @property
     def get_participants(self) -> dict:
@@ -1308,8 +1305,8 @@ class MergerOrAcquisition:
                 transaction_id=self.transaction_id,
                 company=Company(
                     kfinance_api_client=self.kfinance_api_client,
-                    company_id=self.merger_info["participants"]["target"]["company_id"],
-                    company_name=self.merger_info["participants"]["target"]["company_name"],
+                    company_id=self.merger_info.participants.target.company_id,
+                    company_name=self.merger_info.participants.target.company_name,
                 ),
             ),
             "buyers": [
@@ -1318,11 +1315,11 @@ class MergerOrAcquisition:
                     transaction_id=self.transaction_id,
                     company=Company(
                         kfinance_api_client=self.kfinance_api_client,
-                        company_id=company["company_id"],
-                        company_name=company["company_name"],
+                        company_id=company.company_id,
+                        company_name=company.company_name,
                     ),
                 )
-                for company in self.merger_info["participants"]["buyers"]
+                for company in self.merger_info.participants.buyers
             ],
             "sellers": [
                 ParticipantInMerger(
@@ -1330,16 +1327,16 @@ class MergerOrAcquisition:
                     transaction_id=self.transaction_id,
                     company=Company(
                         kfinance_api_client=self.kfinance_api_client,
-                        company_id=company["company_id"],
-                        company_name=company["company_name"],
+                        company_id=company.company_id,
+                        company_name=company.company_name,
                     ),
                 )
-                for company in self.merger_info["participants"]["sellers"]
+                for company in self.merger_info.participants.sellers
             ],
         }
 
     @property
-    def get_consideration(self) -> dict:
+    def get_consideration(self) -> MergerConsideration:
         """A merger's consideration is the assets exchanged for the target company.
 
         Properties in the consideration include:
@@ -1354,7 +1351,7 @@ class MergerOrAcquisition:
                 - The number of shares in the target company.
                 - The current gross total of the consideration detail.
         """
-        return self.merger_info["consideration"]
+        return self.merger_info.consideration
 
 
 @add_methods_of_singular_class_to_iterable_class(Company)
@@ -1903,16 +1900,18 @@ class Client:
         most_recent_year_annual = current_year - 1
 
         current_month = datetime_now.month
-        latest: LatestPeriods = {
-            "annual": {"latest_year": most_recent_year_annual},
-            "quarterly": {"latest_quarter": most_recent_qtr, "latest_year": most_recent_year_qtrly},
-            "now": {
-                "current_year": current_year,
-                "current_quarter": current_qtr,
-                "current_month": current_month,
-                "current_date": datetime_now.date().isoformat(),
-            },
-        }
+        latest = LatestPeriods(
+            annual=LatestAnnualPeriod(latest_year=most_recent_year_annual),
+            quarterly=LatestQuarterlyPeriod(
+                latest_quarter=most_recent_qtr, latest_year=most_recent_year_qtrly
+            ),
+            now=CurrentPeriod(
+                current_year=current_year,
+                current_quarter=current_qtr,
+                current_month=current_month,
+                current_date=datetime_now.date(),
+            ),
+        )
         return latest
 
     @staticmethod
@@ -1932,9 +1931,9 @@ class Client:
         year_n_quarters_ago = total_quarters_completed_n_quarters_ago // 4
         quarter_n_quarters_ago = total_quarters_completed_n_quarters_ago % 4 + 1
 
-        year_quarter_n_quarters_ago: YearAndQuarter = {
-            "year": year_n_quarters_ago,
-            "quarter": quarter_n_quarters_ago,
-        }
+        year_quarter_n_quarters_ago = YearAndQuarter(
+            year=year_n_quarters_ago,
+            quarter=quarter_n_quarters_ago,
+        )
 
         return year_quarter_n_quarters_ago

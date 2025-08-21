@@ -1,3 +1,4 @@
+import abc
 from typing import Annotated, Any, Callable, Dict, Literal, Type
 
 from langchain_core.tools import BaseTool
@@ -22,7 +23,7 @@ class KfinanceTool(BaseTool):
 
     model_config = ConfigDict(extra="forbid")
 
-    def run_without_langchain(self, *args: Any, **kwargs: Any) -> Any:
+    def run_without_langchain(self, *args: Any, **kwargs: Any) -> dict:
         """Execute a Kfinance tool without langchain.
 
         Langchain converts json input params into the pydantic args_schema, which means that
@@ -38,7 +39,8 @@ class KfinanceTool(BaseTool):
         # This behavior matches the langchain handling. See
         # https://github.com/langchain-ai/langchain/blob/ca39680d2ab0d786bc035930778a5787e7bb5e01/libs/core/langchain_core/tools/base.py#L595-L597
         args_dict = {k: v for k, v in args_dict.items() if k in kwargs}
-        return self._run(**args_dict)
+        result_model = self._run(**args_dict)
+        return result_model.model_dump(mode="json", exclude_none=True)
 
     def run_with_grounding(self, *args: Any, **kwargs: Any) -> Any:
         """Execute a Kfinance tool with grounding support.
@@ -47,7 +49,10 @@ class KfinanceTool(BaseTool):
         support, for returning the endpoint urls along with the data as citation info for the LRA Data Agent.
         """
         with self.kfinance_client.kfinance_api_client.endpoint_tracker() as endpoint_tracker_queue:
-            data = self.run_without_langchain(*args, **kwargs)
+            args_model = self.args_schema.model_validate(kwargs)
+            args_dict = args_model.model_dump()
+            args_dict = {k: v for k, v in args_dict.items() if k in kwargs}
+            result_model = self._run(**args_dict)
 
             # After completion of tool data fetching and within the endpoint_tracker context manager scope, dequeue the endpoint_tracker_queue
             endpoint_urls = []
@@ -55,11 +60,12 @@ class KfinanceTool(BaseTool):
                 endpoint_urls.append(endpoint_tracker_queue.get())
 
             return {
-                "data": data,
+                "data": result_model,
                 "endpoint_urls": endpoint_urls,
             }
 
-    def _run(self, *args: Any, **kwargs: Any) -> Any:
+    @abc.abstractmethod
+    def _run(self, *args: Any, **kwargs: Any) -> BaseModel:
         """The code to execute the tool.
 
         Where feasible and useful, tools should use batch processing to parallelize

@@ -6,6 +6,7 @@ from kfinance.domains.competitors.competitor_models import CompetitorSource
 from kfinance.domains.competitors.competitor_tools import (
     GetCompetitorsFromIdentifiers,
     GetCompetitorsFromIdentifiersArgs,
+    GetCompetitorsFromIdentifiersResp,
 )
 
 
@@ -24,25 +25,27 @@ class TestGetCompetitorsFromIdentifiers:
                 {"company_id": 4003514, "company_name": "London Stock Exchange Group plc"},
             ]
         }
-        expected_response = {
-            "results": {
-                "SPGI": {
-                    "competitors": [
-                        {
-                            "company_id": "C_35352",
-                            "company_name": "The Descartes Systems Group Inc.",
-                        },
-                        {
-                            "company_id": "C_4003514",
-                            "company_name": "London Stock Exchange Group plc",
-                        },
-                    ]
-                }
-            },
-            "errors": [
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
-        }
+        expected_response = GetCompetitorsFromIdentifiersResp.model_validate(
+            {
+                "results": {
+                    "SPGI": {
+                        "competitors": [
+                            {
+                                "company_id": 35352,
+                                "company_name": "The Descartes Systems Group Inc.",
+                            },
+                            {
+                                "company_id": 4003514,
+                                "company_name": "London Stock Exchange Group plc",
+                            },
+                        ]
+                    }
+                },
+                "errors": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                ],
+            }
+        )
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/competitors/{SPGI_COMPANY_ID}/named_by_competitor",

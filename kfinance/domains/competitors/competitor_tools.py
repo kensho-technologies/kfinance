@@ -27,7 +27,7 @@ class GetCompetitorsFromIdentifiers(KfinanceTool):
         self,
         identifiers: list[str],
         competitor_source: CompetitorSource,
-    ) -> dict:
+    ) -> GetCompetitorsFromIdentifiersResp:
         """Sample response:
 
         {
@@ -56,7 +56,6 @@ class GetCompetitorsFromIdentifiers(KfinanceTool):
         competitor_responses: dict[str, CompetitorResponse] = process_tasks_in_thread_pool_executor(
             api_client=api_client, tasks=tasks
         )
-        resp_model = GetCompetitorsFromIdentifiersResp(
+        return GetCompetitorsFromIdentifiersResp(
             results=competitor_responses, errors=list(id_triple_resp.errors.values())
         )
-        return resp_model.model_dump(mode="json")

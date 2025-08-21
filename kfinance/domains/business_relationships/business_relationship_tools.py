@@ -38,7 +38,9 @@ class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = GetBusinessRelationshipFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.RelationshipPermission}
 
-    def _run(self, identifiers: list[str], business_relationship: BusinessRelationshipType) -> dict:
+    def _run(
+        self, identifiers: list[str], business_relationship: BusinessRelationshipType
+    ) -> GetBusinessRelationshipFromIdentifiersResp:
         """Sample response:
 
         {
@@ -76,10 +78,8 @@ class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
             api_client=api_client, tasks=tasks
         )
 
-        output_model = GetBusinessRelationshipFromIdentifiersResp(
+        return GetBusinessRelationshipFromIdentifiersResp(
             business_relationship=business_relationship,
             results=relationship_responses,
             errors=list(id_triple_resp.errors.values()),
         )
-
-        return output_model.model_dump(mode="json")

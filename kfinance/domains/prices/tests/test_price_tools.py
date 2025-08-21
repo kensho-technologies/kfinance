@@ -5,8 +5,10 @@ from kfinance.conftest import SPGI_TRADING_ITEM_ID
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.prices.price_tools import (
     GetHistoryMetadataFromIdentifiers,
+    GetHistoryMetadataFromIdentifiersResp,
     GetPricesFromIdentifiers,
     GetPricesFromIdentifiersArgs,
+    GetPricesFromIdentifiersResp,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import ToolArgsWithIdentifiers
 
@@ -27,12 +29,14 @@ class TestGetHistoryMetadataFromIdentifiers:
             "instrument_type": "Equity",
             "symbol": "SPGI",
         }
-        expected_resp = {
-            "results": {"SPGI": metadata_resp},
-            "errors": [
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
-        }
+        expected_resp = GetHistoryMetadataFromIdentifiersResp.model_validate(
+            {
+                "results": {"SPGI": metadata_resp},
+                "errors": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                ],
+            }
+        )
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/metadata",
@@ -80,33 +84,35 @@ class TestGetPricesFromIdentifiers:
             url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/none/none/day/adjusted",
             json=self.prices_resp,
         )
-        expected_response = {
-            "results": {
-                "SPGI": {
-                    "prices": [
-                        {
-                            "date": "2024-04-11",
-                            "open": {"value": "424.26", "unit": "USD"},
-                            "high": {"value": "425.99", "unit": "USD"},
-                            "low": {"value": "422.04", "unit": "USD"},
-                            "close": {"value": "422.92", "unit": "USD"},
-                            "volume": {"value": "1129158", "unit": "Shares"},
-                        },
-                        {
-                            "date": "2024-04-12",
-                            "open": {"value": "419.23", "unit": "USD"},
-                            "high": {"value": "421.94", "unit": "USD"},
-                            "low": {"value": "416.45", "unit": "USD"},
-                            "close": {"value": "417.81", "unit": "USD"},
-                            "volume": {"value": "1182229", "unit": "Shares"},
-                        },
-                    ]
-                }
-            },
-            "errors": [
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
-        }
+        expected_response = GetPricesFromIdentifiersResp.model_validate(
+            {
+                "results": {
+                    "SPGI": {
+                        "prices": [
+                            {
+                                "date": "2024-04-11",
+                                "open": {"value": "424.26", "unit": "USD"},
+                                "high": {"value": "425.99", "unit": "USD"},
+                                "low": {"value": "422.04", "unit": "USD"},
+                                "close": {"value": "422.92", "unit": "USD"},
+                                "volume": {"value": "1129158", "unit": "Shares"},
+                            },
+                            {
+                                "date": "2024-04-12",
+                                "open": {"value": "419.23", "unit": "USD"},
+                                "high": {"value": "421.94", "unit": "USD"},
+                                "low": {"value": "416.45", "unit": "USD"},
+                                "close": {"value": "417.81", "unit": "USD"},
+                                "volume": {"value": "1182229", "unit": "Shares"},
+                            },
+                        ]
+                    }
+                },
+                "errors": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                ],
+            }
+        )
 
         tool = GetPricesFromIdentifiers(kfinance_client=mock_client)
         response = tool.run(
@@ -142,12 +148,14 @@ class TestGetPricesFromIdentifiers:
                 }
             ]
         }
-        expected_response = {
-            "results": {
-                "C_1": expected_single_company_response,
-                "C_2": expected_single_company_response,
-            },
-        }
+        expected_response = GetPricesFromIdentifiersResp.model_validate(
+            {
+                "results": {
+                    "C_1": expected_single_company_response,
+                    "C_2": expected_single_company_response,
+                },
+            }
+        )
         tool = GetPricesFromIdentifiers(kfinance_client=mock_client)
         response = tool.run(
             GetPricesFromIdentifiersArgs(

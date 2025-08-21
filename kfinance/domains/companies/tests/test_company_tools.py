@@ -4,9 +4,13 @@ from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.companies.company_tools import (
     GetCompanyDescriptionFromIdentifiers,
+    GetCompanyDescriptionFromIdentifiersResp,
     GetCompanyOtherNamesFromIdentifiers,
+    GetCompanyOtherNamesFromIdentifiersResp,
     GetCompanySummaryFromIdentifiers,
+    GetCompanySummaryFromIdentifiersResp,
     GetInfoFromIdentifiers,
+    GetInfoFromIdentifiersResp,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import ToolArgsWithIdentifiers
 
@@ -20,12 +24,14 @@ class TestGetInfoFromIdentifiers:
         """
 
         info_resp = {"name": "S&P Global Inc.", "status": "Operating"}
-        expected_response = {
-            "results": {"SPGI": info_resp},
-            "errors": [
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
-        }
+        expected_response = GetInfoFromIdentifiersResp.model_validate(
+            {
+                "results": {"SPGI": info_resp},
+                "errors": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                ],
+            }
+        )
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}",
             json=info_resp,
@@ -61,7 +67,9 @@ class TestGetCompanyDescriptions:
         tool = GetCompanySummaryFromIdentifiers(kfinance_client=mock_client)
         args = ToolArgsWithIdentifiers(identifiers=["SPGI"])
         response = tool.run(args.model_dump(mode="json"))
-        expected_response = {"results": {"SPGI": self.summary}}
+        expected_response = GetCompanySummaryFromIdentifiersResp.model_validate(
+            {"results": {"SPGI": self.summary}}
+        )
         assert response == expected_response
 
     def test_get_company_description_from_identifier(
@@ -81,7 +89,9 @@ class TestGetCompanyDescriptions:
         tool = GetCompanyDescriptionFromIdentifiers(kfinance_client=mock_client)
         args = ToolArgsWithIdentifiers(identifiers=["SPGI"])
         response = tool.run(args.model_dump(mode="json"))
-        expected_response = {"results": {"SPGI": self.description}}
+        expected_response = GetCompanyDescriptionFromIdentifiersResp.model_validate(
+            {"results": {"SPGI": self.description}}
+        )
         assert response == expected_response
 
 
@@ -121,5 +131,7 @@ class TestGetCompanyOtherNames:
         tool = GetCompanyOtherNamesFromIdentifiers(kfinance_client=mock_client)
         args = ToolArgsWithIdentifiers(identifiers=["SPGI"])
         response = tool.run(args.model_dump(mode="json"))
-        expected_response = {"results": {"SPGI": self.company_other_names_info}}
+        expected_response = GetCompanyOtherNamesFromIdentifiersResp.model_validate(
+            {"results": {"SPGI": self.company_other_names_info}}
+        )
         assert response == expected_response

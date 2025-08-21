@@ -4,6 +4,7 @@ from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_SECURITY_ID
 from kfinance.domains.cusip_and_isin.cusip_and_isin_tools import (
     GetCusipFromIdentifiers,
+    GetCusipOrIsinFromIdentifiersResp,
     GetIsinFromIdentifiers,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import ToolArgsWithIdentifiers
@@ -18,10 +19,12 @@ class TestGetCusipFromIdentifiers:
         """
 
         spgi_cusip = "78409V104"
-        expected_response = {
-            "results": {"SPGI": "78409V104"},
-            "errors": ["private_company is a private company without a security_id."],
-        }
+        expected_response = GetCusipOrIsinFromIdentifiersResp.model_validate(
+            {
+                "results": {"SPGI": "78409V104"},
+                "errors": ["private_company is a private company without a security_id."],
+            }
+        )
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/cusip/{SPGI_SECURITY_ID}",
             json={"cusip": spgi_cusip},
@@ -43,10 +46,12 @@ class TestGetIsinFromIdentifiers:
 
         spgi_isin = "US78409V1044"
 
-        expected_response = {
-            "results": {"SPGI": "US78409V1044"},
-            "errors": ["private_company is a private company without a security_id."],
-        }
+        expected_response = GetCusipOrIsinFromIdentifiersResp.model_validate(
+            {
+                "results": {"SPGI": "US78409V1044"},
+                "errors": ["private_company is a private company without a security_id."],
+            }
+        )
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/isin/{SPGI_SECURITY_ID}",
             json={"isin": spgi_isin},

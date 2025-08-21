@@ -11,6 +11,11 @@ class GetNQuartersAgoArgs(BaseModel):
     n: int = Field(description="Number of quarters before the current quarter")
 
 
+class GetNQuartersAgoResp(BaseModel):
+    year: int
+    quarter: int
+
+
 class GetNQuartersAgo(KfinanceTool):
     name: str = "get_n_quarters_ago"
     description: str = (

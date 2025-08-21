@@ -23,7 +23,7 @@ class GetCusipFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.IDPermission}
 
-    def _run(self, identifiers: list[str]) -> dict[str, str]:
+    def _run(self, identifiers: list[str]) -> GetCusipOrIsinFromIdentifiersResp:
         """Sample response:
 
         {
@@ -45,14 +45,13 @@ class GetCusipFromIdentifiers(KfinanceTool):
         ]
 
         cusip_responses = process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
-        resp_model = GetCusipOrIsinFromIdentifiersResp(
+        return GetCusipOrIsinFromIdentifiersResp(
             results={
                 identifier: cusip_resp["cusip"]
                 for identifier, cusip_resp in cusip_responses.items()
             },
             errors=list(id_triple_resp.errors.values()),
         )
-        return resp_model.model_dump(mode="json")
 
 
 class GetIsinFromIdentifiers(KfinanceTool):
@@ -61,7 +60,7 @@ class GetIsinFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.IDPermission}
 
-    def _run(self, identifiers: list[str]) -> dict:
+    def _run(self, identifiers: list[str]) -> GetCusipOrIsinFromIdentifiersResp:
         """Sample response:
 
         {
@@ -83,10 +82,9 @@ class GetIsinFromIdentifiers(KfinanceTool):
         ]
 
         isin_responses = process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
-        resp_model = GetCusipOrIsinFromIdentifiersResp(
+        return GetCusipOrIsinFromIdentifiersResp(
             results={
                 identifier: isin_resp["isin"] for identifier, isin_resp in isin_responses.items()
             },
             errors=list(id_triple_resp.errors.values()),
         )
-        return resp_model.model_dump(mode="json")

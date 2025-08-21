@@ -1,5 +1,6 @@
-from typing import TypedDict
+from datetime import date
 
+from pydantic import BaseModel
 from strenum import StrEnum
 
 
@@ -21,28 +22,28 @@ class Periodicity(StrEnum):
     year = "year"
 
 
-class YearAndQuarter(TypedDict):
+class YearAndQuarter(BaseModel):
     year: int
     quarter: int
 
 
-class LatestAnnualPeriod(TypedDict):
+class LatestAnnualPeriod(BaseModel):
     latest_year: int
 
 
-class LatestQuarterlyPeriod(TypedDict):
+class LatestQuarterlyPeriod(BaseModel):
     latest_quarter: int
     latest_year: int
 
 
-class CurrentPeriod(TypedDict):
+class CurrentPeriod(BaseModel):
     current_year: int
     current_quarter: int
     current_month: int
-    current_date: str
+    current_date: date
 
 
-class LatestPeriods(TypedDict):
+class LatestPeriods(BaseModel):
     annual: LatestAnnualPeriod
     quarterly: LatestQuarterlyPeriod
     now: CurrentPeriod

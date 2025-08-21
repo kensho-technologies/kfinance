@@ -1,11 +1,20 @@
+from datetime import date
+from decimal import Decimal
+
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
+from kfinance.client.models.decimal_with_unit import Money
 from kfinance.conftest import SPGI_COMPANY_ID
-from kfinance.domains.capitalizations.capitalization_models import Capitalization
+from kfinance.domains.capitalizations.capitalization_models import (
+    Capitalization,
+    Capitalizations,
+    DailyCapitalization,
+)
 from kfinance.domains.capitalizations.capitalization_tools import (
     GetCapitalizationFromIdentifiers,
     GetCapitalizationFromIdentifiersArgs,
+    GetCapitalizationFromIdentifiersResp,
 )
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 
@@ -40,25 +49,30 @@ class TestGetCapitalizationFromCompanyIds:
             json=self.market_caps_resp,
         )
 
-        expected_response = {
-            "results": {
-                "SPGI": {
-                    "capitalizations": [
-                        {
-                            "date": "2024-04-10",
-                            "market_cap": {"value": "132766738270.00", "unit": "USD"},
-                        },
-                        {
-                            "date": "2024-04-11",
-                            "market_cap": {"value": "132416066761.00", "unit": "USD"},
-                        },
+        expected_response = GetCapitalizationFromIdentifiersResp(
+            capitalization=Capitalization.market_cap,
+            results={
+                "SPGI": Capitalizations(
+                    market_caps=[
+                        DailyCapitalization(
+                            date=date(2024, 4, 10),
+                            market_cap=Money(value=Decimal(132766738270), unit="USD"),
+                            tev=None,
+                            shares_outstanding=None,
+                        ),
+                        DailyCapitalization(
+                            date=date(2024, 4, 11),
+                            market_cap=Money(value=Decimal(132416066761), unit="USD"),
+                            tev=None,
+                            shares_outstanding=None,
+                        ),
                     ]
-                }
+                )
             },
-            "errors": [
+            errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
-        }
+        )
 
         tool = GetCapitalizationFromIdentifiers(kfinance_client=mock_client)
         args = GetCapitalizationFromIdentifiersArgs(
@@ -73,26 +87,22 @@ class TestGetCapitalizationFromCompanyIds:
         WHEN we request most recent market caps for multiple companies
         THEN we only get back the most recent market cap for each company
         """
-        expected_response = {
-            "results": {
-                "C_1": {
-                    "capitalizations": [
-                        {
-                            "date": "2024-04-11",
-                            "market_cap": {"unit": "USD", "value": "132416066761.00"},
-                        }
-                    ]
-                },
-                "C_2": {
-                    "capitalizations": [
-                        {
-                            "date": "2024-04-11",
-                            "market_cap": {"unit": "USD", "value": "132416066761.00"},
-                        }
-                    ]
-                },
-            }
-        }
+
+        capitalization = Capitalizations(
+            market_caps=[
+                DailyCapitalization(
+                    date=date(2024, 4, 11),
+                    market_cap=Money(value=Decimal(132416066761), unit="USD"),
+                    tev=None,
+                    shares_outstanding=None,
+                )
+            ]
+        )
+
+        expected_response = GetCapitalizationFromIdentifiersResp(
+            capitalization=Capitalization.market_cap,
+            results={"C_1": capitalization, "C_2": capitalization},
+        )
 
         company_ids = [1, 2]
         for company_id in company_ids:

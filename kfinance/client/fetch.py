@@ -26,7 +26,10 @@ from kfinance.domains.companies.company_models import (
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.line_items.line_item_models import LineItemResponse
-from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import MergersResp
+from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
+    MergerInfo,
+    MergersResp,
+)
 from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.domains.statements.statement_models import StatementsResp
@@ -645,17 +648,16 @@ class KFinanceApiClient:
     def fetch_merger_info(
         self,
         transaction_id: int,
-    ) -> dict:
+    ) -> MergerInfo:
         """Fetches information about the given merger or acquisition, including the timeline, the participants, and the considerations.
 
-        Returns a complex dictionary.
         :param transaction_id: The transaction ID to filter on.
         :type transaction_id: int
         :return: A dictionary containing the timeline, the participants, and the considerations (eith their details) of the transaction.
-        :rtype: dict
+        :rtype: MergerInfo
         """
         url = f"{self.url_base}merger/info/{transaction_id}"
-        return self.fetch(url)
+        return MergerInfo.model_validate(self.fetch(url))
 
     def fetch_advisors_for_company_in_merger(
         self,

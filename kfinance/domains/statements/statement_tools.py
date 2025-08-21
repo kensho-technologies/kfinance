@@ -55,7 +55,7 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         end_year: int | None = None,
         start_quarter: Literal[1, 2, 3, 4] | None = None,
         end_quarter: Literal[1, 2, 3, 4] | None = None,
-    ) -> dict:
+    ) -> GetFinancialStatementFromIdentifiersResp:
         """Sample response:
 
         {
@@ -109,7 +109,6 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
                 most_recent_year_data = statement_response.statements[most_recent_year]
                 statement_response.statements = {most_recent_year: most_recent_year_data}
 
-        output_model = GetFinancialStatementFromIdentifiersResp(
+        return GetFinancialStatementFromIdentifiersResp(
             results=statement_responses, errors=list(id_triple_resp.errors.values())
         )
-        return output_model.model_dump(mode="json")
