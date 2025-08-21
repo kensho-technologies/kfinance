@@ -1,5 +1,8 @@
 # Changelog
 
+# v3.2.8
+- Added support for None to LineItemResponse
+
 # v3.2.7
 - Fix validator for UnifiedIdTripleResponse
 
