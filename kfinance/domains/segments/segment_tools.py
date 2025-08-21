@@ -98,9 +98,10 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
             and len(segments_responses) > 1
         ):
             for segments_response in segments_responses.values():
-                most_recent_year = max(segments_response.segments.keys())
-                most_recent_year_data = segments_response.segments[most_recent_year]
-                segments_response.segments = {most_recent_year: most_recent_year_data}
+                if segments_response.segments:
+                    most_recent_year = max(segments_response.segments.keys())
+                    most_recent_year_data = segments_response.segments[most_recent_year]
+                    segments_response.segments = {most_recent_year: most_recent_year_data}
 
         return GetSegmentsFromIdentifiersResp(
             results=segments_responses, errors=list(id_triple_resp.errors.values())

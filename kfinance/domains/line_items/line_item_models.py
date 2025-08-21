@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 
 class LineItemResponse(BaseModel):
-    line_item: dict[str, Decimal]
+    line_item: dict[str, Decimal | None]
 
 
 class LineItemType(TypedDict):

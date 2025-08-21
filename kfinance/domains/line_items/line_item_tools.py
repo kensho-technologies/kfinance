@@ -109,9 +109,10 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
             and len(line_item_responses) > 1
         ):
             for line_item_response in line_item_responses.values():
-                most_recent_year = max(line_item_response.line_item.keys())
-                most_recent_year_data = line_item_response.line_item[most_recent_year]
-                line_item_response.line_item = {most_recent_year: most_recent_year_data}
+                if line_item_response.line_item:
+                    most_recent_year = max(line_item_response.line_item.keys())
+                    most_recent_year_data = line_item_response.line_item[most_recent_year]
+                    line_item_response.line_item = {most_recent_year: most_recent_year_data}
 
         return GetFinancialLineItemFromIdentifiersResp(
             results=line_item_responses, errors=list(id_triple_resp.errors.values())

@@ -86,6 +86,38 @@ class TestGetFinancialLineItemFromCompanyIds:
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
 
+    def test_empty_most_recent_request(self, requests_mock: Mocker, mock_client: Client) -> None:
+        """
+        GIVEN the GetFinancialLineItemFromIdentifiers tool
+        WHEN we request most recent line items for multiple companies
+        THEN we only get back the most recent line item for each company
+        UNLESS no line items exist
+        """
+
+        company_ids = [1, 2]
+
+        c_1_line_item_resp = LineItemResponse(line_item={})
+        c_2_line_item_resp = LineItemResponse(line_item={"2024": Decimal(14208000000)})
+        expected_response = GetFinancialLineItemFromIdentifiersResp(
+            results={"C_1": c_1_line_item_resp, "C_2": c_2_line_item_resp},
+        )
+
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/line_item/1/revenue/none/none/none/none/none",
+            json={"line_item": {}},
+        )
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/line_item/2/revenue/none/none/none/none/none",
+            json=self.line_item_resp,
+        )
+        tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
+        args = GetFinancialLineItemFromIdentifiersArgs(
+            identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
+            line_item="revenue",
+        )
+        response = tool.run(args.model_dump(mode="json"))
+        assert response == expected_response
+
     def test_line_items_and_aliases_included_in_schema(self, mock_client: Client):
         """
         GIVEN a GetFinancialLineItemFromCompanyIds tool
