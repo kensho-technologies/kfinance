@@ -1,5 +1,8 @@
 # Changelog
 
+# v3.2.5
+- Return pydantic models from KfinanceTool._run
+
 ## v3.2.4
 - Add Mergers & Acquisitions tools to ALL_TOOLS
 

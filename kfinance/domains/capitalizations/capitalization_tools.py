@@ -26,6 +26,7 @@ class GetCapitalizationFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 
 class GetCapitalizationFromIdentifiersResp(ToolRespWithErrors):
+    capitalization: Capitalization
     results: dict[str, Capitalizations]
 
 
@@ -50,13 +51,13 @@ class GetCapitalizationFromIdentifiers(KfinanceTool):
         capitalization: Capitalization,
         start_date: str | None = None,
         end_date: str | None = None,
-    ) -> dict:
+    ) -> GetCapitalizationFromIdentifiersResp:
         """Sample response:
 
         {
+            'capitalization': 'market_cap'
             'results': {
                 'SPGI': {
-                    'capitalizations': [
                         {'date': '2024-04-10', 'market_cap': {'value': '132766738270.00', 'unit': 'USD'}},
                         {'date': '2024-04-11', 'market_cap': {'value': '132416066761.00', 'unit': 'USD'}}
                     ]
@@ -100,7 +101,8 @@ class GetCapitalizationFromIdentifiers(KfinanceTool):
                 if capitalization is not Capitalization.shares_outstanding:
                     daily_capitalization.shares_outstanding = None
 
-        resp_model = GetCapitalizationFromIdentifiersResp(
-            results=capitalization_responses, errors=list(id_triple_resp.errors.values())
+        return GetCapitalizationFromIdentifiersResp(
+            capitalization=capitalization,
+            results=capitalization_responses,
+            errors=list(id_triple_resp.errors.values()),
         )
-        return resp_model.model_dump(mode="json", exclude_none=True)

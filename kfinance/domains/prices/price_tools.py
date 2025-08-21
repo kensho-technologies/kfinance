@@ -60,7 +60,7 @@ class GetPricesFromIdentifiers(KfinanceTool):
         end_date: date | None = None,
         periodicity: Periodicity = Periodicity.day,
         adjusted: bool = True,
-    ) -> dict:
+    ) -> GetPricesFromIdentifiersResp:
         """Sample Response:
 
         {
@@ -116,10 +116,9 @@ class GetPricesFromIdentifiers(KfinanceTool):
             for price_response in price_responses.values():
                 price_response.prices = price_response.prices[-1:]
 
-        output_model = GetPricesFromIdentifiersResp(
+        return GetPricesFromIdentifiersResp(
             results=price_responses, errors=list(id_triple_resp.errors.values())
         )
-        return output_model.model_dump(mode="json")
 
 
 class GetHistoryMetadataFromIdentifiersResp(ToolRespWithErrors):
@@ -136,7 +135,7 @@ class GetHistoryMetadataFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = None
 
-    def _run(self, identifiers: list[str]) -> dict:
+    def _run(self, identifiers: list[str]) -> GetHistoryMetadataFromIdentifiersResp:
         """Sample response:
 
         {
@@ -169,8 +168,6 @@ class GetHistoryMetadataFromIdentifiers(KfinanceTool):
         history_metadata_responses: dict[str, HistoryMetadataResp] = (
             process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
         )
-        output_model = GetHistoryMetadataFromIdentifiersResp(
+        return GetHistoryMetadataFromIdentifiersResp(
             results=history_metadata_responses, errors=list(id_triple_resp.errors.values())
         )
-
-        return output_model.model_dump(mode="json")

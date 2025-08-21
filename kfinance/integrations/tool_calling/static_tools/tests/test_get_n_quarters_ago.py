@@ -3,6 +3,7 @@ from datetime import datetime
 import time_machine
 
 from kfinance.client.kfinance import Client
+from kfinance.client.models.date_and_period_models import YearAndQuarter
 from kfinance.integrations.tool_calling.static_tools.get_n_quarters_ago import (
     GetNQuartersAgo,
     GetNQuartersAgoArgs,
@@ -18,7 +19,7 @@ class TestGetNQuartersAgo:
         THEN we get back 3 quarters ago
         """
 
-        expected_resp = {"quarter": 2, "year": 2024}
+        expected_resp = YearAndQuarter(year=2024, quarter=2)
         tool = GetNQuartersAgo(kfinance_client=mock_client)
         resp = tool.run(GetNQuartersAgoArgs(n=3).model_dump(mode="json"))
         assert resp == expected_resp

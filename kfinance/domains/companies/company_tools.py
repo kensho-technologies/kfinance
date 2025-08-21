@@ -27,7 +27,7 @@ class GetInfoFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = None
 
-    def _run(self, identifiers: list[str]) -> dict:
+    def _run(self, identifiers: list[str]) -> GetInfoFromIdentifiersResp:
         """Sample response:
 
         {   "results": {
@@ -65,10 +65,9 @@ class GetInfoFromIdentifiers(KfinanceTool):
         info_responses: dict[str, dict] = process_tasks_in_thread_pool_executor(
             api_client=api_client, tasks=tasks
         )
-        resp_model = GetInfoFromIdentifiersResp(
+        return GetInfoFromIdentifiersResp(
             results=info_responses, errors=list(id_triple_resp.errors.values())
         )
-        return resp_model.model_dump(mode="json")
 
 
 class GetCompanyOtherNamesFromIdentifiersResp(ToolRespWithErrors):
@@ -88,7 +87,7 @@ class GetCompanyOtherNamesFromIdentifiers(KfinanceTool):
     def _run(
         self,
         identifiers: list[str],
-    ) -> dict:
+    ) -> GetCompanyOtherNamesFromIdentifiersResp:
         api_client = self.kfinance_client.kfinance_api_client
         id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
         tasks = [
@@ -102,10 +101,9 @@ class GetCompanyOtherNamesFromIdentifiers(KfinanceTool):
         info_responses: dict[str, CompanyOtherNames] = process_tasks_in_thread_pool_executor(
             api_client=api_client, tasks=tasks
         )
-        resp_model = GetCompanyOtherNamesFromIdentifiersResp(
+        return GetCompanyOtherNamesFromIdentifiersResp(
             results=info_responses, errors=list(id_triple_resp.errors.values())
         )
-        return resp_model.model_dump(mode="json")
 
 
 class GetCompanySummaryFromIdentifiersResp(ToolRespWithErrors):
@@ -125,7 +123,7 @@ class GetCompanySummaryFromIdentifiers(KfinanceTool):
     def _run(
         self,
         identifiers: list[str],
-    ) -> dict:
+    ) -> GetCompanySummaryFromIdentifiersResp:
         api_client = self.kfinance_client.kfinance_api_client
         id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
 
@@ -147,10 +145,9 @@ class GetCompanySummaryFromIdentifiers(KfinanceTool):
             for identifier, descriptions in company_description_responses.items()
         }
 
-        resp_model = GetCompanySummaryFromIdentifiersResp(
+        return GetCompanySummaryFromIdentifiersResp(
             results=summary_results, errors=list(id_triple_resp.errors.values())
         )
-        return resp_model.model_dump(mode="json")
 
 
 class GetCompanyDescriptionFromIdentifiersResp(ToolRespWithErrors):
@@ -170,7 +167,7 @@ class GetCompanyDescriptionFromIdentifiers(KfinanceTool):
     def _run(
         self,
         identifiers: list[str],
-    ) -> dict:
+    ) -> GetCompanyDescriptionFromIdentifiersResp:
         api_client = self.kfinance_client.kfinance_api_client
         id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
 
@@ -192,7 +189,6 @@ class GetCompanyDescriptionFromIdentifiers(KfinanceTool):
             for identifier, descriptions in company_description_responses.items()
         }
 
-        resp_model = GetCompanyDescriptionFromIdentifiersResp(
+        return GetCompanyDescriptionFromIdentifiersResp(
             results=description_results, errors=list(id_triple_resp.errors.values())
         )
-        return resp_model.model_dump(mode="json")

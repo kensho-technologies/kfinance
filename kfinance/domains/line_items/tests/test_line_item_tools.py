@@ -1,12 +1,16 @@
+from decimal import Decimal
+
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
+from kfinance.domains.line_items.line_item_models import LineItemResponse
 from kfinance.domains.line_items.line_item_tools import (
     GetFinancialLineItemFromIdentifiers,
     GetFinancialLineItemFromIdentifiersArgs,
+    GetFinancialLineItemFromIdentifiersResp,
 )
 
 
@@ -28,27 +32,20 @@ class TestGetFinancialLineItemFromCompanyIds:
         THEN we get back the SPGI revenue and an error for the non-existent company
         """
 
-        expected_response = {
-            "SPGI": {
-                "2022": {"revenue": 11181000000.0},
-                "2023": {"revenue": 12497000000.0},
-                "2024": {"revenue": 14208000000.0},
-            }
-        }
-        expected_response = {
-            "results": {
-                "SPGI": {
-                    "line_item": {
-                        "2022": "11181000000.000000",
-                        "2023": "12497000000.000000",
-                        "2024": "14208000000.000000",
+        expected_response = GetFinancialLineItemFromIdentifiersResp(
+            results={
+                "SPGI": LineItemResponse(
+                    line_item={
+                        "2022": Decimal(11181000000),
+                        "2023": Decimal(12497000000),
+                        "2024": Decimal(14208000000),
                     }
-                }
+                )
             },
-            "errors": [
+            errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
-        }
+        )
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/line_item/{SPGI_COMPANY_ID}/revenue/none/none/none/none/none",
@@ -70,12 +67,12 @@ class TestGetFinancialLineItemFromCompanyIds:
         """
 
         company_ids = [1, 2]
-        expected_response = {
-            "results": {
-                "C_1": {"line_item": {"2024": "14208000000.000000"}},
-                "C_2": {"line_item": {"2024": "14208000000.000000"}},
-            }
-        }
+
+        line_item_resp = LineItemResponse(line_item={"2024": Decimal(14208000000)})
+        expected_response = GetFinancialLineItemFromIdentifiersResp(
+            results={"C_1": line_item_resp, "C_2": line_item_resp},
+        )
+
         for company_id in company_ids:
             requests_mock.get(
                 url=f"https://kfinance.kensho.com/api/v1/line_item/{company_id}/revenue/none/none/none/none/none",

@@ -63,7 +63,7 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         end_year: int | None = None,
         start_quarter: Literal[1, 2, 3, 4] | None = None,
         end_quarter: Literal[1, 2, 3, 4] | None = None,
-    ) -> dict:
+    ) -> GetFinancialLineItemFromIdentifiersResp:
         """Sample response:
 
         {
@@ -113,7 +113,6 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
                 most_recent_year_data = line_item_response.line_item[most_recent_year]
                 line_item_response.line_item = {most_recent_year: most_recent_year_data}
 
-        output_model = GetFinancialLineItemFromIdentifiersResp(
+        return GetFinancialLineItemFromIdentifiersResp(
             results=line_item_responses, errors=list(id_triple_resp.errors.values())
         )
-        return output_model.model_dump(mode="json")

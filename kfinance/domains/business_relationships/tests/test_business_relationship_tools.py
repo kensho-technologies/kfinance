@@ -8,6 +8,7 @@ from kfinance.domains.business_relationships.business_relationship_models import
 from kfinance.domains.business_relationships.business_relationship_tools import (
     GetBusinessRelationshipFromIdentifiers,
     GetBusinessRelationshipFromIdentifiersArgs,
+    GetBusinessRelationshipFromIdentifiersResp,
 )
 
 
@@ -27,21 +28,23 @@ class TestGetBusinessRelationshipFromIdentifiers:
                 {"company_id": 8182358, "company_name": "Eloqua, Inc."},
             ],
         }
-        expected_result = {
-            "business_relationship": "supplier",
-            "results": {
-                "SPGI": {
-                    "current": [{"company_id": "C_883103", "company_name": "CRISIL Limited"}],
-                    "previous": [
-                        {"company_id": "C_472898", "company_name": "Morgan Stanley"},
-                        {"company_id": "C_8182358", "company_name": "Eloqua, Inc."},
-                    ],
-                }
-            },
-            "errors": [
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
-        }
+        expected_result = GetBusinessRelationshipFromIdentifiersResp.model_validate(
+            {
+                "business_relationship": "supplier",
+                "results": {
+                    "SPGI": {
+                        "current": [{"company_id": 883103, "company_name": "CRISIL Limited"}],
+                        "previous": [
+                            {"company_id": 472898, "company_name": "Morgan Stanley"},
+                            {"company_id": 8182358, "company_name": "Eloqua, Inc."},
+                        ],
+                    }
+                },
+                "errors": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                ],
+            }
+        )
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/supplier",
@@ -54,5 +57,4 @@ class TestGetBusinessRelationshipFromIdentifiers:
             business_relationship=BusinessRelationshipType.supplier,
         )
         resp = tool.run(args.model_dump(mode="json"))
-        resp["results"]["SPGI"]["previous"].sort(key=lambda x: x["company_id"])
         assert resp == expected_result

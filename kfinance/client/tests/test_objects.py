@@ -14,7 +14,6 @@ from kfinance.client.kfinance import (
     BusinessRelationships,
     Company,
     Earnings,
-    MergerOrAcquisition,
     ParticipantInMerger,
     Security,
     Ticker,
@@ -29,7 +28,10 @@ from kfinance.domains.capitalizations.capitalization_models import Capitalizatio
 from kfinance.domains.companies.company_models import CompanyIdAndName, IdentificationTriple
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.line_items.line_item_models import LineItemResponse
-from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import MergersResp
+from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
+    MergerInfo,
+    MergersResp,
+)
 from kfinance.domains.prices.price_models import HistoryMetadataResp
 from kfinance.domains.segments.segment_models import SegmentsResp
 from kfinance.domains.statements.statement_models import StatementsResp
@@ -254,39 +256,41 @@ MOCK_ISIN_DB = {msft_isin: msft_id_triple.model_dump(mode="json")}
 MOCK_CUSIP_DB = {msft_cusip: msft_id_triple.model_dump(mode="json")}
 
 MOCK_MERGERS_DB = {
-    msft_buys_mongo: {
-        "timeline": [
-            {"status": "Announced", "date": "2000-09-12"},
-            {"status": "Closed", "date": "2000-09-12"},
-        ],
-        "participants": {
-            "target": {"company_id": 31696, "company_name": "MongoMusic, Inc."},
-            "buyers": [{"company_id": 21835, "company_name": "Microsoft Corporation"}],
-            "sellers": [
-                {"company_id": 18805, "company_name": "Angel Investors L.P."},
-                {"company_id": 20087, "company_name": "Draper Richards, L.P."},
-                {"company_id": 22103, "company_name": "BRV Partners, LLC"},
-                {"company_id": 23745, "company_name": "Venture Frogs, LLC"},
-                {"company_id": 105902, "company_name": "ARGUS Capital International Limited"},
-                {"company_id": 880300, "company_name": "Sony Music Entertainment, Inc."},
+    msft_buys_mongo: MergerInfo.model_validate(
+        {
+            "timeline": [
+                {"status": "Announced", "date": "2000-09-12"},
+                {"status": "Closed", "date": "2000-09-12"},
             ],
-        },
-        "consideration": {
-            "currency_name": "US Dollar",
-            "current_calculated_gross_total_transaction_value": "51609375.000000",
-            "current_calculated_implied_equity_value": "51609375.000000",
-            "current_calculated_implied_enterprise_value": "51609375.000000",
-            "details": [
-                {
-                    "scenario": "Stock Lump Sum",
-                    "subtype": "Common Equity",
-                    "cash_or_cash_equivalent_per_target_share_unit": None,
-                    "number_of_target_shares_sought": "1000000.000000",
-                    "current_calculated_gross_value_of_consideration": "51609375.000000",
-                }
-            ],
-        },
-    }
+            "participants": {
+                "target": {"company_id": 31696, "company_name": "MongoMusic, Inc."},
+                "buyers": [{"company_id": 21835, "company_name": "Microsoft Corporation"}],
+                "sellers": [
+                    {"company_id": 18805, "company_name": "Angel Investors L.P."},
+                    {"company_id": 20087, "company_name": "Draper Richards, L.P."},
+                    {"company_id": 22103, "company_name": "BRV Partners, LLC"},
+                    {"company_id": 23745, "company_name": "Venture Frogs, LLC"},
+                    {"company_id": 105902, "company_name": "ARGUS Capital International Limited"},
+                    {"company_id": 880300, "company_name": "Sony Music Entertainment, Inc."},
+                ],
+            },
+            "consideration": {
+                "currency_name": "US Dollar",
+                "current_calculated_gross_total_transaction_value": "51609375.000000",
+                "current_calculated_implied_equity_value": "51609375.000000",
+                "current_calculated_implied_enterprise_value": "51609375.000000",
+                "details": [
+                    {
+                        "scenario": "Stock Lump Sum",
+                        "subtype": "Common Equity",
+                        "cash_or_cash_equivalent_per_target_share_unit": None,
+                        "number_of_target_shares_sought": "1000000.000000",
+                        "current_calculated_gross_value_of_consideration": "51609375.000000",
+                    }
+                ],
+            },
+        }
+    )
 }
 
 
@@ -1012,64 +1016,3 @@ class TestCompanyEarnings(TestCase):
         """test company next_earnings property"""
         next_earnings = self.msft_company.next_earnings
         self.assertEqual(next_earnings.key_dev_id, 1916266380)
-
-
-class TestMerger(TestCase):
-    def setUp(self):
-        self.kfinance_api_client = MockKFinanceApiClient()
-        self.merger = MergerOrAcquisition(
-            kfinance_api_client=self.kfinance_api_client,
-            transaction_id=int(msft_buys_mongo),
-            merger_title="Closed M/A of MongoMusic, Inc.",
-            closed_date=date(2021, 1, 1),
-        )
-
-    def test_merger_info(self) -> None:
-        expected_merger_info = MOCK_MERGERS_DB[msft_buys_mongo]
-        merger_info = {
-            "timeline": [
-                {"status": timeline["status"], "date": timeline["date"].strftime("%Y-%m-%d")}
-                for timeline in self.merger.get_timeline.to_dict(orient="records")
-            ],
-            "participants": {
-                "target": {
-                    "company_id": self.merger.get_participants["target"].company.company_id,
-                    "company_name": self.merger.get_participants["target"].company.name,
-                },
-                "buyers": [
-                    {"company_id": buyer.company.company_id, "company_name": buyer.company.name}
-                    for buyer in self.merger.get_participants["buyers"]
-                ],
-                "sellers": [
-                    {"company_id": seller.company.company_id, "company_name": seller.company.name}
-                    for seller in self.merger.get_participants["sellers"]
-                ],
-            },
-            "consideration": {
-                "currency_name": self.merger.get_consideration["currency_name"],
-                "current_calculated_gross_total_transaction_value": self.merger.get_consideration[
-                    "current_calculated_gross_total_transaction_value"
-                ],
-                "current_calculated_implied_equity_value": self.merger.get_consideration[
-                    "current_calculated_implied_equity_value"
-                ],
-                "current_calculated_implied_enterprise_value": self.merger.get_consideration[
-                    "current_calculated_implied_enterprise_value"
-                ],
-                "details": [
-                    {
-                        "scenario": detail["scenario"],
-                        "subtype": detail["subtype"],
-                        "cash_or_cash_equivalent_per_target_share_unit": detail[
-                            "cash_or_cash_equivalent_per_target_share_unit"
-                        ],
-                        "number_of_target_shares_sought": detail["number_of_target_shares_sought"],
-                        "current_calculated_gross_value_of_consideration": detail[
-                            "current_calculated_gross_value_of_consideration"
-                        ],
-                    }
-                    for detail in self.merger.get_consideration["details"].to_dict(orient="records")
-                ],
-            },
-        }
-        self.assertEqual(ordered(expected_merger_info), ordered(merger_info))

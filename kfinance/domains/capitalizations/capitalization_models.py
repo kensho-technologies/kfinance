@@ -20,9 +20,9 @@ class DailyCapitalization(BaseModel):
     """DailyCapitalization represents market cap, TEV, and shares outstanding for a day"""
 
     date: date
-    market_cap: Money
-    tev: Money
-    shares_outstanding: Shares
+    market_cap: Money | None
+    tev: Money | None
+    shares_outstanding: Shares | None
 
 
 class Capitalizations(BaseModel):

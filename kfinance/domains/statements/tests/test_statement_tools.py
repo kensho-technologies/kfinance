@@ -7,6 +7,7 @@ from kfinance.domains.statements.statement_models import StatementType
 from kfinance.domains.statements.statement_tools import (
     GetFinancialStatementFromIdentifiers,
     GetFinancialStatementFromIdentifiersArgs,
+    GetFinancialStatementFromIdentifiersResp,
 )
 
 
@@ -31,25 +32,27 @@ class TestGetFinancialStatementFromIdentifiers:
             url=f"https://kfinance.kensho.com/api/v1/statements/{SPGI_COMPANY_ID}/income_statement/none/none/none/none/none",
             json=self.statement_resp,
         )
-        expected_response = {
-            "results": {
-                "SPGI": {
-                    "statements": {
-                        "2020": {
-                            "Revenues": "7442000000.000000",
-                            "Total Revenues": "7442000000.000000",
-                        },
-                        "2021": {
-                            "Revenues": "8243000000.000000",
-                            "Total Revenues": "8243000000.000000",
-                        },
+        expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
+            {
+                "results": {
+                    "SPGI": {
+                        "statements": {
+                            "2020": {
+                                "Revenues": "7442000000.000000",
+                                "Total Revenues": "7442000000.000000",
+                            },
+                            "2021": {
+                                "Revenues": "8243000000.000000",
+                                "Total Revenues": "8243000000.000000",
+                            },
+                        }
                     }
-                }
-            },
-            "errors": [
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
-        }
+                },
+                "errors": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                ],
+            }
+        )
 
         tool = GetFinancialStatementFromIdentifiers(kfinance_client=mock_client)
         args = GetFinancialStatementFromIdentifiersArgs(
@@ -66,26 +69,28 @@ class TestGetFinancialStatementFromIdentifiers:
         """
 
         company_ids = [1, 2]
-        expected_response = {
-            "results": {
-                "C_1": {
-                    "statements": {
-                        "2021": {
-                            "Revenues": "8243000000.000000",
-                            "Total Revenues": "8243000000.000000",
+        expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
+            {
+                "results": {
+                    "C_1": {
+                        "statements": {
+                            "2021": {
+                                "Revenues": "8243000000.000000",
+                                "Total Revenues": "8243000000.000000",
+                            }
                         }
-                    }
-                },
-                "C_2": {
-                    "statements": {
-                        "2021": {
-                            "Revenues": "8243000000.000000",
-                            "Total Revenues": "8243000000.000000",
+                    },
+                    "C_2": {
+                        "statements": {
+                            "2021": {
+                                "Revenues": "8243000000.000000",
+                                "Total Revenues": "8243000000.000000",
+                            }
                         }
-                    }
-                },
+                    },
+                }
             }
-        }
+        )
 
         for company_id in company_ids:
             requests_mock.get(

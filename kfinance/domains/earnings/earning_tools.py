@@ -35,7 +35,7 @@ class GetEarningsFromIdentifiers(KfinanceTool):
         Permission.TranscriptsPermission,
     }
 
-    def _run(self, identifiers: list[str]) -> dict:
+    def _run(self, identifiers: list[str]) -> GetEarningsFromIdentifiersResp:
         """Sample response:
 
         {
@@ -52,10 +52,9 @@ class GetEarningsFromIdentifiers(KfinanceTool):
         }
 
         """
-        earnings_responses = get_earnings_from_identifiers(
+        return get_earnings_from_identifiers(
             identifiers=identifiers, kfinance_api_client=self.kfinance_client.kfinance_api_client
         )
-        return earnings_responses.model_dump(mode="json")
 
 
 class GetLatestEarningsFromIdentifiers(KfinanceTool):
@@ -71,7 +70,7 @@ class GetLatestEarningsFromIdentifiers(KfinanceTool):
         Permission.TranscriptsPermission,
     }
 
-    def _run(self, identifiers: list[str]) -> dict:
+    def _run(self, identifiers: list[str]) -> GetNextOrLatestEarningsFromIdentifiersResp:
         """Sample response:
 
         {
@@ -95,7 +94,7 @@ class GetLatestEarningsFromIdentifiers(KfinanceTool):
                 output_model.results[identifier] = most_recent_earnings
             else:
                 output_model.errors.append(f"No latest earnings available for {identifier}.")
-        return output_model.model_dump(mode="json")
+        return output_model
 
 
 class GetNextEarningsFromIdentifiers(KfinanceTool):
@@ -111,7 +110,7 @@ class GetNextEarningsFromIdentifiers(KfinanceTool):
         Permission.TranscriptsPermission,
     }
 
-    def _run(self, identifiers: list[str]) -> dict:
+    def _run(self, identifiers: list[str]) -> GetNextOrLatestEarningsFromIdentifiersResp:
         """Sample response:
 
         {
@@ -135,7 +134,7 @@ class GetNextEarningsFromIdentifiers(KfinanceTool):
                 output_model.results[identifier] = next_earnings
             else:
                 output_model.errors.append(f"No next earnings available for {identifier}.")
-        return output_model.model_dump(mode="json")
+        return output_model
 
 
 def get_earnings_from_identifiers(
@@ -170,12 +169,16 @@ class GetTranscriptFromKeyDevIdArgs(BaseModel):
     key_dev_id: int = Field(description="The key dev ID for the earnings call")
 
 
+class GetTranscriptFromKeyDevIdResp(BaseModel):
+    transcript: str
+
+
 class GetTranscriptFromKeyDevId(KfinanceTool):
     name: str = "get_transcript_from_key_dev_id"
     description: str = "Get the raw transcript text for an earnings call by key dev ID."
     args_schema: Type[BaseModel] = GetTranscriptFromKeyDevIdArgs
     accepted_permissions: set[Permission] | None = {Permission.TranscriptsPermission}
 
-    def _run(self, key_dev_id: int) -> str:
+    def _run(self, key_dev_id: int) -> GetTranscriptFromKeyDevIdResp:
         transcript = self.kfinance_client.transcript(key_dev_id)
-        return transcript.raw
+        return GetTranscriptFromKeyDevIdResp(transcript=transcript.raw)

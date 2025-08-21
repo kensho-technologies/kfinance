@@ -7,6 +7,7 @@ from kfinance.domains.segments.segment_models import SegmentType
 from kfinance.domains.segments.segment_tools import (
     GetSegmentsFromIdentifiers,
     GetSegmentsFromIdentifiersArgs,
+    GetSegmentsFromIdentifiersResp,
 )
 
 
@@ -43,12 +44,14 @@ class TestGetSegmentsFromIdentifier:
             json=self.segments_response,
         )
 
-        expected_response = {
-            "results": {"SPGI": self.segments_response},
-            "errors": [
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
-        }
+        expected_response = GetSegmentsFromIdentifiersResp.model_validate(
+            {
+                "results": {"SPGI": self.segments_response},
+                "errors": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                ],
+            }
+        )
 
         tool = GetSegmentsFromIdentifiers(kfinance_client=mock_client)
         args = GetSegmentsFromIdentifiersArgs(
@@ -65,12 +68,14 @@ class TestGetSegmentsFromIdentifier:
         """
 
         company_ids = [1, 2]
-        expected_response = {
-            "results": {
-                "C_1": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
-                "C_2": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
+        expected_response = GetSegmentsFromIdentifiersResp.model_validate(
+            {
+                "results": {
+                    "C_1": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
+                    "C_2": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
+                }
             }
-        }
+        )
 
         for company_id in company_ids:
             requests_mock.get(

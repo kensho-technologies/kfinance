@@ -3,6 +3,7 @@ from datetime import datetime
 import time_machine
 
 from kfinance.client.kfinance import Client
+from kfinance.client.models.date_and_period_models import LatestPeriods
 from kfinance.integrations.tool_calling.static_tools.get_latest import GetLatest, GetLatestArgs
 
 
@@ -15,16 +16,18 @@ class TestGetLatest:
         THEN we get back latest info
         """
 
-        expected_resp = {
-            "annual": {"latest_year": 2024},
-            "now": {
-                "current_date": "2025-01-01",
-                "current_month": 1,
-                "current_quarter": 1,
-                "current_year": 2025,
-            },
-            "quarterly": {"latest_quarter": 4, "latest_year": 2024},
-        }
+        expected_resp = LatestPeriods.model_validate(
+            {
+                "annual": {"latest_year": 2024},
+                "now": {
+                    "current_date": "2025-01-01",
+                    "current_month": 1,
+                    "current_quarter": 1,
+                    "current_year": 2025,
+                },
+                "quarterly": {"latest_quarter": 4, "latest_year": 2024},
+            }
+        )
         tool = GetLatest(kfinance_client=mock_client)
         resp = tool.run(GetLatestArgs().model_dump(mode="json"))
         assert resp == expected_resp

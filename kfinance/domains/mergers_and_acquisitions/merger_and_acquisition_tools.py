@@ -4,11 +4,11 @@ from typing import Type
 from pydantic import BaseModel, Field
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
-from kfinance.client.kfinance import Company, MergerOrAcquisition, ParticipantInMerger
+from kfinance.client.kfinance import Company, ParticipantInMerger
 from kfinance.client.permission_models import Permission
-from kfinance.domains.companies.company_models import prefix_company_id
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     AdvisorResp,
+    MergerInfo,
     MergersResp,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
@@ -31,7 +31,7 @@ class GetMergersFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    def _run(self, identifiers: list[str]) -> dict:
+    def _run(self, identifiers: list[str]) -> GetMergersFromIdentifiersResp:
         """Sample Response:
 
         {
@@ -79,10 +79,9 @@ class GetMergersFromIdentifiers(KfinanceTool):
         merger_responses: dict[str, MergersResp] = process_tasks_in_thread_pool_executor(
             api_client=api_client, tasks=tasks
         )
-        output_model = GetMergersFromIdentifiersResp(
+        return GetMergersFromIdentifiersResp(
             results=merger_responses, errors=list(id_triple_resp.errors.values())
         )
-        return output_model.model_dump(mode="json")
 
 
 class GetMergerInfoFromTransactionIdArgs(BaseModel):
@@ -97,64 +96,10 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
     args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIdArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    def _run(self, transaction_id: int) -> dict:
-        merger_or_acquisition = MergerOrAcquisition(
-            kfinance_api_client=self.kfinance_client.kfinance_api_client,
-            transaction_id=transaction_id,
-            merger_title=None,
-            closed_date=None,
+    def _run(self, transaction_id: int) -> MergerInfo:
+        return self.kfinance_client.kfinance_api_client.fetch_merger_info(
+            transaction_id=transaction_id
         )
-        merger_timeline = merger_or_acquisition.get_timeline
-        merger_participants = merger_or_acquisition.get_participants
-        merger_consideration = merger_or_acquisition.get_consideration
-
-        return {
-            "timeline": [
-                {"status": timeline["status"], "date": timeline["date"].strftime("%Y-%m-%d")}
-                for timeline in merger_timeline.to_dict(orient="records")
-            ]
-            if merger_timeline is not None
-            else None,
-            "participants": {
-                "target": {
-                    "company_id": prefix_company_id(
-                        merger_participants["target"].company.company_id
-                    ),
-                    "company_name": merger_participants["target"].company.name,
-                },
-                "buyers": [
-                    {
-                        "company_id": prefix_company_id(buyer.company.company_id),
-                        "company_name": buyer.company.name,
-                    }
-                    for buyer in merger_participants["buyers"]
-                ],
-                "sellers": [
-                    {
-                        "company_id": prefix_company_id(seller.company.company_id),
-                        "company_name": seller.company.name,
-                    }
-                    for seller in merger_participants["sellers"]
-                ],
-            }
-            if merger_participants is not None
-            else None,
-            "consideration": {
-                "currency_name": merger_consideration["currency_name"],
-                "current_calculated_gross_total_transaction_value": merger_consideration[
-                    "current_calculated_gross_total_transaction_value"
-                ],
-                "current_calculated_implied_equity_value": merger_consideration[
-                    "current_calculated_implied_equity_value"
-                ],
-                "current_calculated_implied_enterprise_value": merger_consideration[
-                    "current_calculated_implied_enterprise_value"
-                ],
-                "details": merger_consideration["details"].to_dict(orient="records"),
-            }
-            if merger_consideration is not None
-            else None,
-        }
 
 
 class GetAdvisorsForCompanyInTransactionFromIdentifierArgs(ToolArgsWithIdentifier):
@@ -173,15 +118,16 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
     args_schema: Type[BaseModel] = GetAdvisorsForCompanyInTransactionFromIdentifierArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    def _run(self, identifier: str, transaction_id: int) -> dict:
+    def _run(
+        self, identifier: str, transaction_id: int
+    ) -> GetAdvisorsForCompanyInTransactionFromIdentifierResp:
         api_client = self.kfinance_client.kfinance_api_client
         id_triple_resp = api_client.unified_fetch_id_triples(identifiers=[identifier])
         # If the identifier cannot be resolved, return the associated error.
         if id_triple_resp.errors:
-            output_model = GetAdvisorsForCompanyInTransactionFromIdentifierResp(
+            return GetAdvisorsForCompanyInTransactionFromIdentifierResp(
                 results=[], errors=list(id_triple_resp.errors.values())
             )
-            return output_model.model_dump(mode="json")
 
         id_triple = id_triple_resp.identifiers_to_id_triples[identifier]
 
@@ -201,13 +147,12 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
             for advisor in advisors:
                 advisors_response.append(
                     AdvisorResp(
-                        advisor_company_id=prefix_company_id(advisor.company.company_id),
+                        advisor_company_id=advisor.company.company_id,
                         advisor_company_name=advisor.company.name,
                         advisor_type_name=advisor.advisor_type_name,
                     )
                 )
 
-        output_model = GetAdvisorsForCompanyInTransactionFromIdentifierResp(
+        return GetAdvisorsForCompanyInTransactionFromIdentifierResp(
             results=advisors_response, errors=list(id_triple_resp.errors.values())
         )
-        return output_model.model_dump(mode="json")

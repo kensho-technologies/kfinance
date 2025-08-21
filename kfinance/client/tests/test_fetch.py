@@ -311,7 +311,9 @@ class TestFetchItem(TestCase):
     def test_fetch_merger_info(self) -> None:
         transaction_id = 554979212
         expected_fetch_url = f"{self.kfinance_api_client.url_base}merger/info/{transaction_id}"
-        self.kfinance_api_client.fetch_merger_info(transaction_id=transaction_id)
+        # Validation error is ok, we only care that the function was called with the correct url
+        with pytest.raises(ValidationError):
+            self.kfinance_api_client.fetch_merger_info(transaction_id=transaction_id)
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
 
     def test_fetch_advisors_for_company_in_merger(self) -> None:

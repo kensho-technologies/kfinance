@@ -43,7 +43,7 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         end_year: int | None = None,
         start_quarter: Literal[1, 2, 3, 4] | None = None,
         end_quarter: Literal[1, 2, 3, 4] | None = None,
-    ) -> dict:
+    ) -> GetSegmentsFromIdentifiersResp:
         """Sample Response:
 
         {
@@ -102,7 +102,6 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
                 most_recent_year_data = segments_response.segments[most_recent_year]
                 segments_response.segments = {most_recent_year: most_recent_year_data}
 
-        output_model = GetSegmentsFromIdentifiersResp(
+        return GetSegmentsFromIdentifiersResp(
             results=segments_responses, errors=list(id_triple_resp.errors.values())
         )
-        return output_model.model_dump(mode="json")
