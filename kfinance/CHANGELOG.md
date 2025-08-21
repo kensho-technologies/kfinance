@@ -1,5 +1,8 @@
 # Changelog
 
+# v3.2.7
+- Fix validator for UnifiedIdTripleResponse
+
 # v3.2.6
 - Return pydantic models from KfinanceTool._run
 

@@ -84,14 +84,20 @@ class UnifiedIdTripleResponse(BaseModel):
 
 
         """
-        output: dict[str, dict] = dict(identifiers_to_id_triples=dict(), errors=dict())
+        # Separate successful and failed resolutions for kfinance api responses
         if isinstance(data, dict) and "data" in data:
+            output: dict[str, dict] = dict(identifiers_to_id_triples=dict(), errors=dict())
+
             for key, val in data["data"].items():
                 if "error" in val:
                     output["errors"][key] = val["error"]
                 else:
                     output["identifiers_to_id_triples"][key] = val
-        return output
+            return output
+        # In all other cases (e.g. UnifiedIdTripleResponse directly initialized),
+        # just return the data.
+        else:
+            return data
 
     def filter_out_companies_without_security_ids(self) -> None:
         """Filter out companies that don't have a security_id and add an error for them."""
