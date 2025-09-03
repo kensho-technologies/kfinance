@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing import Literal, Type
 
 from pydantic import BaseModel, Field
@@ -30,7 +31,11 @@ class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
 
 class GetSegmentsFromIdentifiers(KfinanceTool):
     name: str = "get_segments_from_identifiers"
-    description: str = "Get the templated segments associated with a list of identifiers."
+    description: str = dedent("""
+        Get the templated segments associated with a list of identifiers.
+        
+        - The tool accepts arguments in calendar years, and all outputs will be presented in terms of calendar years. Please note that these calendar years may not align with the company's fiscal year.
+    """).strip()
     args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.SegmentsPermission}
 
