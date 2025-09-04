@@ -1,5 +1,8 @@
 # Changelog
 
+# v3.2.9
+- Updated tool descriptions for line items, segments, and statements to mention that all period-based inputs and outputs refer only to the calendar year.
+
 # v3.2.8
 - Added support for None to LineItemResponse & empty behavior for line items, segments, and statements
 

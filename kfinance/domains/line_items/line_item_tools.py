@@ -43,6 +43,7 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - To fetch the most recent value for the line item, leave start_year, start_quarter, end_year, and end_quarter as None.
+        - The tool accepts arguments in calendar years, and all outputs will be presented in terms of calendar years. Please note that these calendar years may not align with the company's fiscal year.
 
         Example:
         Query: "What are the revenues of Lowe's and Home Depot?"

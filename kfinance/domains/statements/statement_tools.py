@@ -35,6 +35,7 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         Get a financial statement associated with a group of identifiers.
 
         - To fetch the most recent value for the statement, leave start_year, start_quarter, end_year, and end_quarter as None.
+        - The tool accepts arguments in calendar years, and all outputs will be presented in terms of calendar years. Please note that these calendar years may not align with the company's fiscal year.
 
         Example:
         Query: "Fetch the balance sheets of BAC and GS for 2024"
