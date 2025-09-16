@@ -7,6 +7,7 @@ from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_COMPANY_ID
+from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.companies.company_tools import (
     GetInfoFromIdentifiers,
     GetInfoFromIdentifiersResp,
@@ -25,7 +26,11 @@ class TestGetEndpointsFromToolCallsWithGrounding:
         """
 
         # truncated from the original
-        resp_data = {"name": "S&P Global Inc.", "status": "Operating", "company_id": "C_21719"}
+        resp_data = {
+            "name": "S&P Global Inc.",
+            "status": "Operating",
+            "company_id": f"{COMPANY_ID_PREFIX}{SPGI_COMPANY_ID}",
+        }
         resp_endpoint = [
             "https://kfinance.kensho.com/api/v1/ids",
             "https://kfinance.kensho.com/api/v1/info/21719",

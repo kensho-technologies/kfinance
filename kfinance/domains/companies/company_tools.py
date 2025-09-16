@@ -5,7 +5,11 @@ from pydantic import BaseModel
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.permission_models import Permission
-from kfinance.domains.companies.company_models import CompanyDescriptions, CompanyOtherNames
+from kfinance.domains.companies.company_models import (
+    COMPANY_ID_PREFIX,
+    CompanyDescriptions,
+    CompanyOtherNames,
+)
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
@@ -68,7 +72,7 @@ class GetInfoFromIdentifiers(KfinanceTool):
         )
 
         for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items():
-            info_responses[identifier]["company_id"] = f"C_{id_triple.company_id}"
+            info_responses[identifier]["company_id"] = f"{COMPANY_ID_PREFIX}{id_triple.company_id}"
 
         return GetInfoFromIdentifiersResp(
             results=info_responses, errors=list(id_triple_resp.errors.values())
