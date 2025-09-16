@@ -25,7 +25,7 @@ class TestGetEndpointsFromToolCallsWithGrounding:
         """
 
         # truncated from the original
-        resp_data = {"name": "S&P Global Inc.", "status": "Operating"}
+        resp_data = {"name": "S&P Global Inc.", "status": "Operating", "company_id": "C_21719"}
         resp_endpoint = [
             "https://kfinance.kensho.com/api/v1/ids",
             "https://kfinance.kensho.com/api/v1/info/21719",
@@ -34,7 +34,7 @@ class TestGetEndpointsFromToolCallsWithGrounding:
             "data": GetInfoFromIdentifiersResp.model_validate({"results": {"SPGI": resp_data}}),
             "endpoint_urls": resp_endpoint,
         }
-
+        del resp_data["company_id"]
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}",
             json=resp_data,

@@ -20,7 +20,7 @@ class GetInfoFromIdentifiersResp(ToolRespWithErrors):
 class GetInfoFromIdentifiers(KfinanceTool):
     name: str = "get_info_from_identifiers"
     description: str = dedent("""
-        Get the information associated with a list of identifiers. Info includes company name, status, type, simple industry, number of employees (if available), founding date, webpage, HQ address, HQ city, HQ zip code, HQ state, HQ country, and HQ country iso code.
+        Get the information associated with a list of identifiers. Info includes company name, status, type, simple industry, number of employees (if available), founding date, webpage, HQ address, HQ city, HQ zip code, HQ state, HQ country, HQ country iso code, and CIQ company_id.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
     """).strip()
@@ -44,7 +44,8 @@ class GetInfoFromIdentifiers(KfinanceTool):
                     "zip_code": "10041-0001",
                     "state": "New York",
                     "country": "United States",
-                    "iso_country": "USA"
+                    "iso_country": "USA",
+                    "company_id": "C_21719"
                 }
             },
             "errors": [['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
@@ -65,6 +66,10 @@ class GetInfoFromIdentifiers(KfinanceTool):
         info_responses: dict[str, dict] = process_tasks_in_thread_pool_executor(
             api_client=api_client, tasks=tasks
         )
+
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items():
+            info_responses[identifier]["company_id"] = f"C_{id_triple.company_id}"
+
         return GetInfoFromIdentifiersResp(
             results=info_responses, errors=list(id_triple_resp.errors.values())
         )

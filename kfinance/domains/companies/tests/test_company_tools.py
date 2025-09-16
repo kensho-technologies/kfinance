@@ -23,7 +23,7 @@ class TestGetInfoFromIdentifiers:
         THEN we get back info for SPGI and an error for the non-existent company
         """
 
-        info_resp = {"name": "S&P Global Inc.", "status": "Operating"}
+        info_resp = {"name": "S&P Global Inc.", "status": "Operating", "company_id": "C_21719"}
         expected_response = GetInfoFromIdentifiersResp.model_validate(
             {
                 "results": {"SPGI": info_resp},
@@ -32,6 +32,7 @@ class TestGetInfoFromIdentifiers:
                 ],
             }
         )
+        del info_resp["company_id"]
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}",
             json=info_resp,
