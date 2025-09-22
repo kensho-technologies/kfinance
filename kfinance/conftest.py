@@ -64,6 +64,16 @@ def mock_client(requests_mock: Mocker) -> Client:
             }
         },
     )
+    # Fetch a fake company
+    requests_mock.post(
+        url="https://kfinance.kensho.com/api/v1/ids",
+        additional_matcher=lambda req: req.json().get("identifiers") == ["C_1"],
+        json={
+            "data": {
+                "C_1": {"company_id": 1, "security_id": 1, "trading_item_id": 1},
+            },
+        },
+    )
     # Fetch SPGI and a non-existent company (which will include an error)
     requests_mock.post(
         url="https://kfinance.kensho.com/api/v1/ids",

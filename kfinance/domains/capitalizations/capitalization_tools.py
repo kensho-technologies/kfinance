@@ -84,7 +84,11 @@ class GetCapitalizationFromIdentifiers(KfinanceTool):
             api_client=api_client, tasks=tasks
         )
 
-        for capitalization_response in capitalization_responses.values():
+        for identifier, capitalization_response in capitalization_responses.items():
+            # If we get an empty response for a company, assign an empty object
+            if not capitalization_response:
+                capitalization_responses[identifier] = Capitalizations(capitalizations=list())
+                capitalization_response = capitalization_responses[identifier]
             # If we return results for more than one company and the start and end dates are unset,
             # truncate data to only return the most recent datapoint.
             if len(capitalization_responses) > 1 and start_date is None and end_date is None:
@@ -93,13 +97,14 @@ class GetCapitalizationFromIdentifiers(KfinanceTool):
                 ]
             # Set capitalizations that were not requested to None.
             # That way, they can be skipped for serialization via `exclude_none=True`
-            for daily_capitalization in capitalization_response.capitalizations:
-                if capitalization is not Capitalization.market_cap:
-                    daily_capitalization.market_cap = None
-                if capitalization is not Capitalization.tev:
-                    daily_capitalization.tev = None
-                if capitalization is not Capitalization.shares_outstanding:
-                    daily_capitalization.shares_outstanding = None
+            if capitalization_response.capitalizations:
+                for daily_capitalization in capitalization_response.capitalizations:
+                    if capitalization is not Capitalization.market_cap:
+                        daily_capitalization.market_cap = None
+                    if capitalization is not Capitalization.tev:
+                        daily_capitalization.tev = None
+                    if capitalization is not Capitalization.shares_outstanding:
+                        daily_capitalization.shares_outstanding = None
 
         return GetCapitalizationFromIdentifiersResp(
             capitalization=capitalization,

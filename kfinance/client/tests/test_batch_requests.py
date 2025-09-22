@@ -212,11 +212,12 @@ class TestTradingItem(TestCase):
         )
         m.get("https://kfinance.kensho.com/api/v1/info/1002", status_code=400)
 
-        with self.assertRaises(requests.exceptions.HTTPError) as e:
-            companies = Companies(self.kfinance_api_client, [1001, 1002])
-            _ = companies.city
+        companies = Companies(self.kfinance_api_client, [1001, 1002])
+        result = companies.city
+        id_based_result = self.company_object_keys_as_company_id(result)
 
-        self.assertEqual(e.exception.response.status_code, 400)
+        expected_id_based_result = {1001: "Mock City A", 1002: None}
+        self.assertDictEqual(id_based_result, expected_id_based_result)
 
     @requests_mock.Mocker()
     def test_batch_request_500(self, m):
