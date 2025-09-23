@@ -60,7 +60,7 @@ class EmbeddingCache:
         if self._embedding_model is None:
             try:
                 self._embedding_model = SentenceTransformer(self.embedding_model_name)
-                logger.info("Loaded embedding model: %s", self.embedding_model_name)
+                logger.debug("Loaded embedding model: %s", self.embedding_model_name)
             except (OSError, ImportError, RuntimeError) as e:
                 logger.error("Failed to load embedding model: %s", e)
                 raise
@@ -89,13 +89,13 @@ class EmbeddingCache:
             if self.embeddings_cache_file.exists():
                 with open(self.embeddings_cache_file, "rb") as f:
                     self.cached_embeddings = pickle.load(f)
-                logger.info("Loaded %d cached embeddings", len(self.cached_embeddings))
+                logger.debug("Loaded %d cached embeddings", len(self.cached_embeddings))
 
             # Load metadata
             if self.metadata_cache_file.exists():
                 with open(self.metadata_cache_file, "r") as f:
                     self.cached_metadata = json.load(f)
-                logger.info("Loaded embedding cache metadata")
+                logger.debug("Loaded embedding cache metadata")
 
         except (OSError, json.JSONDecodeError, pickle.PickleError) as e:
             logger.error("Failed to load embedding cache: %s", e)
@@ -114,7 +114,7 @@ class EmbeddingCache:
             with open(self.metadata_cache_file, "w") as f:
                 json.dump(self.cached_metadata, f, indent=2)
 
-            logger.info("Saved %d embeddings to cache", len(self.cached_embeddings))
+            logger.debug("Saved %d embeddings to cache", len(self.cached_embeddings))
 
         except (OSError, TypeError, ValueError, pickle.PickleError) as e:
             logger.error("Failed to save embedding cache: %s", e)
@@ -153,7 +153,7 @@ class EmbeddingCache:
 
         # Compute new embeddings if needed
         if new_embeddings_needed:
-            logger.info("Computing embeddings for %d new examples", len(new_embeddings_needed))
+            logger.debug("Computing embeddings for %d new examples", len(new_embeddings_needed))
 
             try:
                 new_embeddings = self.embedding_model.encode(new_embeddings_needed)
@@ -179,7 +179,6 @@ class EmbeddingCache:
             except (RuntimeError, ValueError, OSError) as e:
                 logger.error("Failed to compute new embeddings: %s", e)
                 # Return examples without new embeddings
-                pass
 
         return examples_with_embeddings
 
@@ -206,19 +205,30 @@ class EmbeddingCache:
                 with open(json_file, "r") as f:
                     data = json.load(f)
 
-                for example_data in data.get("examples", []):
-                    example = ToolExample.from_dict(example_data)
-                    all_examples.append(example)
+                total_examples_loaded = 0
 
-                logger.info(
-                    "Loaded %d examples from %s", len(data.get("examples", [])), json_file.name
-                )
+                # Handle both old format (examples at top level) and new format (tools with examples)
+                if "examples" in data:
+                    # Old format: {"examples": [...]}
+                    for example_data in data["examples"]:
+                        example = ToolExample.from_dict(example_data)
+                        all_examples.append(example)
+                        total_examples_loaded += 1
+                elif "tools" in data:
+                    # New format: {"tools": [{"tool_name": "...", "examples": [...]}]}
+                    for tool_data in data["tools"]:
+                        for example_data in tool_data.get("examples", []):
+                            example = ToolExample.from_dict(example_data)
+                            all_examples.append(example)
+                            total_examples_loaded += 1
+
+                logger.debug("Loaded %d examples from %s", total_examples_loaded, json_file.name)
 
             except (OSError, json.JSONDecodeError, KeyError, ValueError) as e:
                 logger.error("Failed to load examples from %s: %s", json_file, e)
 
         if all_examples:
-            logger.info("Precomputing embeddings for %d examples", len(all_examples))
+            logger.debug("Precomputing embeddings for %d examples", len(all_examples))
             self.get_or_compute_embeddings(all_examples, force_recompute=force_recompute)
         else:
             logger.warning("No examples found to precompute embeddings for")
@@ -234,7 +244,7 @@ class EmbeddingCache:
                 self.embeddings_cache_file.unlink()
             if self.metadata_cache_file.exists():
                 self.metadata_cache_file.unlink()
-            logger.info("Invalidated embedding cache")
+            logger.debug("Invalidated embedding cache")
         except OSError as e:
             logger.error("Failed to invalidate cache: %s", e)
 
@@ -264,7 +274,7 @@ class EmbeddingCache:
         orphaned_hashes = cached_hashes - current_hashes
 
         if orphaned_hashes:
-            logger.info("Removing %d orphaned embeddings from cache", len(orphaned_hashes))
+            logger.debug("Removing %d orphaned embeddings from cache", len(orphaned_hashes))
             for hash_key in orphaned_hashes:
                 del self.cached_embeddings[hash_key]
 
@@ -288,15 +298,16 @@ def precompute_all_embeddings(
         force_recompute: Whether to force recomputation of all embeddings
     """
     if examples_dir is None:
-        examples_dir = Path(__file__).parent / "tool_examples"
+        examples_dir = Path(__file__).parent.parent / "tool_examples"
 
     cache = EmbeddingCache(cache_dir=cache_dir, embedding_model_name=embedding_model)
     cache.precompute_embeddings_from_files(examples_dir, force_recompute=force_recompute)
 
     # Print cache statistics
     stats = cache.get_cache_stats()
+    logger.info("Cache Statistics:")
     for key, value in stats.items():
-        pass
+        logger.info("  %s: %s", key, value)
 
 
 if __name__ == "__main__":

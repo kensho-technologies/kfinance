@@ -1,0 +1,29 @@
+{
+  "description": "Parameter descriptors for transcript access tools",
+  "tools": [
+    {
+      "tool_name": "get_transcript_from_key_dev_id",
+      "parameters": [
+        {
+          "parameter_name": "key_dev_id",
+          "tool_name": "get_transcript_from_key_dev_id",
+          "description": "The key development ID for the earnings call transcript. Must be obtained from earnings tools first (get_earnings_from_identifiers, get_latest_earnings_from_identifiers, or get_next_earnings_from_identifiers).",
+          "examples": [
+            "12345",
+            "67890",
+            "54321"
+          ],
+          "common_mistakes": [
+            "Using company identifier instead of key_dev_id",
+            "Using ticker symbol instead of key_dev_id",
+            "Not obtaining key_dev_id from earnings tools first",
+            "Guessing key_dev_id values instead of looking them up",
+            "Using string format instead of integer for key_dev_id",
+            "Expecting this to work without a valid key_dev_id"
+          ],
+          "related_parameters": []
+        }
+      ]
+    }
+  ]
+}

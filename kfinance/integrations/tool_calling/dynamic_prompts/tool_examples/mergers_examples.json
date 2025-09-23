@@ -1,0 +1,150 @@
+{
+  "description": "Comprehensive examples for mergers and acquisitions tools",
+  "tools": [
+    {
+      "tool_name": "get_mergers_from_identifiers",
+      "examples": [
+        {
+          "query": "which companies did <company_b> acquire?",
+          "tool_name": "get_mergers_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT"
+            ]
+          },
+          "context": "use get_mergers_from_identifiers to find all m&a transactions where a company was involved as buyer, seller, or target.",
+          "permissions_required": [
+            "MergersPermission"
+          ],
+          "disambiguation_note": "this returns transaction_ids that can be used with other m&a tools for detailed information.",
+          "tags": [
+            "acquisitions",
+            "ma_history",
+            "buyer_role",
+            "transaction_ids"
+          ]
+        },
+        {
+          "query": "who acquired ben & jerry's?",
+          "tool_name": "get_mergers_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "BJ"
+            ]
+          },
+          "context": "find m&a transactions where the company was a target (acquired).",
+          "permissions_required": [
+            "MergersPermission"
+          ],
+          "disambiguation_note": "results show the company's role in each transaction (target, buyer, seller).",
+          "tags": [
+            "acquisition_target",
+            "who_acquired",
+            "target_role"
+          ]
+        },
+        {
+          "query": "what m&a activity has <company_q> been involved in?",
+          "tool_name": "get_mergers_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "PFE"
+            ]
+          },
+          "context": "get comprehensive m&a history including all roles (buyer, seller, target).",
+          "permissions_required": [
+            "MergersPermission"
+          ],
+          "disambiguation_note": "use this first to get transaction_ids, then use other m&a tools for details.",
+          "tags": [
+            "ma_activity",
+            "comprehensive_history",
+            "all_roles"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_merger_info_from_transaction_id",
+      "examples": [
+        {
+          "query": "when was the acquisition of ben & jerry's announced?",
+          "tool_name": "get_merger_info_from_transaction_id",
+          "parameters": {
+            "transaction_id": "67890"
+          },
+          "context": "use this tool for comprehensive m&a transaction details including timeline, participants, and financial terms.",
+          "permissions_required": [
+            "MergersPermission"
+          ],
+          "disambiguation_note": "this tool requires transaction_id - use get_mergers_from_identifiers to find transaction ids first.",
+          "tags": [
+            "ma_timeline",
+            "announcement_date",
+            "transaction_details"
+          ]
+        },
+        {
+          "query": "how much did s&p purchase kensho for?",
+          "tool_name": "get_merger_info_from_transaction_id",
+          "parameters": {
+            "transaction_id": "12345"
+          },
+          "context": "get purchase price and financial details of m&a transactions.",
+          "permissions_required": [
+            "MergersPermission"
+          ],
+          "disambiguation_note": "this provides detailed financial terms when transaction_id is known.",
+          "tags": [
+            "purchase_price",
+            "acquisition_cost",
+            "deal_value"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_advisors_for_company_in_transaction_from_identifier",
+      "examples": [
+        {
+          "query": "who advised s&p global during their purchase of kensho?",
+          "tool_name": "get_advisors_for_company_in_transaction_from_identifier",
+          "parameters": {
+            "identifier": "SPGI",
+            "transaction_id": "12345"
+          },
+          "context": "use this tool to find advisory firms that provided services during m&a transactions.",
+          "permissions_required": [
+            "MergersPermission"
+          ],
+          "disambiguation_note": "this tool requires both company identifier and transaction_id - use get_mergers_from_identifiers first to find transaction_id.",
+          "tags": [
+            "advisors",
+            "ma",
+            "investment_banking",
+            "transaction_services"
+          ]
+        },
+        {
+          "query": "which firms advised ben & jerry's in their acquisition?",
+          "tool_name": "get_advisors_for_company_in_transaction_from_identifier",
+          "parameters": {
+            "identifier": "BJ",
+            "transaction_id": "67890"
+          },
+          "context": "get the list of advisory companies for acquisition transactions.",
+          "permissions_required": [
+            "MergersPermission"
+          ],
+          "disambiguation_note": "you need the specific transaction_id - this tool won't work without it.",
+          "tags": [
+            "acquisition_advisors",
+            "ma",
+            "advisory_services",
+            "transaction_id_required"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,242 @@
+{
+  "description": "Examples for ID-related tools: capitalization, security identifiers, and utility tools",
+  "tools": [
+    {
+      "tool_name": "get_capitalization_from_identifiers",
+      "examples": [
+        {
+          "query": "what is the market cap of <company_a> and <company_b>?",
+          "tool_name": "get_capitalization_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL",
+              "MSFT"
+            ],
+            "capitalization": "market_cap"
+          },
+          "context": "use get_capitalization_from_identifiers for market cap, enterprise value, and shares outstanding.",
+          "permissions_required": [
+            "IDPermission"
+          ],
+          "disambiguation_note": "capitalization parameter must be exact: 'market_cap', 'tev', or 'shares_outstanding'.",
+          "tags": [
+            "market_cap",
+            "valuation",
+            "capitalization"
+          ]
+        },
+        {
+          "query": "get the enterprise value for <company_f>",
+          "tool_name": "get_capitalization_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "TSLA"
+            ],
+            "capitalization": "tev"
+          },
+          "context": "use 'tev' for total enterprise value calculations.",
+          "permissions_required": [
+            "IDPermission"
+          ],
+          "disambiguation_note": "use 'tev' not 'enterprise_value' or 'ev' - the parameter is 'tev'.",
+          "tags": [
+            "enterprise_value",
+            "tev",
+            "valuation_metrics"
+          ]
+        },
+        {
+          "query": "what was <company_a>'s market cap at the end of 2022?",
+          "tool_name": "get_capitalization_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ],
+            "capitalization": "market_cap",
+            "start_date": "2022-12-31",
+            "end_date": "2022-12-31"
+          },
+          "context": "get historical market cap for specific dates using date parameters.",
+          "permissions_required": [
+            "IDPermission"
+          ],
+          "disambiguation_note": "use same start_date and end_date for specific point-in-time values.",
+          "tags": [
+            "historical_market_cap",
+            "specific_date",
+            "point_in_time"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_cusip_from_identifiers",
+      "examples": [
+        {
+          "query": "what is the cusip for <company_a>?",
+          "tool_name": "get_cusip_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ]
+          },
+          "context": "use get_cusip_from_identifiers to get cusip identifiers for companies.",
+          "permissions_required": [
+            "IDPermission"
+          ],
+          "disambiguation_note": "this tool only returns cusip identifiers, not other identifier types.",
+          "tags": [
+            "cusip",
+            "identifiers",
+            "security_identifiers"
+          ]
+        },
+        {
+          "query": "get cusip identifiers for <company_b>, <company_c>, and <company_d>",
+          "tool_name": "get_cusip_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT",
+              "GOOGL",
+              "AMZN"
+            ]
+          },
+          "context": "batch multiple companies to get their cusip identifiers efficiently.",
+          "permissions_required": [
+            "IDPermission"
+          ],
+          "disambiguation_note": "always batch multiple companies in one call rather than making separate requests.",
+          "tags": [
+            "cusip",
+            "multiple_companies",
+            "batching",
+            "us_securities"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_isin_from_identifiers",
+      "examples": [
+        {
+          "query": "what is the isin for <company_b>?",
+          "tool_name": "get_isin_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT"
+            ]
+          },
+          "context": "use get_isin_from_identifiers to get isin identifiers for companies.",
+          "permissions_required": [
+            "IDPermission"
+          ],
+          "disambiguation_note": "this tool only returns isin identifiers, not other identifier types.",
+          "tags": [
+            "isin",
+            "identifiers",
+            "international_identifiers"
+          ]
+        },
+        {
+          "query": "get isin codes for <company_a>, <company_f>, and <company_g>",
+          "tool_name": "get_isin_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL",
+              "TSLA",
+              "NFLX"
+            ]
+          },
+          "context": "batch multiple companies to get their isin identifiers efficiently.",
+          "permissions_required": [
+            "IDPermission"
+          ],
+          "disambiguation_note": "always batch multiple companies in one call for better performance.",
+          "tags": [
+            "isin",
+            "multiple_companies",
+            "batching",
+            "international_securities"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_latest",
+      "examples": [
+        {
+          "query": "what is the current date and latest reporting periods?",
+          "tool_name": "get_latest",
+          "parameters": {},
+          "context": "use get_latest to get current date, latest annual reporting year, and latest quarterly reporting period.",
+          "permissions_required": [
+            "IDPermission"
+          ],
+          "disambiguation_note": "this tool takes no parameters and returns current system date and reporting periods.",
+          "tags": [
+            "current_date",
+            "reporting_periods",
+            "latest_data",
+            "system_info"
+          ]
+        },
+        {
+          "query": "what is today's date in the user's timezone?",
+          "tool_name": "get_latest",
+          "parameters": {
+            "use_local_timezone": true
+          },
+          "context": "use use_local_timezone=true to get date in user's local timezone instead of utc.",
+          "permissions_required": [
+            "IDPermission"
+          ],
+          "disambiguation_note": "set use_local_timezone=true for user-specific date, leave false/empty for utc.",
+          "tags": [
+            "local_timezone",
+            "user_timezone",
+            "current_date"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_n_quarters_ago",
+      "examples": [
+        {
+          "query": "what quarter was it 2 quarters ago?",
+          "tool_name": "get_n_quarters_ago",
+          "parameters": {
+            "n": 2
+          },
+          "context": "use get_n_quarters_ago to calculate quarters relative to the current quarter.",
+          "permissions_required": [
+            "IDPermission"
+          ],
+          "disambiguation_note": "returns the year and quarter that was n quarters before the current quarter.",
+          "tags": [
+            "quarter_calculation",
+            "relative_quarters",
+            "time_calculation"
+          ]
+        },
+        {
+          "query": "what was the quarter 4 quarters back?",
+          "tool_name": "get_n_quarters_ago",
+          "parameters": {
+            "n": 4
+          },
+          "context": "calculate quarters going back in time from the current quarter.",
+          "permissions_required": [
+            "IDPermission"
+          ],
+          "disambiguation_note": "use this for relative quarter calculations rather than hardcoding dates.",
+          "tags": [
+            "year_back",
+            "quarter_calculation",
+            "relative_time"
+          ]
+        }
+      ]
+    }
+  ]
+}

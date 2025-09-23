@@ -1,0 +1,50 @@
+{
+  "description": "Parameter descriptors for competitor queries with focus on competitor source disambiguation",
+  "tools": [
+    {
+      "tool_name": "get_competitors_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_competitors_from_identifiers",
+          "description": "List of company identifiers to find competitors for. Always batch multiple identifiers when possible.",
+          "examples": [
+            "['AAPL']",
+            "['TSLA']",
+            "['AAPL', 'MSFT', 'GOOGL']"
+          ],
+          "common_mistakes": [
+            "Making separate API calls for each company instead of batching",
+            "Using incorrect ticker symbols",
+            "Not using array format for single identifiers",
+            "Expecting comprehensive competitor lists without specifying source"
+          ],
+          "related_parameters": ["competitor_source"]
+        },
+        {
+          "parameter_name": "competitor_source",
+          "tool_name": "get_competitors_from_identifiers",
+          "description": "The source type of competitor information. Must be exact source names from the system.",
+          "examples": [
+            "filing",
+            "key_dev",
+            "contact",
+            "third_party",
+            "self_identified",
+            "named_by_competitor"
+          ],
+          "common_mistakes": [
+            "Using 'sec_filing' instead of 'filing'",
+            "Using 'self_reported' instead of 'self_identified'",
+            "Using 'third_party_source' instead of 'third_party'",
+            "Using 'key_development' instead of 'key_dev'",
+            "Using 'competitor_named' instead of 'named_by_competitor'",
+            "Not specifying competitor_source (this parameter is required)",
+            "Using multiple sources in one call (make separate calls for different sources)"
+          ],
+          "related_parameters": ["identifiers"]
+        }
+      ]
+    }
+  ]
+}

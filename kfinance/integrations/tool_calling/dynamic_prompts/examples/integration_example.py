@@ -1,13 +1,35 @@
-"""Example integration of dynamic prompt construction with existing tool calling pipeline."""
+"""Example of integrating dynamic prompts with existing tool calling systems."""
 
-from __future__ import annotations
-
+import logging
 from typing import List, Set
 
 from kfinance.client.permission_models import Permission
-from kfinance.integrations.tool_calling.all_tools import ALL_TOOLS
-from kfinance.integrations.tool_calling.dynamic_prompts import construct_dynamic_prompt
 from kfinance.integrations.tool_calling.prompts import BASE_PROMPT
+
+from ..core.manager import construct_dynamic_prompt
+
+
+logger = logging.getLogger(__name__)
+
+# Mock tools for demonstration
+ALL_TOOLS = [
+    type(
+        "GetFinancialLineItemFromIdentifiers",
+        (),
+        {
+            "accepted_permissions": {Permission.StatementsPermission},
+            "__name__": "get_financial_line_item_from_identifiers",
+        },
+    ),
+    type(
+        "GetFinancialStatementFromIdentifiers",
+        (),
+        {
+            "accepted_permissions": {Permission.StatementsPermission},
+            "__name__": "get_financial_statement_from_identifiers",
+        },
+    ),
+]
 
 
 class EnhancedToolCaller:
@@ -68,8 +90,14 @@ class EnhancedToolCaller:
             )
 
             # Log the improvement (in practice, you'd use proper logging)
-            len(BASE_PROMPT.split())
-            len(dynamic_prompt.split())
+            base_tokens = len(BASE_PROMPT.split())
+            dynamic_tokens = len(dynamic_prompt.split())
+            logger.info(
+                "Dynamic prompt constructed: %d tokens (vs %d base tokens, %+d difference)",
+                dynamic_tokens,
+                base_tokens,
+                dynamic_tokens - base_tokens,
+            )
 
             return dynamic_prompt
 
@@ -83,9 +111,14 @@ class EnhancedToolCaller:
 def example_usage() -> None:
     """Example of how to use the enhanced tool caller."""
 
+    logger.info("Enhanced Tool Caller Demo")
+    logger.info("=" * 50)
+
     # Initialize with user permissions
     user_permissions = {Permission.StatementsPermission}
     tool_caller = EnhancedToolCaller(user_permissions)
+
+    logger.info("Available tools: %d", len(tool_caller.available_tools))
 
     # Test queries that benefit from dynamic prompts
     test_queries = [
@@ -96,8 +129,11 @@ def example_usage() -> None:
     ]
 
     for i, query in enumerate(test_queries, 1):
+        logger.info("Test Query %d: %s", i, query)
+
         # Get dynamic prompt
-        tool_caller.get_prompt_for_query(query)
+        prompt = tool_caller.get_prompt_for_query(query)
+        logger.info("  Generated prompt with %d tokens", len(prompt.split()))
 
         # In practice, you would now pass this prompt to your LLM
         # along with the available tools for the actual tool calling
@@ -111,7 +147,12 @@ def compare_static_vs_dynamic() -> None:
     # Test with a query that should benefit from examples
     query = "What is the preferred stock additional paid in capital for Apple?"
 
+    logger.info("Comparing approaches for: %s", query)
+    logger.info("-" * 60)
+
     # Static approach
+    base_tokens = len(BASE_PROMPT.split())
+    logger.info("Static prompt: %d tokens", base_tokens)
 
     try:
         dynamic_prompt = construct_dynamic_prompt(
@@ -120,17 +161,28 @@ def compare_static_vs_dynamic() -> None:
         )
 
         # Count examples in dynamic prompt
-        dynamic_prompt.count('Query: "')
+        example_count = dynamic_prompt.count('Query: "')
+        dynamic_tokens = len(dynamic_prompt.split())
 
-        # Show token difference
-        len(dynamic_prompt.split()) - len(BASE_PROMPT.split())
+        logger.info(
+            "Dynamic prompt: %d tokens, %d examples included", dynamic_tokens, example_count
+        )
+        logger.info(
+            "Token difference: %+d (%+.1f%%)",
+            dynamic_tokens - base_tokens,
+            ((dynamic_tokens - base_tokens) / base_tokens * 100) if base_tokens > 0 else 0,
+        )
 
-    except (RuntimeError, ValueError, OSError, ImportError):
-        pass
+    except (RuntimeError, ValueError, OSError, ImportError) as e:
+        logger.error("Dynamic prompt construction failed: %s", e)
+        logger.info("Falling back to static prompt: %d tokens", base_tokens)
 
 
 def integration_with_existing_client() -> None:
     """Example of integrating with existing kfinance client."""
+
+    logger.info("Integration with Existing Client Demo")
+    logger.info("=" * 50)
 
     # This is how you might modify the existing client to use dynamic prompts
     class EnhancedKFinanceClient:
@@ -161,8 +213,10 @@ def integration_with_existing_client() -> None:
         "Show me the total debt to equity ratio for JPMorgan",
     ]
 
-    for query in queries:
-        client.process_query(query)
+    for i, query in enumerate(queries, 1):
+        logger.info("Processing Query %d: %s", i, query)
+        result = client.process_query(query)
+        logger.info("  Result: %s", result)
 
 
 if __name__ == "__main__":

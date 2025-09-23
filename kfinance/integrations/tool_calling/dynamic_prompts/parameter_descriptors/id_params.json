@@ -1,0 +1,169 @@
+{
+  "description": "Parameter descriptors for ID-related tools: capitalization, security identifiers, and utility tools",
+  "tools": [
+    {
+      "tool_name": "get_capitalization_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_capitalization_from_identifiers",
+          "description": "List of company identifiers for capitalization metrics. Always batch multiple identifiers when possible.",
+          "examples": [
+            "['AAPL']",
+            "['AAPL', 'MSFT']",
+            "['TSLA']",
+            "['GOOGL', 'META', 'AMZN']"
+          ],
+          "common_mistakes": [
+            "Making separate API calls for each company instead of batching",
+            "Using incorrect ticker symbols",
+            "Not using array format for single identifiers",
+            "Expecting this to work for private companies without public market data"
+          ],
+          "related_parameters": ["capitalization", "start_date", "end_date"]
+        },
+        {
+          "parameter_name": "capitalization",
+          "tool_name": "get_capitalization_from_identifiers",
+          "description": "The type of capitalization metric to retrieve. Must be exact parameter names.",
+          "examples": [
+            "market_cap",
+            "tev",
+            "shares_outstanding"
+          ],
+          "common_mistakes": [
+            "Using 'market_capitalization' instead of 'market_cap'",
+            "Using 'enterprise_value' or 'ev' instead of 'tev'",
+            "Using 'shares' or 'outstanding_shares' instead of 'shares_outstanding'",
+            "Using 'market_value' instead of 'market_cap'",
+            "Not specifying capitalization parameter (this is required)"
+          ],
+          "related_parameters": ["identifiers", "start_date", "end_date"]
+        },
+        {
+          "parameter_name": "start_date",
+          "tool_name": "get_capitalization_from_identifiers",
+          "description": "Starting date for historical capitalization retrieval in YYYY-MM-DD format. Leave empty for most recent values.",
+          "examples": [
+            "2023-01-01",
+            "2022-12-31",
+            "2023-06-30"
+          ],
+          "common_mistakes": [
+            "Using incorrect date format (should be YYYY-MM-DD)",
+            "Setting start_date without end_date for ranges",
+            "Using future dates for historical data",
+            "Using relative terms instead of specific dates"
+          ],
+          "related_parameters": ["end_date", "capitalization"]
+        },
+        {
+          "parameter_name": "end_date",
+          "tool_name": "get_capitalization_from_identifiers",
+          "description": "Ending date for historical capitalization retrieval in YYYY-MM-DD format. Must be >= start_date.",
+          "examples": [
+            "2023-12-31",
+            "2023-06-30",
+            "2023-09-30"
+          ],
+          "common_mistakes": [
+            "Using incorrect date format (should be YYYY-MM-DD)",
+            "Setting end_date before start_date",
+            "Using future dates beyond current date",
+            "Not specifying end_date when start_date is provided"
+          ],
+          "related_parameters": ["start_date", "capitalization"]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_cusip_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_cusip_from_identifiers",
+          "description": "List of company identifiers to get CUSIP identifiers for. Always batch multiple identifiers when possible.",
+          "examples": [
+            "['AAPL']",
+            "['MSFT']",
+            "['AAPL', 'MSFT', 'GOOGL']"
+          ],
+          "common_mistakes": [
+            "Making separate API calls for each company instead of batching",
+            "Using incorrect ticker symbols",
+            "Not using array format for single identifiers",
+            "Expecting this to work for non-US securities (CUSIP is US-specific)"
+          ],
+          "related_parameters": []
+        }
+      ]
+    },
+    {
+      "tool_name": "get_isin_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_isin_from_identifiers",
+          "description": "List of company identifiers to get ISIN identifiers for. Always batch multiple identifiers when possible.",
+          "examples": [
+            "['AAPL']",
+            "['MSFT']",
+            "['AAPL', 'MSFT', 'GOOGL']"
+          ],
+          "common_mistakes": [
+            "Making separate API calls for each company instead of batching",
+            "Using incorrect ticker symbols",
+            "Not using array format for single identifiers",
+            "Confusing ISIN with CUSIP (ISIN is international, CUSIP is US-specific)"
+          ],
+          "related_parameters": []
+        }
+      ]
+    },
+    {
+      "tool_name": "get_latest",
+      "parameters": [
+        {
+          "parameter_name": "use_local_timezone",
+          "tool_name": "get_latest",
+          "description": "Whether to use the local timezone of the user instead of UTC. Optional parameter, defaults to false (UTC).",
+          "examples": [
+            "true",
+            "false"
+          ],
+          "common_mistakes": [
+            "Using string values 'true'/'false' instead of boolean true/false",
+            "Not understanding the difference between local timezone and UTC",
+            "Assuming the tool always returns local time (defaults to UTC)",
+            "Using this parameter when timezone doesn't matter for the use case"
+          ],
+          "related_parameters": []
+        }
+      ]
+    },
+    {
+      "tool_name": "get_n_quarters_ago",
+      "parameters": [
+        {
+          "parameter_name": "n",
+          "tool_name": "get_n_quarters_ago",
+          "description": "Number of quarters before the current quarter to calculate. Must be a positive integer.",
+          "examples": [
+            "1",
+            "2",
+            "4",
+            "6"
+          ],
+          "common_mistakes": [
+            "Using negative numbers (n must be positive)",
+            "Using 0 (use 1 for previous quarter)",
+            "Using string values instead of integers",
+            "Using decimal values instead of whole numbers",
+            "Not understanding that n=4 means 1 year ago, n=8 means 2 years ago"
+          ],
+          "related_parameters": []
+        }
+      ]
+    }
+  ]
+}

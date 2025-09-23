@@ -1,0 +1,156 @@
+{
+  "dataset": "company_financials",
+  "description": "Parameter descriptors for company financials tools - specifically financial line items",
+  "tools": [
+    {
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "line_item",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "description": "The specific financial line item to retrieve. Must match exact parameter names from the allowed list. Categories include: Income Statement items (revenue, expenses, profits), Balance Sheet items (assets, liabilities, equity), Cash Flow items (operating, investing, financing), and Financial Ratios.",
+          "examples": [
+            "revenue",
+            "total_revenue", 
+            "net_income",
+            "gross_profit",
+            "operating_income",
+            "cost_of_goods_sold",
+            "research_and_development",
+            "selling_general_and_administrative",
+            "total_debt",
+            "total_current_assets",
+            "total_current_liabilities",
+            "total_stockholders_equity",
+            "cash_and_cash_equivalents",
+            "accounts_receivable",
+            "inventory",
+            "property_plant_and_equipment",
+            "accounts_payable",
+            "long_term_debt",
+            "retained_earnings",
+            "common_stock",
+            "preferred_stock_convertible",
+            "additional_paid_in_capital_preferred_stock",
+            "preferred_stock_dividend",
+            "goodwill",
+            "interest_expense",
+            "income_tax_expense",
+            "operating_cash_flow",
+            "free_cash_flow",
+            "capital_expenditures",
+            "dividends_paid",
+            "earnings_per_share",
+            "book_value_per_share",
+            "return_on_assets",
+            "return_on_equity",
+            "total_debt_to_equity",
+            "total_depreciation_and_amortization",
+            "total_other_non_operating_income",
+            "total_receivable"
+          ],
+          "common_mistakes": [
+            "Using 'convertible_preferred_stock' instead of 'preferred_stock_convertible'",
+            "Using 'total_debt_to_equity_ratio' instead of 'total_debt_to_equity'",
+            "Using 'preferred_dividends_paid' instead of 'preferred_stock_dividend'",
+            "Using 'total_receivables' (plural) instead of 'total_receivable' (singular)",
+            "Using 'depreciation_and_amortization' instead of 'total_depreciation_and_amortization'"
+          ],
+          "related_parameters": ["period_type", "start_year", "end_year"]
+        },
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "description": "List of company identifiers (ticker symbols, ISINs, CUSIPs, or company_ids). Always pass multiple identifiers in a single call when possible.",
+          "examples": [
+            "['AAPL']",
+            "['AAPL', 'MSFT', 'GOOGL']",
+            "['JPM', 'BAC', 'WFC']"
+          ],
+          "common_mistakes": [
+            "Making separate API calls for each company instead of batching identifiers",
+            "Using incorrect ticker symbols",
+            "Not using array format for single identifiers"
+          ],
+          "related_parameters": ["line_item"]
+        },
+        {
+          "parameter_name": "period_type",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "description": "Specifies whether to retrieve annual or quarterly data. Required when requesting quarterly data.",
+          "examples": [
+            "annual",
+            "quarterly"
+          ],
+          "common_mistakes": [
+            "Forgetting to set period_type to 'quarterly' when requesting quarterly data",
+            "Using 'quarter' instead of 'quarterly'"
+          ],
+          "related_parameters": ["start_quarter", "end_quarter", "start_year", "end_year"]
+        },
+        {
+          "parameter_name": "start_year",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "description": "Starting year for the data range. Use calendar years, not fiscal years.",
+          "examples": [
+            "2020",
+            "2023"
+          ],
+          "common_mistakes": [
+            "Using fiscal years instead of calendar years",
+            "Not specifying when requesting historical data ranges"
+          ],
+          "related_parameters": ["end_year", "period_type"]
+        },
+        {
+          "parameter_name": "end_year", 
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "description": "Ending year for the data range. Use calendar years, not fiscal years.",
+          "examples": [
+            "2023",
+            "2024"
+          ],
+          "common_mistakes": [
+            "Using fiscal years instead of calendar years",
+            "Setting end_year before start_year"
+          ],
+          "related_parameters": ["start_year", "period_type"]
+        },
+        {
+          "parameter_name": "start_quarter",
+          "tool_name": "get_financial_line_item_from_identifiers", 
+          "description": "Starting quarter (1-4) when requesting quarterly data. Only used with period_type='quarterly'.",
+          "examples": [
+            "1",
+            "2", 
+            "3",
+            "4"
+          ],
+          "common_mistakes": [
+            "Using quarter numbers outside 1-4 range",
+            "Forgetting to set period_type to 'quarterly'",
+            "Using string values like 'Q1' instead of integer 1"
+          ],
+          "related_parameters": ["end_quarter", "period_type", "start_year"]
+        },
+        {
+          "parameter_name": "end_quarter",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "description": "Ending quarter (1-4) when requesting quarterly data. Only used with period_type='quarterly'.",
+          "examples": [
+            "1",
+            "2",
+            "3", 
+            "4"
+          ],
+          "common_mistakes": [
+            "Using quarter numbers outside 1-4 range",
+            "Setting end_quarter before start_quarter in same year",
+            "Using string values like 'Q4' instead of integer 4"
+          ],
+          "related_parameters": ["start_quarter", "period_type", "end_year"]
+        }
+      ]
+    }
+  ]
+}

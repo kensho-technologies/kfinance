@@ -50,12 +50,12 @@ class EntityProcessor:
         try:
             # Try to load English model
             self.nlp = spacy.load("en_core_web_sm")
-            logger.info("Loaded spaCy English model for NER")
+            logger.debug("Loaded spaCy English model for NER")
         except OSError:
             try:
                 # Fallback to smaller model
                 self.nlp = spacy.load("en_core_web_md")
-                logger.info("Loaded spaCy medium English model for NER")
+                logger.debug("Loaded spaCy medium English model for NER")
             except OSError:
                 logger.warning("No spaCy English model found - entity normalization disabled")
                 self.nlp = None

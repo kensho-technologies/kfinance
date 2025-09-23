@@ -14,7 +14,7 @@
           },
           "context": "use get_info_from_identifiers for basic company details like name, status, industry, employees, founding date, and headquarters.",
           "permissions_required": [
-            "COMPANY_INTELLIGENCE"
+            "CompanyIntelligencePermission"
           ],
           "disambiguation_note": "this tool provides core company facts - use it for questions about company basics, not detailed descriptions.",
           "tags": [
@@ -36,7 +36,7 @@
           },
           "context": "batch multiple companies to get their basic information efficiently.",
           "permissions_required": [
-            "COMPANY_INTELLIGENCE"
+            "CompanyIntelligencePermission"
           ],
           "disambiguation_note": "always batch multiple companies in one call rather than making separate requests.",
           "tags": [
@@ -56,7 +56,7 @@
           },
           "context": "this tool provides headquarters location and founding date information.",
           "permissions_required": [
-            "COMPANY_INTELLIGENCE"
+            "CompanyIntelligencePermission"
           ],
           "disambiguation_note": "use get_info_from_identifiers for headquarters and founding date questions, not get_company_description.",
           "tags": [
@@ -81,7 +81,7 @@
           },
           "context": "use get_company_summary_from_identifiers for one-paragraph business summaries including products, services, and markets.",
           "permissions_required": [
-            "COMPANY_INTELLIGENCE"
+            "CompanyIntelligencePermission"
           ],
           "disambiguation_note": "use summary for concise business overviews, description for detailed multi-section information.",
           "tags": [
@@ -102,7 +102,7 @@
           },
           "context": "get concise business summaries for multiple companies in one call.",
           "permissions_required": [
-            "COMPANY_INTELLIGENCE"
+            "CompanyIntelligencePermission"
           ],
           "disambiguation_note": "summary provides a single paragraph overview, while description provides detailed sections.",
           "tags": [
@@ -110,26 +110,6 @@
             "banking",
             "multiple_companies",
             "business_model"
-          ]
-        },
-        {
-          "query": "summarize <company_n>'s business model and markets",
-          "tool_name": "get_company_summary_from_identifiers",
-          "parameters": {
-            "identifiers": [
-              "F"
-            ]
-          },
-          "context": "summary includes business model, markets served, and key business segments.",
-          "permissions_required": [
-            "COMPANY_INTELLIGENCE"
-          ],
-          "disambiguation_note": "use summary for business model questions, not detailed operational descriptions.",
-          "tags": [
-            "business_model",
-            "markets",
-            "summary",
-            "automotive"
           ]
         }
       ]
@@ -147,7 +127,7 @@
           },
           "context": "use get_company_description_from_identifiers for detailed, multi-section descriptions including segments, competition, and history.",
           "permissions_required": [
-            "COMPANY_INTELLIGENCE"
+            "CompanyIntelligencePermission"
           ],
           "disambiguation_note": "description provides detailed sections (segments, competition, history), summary provides one paragraph.",
           "tags": [
@@ -168,7 +148,7 @@
           },
           "context": "description includes detailed segment breakdowns and competitive analysis.",
           "permissions_required": [
-            "COMPANY_INTELLIGENCE"
+            "CompanyIntelligencePermission"
           ],
           "disambiguation_note": "use description for detailed segment and competition analysis, not summary.",
           "tags": [
@@ -176,27 +156,6 @@
             "competition",
             "detailed_analysis",
             "business_units"
-          ]
-        },
-        {
-          "query": "tell me about <company_b> and <company_c>'s business history and significant events",
-          "tool_name": "get_company_description_from_identifiers",
-          "parameters": {
-            "identifiers": [
-              "MSFT",
-              "GOOGL"
-            ]
-          },
-          "context": "description includes company history and significant events in detailed sections.",
-          "permissions_required": [
-            "COMPANY_INTELLIGENCE"
-          ],
-          "disambiguation_note": "use description for historical information and significant events, not basic info.",
-          "tags": [
-            "history",
-            "significant_events",
-            "detailed",
-            "multiple_companies"
           ]
         }
       ]
@@ -214,7 +173,7 @@
           },
           "context": "use get_company_other_names_from_identifiers for alternate names, historical names, and native language names.",
           "permissions_required": [
-            "COMPANY_INTELLIGENCE"
+            "CompanyIntelligencePermission"
           ],
           "disambiguation_note": "this tool is specifically for name variations, not basic company information.",
           "tags": [
@@ -233,7 +192,7 @@
           },
           "context": "get historical names (previous company names) and alternate names (current variations).",
           "permissions_required": [
-            "COMPANY_INTELLIGENCE"
+            "CompanyIntelligencePermission"
           ],
           "disambiguation_note": "use this for name history questions, not current business information.",
           "tags": [
@@ -241,126 +200,6 @@
             "name_changes",
             "alternate_names",
             "rebranding"
-          ]
-        },
-        {
-          "query": "what are the native names for <company_r> and <company_s>?",
-          "tool_name": "get_company_other_names_from_identifiers",
-          "parameters": {
-            "identifiers": [
-              "TM",
-              "005930.KS"
-            ]
-          },
-          "context": "get native language names for international companies.",
-          "permissions_required": [
-            "COMPANY_INTELLIGENCE"
-          ],
-          "disambiguation_note": "use this for native language names of global companies, especially asian companies.",
-          "tags": [
-            "native_names",
-            "international",
-            "non_latin",
-            "global_companies"
-          ]
-        }
-      ]
-    },
-    {
-      "tool_name": "get_advisors_for_company_in_transaction_from_identifier",
-      "examples": [
-        {
-          "query": "who advised s&p global during their purchase of kensho?",
-          "tool_name": "get_advisors_for_company_in_transaction_from_identifier",
-          "parameters": {
-            "identifier": "SPGI",
-            "transaction_id": "12345"
-          },
-          "context": "use this tool to find advisory firms that provided services during m&a transactions.",
-          "permissions_required": [
-            "MERGERS"
-          ],
-          "disambiguation_note": "this tool requires both company identifier and transaction_id - use get_mergers_from_identifiers first to find transaction_id.",
-          "tags": [
-            "advisors",
-            "ma",
-            "investment_banking",
-            "transaction_services"
-          ]
-        },
-        {
-          "query": "which firms advised ben & jerry's in their acquisition?",
-          "tool_name": "get_advisors_for_company_in_transaction_from_identifier",
-          "parameters": {
-            "identifier": "BJ",
-            "transaction_id": "67890"
-          },
-          "context": "get the list of advisory companies for acquisition transactions.",
-          "permissions_required": [
-            "MERGERS"
-          ],
-          "disambiguation_note": "you need the specific transaction_id - this tool won't work without it.",
-          "tags": [
-            "acquisition_advisors",
-            "ma",
-            "advisory_services",
-            "transaction_id_required"
-          ]
-        }
-      ]
-    },
-    {
-      "tool_name": "get_merger_info_from_transaction_id",
-      "examples": [
-        {
-          "query": "when was the acquisition of ben & jerry's announced?",
-          "tool_name": "get_merger_info_from_transaction_id",
-          "parameters": {
-            "transaction_id": "67890"
-          },
-          "context": "use this tool for comprehensive m&a transaction details including timeline, participants, and financial terms.",
-          "permissions_required": [
-            "MERGERS"
-          ],
-          "disambiguation_note": "this tool requires transaction_id - use get_mergers_from_identifiers to find transaction ids first.",
-          "tags": [
-            "ma_timeline",
-            "announcement_date",
-            "transaction_details"
-          ]
-        },
-        {
-          "query": "what was the transaction size of vodafone's acquisition of mannesmann?",
-          "tool_name": "get_merger_info_from_transaction_id",
-          "parameters": {
-            "transaction_id": "11111"
-          },
-          "context": "get financial consideration details including transaction value.",
-          "permissions_required": [
-            "MERGERS"
-          ],
-          "disambiguation_note": "use this for transaction value questions when you have the transaction_id.",
-          "tags": [
-            "transaction_value",
-            "deal_size",
-            "financial_consideration"
-          ]
-        },
-        {
-          "query": "how much did s&p purchase kensho for?",
-          "tool_name": "get_merger_info_from_transaction_id",
-          "parameters": {
-            "transaction_id": "12345"
-          },
-          "context": "get purchase price and financial details of m&a transactions.",
-          "permissions_required": [
-            "MERGERS"
-          ],
-          "disambiguation_note": "this provides detailed financial terms when transaction_id is known.",
-          "tags": [
-            "purchase_price",
-            "acquisition_cost",
-            "deal_value"
           ]
         }
       ]

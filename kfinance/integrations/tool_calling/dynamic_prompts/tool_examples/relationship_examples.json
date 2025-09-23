@@ -1,0 +1,170 @@
+{
+  "description": "Comprehensive examples for business relationship queries covering all relationship types",
+  "tools": [
+    {
+      "tool_name": "get_business_relationship_from_identifiers",
+      "examples": [
+        {
+          "query": "what are the previous borrowers of <company_h>?",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "JPM"
+            ],
+            "business_relationship": "borrower"
+          },
+          "context": "use get_business_relationship_from_identifiers to find companies with specific business relationships.",
+          "permissions_required": [
+            "RelationshipPermission"
+          ],
+          "disambiguation_note": "the business_relationship parameter must match exact relationship types from the system.",
+          "tags": [
+            "borrowers",
+            "lending_relationships",
+            "business_relationships"
+          ]
+        },
+        {
+          "query": "who are the suppliers for <company_a>?",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ],
+            "business_relationship": "supplier"
+          },
+          "context": "find supplier relationships for companies.",
+          "permissions_required": [
+            "RelationshipPermission"
+          ],
+          "disambiguation_note": "use exact relationship type names - 'supplier' not 'suppliers' or 'vendor'.",
+          "tags": [
+            "suppliers",
+            "supply_chain",
+            "vendor_relationships"
+          ]
+        },
+        {
+          "query": "what companies are customers of <company_b>?",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT"
+            ],
+            "business_relationship": "customer"
+          },
+          "context": "find customer relationships and business partnerships.",
+          "permissions_required": [
+            "RelationshipPermission"
+          ],
+          "disambiguation_note": "relationship types are predefined - use exact parameter values.",
+          "tags": [
+            "customers",
+            "client_relationships",
+            "business_partnerships"
+          ]
+        },
+        {
+          "query": "who are the lenders for <company_f>?",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "TSLA"
+            ],
+            "business_relationship": "lender"
+          },
+          "context": "find lending relationships where companies provide financing.",
+          "permissions_required": [
+            "RelationshipPermission"
+          ],
+          "disambiguation_note": "use 'lender' for companies that provide loans, 'borrower' for companies that receive loans.",
+          "tags": [
+            "lenders",
+            "financing_relationships",
+            "credit_relationships"
+          ]
+        },
+        {
+          "query": "what partners does <company_c> work with?",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "GOOGL"
+            ],
+            "business_relationship": "partner"
+          },
+          "context": "find strategic partnerships and business alliances.",
+          "permissions_required": [
+            "RelationshipPermission"
+          ],
+          "disambiguation_note": "use 'partner' not 'business_partner' or 'strategic_partner' - use the exact parameter name.",
+          "tags": [
+            "partners",
+            "strategic_alliances",
+            "business_partnerships"
+          ]
+        },
+        {
+          "query": "who are the distributors for <company_coca_cola>?",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "KO"
+            ],
+            "business_relationship": "distributor"
+          },
+          "context": "find distribution channel relationships.",
+          "permissions_required": [
+            "RelationshipPermission"
+          ],
+          "disambiguation_note": "use 'distributor' for companies that distribute products, different from 'supplier'.",
+          "tags": [
+            "distributors",
+            "distribution_channels",
+            "sales_relationships"
+          ]
+        },
+        {
+          "query": "what vendors does <company_l> use?",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "WMT"
+            ],
+            "business_relationship": "vendor"
+          },
+          "context": "find vendor relationships for procurement and services.",
+          "permissions_required": [
+            "RelationshipPermission"
+          ],
+          "disambiguation_note": "use 'vendor' for service providers, 'supplier' for goods providers - they may overlap but are distinct categories.",
+          "tags": [
+            "vendors",
+            "procurement",
+            "service_relationships"
+          ]
+        },
+        {
+          "query": "who are the clients of <company_h>?",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "JPM"
+            ],
+            "business_relationship": "client"
+          },
+          "context": "find client relationships, particularly for service-oriented businesses.",
+          "permissions_required": [
+            "RelationshipPermission"
+          ],
+          "disambiguation_note": "use 'client' for service relationships, 'customer' for product relationships - context matters.",
+          "tags": [
+            "clients",
+            "service_relationships",
+            "professional_services"
+          ]
+        }
+      ]
+    }
+  ]
+}

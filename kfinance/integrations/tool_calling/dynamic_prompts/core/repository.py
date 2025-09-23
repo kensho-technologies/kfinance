@@ -88,13 +88,24 @@ class ExampleRepository:
                 with open(json_file, "r") as f:
                     data = json.load(f)
 
-                for example_data in data.get("examples", []):
-                    example = ToolExample.from_dict(example_data)
-                    self.examples.append(example)
+                total_examples_loaded = 0
 
-                logger.info(
-                    "Loaded %d examples from %s", len(data.get("examples", [])), json_file.name
-                )
+                # Handle both old format (examples at top level) and new format (tools with examples)
+                if "examples" in data:
+                    # Old format: {"examples": [...]}
+                    for example_data in data["examples"]:
+                        example = ToolExample.from_dict(example_data)
+                        self.examples.append(example)
+                        total_examples_loaded += 1
+                elif "tools" in data:
+                    # New format: {"tools": [{"tool_name": "...", "examples": [...]}]}
+                    for tool_data in data["tools"]:
+                        for example_data in tool_data.get("examples", []):
+                            example = ToolExample.from_dict(example_data)
+                            self.examples.append(example)
+                            total_examples_loaded += 1
+
+                logger.debug("Loaded %d examples from %s", total_examples_loaded, json_file.name)
 
             except (OSError, json.JSONDecodeError, KeyError, ValueError) as e:
                 logger.error("Failed to load examples from %s: %s", json_file, e)
@@ -122,7 +133,7 @@ class ExampleRepository:
                     descriptors.append(descriptor)
 
                 self.parameter_descriptors[tool_name] = descriptors
-                logger.info("Loaded %d parameter descriptors for %s", len(descriptors), tool_name)
+                logger.debug("Loaded %d parameter descriptors for %s", len(descriptors), tool_name)
 
             except (OSError, json.JSONDecodeError, KeyError, ValueError) as e:
                 logger.error("Failed to load parameter descriptors from %s: %s", json_file, e)
@@ -139,7 +150,7 @@ class ExampleRepository:
             # Clean up orphaned embeddings
             self.embedding_cache.cleanup_orphaned_embeddings(self.examples)
 
-            logger.info("Loaded/computed embeddings for %d examples", len(self.examples))
+            logger.debug("Loaded/computed embeddings for %d examples", len(self.examples))
 
         except (RuntimeError, ValueError, OSError) as e:
             logger.error("Failed to load/compute embeddings: %s", e)

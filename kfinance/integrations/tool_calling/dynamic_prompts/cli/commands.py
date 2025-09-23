@@ -2,6 +2,7 @@
 
 import argparse
 from datetime import datetime
+import logging
 from pathlib import Path
 import sys
 from typing import Any, Dict
@@ -9,8 +10,14 @@ from typing import Any, Dict
 from kfinance.client.permission_models import Permission
 from kfinance.integrations.tool_calling.prompts import BASE_PROMPT
 
-from ..core.cache import precompute_all_embeddings
 from ..core.manager import DynamicPromptManager
+from ..processing.entities import EntityProcessor
+
+
+# from ..utils.metrics import calculate_prompt_metrics
+# from ..utils.report import generate_markdown_report
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_prompt_metrics(base_prompt: str, dynamic_prompt: str) -> Dict[str, Any]:
@@ -122,6 +129,8 @@ def precompute_command(args: argparse.Namespace) -> None:
     """Precompute embeddings for all examples."""
 
     try:
+        from ..core.cache import precompute_all_embeddings
+
         precompute_all_embeddings(
             examples_dir=args.examples_dir,
             cache_dir=args.cache_dir,
@@ -145,20 +154,26 @@ def stats_command(args: argparse.Namespace) -> None:
 
         stats = manager.get_repository_stats()
 
-        # Repository stats
+        logger.info("Repository Statistics:")
+        logger.info("=" * 50)
 
         # Examples by tool
         examples_by_tool = stats.get("examples_by_tool", {})
         if examples_by_tool:
+            logger.info("Examples by Tool:")
             for tool, count in examples_by_tool.items():
-                pass
+                logger.info("  %s: %d examples", tool, count)
+        else:
+            logger.info("Examples by Tool: No examples found")
 
         # Cache stats
         cache_stats = stats.get("cache", {})
-        if cache_stats and "error" not in cache_stats:
-            pass
+        if cache_stats:
+            logger.info("Cache Statistics:")
+            for key, value in cache_stats.items():
+                logger.info("  %s: %s", key, value)
         else:
-            pass
+            logger.info("Cache Statistics: Cache not available or error occurred")
 
     except (RuntimeError, ValueError):
         sys.exit(1)
@@ -175,8 +190,9 @@ def invalidate_command(args: argparse.Namespace) -> None:
         )
 
         if manager.invalidate_cache():
-            pass
+            logger.info("Cache invalidated successfully")
         else:
+            logger.error("Failed to invalidate cache")
             sys.exit(1)
 
     except (RuntimeError, OSError):
@@ -200,20 +216,22 @@ def test_command(args: argparse.Namespace) -> None:
         user_permissions = {Permission.StatementsPermission}
 
         # Show entity normalization
+        logger.info("Testing Query: %s", test_query)
+        logger.info("=" * 60)
+
         entity_mapping: Dict[str, str] = {}
         try:
-            # Access the repository to get the entity processor
-            manager._initialize()  # Ensure repository is loaded  # noqa: SLF001
-            if manager._repository and hasattr(manager._repository, "normalize_query_for_search"):  # noqa: SLF001
-                normalized_query, entity_mapping = manager._repository.normalize_query_for_search(  # noqa: SLF001
-                    test_query
-                )
-                if entity_mapping:
-                    pass
-                else:
-                    pass
-        except (RuntimeError, ValueError, AttributeError):
-            pass
+            # Create entity processor directly for normalization demo
+            entity_processor = EntityProcessor()
+            _, entity_mapping = entity_processor.process_query(test_query)
+            if entity_mapping:
+                logger.info("Entity Normalization:")
+                for placeholder, entity in entity_mapping.items():
+                    logger.info("  %s → %s", placeholder, entity)
+            else:
+                logger.info("Entity Normalization: No entities detected")
+        except (RuntimeError, ValueError, AttributeError) as e:
+            logger.warning("Entity normalization failed: %s", e)
 
         # Get both base and dynamic prompts
         base_prompt = BASE_PROMPT
@@ -226,9 +244,34 @@ def test_command(args: argparse.Namespace) -> None:
         metrics = calculate_prompt_metrics(base_prompt, dynamic_prompt)
 
         # Show prompt comparison metrics
-
+        logger.info("Prompt Construction Stats:")
         for key, value in stats.items():
-            pass
+            logger.info("  %s: %s", key, value)
+
+        logger.info("Prompt Size Comparison:")
+        base_metrics = metrics["base_prompt"]
+        dynamic_metrics = metrics["dynamic_prompt"]
+        comparison = metrics["comparison"]
+
+        logger.info(
+            "  Base prompt:    %d lines, %d words, %d chars",
+            base_metrics["lines"],
+            base_metrics["words"],
+            base_metrics["characters"],
+        )
+        logger.info(
+            "  Dynamic prompt: %d lines, %d words, %d chars",
+            dynamic_metrics["lines"],
+            dynamic_metrics["words"],
+            dynamic_metrics["characters"],
+        )
+        logger.info(
+            "  Size increase:  +%d lines, +%d words, +%d chars (%s%%)",
+            comparison["lines_added"],
+            comparison["words_added"],
+            comparison["characters_added"],
+            comparison["size_increase_percent"],
+        )
 
         # Show similar examples
         similar_examples = manager.search_similar_examples(
@@ -237,13 +280,16 @@ def test_command(args: argparse.Namespace) -> None:
             top_k=3,
         )
 
+        logger.info("Similar Examples Found:")
         if similar_examples:
             for i, example in enumerate(similar_examples, 1):
-                example.get("similarity_score", 0)
-                example.get("query", "Unknown")
-                example.get("tool_name", "Unknown")
+                similarity = example.get("similarity_score", 0)
+                query_text = example.get("query", "Unknown")
+                tool_name = example.get("tool_name", "Unknown")
+                logger.info("  %d. %s (similarity: %.3f)", i, query_text, similarity)
+                logger.info("     Tool: %s", tool_name)
         else:
-            pass
+            logger.info("  No similar examples found.")
 
         # Generate markdown report if requested
         if args.output_markdown:
@@ -261,7 +307,10 @@ def test_command(args: argparse.Namespace) -> None:
                 f.write(report)
 
         if args.show_prompt:
-            pass
+            logger.info("Generated Dynamic Prompt:")
+            logger.info("-" * 60)
+            logger.info("%s", dynamic_prompt)
+            logger.info("-" * 60)
 
     except (RuntimeError, ValueError):
         sys.exit(1)
@@ -269,6 +318,11 @@ def test_command(args: argparse.Namespace) -> None:
 
 def main() -> None:
     """Main CLI entry point."""
+    # Configure logging for CLI usage
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s: %(message)s", handlers=[logging.StreamHandler()]
+    )
+
     parser = argparse.ArgumentParser(
         description="Dynamic Prompt Construction CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
