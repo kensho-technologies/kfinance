@@ -106,3 +106,5 @@ kfinance/wrappers/
 docs/output/
 docs/generated/
 wrappers/
+
+uv.lock
