@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import List, Optional, Set
 
 from kfinance.client.permission_models import Permission
-from .example_repository import ExampleRepository
-from .prompt_constructor import DynamicPromptConstructor
-from .similarity_search import SimilaritySearchEngine
+from .repository import ExampleRepository
+from .constructor import DynamicPromptConstructor
+from .search import SimilaritySearchEngine
 
 logger = logging.getLogger(__name__)
 

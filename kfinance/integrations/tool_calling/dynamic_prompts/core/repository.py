@@ -11,9 +11,8 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 
 from .models import ToolExample, ParameterDescriptor
-from .embedding_cache import EmbeddingCache
-from .entity_normalizer import EntityNormalizer
-from .permission_resolver import PermissionResolver
+from .cache import EmbeddingCache
+from ..processing.entities import EntityProcessor
 from kfinance.client.permission_models import Permission
 
 logger = logging.getLogger(__name__)
@@ -50,9 +49,8 @@ class ExampleRepository:
         # Get embedding model from cache (lazy loaded)
         self.embedding_model = self.embedding_cache.embedding_model if self.embedding_cache else None
         
-        # Entity normalization and permission resolution
-        self.entity_normalizer = EntityNormalizer()
-        self.permission_resolver = PermissionResolver()
+        # Entity processing
+        self.entity_processor = EntityProcessor()
         
         # Storage
         self.examples: List[ToolExample] = []
@@ -68,7 +66,8 @@ class ExampleRepository:
     
     def _get_default_examples_dir(self) -> Path:
         """Get the default examples directory."""
-        current_dir = Path(__file__).parent
+        # Go up one level from core/ to the main dynamic_prompts directory
+        current_dir = Path(__file__).parent.parent
         return current_dir / "tool_examples"
     
     def _load_examples(self) -> None:
@@ -146,7 +145,7 @@ class ExampleRepository:
         Returns:
             Tuple of (normalized_query, entity_mapping)
         """
-        return self.entity_normalizer.normalize_query(query)
+        return self.entity_processor.process_query(query)
     
     def search_examples(
         self,

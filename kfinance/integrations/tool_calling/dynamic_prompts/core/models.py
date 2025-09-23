@@ -1,14 +1,81 @@
-"""Data models for dynamic prompt construction."""
+"""Data models for dynamic prompt construction with integrated permission resolution."""
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set
 
 import numpy as np
 
-from kfinance.client.permission_models import Permission
-from .permission_resolver import get_permission_resolver
+logger = logging.getLogger(__name__)
+
+# Import Permission model with fallback for development
+try:
+    from kfinance.client.permission_models import Permission
+except ImportError:
+    logger.warning("Could not import Permission model - using mock for development")
+    from enum import Enum
+    
+    class Permission(Enum):
+        StatementsPermission = "StatementsPermission"
+        PricingPermission = "PricingPermission"
+        EarningsPermission = "EarningsPermission"
+        MergersPermission = "MergersPermission"
+        CompanyIntelligencePermission = "CompanyIntelligencePermission"
+        RelationshipPermission = "RelationshipPermission"
+        SegmentsPermission = "SegmentsPermission"
+        IDPermission = "IDPermission"
+        CompetitorsPermission = "CompetitorsPermission"
+        TranscriptsPermission = "TranscriptsPermission"
+
+
+# Permission mapping for resolving references
+PERMISSION_MAPPING = {
+    # Financial data permissions
+    "STATEMENTS": Permission.StatementsPermission,
+    "PRICING": Permission.PricingPermission,
+    "EARNINGS": Permission.EarningsPermission,
+    
+    # Company data permissions
+    "COMPANY_INTELLIGENCE": Permission.CompanyIntelligencePermission,
+    "MERGERS": Permission.MergersPermission,
+    "RELATIONSHIPS": Permission.RelationshipPermission,
+    "SEGMENTS": Permission.SegmentsPermission,
+    "COMPETITORS": Permission.CompetitorsPermission,
+    
+    # Identifier and utility permissions
+    "ID": Permission.IDPermission,
+    "TRANSCRIPTS": Permission.TranscriptsPermission,
+    
+    # Handle both singular and plural forms
+    "RELATIONSHIP": Permission.RelationshipPermission,
+}
+
+
+def resolve_permissions(permission_refs: List[str]) -> Set[Permission]:
+    """
+    Resolve permission reference strings to Permission enum values.
+    
+    Args:
+        permission_refs: List of permission reference strings (e.g., ["STATEMENTS", "PRICING"])
+        
+    Returns:
+        Set of Permission enum values
+    """
+    resolved_permissions = set()
+    
+    for ref in permission_refs:
+        if ref in PERMISSION_MAPPING:
+            resolved_permissions.add(PERMISSION_MAPPING[ref])
+        else:
+            # Try to resolve as direct Permission enum value
+            try:
+                resolved_permissions.add(Permission(ref))
+            except (ValueError, AttributeError):
+                logger.warning(f"Could not resolve permission reference: {ref}")
+    
+    return resolved_permissions
 
 
 @dataclass
@@ -38,10 +105,9 @@ class ToolExample:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ToolExample":
-        """Create ToolExample from dictionary."""
+        """Create ToolExample from dictionary with integrated permission resolution."""
         permission_refs = data.get("permissions_required", [])
-        resolver = get_permission_resolver()
-        permissions = resolver.resolve_permissions(permission_refs)
+        permissions = resolve_permissions(permission_refs)
         return cls(
             query=data["query"],
             tool_name=data["tool_name"],

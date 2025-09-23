@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Entity tagging system using NER for comprehensive company detection."""
+"""Unified entity processing system combining NER detection and normalization."""
 
 import re
 import logging
 from typing import Dict, List, Tuple, Set, Optional
 from dataclasses import dataclass
+from pathlib import Path
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +16,7 @@ try:
     SPACY_AVAILABLE = True
 except ImportError:
     SPACY_AVAILABLE = False
-    logger.warning("spaCy not available - falling back to pattern-based entity detection")
+    logger.warning("spaCy not available - entity normalization disabled")
 
 
 @dataclass
@@ -27,13 +29,17 @@ class EntityMatch:
     placeholder: str
 
 
-class EntityTagger:
-    """Advanced entity tagger using NER and pattern matching for comprehensive company detection."""
+class EntityProcessor:
+    """Unified entity detection and normalization processor."""
     
     def __init__(self):
-        """Initialize the entity tagger."""
+        """Initialize the entity processor."""
+        # Initialize spaCy NER
         self.nlp = None
         self._init_spacy_model()
+        
+        # Initialize legacy patterns for backward compatibility
+        self._init_legacy_patterns()
     
     def _init_spacy_model(self):
         """Initialize spaCy NER model if available."""
@@ -50,12 +56,133 @@ class EntityTagger:
                 self.nlp = spacy.load("en_core_web_md")
                 logger.info("Loaded spaCy medium English model for NER")
             except OSError:
-                logger.warning("No spaCy English model found - using pattern-based detection only")
+                logger.warning("No spaCy English model found - entity normalization disabled")
                 self.nlp = None
     
-    def detect_entities(self, text: str) -> List[EntityMatch]:
+    def _init_legacy_patterns(self):
+        """Initialize legacy company patterns for backward compatibility."""
+        self.legacy_company_patterns = {
+            # Tech companies
+            "apple": ["apple", "aapl", "apple inc", "apple computer"],
+            "microsoft": ["microsoft", "msft", "microsoft corp", "microsoft corporation"],
+            "google": ["google", "googl", "alphabet", "alphabet inc"],
+            "amazon": ["amazon", "amzn", "amazon.com", "amazon inc"],
+            "meta": ["meta", "facebook", "fb", "meta platforms"],
+            "tesla": ["tesla", "tsla", "tesla inc", "tesla motors"],
+            "netflix": ["netflix", "nflx", "netflix inc"],
+            
+            # Financial companies
+            "jpmorgan": ["jpmorgan", "jpm", "jpmorgan chase", "jp morgan"],
+            "goldman_sachs": ["goldman sachs", "gs", "goldman sachs group"],
+            "morgan_stanley": ["morgan stanley", "ms", "morgan stanley & co"],
+            "bank_of_america": ["bank of america", "bac", "bofa"],
+            "wells_fargo": ["wells fargo", "wfc", "wells fargo & company"],
+            "citigroup": ["citigroup", "c", "citi", "citicorp"],
+            
+            # Other major companies
+            "berkshire_hathaway": ["berkshire hathaway", "brk.a", "brk.b", "berkshire"],
+            "coca_cola": ["coca cola", "ko", "coca-cola", "coke"],
+            "walmart": ["walmart", "wmt", "wal-mart"],
+            "disney": ["disney", "dis", "walt disney"],
+            "general_electric": ["general electric", "ge", "ge company"],
+            "exxon": ["exxon", "xom", "exxon mobil", "exxonmobil"],
+            "pfizer": ["pfizer", "pfe", "pfizer inc"],
+            
+            # International companies
+            "toyota": ["toyota", "tm", "toyota motor"],
+            "samsung": ["samsung", "005930.ks", "samsung electronics"],
+            "nestle": ["nestle", "nsrgy", "nestle sa"],
+        }
+        
+        # Create reverse mapping for legacy patterns
+        self.legacy_entity_to_placeholder = {}
+        self.legacy_placeholder_to_entities = {}
+        
+        # Create generic placeholders (COMPANY_A, COMPANY_B, etc.) for legacy patterns
+        placeholder_letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T']
+        
+        for i, (placeholder, variations) in enumerate(self.legacy_company_patterns.items()):
+            if i < len(placeholder_letters):
+                placeholder_key = f"<COMPANY_{placeholder_letters[i]}>"
+                self.legacy_placeholder_to_entities[placeholder_key] = variations
+                for variation in variations:
+                    self.legacy_entity_to_placeholder[variation.lower()] = placeholder_key
+    
+    def process_query(self, query: str) -> Tuple[str, Dict[str, str]]:
         """
-        Detect company entities in text using spaCy NER only.
+        Main entry point: detect and normalize entities in query.
+        
+        Args:
+            query: Original query string
+            
+        Returns:
+            Tuple of (normalized_query, entity_mapping)
+        """
+        # First, handle existing old-style placeholders (convert them to new format)
+        normalized_query = query.lower()
+        entity_mapping = {}
+        
+        old_placeholder_pattern = r'<company_(\w+)>'
+        old_placeholders = re.findall(old_placeholder_pattern, normalized_query)
+        for old_company_name in old_placeholders:
+            # Find the new placeholder for this company using legacy patterns
+            if old_company_name in self.legacy_entity_to_placeholder:
+                new_placeholder = self.legacy_entity_to_placeholder[old_company_name]
+                old_pattern = f'<company_{old_company_name}>'
+                normalized_query = normalized_query.replace(old_pattern, new_placeholder.lower())
+                entity_mapping[new_placeholder] = old_company_name
+        
+        # If no old placeholders found, use the advanced entity detection
+        if not old_placeholders:
+            try:
+                normalized_query, entity_mapping = self._detect_and_normalize(query)
+            except Exception as e:
+                logger.error(f"Error in entity detection, falling back to legacy method: {e}")
+                # Fallback to legacy method
+                return self._normalize_query_legacy(query)
+        
+        return normalized_query, entity_mapping
+    
+    def _detect_and_normalize(self, text: str) -> Tuple[str, Dict[str, str]]:
+        """
+        Detect and normalize entities using spaCy NER.
+        If spaCy is not available, returns text as-is with no entity masking.
+        
+        Args:
+            text: Input text
+            
+        Returns:
+            Tuple of (normalized_text, entity_mapping)
+        """
+        # If no spaCy model available, return text as-is (no entity masking)
+        if not self.nlp:
+            return text.lower(), {}
+        
+        entities = self._detect_entities(text)
+        
+        if not entities:
+            return text.lower(), {}
+        
+        # Sort entities by start position (reverse order for replacement)
+        entities.sort(key=lambda x: x.start, reverse=True)
+        
+        normalized_text = text
+        entity_mapping = {}
+        
+        # Replace entities with placeholders (reverse order to preserve positions)
+        for entity in entities:
+            normalized_text = (
+                normalized_text[:entity.start] + 
+                entity.placeholder.lower() + 
+                normalized_text[entity.end:]
+            )
+            entity_mapping[entity.placeholder] = entity.text.lower()
+        
+        return normalized_text.lower(), entity_mapping
+    
+    def _detect_entities(self, text: str) -> List[EntityMatch]:
+        """
+        Detect entities using spaCy NER.
         
         Args:
             text: Input text to analyze
@@ -294,87 +421,59 @@ class EntityTagger:
         
         return deduplicated
     
-    def normalize_text(self, text: str) -> Tuple[str, Dict[str, str]]:
-        """
-        Normalize text by replacing detected entities with placeholders.
-        If spaCy is not available, returns text as-is with no entity masking.
-        
-        Args:
-            text: Input text
-            
-        Returns:
-            Tuple of (normalized_text, entity_mapping)
-        """
-        # If no spaCy model available, return text as-is (no entity masking)
-        if not self.nlp:
-            return text.lower(), {}
-        
-        entities = self.detect_entities(text)
-        
-        if not entities:
-            return text.lower(), {}
-        
-        # Sort entities by start position (reverse order for replacement)
-        entities.sort(key=lambda x: x.start, reverse=True)
-        
-        normalized_text = text
+    def _normalize_query_legacy(self, query: str) -> Tuple[str, Dict[str, str]]:
+        """Legacy normalization method as fallback."""
+        normalized_query = query.lower()
         entity_mapping = {}
         
-        # Replace entities with placeholders (reverse order to preserve positions)
-        for entity in entities:
-            normalized_text = (
-                normalized_text[:entity.start] + 
-                entity.placeholder.lower() + 
-                normalized_text[entity.end:]
-            )
-            entity_mapping[entity.placeholder] = entity.text.lower()
+        # Use legacy entity patterns
+        sorted_entities = sorted(self.legacy_entity_to_placeholder.items(), 
+                               key=lambda x: len(x[0]), reverse=True)
         
-        return normalized_text.lower(), entity_mapping
+        for entity, placeholder in sorted_entities:
+            pattern = r'\b' + re.escape(entity) + r'\b'
+            if re.search(pattern, normalized_query, re.IGNORECASE):
+                normalized_query = re.sub(pattern, placeholder.lower(), normalized_query, flags=re.IGNORECASE)
+                entity_mapping[placeholder] = entity
+        
+        return normalized_query, entity_mapping
+    
+    def denormalize_query(self, normalized_query: str, entity_mapping: Dict[str, str]) -> str:
+        """
+        Convert normalized query back to original entities.
+        
+        Args:
+            normalized_query: Query with placeholders
+            entity_mapping: Mapping from placeholders to original entities
+            
+        Returns:
+            Query with original entity names
+        """
+        denormalized = normalized_query
+        for placeholder, entity in entity_mapping.items():
+            denormalized = denormalized.replace(placeholder.lower(), entity)
+        return denormalized
+    
+    def get_common_entities(self) -> Set[str]:
+        """Get set of all common entity variations for testing."""
+        entities = set()
+        for variations in self.legacy_company_patterns.values():
+            entities.update(variations)
+        return entities
+    
+    def get_placeholders(self) -> Set[str]:
+        """Get set of all placeholders."""
+        return set(self.legacy_placeholder_to_entities.keys())
 
 
-# Convenience functions
+# Convenience functions for backward compatibility
 def detect_companies(text: str) -> List[EntityMatch]:
     """Detect company entities in text."""
-    tagger = EntityTagger()
-    return tagger.detect_entities(text)
+    processor = EntityProcessor()
+    return processor._detect_entities(text)
 
 
 def normalize_query(text: str) -> Tuple[str, Dict[str, str]]:
-    """Normalize query by replacing companies with placeholders."""
-    tagger = EntityTagger()
-    return tagger.normalize_text(text)
-
-
-if __name__ == "__main__":
-    # Test the entity tagger
-    tagger = EntityTagger()
-    
-    test_queries = [
-        "What is the revenue for Apple and Microsoft?",
-        "Get Tesla's stock price for Q3 2023",
-        "Show me JPMorgan Chase's balance sheet in New York",
-        "Compare Amazon and Alphabet Inc's market cap in the US",
-        "What are Berkshire Hathaway's holdings in California?",
-        "Get financial data for NVDA and AMD in Europe",
-        "Show me Johnson & Johnson's earnings under CEO Alex Gorsky",
-        "What is Procter & Gamble Company's debt ratio in Germany?",
-        "Compare AAPL, MSFT, and GOOGL performance in Asia",
-        "Get data for Samsung's business in China and Japan"
-    ]
-    
-    print("ADVANCED ENTITY TAGGING TEST")
-    print("=" * 60)
-    
-    for i, query in enumerate(test_queries, 1):
-        print(f"\n{i}. Testing Query:")
-        print(f"   Original:   {query}")
-        
-        # Detect entities
-        entities = tagger.detect_entities(query)
-        print(f"   Entities:   {[(e.text, e.entity_type) for e in entities]}")
-        
-        # Normalize
-        normalized, mapping = tagger.normalize_text(query)
-        print(f"   Normalized: {normalized}")
-        if mapping:
-            print(f"   Mapping:    {mapping}")
+    """Normalize query by replacing entities with placeholders."""
+    processor = EntityProcessor()
+    return processor.process_query(text)

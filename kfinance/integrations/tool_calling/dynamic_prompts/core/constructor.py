@@ -7,9 +7,9 @@ from typing import Dict, List, Optional, Set
 
 from kfinance.client.permission_models import Permission
 from kfinance.integrations.tool_calling.prompts import BASE_PROMPT
-from .example_repository import ExampleRepository
+from .repository import ExampleRepository
 from .models import ParameterDescriptor, ToolExample
-from .similarity_search import SimilaritySearchEngine
+from .search import SimilaritySearchEngine
 
 logger = logging.getLogger(__name__)
 
