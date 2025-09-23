@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass, field
+import logging
 from typing import Any, Dict, List, Optional, Set
 
 import numpy as np
+
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,8 @@ try:
 except ImportError:
     logger.warning("Could not import Permission model - using mock for development")
     from enum import Enum
-    
-    class Permission(Enum):
+
+    class Permission(Enum):  # type: ignore[no-redef]
         StatementsPermission = "StatementsPermission"
         PricingPermission = "PricingPermission"
         EarningsPermission = "EarningsPermission"
@@ -36,35 +37,34 @@ PERMISSION_MAPPING = {
     "STATEMENTS": Permission.StatementsPermission,
     "PRICING": Permission.PricingPermission,
     "EARNINGS": Permission.EarningsPermission,
-    
+
     # Company data permissions
     "COMPANY_INTELLIGENCE": Permission.CompanyIntelligencePermission,
     "MERGERS": Permission.MergersPermission,
     "RELATIONSHIPS": Permission.RelationshipPermission,
     "SEGMENTS": Permission.SegmentsPermission,
     "COMPETITORS": Permission.CompetitorsPermission,
-    
+
     # Identifier and utility permissions
     "ID": Permission.IDPermission,
     "TRANSCRIPTS": Permission.TranscriptsPermission,
-    
+
     # Handle both singular and plural forms
     "RELATIONSHIP": Permission.RelationshipPermission,
 }
 
 
 def resolve_permissions(permission_refs: List[str]) -> Set[Permission]:
-    """
-    Resolve permission reference strings to Permission enum values.
-    
+    """Resolve permission reference strings to Permission enum values.
+
     Args:
         permission_refs: List of permission reference strings (e.g., ["STATEMENTS", "PRICING"])
-        
+
     Returns:
         Set of Permission enum values
     """
     resolved_permissions = set()
-    
+
     for ref in permission_refs:
         if ref in PERMISSION_MAPPING:
             resolved_permissions.add(PERMISSION_MAPPING[ref])
@@ -74,14 +74,14 @@ def resolve_permissions(permission_refs: List[str]) -> Set[Permission]:
                 resolved_permissions.add(Permission(ref))
             except (ValueError, AttributeError):
                 logger.warning(f"Could not resolve permission reference: {ref}")
-    
+
     return resolved_permissions
 
 
 @dataclass
 class ToolExample:
     """Represents a single tool usage example with context and embeddings."""
-    
+
     query: str
     tool_name: str
     parameters: Dict[str, Any]
@@ -90,7 +90,7 @@ class ToolExample:
     embedding: Optional[np.ndarray] = field(default=None, repr=False)
     disambiguation_note: Optional[str] = None
     tags: List[str] = field(default_factory=list)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization (excluding embedding)."""
         return {
@@ -102,7 +102,7 @@ class ToolExample:
             "disambiguation_note": self.disambiguation_note,
             "tags": self.tags,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ToolExample":
         """Create ToolExample from dictionary with integrated permission resolution."""
@@ -122,14 +122,14 @@ class ToolExample:
 @dataclass
 class ParameterDescriptor:
     """Enhanced parameter description for disambiguation."""
-    
+
     parameter_name: str
     tool_name: str
     description: str
     examples: List[str]
     common_mistakes: List[str] = field(default_factory=list)
     related_parameters: List[str] = field(default_factory=list)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
@@ -140,7 +140,7 @@ class ParameterDescriptor:
             "common_mistakes": self.common_mistakes,
             "related_parameters": self.related_parameters,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ParameterDescriptor":
         """Create ParameterDescriptor from dictionary."""

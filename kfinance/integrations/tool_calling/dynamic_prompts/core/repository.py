@@ -5,22 +5,23 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Any, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
-from .models import ToolExample, ParameterDescriptor
-from .cache import EmbeddingCache
-from ..processing.entities import EntityProcessor
 from kfinance.client.permission_models import Permission
+
+from ..processing.entities import EntityProcessor
+from .cache import EmbeddingCache
+from .models import ParameterDescriptor, ToolExample
+
 
 logger = logging.getLogger(__name__)
 
 
 class ExampleRepository:
     """Repository for managing tool usage examples and parameter descriptors."""
-    
+
     def __init__(
         self,
         examples_dir: Optional[Path] = None,
@@ -29,7 +30,7 @@ class ExampleRepository:
         cache_dir: Optional[Path] = None,
     ):
         """Initialize the example repository.
-        
+
         Args:
             examples_dir: Directory containing example JSON files
             embedding_model: Name of the sentence transformer model to use
@@ -39,114 +40,113 @@ class ExampleRepository:
         self.examples_dir = examples_dir or self._get_default_examples_dir()
         self.embedding_model_name = embedding_model
         self.cache_embeddings = cache_embeddings
-        
+
         # Initialize embedding cache
         self.embedding_cache = EmbeddingCache(
             cache_dir=cache_dir,
             embedding_model_name=embedding_model,
         ) if cache_embeddings else None
-        
+
         # Get embedding model from cache (lazy loaded)
         self.embedding_model = self.embedding_cache.embedding_model if self.embedding_cache else None
-        
+
         # Entity processing
         self.entity_processor = EntityProcessor()
-        
+
         # Storage
         self.examples: List[ToolExample] = []
         self.parameter_descriptors: Dict[str, List[ParameterDescriptor]] = {}
-        
+
         # Load examples and descriptors
         self._load_examples()
         self._load_parameter_descriptors()
-        
+
         # Load or compute embeddings
         if self.embedding_cache and self.examples:
             self._load_or_compute_embeddings()
-    
+
     def _get_default_examples_dir(self) -> Path:
         """Get the default examples directory."""
         # Go up one level from core/ to the main dynamic_prompts directory
         current_dir = Path(__file__).parent.parent
         return current_dir / "tool_examples"
-    
+
     def _load_examples(self) -> None:
         """Load tool usage examples from JSON files."""
         if not self.examples_dir.exists():
             logger.warning(f"Examples directory not found: {self.examples_dir}")
             return
-        
+
         for json_file in self.examples_dir.glob("*_examples.json"):
             try:
-                with open(json_file, 'r') as f:
+                with open(json_file, "r") as f:
                     data = json.load(f)
-                
+
                 for example_data in data.get("examples", []):
                     example = ToolExample.from_dict(example_data)
                     self.examples.append(example)
-                
+
                 logger.info(f"Loaded {len(data.get('examples', []))} examples from {json_file.name}")
-            
+
             except Exception as e:
                 logger.error(f"Failed to load examples from {json_file}: {e}")
-    
+
     def _load_parameter_descriptors(self) -> None:
         """Load parameter descriptors from JSON files."""
         descriptors_dir = self.examples_dir.parent / "parameter_descriptors"
-        
+
         if not descriptors_dir.exists():
             logger.warning(f"Parameter descriptors directory not found: {descriptors_dir}")
             return
-        
+
         for json_file in descriptors_dir.glob("*_params.json"):
             try:
-                with open(json_file, 'r') as f:
+                with open(json_file, "r") as f:
                     data = json.load(f)
-                
+
                 tool_name = data.get("tool_name")
                 if not tool_name:
                     continue
-                
+
                 descriptors = []
                 for param_data in data.get("parameters", []):
                     descriptor = ParameterDescriptor.from_dict(param_data)
                     descriptors.append(descriptor)
-                
+
                 self.parameter_descriptors[tool_name] = descriptors
                 logger.info(f"Loaded {len(descriptors)} parameter descriptors for {tool_name}")
-            
+
             except Exception as e:
                 logger.error(f"Failed to load parameter descriptors from {json_file}: {e}")
-    
+
     def _load_or_compute_embeddings(self) -> None:
         """Load cached embeddings or compute new ones as needed."""
         if not self.embedding_cache:
             return
-        
+
         try:
             # Use embedding cache to get or compute embeddings
             self.examples = self.embedding_cache.get_or_compute_embeddings(self.examples)
-            
+
             # Clean up orphaned embeddings
             self.embedding_cache.cleanup_orphaned_embeddings(self.examples)
-            
+
             logger.info(f"Loaded/computed embeddings for {len(self.examples)} examples")
-        
+
         except Exception as e:
             logger.error(f"Failed to load/compute embeddings: {e}")
-    
+
     def normalize_query_for_search(self, query: str) -> Tuple[str, Dict[str, str]]:
-        """
-        Normalize a query for semantic search by replacing entities with placeholders.
-        
+        """Normalize a query for semantic search by replacing entities with placeholders.
+
         Args:
             query: Original user query
-            
+
         Returns:
             Tuple of (normalized_query, entity_mapping)
         """
         return self.entity_processor.process_query(query)
-    
+
     def search_examples(
         self,
         query: str,
@@ -156,46 +156,46 @@ class ExampleRepository:
         min_similarity: float = 0.3,
     ) -> List[ToolExample]:
         """Search for relevant examples using cosine similarity.
-        
+
         Args:
             query: User query to search for
             user_permissions: User's permissions for filtering
             tool_names: Optional list of tool names to filter by
             top_k: Maximum number of examples to return
             min_similarity: Minimum similarity threshold
-            
+
         Returns:
             List of relevant tool examples, sorted by similarity
         """
         if not self.embedding_model or not self.examples:
             return []
-        
+
         # Normalize query to reduce entity bias
         normalized_query, entity_mapping = self.normalize_query_for_search(query)
-        
+
         # Filter examples by permissions and tool names
         filtered_examples = []
         for example in self.examples:
             # Check permissions
             if not example.permissions_required.issubset(user_permissions):
                 continue
-            
+
             # Check tool names if specified
             if tool_names and example.tool_name not in tool_names:
                 continue
-            
+
             filtered_examples.append(example)
-        
+
         if not filtered_examples:
             return []
-        
+
         # Compute query embedding using normalized query
         try:
             query_embedding = self.embedding_model.encode([normalized_query])[0]
         except Exception as e:
             logger.error(f"Failed to compute query embedding: {e}")
             return []
-        
+
         # Calculate similarities
         similarities = []
         for example in filtered_examples:
@@ -205,20 +205,20 @@ class ExampleRepository:
                 )
                 if similarity >= min_similarity:
                     similarities.append((similarity, example))
-        
+
         # Sort by similarity and return top_k
         similarities.sort(key=lambda x: x[0], reverse=True)
         return [example for _, example in similarities[:top_k]]
-    
+
     def get_parameter_descriptors(self, tool_name: str) -> List[ParameterDescriptor]:
         """Get parameter descriptors for a specific tool."""
         return self.parameter_descriptors.get(tool_name, [])
-    
+
     def add_example(self, example: ToolExample) -> None:
         """Add a new example to the repository."""
         # Add to examples list first
         self.examples.append(example)
-        
+
         # Compute embedding using cache if available
         if self.embedding_cache:
             try:
@@ -235,41 +235,41 @@ class ExampleRepository:
                 example.embedding = embedding
             except Exception as e:
                 logger.error(f"Failed to compute embedding for new example: {e}")
-    
+
     def save_examples(self, output_file: Path) -> None:
         """Save examples to a JSON file."""
         data = {
             "examples": [example.to_dict() for example in self.examples]
         }
-        
-        with open(output_file, 'w') as f:
+
+        with open(output_file, "w") as f:
             json.dump(data, f, indent=2, default=str)
-        
+
         logger.info(f"Saved {len(self.examples)} examples to {output_file}")
-    
+
     def precompute_embeddings(self, force_recompute: bool = False) -> None:
         """Precompute embeddings for all examples.
-        
+
         Args:
             force_recompute: Whether to force recomputation of all embeddings
         """
         if not self.embedding_cache:
             logger.warning("No embedding cache available for precomputation")
             return
-        
+
         self.examples = self.embedding_cache.get_or_compute_embeddings(
-            self.examples, 
+            self.examples,
             force_recompute=force_recompute
         )
         logger.info(f"Precomputed embeddings for {len(self.examples)} examples")
-    
-    def get_cache_stats(self) -> Dict[str, any]:
+
+    def get_cache_stats(self) -> Dict[str, Any]:
         """Get embedding cache statistics."""
         if not self.embedding_cache:
             return {"error": "No embedding cache available"}
-        
+
         return self.embedding_cache.get_cache_stats()
-    
+
     def invalidate_cache(self) -> None:
         """Invalidate the embedding cache."""
         if self.embedding_cache:
