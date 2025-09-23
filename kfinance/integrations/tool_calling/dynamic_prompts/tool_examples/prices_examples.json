@@ -1,0 +1,228 @@
+{
+  "tool_name": "get_prices_from_identifiers",
+  "description": "Examples for stock price queries with focus on date ranges and periodicity",
+  "examples": [
+    {
+      "query": "what are the current stock prices for <company_a> and <company_b>?",
+      "tool_name": "get_prices_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "AAPL",
+          "MSFT"
+        ]
+      },
+      "context": "for current/most recent prices, omit start_date and end_date parameters.",
+      "permissions_required": [
+        "PRICING"
+      ],
+      "disambiguation_note": "leave date parameters empty to get the most recent available prices automatically.",
+      "tags": [
+        "current_prices",
+        "most_recent",
+        "multiple_companies"
+      ]
+    },
+    {
+      "query": "get <company_f>'s stock price for the last month",
+      "tool_name": "get_prices_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "TSLA"
+        ],
+        "start_date": "2023-10-01",
+        "end_date": "2023-10-31"
+      },
+      "context": "for specific date ranges, provide both start_date and end_date in yyyy-mm-dd format.",
+      "permissions_required": [
+        "PRICING"
+      ],
+      "disambiguation_note": "use specific dates rather than relative terms like 'last month' - calculate the actual dates.",
+      "tags": [
+        "date_range",
+        "monthly_data",
+        "historical_prices"
+      ]
+    },
+    {
+      "query": "show me <company_d>'s daily stock prices for q3 2023",
+      "tool_name": "get_prices_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "AMZN"
+        ],
+        "start_date": "2023-07-01",
+        "end_date": "2023-09-30",
+        "periodicity": "daily"
+      },
+      "context": "use periodicity parameter to specify the frequency of data points (daily, weekly, monthly).",
+      "permissions_required": [
+        "PRICING"
+      ],
+      "disambiguation_note": "periodicity controls data frequency, not the date range. default is daily if not specified.",
+      "tags": [
+        "daily_prices",
+        "quarterly_range",
+        "periodicity"
+      ]
+    },
+    {
+      "query": "get weekly prices for <company_c> and <company_e> over the past year",
+      "tool_name": "get_prices_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "GOOGL",
+          "META"
+        ],
+        "start_date": "2022-11-01",
+        "end_date": "2023-10-31",
+        "periodicity": "weekly"
+      },
+      "context": "weekly periodicity aggregates daily data into weekly intervals for longer time periods.",
+      "permissions_required": [
+        "PRICING"
+      ],
+      "disambiguation_note": "use weekly periodicity for year-long ranges to reduce data volume while maintaining trends.",
+      "tags": [
+        "weekly_prices",
+        "yearly_range",
+        "multiple_companies",
+        "periodicity"
+      ]
+    },
+    {
+      "query": "what were <company_g>'s adjusted stock prices in 2022?",
+      "tool_name": "get_prices_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "NFLX"
+        ],
+        "start_date": "2022-01-01",
+        "end_date": "2022-12-31",
+        "adjusted": true
+      },
+      "context": "use adjusted=true to get prices adjusted for splits, dividends, and other corporate actions.",
+      "permissions_required": [
+        "PRICING"
+      ],
+      "disambiguation_note": "adjusted prices account for corporate actions - use for historical analysis and comparisons.",
+      "tags": [
+        "adjusted_prices",
+        "yearly_data",
+        "corporate_actions"
+      ]
+    },
+    {
+      "query": "get unadjusted monthly prices for <company_coca_cola> from 2020 to 2023",
+      "tool_name": "get_prices_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "KO"
+        ],
+        "start_date": "2020-01-01",
+        "end_date": "2023-12-31",
+        "periodicity": "monthly",
+        "adjusted": false
+      },
+      "context": "use adjusted=false for raw historical prices without corporate action adjustments.",
+      "permissions_required": [
+        "PRICING"
+      ],
+      "disambiguation_note": "unadjusted prices show actual historical trading prices without modifications.",
+      "tags": [
+        "unadjusted_prices",
+        "monthly_data",
+        "multi_year",
+        "raw_prices"
+      ]
+    },
+    {
+      "query": "show me <company_n>'s stock price on a specific date",
+      "tool_name": "get_prices_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "F"
+        ],
+        "start_date": "2023-06-15",
+        "end_date": "2023-06-15"
+      },
+      "context": "for a specific date, set start_date and end_date to the same value.",
+      "permissions_required": [
+        "PRICING"
+      ],
+      "disambiguation_note": "use same start and end date to get prices for a single trading day.",
+      "tags": [
+        "specific_date",
+        "single_day",
+        "point_in_time"
+      ]
+    },
+    {
+      "query": "get the latest stock prices for all major tech companies",
+      "tool_name": "get_prices_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "AAPL",
+          "MSFT",
+          "GOOGL",
+          "AMZN",
+          "META",
+          "TSLA",
+          "NFLX"
+        ]
+      },
+      "context": "batch multiple companies efficiently rather than making separate calls.",
+      "permissions_required": [
+        "PRICING"
+      ],
+      "disambiguation_note": "always batch multiple companies in one call for better performance.",
+      "tags": [
+        "multiple_companies",
+        "tech_stocks",
+        "batching",
+        "current_prices"
+      ]
+    },
+    {
+      "query": "what are <company_h>'s high, low, and closing prices for last week?",
+      "tool_name": "get_prices_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "JPM"
+        ],
+        "start_date": "2023-10-23",
+        "end_date": "2023-10-27"
+      },
+      "context": "the tool returns open, high, low, close prices and volume for each trading day in the range.",
+      "permissions_required": [
+        "PRICING"
+      ],
+      "disambiguation_note": "all price data (ohlc + volume) is returned automatically - no need to specify which fields.",
+      "tags": [
+        "ohlc_data",
+        "weekly_range",
+        "price_components"
+      ]
+    },
+    {
+      "query": "show me <company_l>'s stock performance during earnings season",
+      "tool_name": "get_prices_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "WMT"
+        ],
+        "start_date": "2023-08-10",
+        "end_date": "2023-08-20"
+      },
+      "context": "use specific date ranges around events like earnings announcements for event analysis.",
+      "permissions_required": [
+        "PRICING"
+      ],
+      "disambiguation_note": "define specific date windows around events rather than using vague terms like 'earnings season'.",
+      "tags": [
+        "event_analysis",
+        "earnings_period",
+        "specific_window"
+      ]
+    }
+  ]
+}

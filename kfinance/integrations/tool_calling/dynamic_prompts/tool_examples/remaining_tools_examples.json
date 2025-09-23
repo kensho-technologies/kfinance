@@ -1,0 +1,360 @@
+{
+  "description": "Examples for remaining kfinance tools: mergers, business relationships, segments, and identifiers",
+  "tools": [
+    {
+      "tool_name": "get_mergers_from_identifiers",
+      "examples": [
+        {
+          "query": "which companies did <company_b> acquire?",
+          "tool_name": "get_mergers_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT"
+            ]
+          },
+          "context": "use get_mergers_from_identifiers to find all m&a transactions where a company was involved as buyer, seller, or target.",
+          "permissions_required": [
+            "MERGERS"
+          ],
+          "disambiguation_note": "this returns transaction_ids that can be used with other m&a tools for detailed information.",
+          "tags": [
+            "acquisitions",
+            "ma_history",
+            "buyer_role",
+            "transaction_ids"
+          ]
+        },
+        {
+          "query": "who acquired ben & jerry's?",
+          "tool_name": "get_mergers_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "BJ"
+            ]
+          },
+          "context": "find m&a transactions where the company was a target (acquired).",
+          "permissions_required": [
+            "MERGERS"
+          ],
+          "disambiguation_note": "results show the company's role in each transaction (target, buyer, seller).",
+          "tags": [
+            "acquisition_target",
+            "who_acquired",
+            "target_role"
+          ]
+        },
+        {
+          "query": "what m&a activity has <company_q> been involved in?",
+          "tool_name": "get_mergers_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "PFE"
+            ]
+          },
+          "context": "get comprehensive m&a history including all roles (buyer, seller, target).",
+          "permissions_required": [
+            "MERGERS"
+          ],
+          "disambiguation_note": "use this first to get transaction_ids, then use other m&a tools for details.",
+          "tags": [
+            "ma_activity",
+            "comprehensive_history",
+            "all_roles"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_business_relationship_from_identifiers",
+      "examples": [
+        {
+          "query": "what are the previous borrowers of <company_h>?",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "JPM"
+            ],
+            "business_relationship": "borrower"
+          },
+          "context": "use get_business_relationship_from_identifiers to find companies with specific business relationships.",
+          "permissions_required": [
+            "RELATIONSHIPS"
+          ],
+          "disambiguation_note": "the business_relationship parameter must match exact relationship types from the system.",
+          "tags": [
+            "borrowers",
+            "lending_relationships",
+            "business_relationships"
+          ]
+        },
+        {
+          "query": "who are the suppliers for <company_a>?",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ],
+            "business_relationship": "supplier"
+          },
+          "context": "find supplier relationships for companies.",
+          "permissions_required": [
+            "RELATIONSHIPS"
+          ],
+          "disambiguation_note": "use exact relationship type names - 'supplier' not 'suppliers' or 'vendor'.",
+          "tags": [
+            "suppliers",
+            "supply_chain",
+            "vendor_relationships"
+          ]
+        },
+        {
+          "query": "what companies are customers of <company_b>?",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT"
+            ],
+            "business_relationship": "customer"
+          },
+          "context": "find customer relationships and business partnerships.",
+          "permissions_required": [
+            "RELATIONSHIPS"
+          ],
+          "disambiguation_note": "relationship types are predefined - use exact parameter values.",
+          "tags": [
+            "customers",
+            "client_relationships",
+            "business_partnerships"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_segments_from_identifiers",
+      "examples": [
+        {
+          "query": "what are <company_a>'s business segments?",
+          "tool_name": "get_segments_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ],
+            "segment_type": "business"
+          },
+          "context": "use get_segments_from_identifiers to get business segment breakdowns for companies.",
+          "permissions_required": [
+            "SEGMENTS"
+          ],
+          "disambiguation_note": "segment_type must match available segment types - 'business', 'geographic', etc.",
+          "tags": [
+            "business_segments",
+            "segment_breakdown",
+            "business_units"
+          ]
+        },
+        {
+          "query": "show me the geographic segments for <company_coca_cola>",
+          "tool_name": "get_segments_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "KO"
+            ],
+            "segment_type": "geographic"
+          },
+          "context": "get geographic/regional segment information for global companies.",
+          "permissions_required": [
+            "SEGMENTS"
+          ],
+          "disambiguation_note": "use 'geographic' for regional breakdowns, 'business' for product/service segments.",
+          "tags": [
+            "geographic_segments",
+            "regional_breakdown",
+            "global_operations"
+          ]
+        },
+        {
+          "query": "get quarterly business segments for <company_d> in 2023",
+          "tool_name": "get_segments_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AMZN"
+            ],
+            "segment_type": "business",
+            "period_type": "quarterly",
+            "start_year": 2023,
+            "end_year": 2023
+          },
+          "context": "segment data can be retrieved for specific time periods and frequencies.",
+          "permissions_required": [
+            "SEGMENTS"
+          ],
+          "disambiguation_note": "use same date parameters as financial statement tools for consistency.",
+          "tags": [
+            "quarterly_segments",
+            "business_segments",
+            "time_specific"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_capitalization_from_identifiers",
+      "examples": [
+        {
+          "query": "what is the market cap of <company_a> and <company_b>?",
+          "tool_name": "get_capitalization_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL",
+              "MSFT"
+            ],
+            "capitalization": "market_cap"
+          },
+          "context": "use get_capitalization_from_identifiers for market cap, enterprise value, and shares outstanding.",
+          "permissions_required": [
+            "ID"
+          ],
+          "disambiguation_note": "capitalization parameter must be exact: 'market_cap', 'tev', or 'shares_outstanding'.",
+          "tags": [
+            "market_cap",
+            "valuation",
+            "capitalization"
+          ]
+        },
+        {
+          "query": "get the enterprise value for <company_f>",
+          "tool_name": "get_capitalization_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "TSLA"
+            ],
+            "capitalization": "tev"
+          },
+          "context": "use 'tev' for total enterprise value calculations.",
+          "permissions_required": [
+            "ID"
+          ],
+          "disambiguation_note": "use 'tev' not 'enterprise_value' or 'ev' - the parameter is 'tev'.",
+          "tags": [
+            "enterprise_value",
+            "tev",
+            "valuation_metrics"
+          ]
+        },
+        {
+          "query": "how many shares outstanding does <company_d> have?",
+          "tool_name": "get_capitalization_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AMZN"
+            ],
+            "capitalization": "shares_outstanding"
+          },
+          "context": "get shares outstanding for share count information.",
+          "permissions_required": [
+            "ID"
+          ],
+          "disambiguation_note": "use 'shares_outstanding' for share count, not 'shares' or 'outstanding_shares'.",
+          "tags": [
+            "shares_outstanding",
+            "share_count",
+            "equity_structure"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_competitors_from_identifiers",
+      "examples": [
+        {
+          "query": "who are <company_a>'s competitors according to sec filings?",
+          "tool_name": "get_competitors_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ],
+            "competitor_source": "filing"
+          },
+          "context": "use get_competitors_from_identifiers with specific sources to find competitor relationships.",
+          "permissions_required": [
+            "COMPETITORS"
+          ],
+          "disambiguation_note": "competitor_source must be exact: 'filing', 'key_dev', 'contact', 'third_party', 'self_identified', 'named_by_competitor'.",
+          "tags": [
+            "competitors",
+            "sec_filings",
+            "competitive_landscape"
+          ]
+        },
+        {
+          "query": "what companies does <company_f> consider as competitors?",
+          "tool_name": "get_competitors_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "TSLA"
+            ],
+            "competitor_source": "self_identified"
+          },
+          "context": "use 'self_identified' for competitors that the company itself identifies.",
+          "permissions_required": [
+            "COMPETITORS"
+          ],
+          "disambiguation_note": "different sources provide different perspectives on competitive relationships.",
+          "tags": [
+            "self_identified_competitors",
+            "company_perspective",
+            "competitive_analysis"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_cusip_from_identifiers",
+      "examples": [
+        {
+          "query": "what is the cusip for <company_a>?",
+          "tool_name": "get_cusip_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ]
+          },
+          "context": "use get_cusip_from_identifiers to get cusip identifiers for companies.",
+          "permissions_required": [
+            "ID"
+          ],
+          "disambiguation_note": "this tool only returns cusip identifiers, not other identifier types.",
+          "tags": [
+            "cusip",
+            "identifiers",
+            "security_identifiers"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_isin_from_identifiers",
+      "examples": [
+        {
+          "query": "what is the isin for <company_b>?",
+          "tool_name": "get_isin_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT"
+            ]
+          },
+          "context": "use get_isin_from_identifiers to get isin identifiers for companies.",
+          "permissions_required": [
+            "ID"
+          ],
+          "disambiguation_note": "this tool only returns isin identifiers, not other identifier types.",
+          "tags": [
+            "isin",
+            "identifiers",
+            "international_identifiers"
+          ]
+        }
+      ]
+    }
+  ]
+}

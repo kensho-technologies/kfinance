@@ -1,0 +1,69 @@
+{
+  "description": "Parameter descriptors for earnings tools with temporal disambiguation",
+  "tools": [
+    {
+      "tool_name": "get_earnings_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_earnings_from_identifiers",
+          "description": "List of company identifiers for complete earnings announcement history. Returns ALL earnings announcements (past and future).",
+          "examples": [
+            "['AAPL']",
+            "['MSFT', 'GOOGL']",
+            "['TSLA']"
+          ],
+          "common_mistakes": [
+            "Using this when you only want latest earnings (use get_latest_earnings_from_identifiers instead)",
+            "Using this when you only want next earnings (use get_next_earnings_from_identifiers instead)",
+            "Expecting only recent earnings (this returns complete history)"
+          ],
+          "related_parameters": []
+        }
+      ]
+    },
+    {
+      "tool_name": "get_latest_earnings_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_latest_earnings_from_identifiers",
+          "description": "List of company identifiers for the most recent earnings announcement only. Use for 'latest', 'most recent', or 'last' earnings questions.",
+          "examples": [
+            "['AAPL']",
+            "['AMZN', 'NFLX']",
+            "['MSFT']"
+          ],
+          "common_mistakes": [
+            "Using this for future earnings (use get_next_earnings_from_identifiers instead)",
+            "Using this for complete history (use get_earnings_from_identifiers instead)",
+            "Confusing 'latest' (past) with 'next' (future)"
+          ],
+          "related_parameters": []
+        }
+      ]
+    },
+    {
+      "tool_name": "get_next_earnings_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_next_earnings_from_identifiers",
+          "description": "List of company identifiers for upcoming/future earnings announcements. Use for 'next', 'upcoming', or 'scheduled' earnings questions.",
+          "examples": [
+            "['AAPL']",
+            "['TSLA', 'F']",
+            "['GOOGL']",
+            "['JPM']"
+          ],
+          "common_mistakes": [
+            "Using this for past earnings (use get_latest_earnings_from_identifiers instead)",
+            "Using this for complete history (use get_earnings_from_identifiers instead)",
+            "Confusing 'next' (future) with 'latest' (past)"
+          ],
+          "related_parameters": []
+        }
+      ]
+    }
+  ]
+}

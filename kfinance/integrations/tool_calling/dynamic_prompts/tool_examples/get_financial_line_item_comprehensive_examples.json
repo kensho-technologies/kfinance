@@ -1,0 +1,831 @@
+{
+  "tool_name": "get_financial_line_item_from_identifiers",
+  "description": "Comprehensive examples for financial line item queries with extensive parameter disambiguation coverage",
+  "examples": [
+    {
+      "query": "what is the preferred stock additional paid in capital for <company_a>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "AAPL"
+        ],
+        "line_item": "additional_paid_in_capital_preferred_stock"
+      },
+      "context": "use 'additional_paid_in_capital_preferred_stock' for the amount of capital received from preferred stock issuance above par value.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "key difference: 'additional_paid_in_capital_preferred_stock' vs 'preferred_stock_additional_paid_in_capital' - the first follows standard accounting terminology.",
+      "tags": [
+        "preferred_stock",
+        "capital",
+        "disambiguation"
+      ]
+    },
+    {
+      "query": "show me the convertible preferred stock for <company_f>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "TSLA"
+        ],
+        "line_item": "preferred_stock_convertible"
+      },
+      "context": "use 'preferred_stock_convertible' for preferred stock that can be converted to common stock.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'preferred_stock_convertible' not 'convertible_preferred_stock' - the first is the correct parameter name.",
+      "tags": [
+        "preferred_stock",
+        "convertible",
+        "disambiguation"
+      ]
+    },
+    {
+      "query": "what are the preferred dividends paid by <company_b>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "MSFT"
+        ],
+        "line_item": "preferred_stock_dividend"
+      },
+      "context": "use 'preferred_stock_dividend' for dividends paid on preferred stock.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'preferred_stock_dividend' not 'preferred_dividends_paid' - the parameter follows the preferred_stock_* naming pattern.",
+      "tags": [
+        "preferred_stock",
+        "dividends",
+        "disambiguation"
+      ]
+    },
+    {
+      "query": "get the total revenue for <company_c> and <company_d>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "GOOGL",
+          "AMZN"
+        ],
+        "line_item": "total_revenue"
+      },
+      "context": "use 'total_revenue' for the complete revenue figure including all revenue streams.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'total_revenue' not 'revenue' when you specifically want the total. 'revenue' refers to normal/regular revenue only.",
+      "tags": [
+        "revenue",
+        "total",
+        "multiple_companies"
+      ]
+    },
+    {
+      "query": "what is the regular revenue for <company_g>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "NFLX"
+        ],
+        "line_item": "revenue"
+      },
+      "context": "use 'revenue' for normal/regular revenue, excluding other revenue streams.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'revenue' for normal revenue. this excludes other revenue types like finance division revenue.",
+      "tags": [
+        "revenue",
+        "regular",
+        "normal"
+      ]
+    },
+    {
+      "query": "show me the total debt to equity ratio for <company_h>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "JPM"
+        ],
+        "line_item": "total_debt_to_equity"
+      },
+      "context": "use 'total_debt_to_equity' for the debt-to-equity ratio calculation.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'total_debt_to_equity' not 'total_debt_to_equity_ratio' - the parameter name doesn't include 'ratio'.",
+      "tags": [
+        "debt",
+        "equity",
+        "ratio",
+        "disambiguation"
+      ]
+    },
+    {
+      "query": "get depreciation and amortization for <company_n> over the last 3 years",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "F"
+        ],
+        "line_item": "total_depreciation_and_amortization",
+        "start_year": 2021,
+        "end_year": 2023
+      },
+      "context": "use 'total_depreciation_and_amortization' for the complete d&a figure.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'total_depreciation_and_amortization' not 'depreciation_and_amortization' - the 'total_' prefix is important.",
+      "tags": [
+        "depreciation",
+        "amortization",
+        "total",
+        "time_range"
+      ]
+    },
+    {
+      "query": "what are the other non-operating income items for <company_l>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "WMT"
+        ],
+        "line_item": "total_other_non_operating_income"
+      },
+      "context": "use 'total_other_non_operating_income' for all other non-operating income items combined.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'total_other_non_operating_income' not 'other_non_operating_income' - the 'total_' prefix indicates it's an aggregate figure.",
+      "tags": [
+        "non_operating",
+        "income",
+        "total",
+        "other"
+      ]
+    },
+    {
+      "query": "show me the total receivables for <company_coca_cola>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "KO"
+        ],
+        "line_item": "total_receivable"
+      },
+      "context": "use 'total_receivable' for all receivables combined.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'total_receivable' not 'total_receivables' - the parameter is singular form.",
+      "tags": [
+        "receivables",
+        "total",
+        "singular_form"
+      ]
+    },
+    {
+      "query": "get quarterly revenue for <company_a> in q1 2023",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "AAPL"
+        ],
+        "line_item": "revenue",
+        "period_type": "quarterly",
+        "start_year": 2023,
+        "start_quarter": 1,
+        "end_year": 2023,
+        "end_quarter": 1
+      },
+      "context": "for quarterly data, specify period_type as 'quarterly' and include quarter parameters.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "when requesting quarterly data, always set period_type to 'quarterly' and specify both start_quarter and end_quarter.",
+      "tags": [
+        "quarterly",
+        "revenue",
+        "specific_period"
+      ]
+    },
+    {
+      "query": "what is the net income for <company_b>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "MSFT"
+        ],
+        "line_item": "net_income"
+      },
+      "context": "use 'net_income' for the bottom-line profit after all expenses and taxes.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'net_income' not 'net_profit' or 'earnings' - net_income is the standard parameter name.",
+      "tags": [
+        "net_income",
+        "profit",
+        "earnings"
+      ]
+    },
+    {
+      "query": "show me the gross profit for <company_d>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "AMZN"
+        ],
+        "line_item": "gross_profit"
+      },
+      "context": "use 'gross_profit' for revenue minus cost of goods sold.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'gross_profit' not 'gross_margin' - gross_profit is the dollar amount, not the percentage.",
+      "tags": [
+        "gross_profit",
+        "margin",
+        "cogs"
+      ]
+    },
+    {
+      "query": "what is the operating income for <company_f>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "TSLA"
+        ],
+        "line_item": "operating_income"
+      },
+      "context": "use 'operating_income' for income from core business operations before interest and taxes.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'operating_income' not 'ebit' or 'operating_profit' - operating_income is the standard parameter.",
+      "tags": [
+        "operating_income",
+        "ebit",
+        "operations"
+      ]
+    },
+    {
+      "query": "get the cost of goods sold for <company_l>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "WMT"
+        ],
+        "line_item": "cost_of_goods_sold"
+      },
+      "context": "use 'cost_of_goods_sold' for direct costs of producing goods sold.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'cost_of_goods_sold' not 'cogs' or 'cost_of_sales' - the full parameter name is required.",
+      "tags": [
+        "cogs",
+        "cost_of_sales",
+        "direct_costs"
+      ]
+    },
+    {
+      "query": "what are the research and development expenses for <company_a>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "AAPL"
+        ],
+        "line_item": "research_and_development"
+      },
+      "context": "use 'research_and_development' for r&d expenses.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'research_and_development' not 'rd_expenses' or 'r_and_d' - use the full parameter name with underscores.",
+      "tags": [
+        "rd",
+        "research",
+        "development",
+        "expenses"
+      ]
+    },
+    {
+      "query": "show me the selling, general and administrative expenses for <company_c>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "GOOGL"
+        ],
+        "line_item": "selling_general_and_administrative"
+      },
+      "context": "use 'selling_general_and_administrative' for sg&a expenses.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'selling_general_and_administrative' not 'sga' or 'sg_and_a' - use the full parameter name.",
+      "tags": [
+        "sga",
+        "selling",
+        "administrative",
+        "expenses"
+      ]
+    },
+    {
+      "query": "what is the total debt for <company_h>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "JPM"
+        ],
+        "line_item": "total_debt"
+      },
+      "context": "use 'total_debt' for all debt obligations combined.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'total_debt' not 'debt' or 'total_liabilities' - total_debt is specifically for debt obligations.",
+      "tags": [
+        "debt",
+        "total",
+        "liabilities"
+      ]
+    },
+    {
+      "query": "get the current assets for <company_coca_cola>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "KO"
+        ],
+        "line_item": "total_current_assets"
+      },
+      "context": "use 'total_current_assets' for assets expected to be converted to cash within one year.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'total_current_assets' not 'current_assets' - the 'total_' prefix is required for the aggregate figure.",
+      "tags": [
+        "current_assets",
+        "total",
+        "liquidity"
+      ]
+    },
+    {
+      "query": "what are the current liabilities for <company_n>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "F"
+        ],
+        "line_item": "total_current_liabilities"
+      },
+      "context": "use 'total_current_liabilities' for liabilities due within one year.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'total_current_liabilities' not 'current_liabilities' - the 'total_' prefix is required.",
+      "tags": [
+        "current_liabilities",
+        "total",
+        "short_term"
+      ]
+    },
+    {
+      "query": "show me the stockholders equity for <company_b>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "MSFT"
+        ],
+        "line_item": "total_stockholders_equity"
+      },
+      "context": "use 'total_stockholders_equity' for the total equity belonging to shareholders.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'total_stockholders_equity' not 'shareholders_equity' or 'equity' - use the exact parameter name with 'stockholders'.",
+      "tags": [
+        "equity",
+        "stockholders",
+        "shareholders",
+        "total"
+      ]
+    },
+    {
+      "query": "what is the cash and cash equivalents for <company_d>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "AMZN"
+        ],
+        "line_item": "cash_and_cash_equivalents"
+      },
+      "context": "use 'cash_and_cash_equivalents' for cash plus highly liquid short-term investments.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'cash_and_cash_equivalents' not 'cash' or 'cash_equivalents' - the combined parameter includes both.",
+      "tags": [
+        "cash",
+        "cash_equivalents",
+        "liquidity"
+      ]
+    },
+    {
+      "query": "get the accounts receivable for <company_f>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "TSLA"
+        ],
+        "line_item": "accounts_receivable"
+      },
+      "context": "use 'accounts_receivable' for money owed by customers for goods/services delivered.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'accounts_receivable' not 'receivables' or 'ar' - use the full parameter name.",
+      "tags": [
+        "receivables",
+        "accounts",
+        "customers"
+      ]
+    },
+    {
+      "query": "what is the inventory for <company_l>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "WMT"
+        ],
+        "line_item": "inventory"
+      },
+      "context": "use 'inventory' for goods held for sale or raw materials.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'inventory' not 'inventories' - the parameter is singular form.",
+      "tags": [
+        "inventory",
+        "goods",
+        "raw_materials"
+      ]
+    },
+    {
+      "query": "show me the property, plant and equipment for <company_a>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "AAPL"
+        ],
+        "line_item": "property_plant_and_equipment"
+      },
+      "context": "use 'property_plant_and_equipment' for tangible fixed assets.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'property_plant_and_equipment' not 'ppe' or 'fixed_assets' - use the full parameter name.",
+      "tags": [
+        "ppe",
+        "fixed_assets",
+        "tangible"
+      ]
+    },
+    {
+      "query": "what are the accounts payable for <company_c>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "GOOGL"
+        ],
+        "line_item": "accounts_payable"
+      },
+      "context": "use 'accounts_payable' for money owed to suppliers and vendors.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'accounts_payable' not 'payables' or 'ap' - use the full parameter name.",
+      "tags": [
+        "payables",
+        "suppliers",
+        "vendors"
+      ]
+    },
+    {
+      "query": "get the long-term debt for <company_g>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "NFLX"
+        ],
+        "line_item": "long_term_debt"
+      },
+      "context": "use 'long_term_debt' for debt obligations due beyond one year.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'long_term_debt' not 'longterm_debt' or 'lt_debt' - use underscores between words.",
+      "tags": [
+        "debt",
+        "long_term",
+        "obligations"
+      ]
+    },
+    {
+      "query": "what is the retained earnings for <company_coca_cola>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "KO"
+        ],
+        "line_item": "retained_earnings"
+      },
+      "context": "use 'retained_earnings' for accumulated profits not distributed as dividends.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'retained_earnings' not 'accumulated_earnings' - retained_earnings is the standard parameter.",
+      "tags": [
+        "earnings",
+        "retained",
+        "accumulated"
+      ]
+    },
+    {
+      "query": "show me the common stock for <company_n>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "F"
+        ],
+        "line_item": "common_stock"
+      },
+      "context": "use 'common_stock' for the par value of common shares outstanding.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'common_stock' not 'common_shares' - common_stock refers to the dollar value, not share count.",
+      "tags": [
+        "stock",
+        "common",
+        "par_value"
+      ]
+    },
+    {
+      "query": "what is the goodwill for <company_b>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "MSFT"
+        ],
+        "line_item": "goodwill"
+      },
+      "context": "use 'goodwill' for the intangible asset from acquisitions above fair value.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'goodwill' not 'goodwill_and_intangibles' - goodwill is a specific intangible asset category.",
+      "tags": [
+        "goodwill",
+        "intangible",
+        "acquisitions"
+      ]
+    },
+    {
+      "query": "get the interest expense for <company_d>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "AMZN"
+        ],
+        "line_item": "interest_expense"
+      },
+      "context": "use 'interest_expense' for the cost of borrowing money.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'interest_expense' not 'interest_cost' or 'borrowing_costs' - interest_expense is the standard parameter.",
+      "tags": [
+        "interest",
+        "expense",
+        "borrowing"
+      ]
+    },
+    {
+      "query": "what is the tax expense for <company_f>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "TSLA"
+        ],
+        "line_item": "income_tax_expense"
+      },
+      "context": "use 'income_tax_expense' for taxes on income.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'income_tax_expense' not 'tax_expense' or 'taxes' - the full parameter name is required.",
+      "tags": [
+        "tax",
+        "income_tax",
+        "expense"
+      ]
+    },
+    {
+      "query": "show me the operating cash flow for <company_h>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "JPM"
+        ],
+        "line_item": "operating_cash_flow"
+      },
+      "context": "use 'operating_cash_flow' for cash generated from core business operations.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'operating_cash_flow' not 'cash_from_operations' or 'ocf' - use the full parameter name.",
+      "tags": [
+        "cash_flow",
+        "operating",
+        "operations"
+      ]
+    },
+    {
+      "query": "what is the free cash flow for <company_a>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "AAPL"
+        ],
+        "line_item": "free_cash_flow"
+      },
+      "context": "use 'free_cash_flow' for operating cash flow minus capital expenditures.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'free_cash_flow' not 'fcf' or 'unlevered_free_cash_flow' - free_cash_flow is the standard parameter.",
+      "tags": [
+        "cash_flow",
+        "free",
+        "capex"
+      ]
+    },
+    {
+      "query": "get the capital expenditures for <company_c>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "GOOGL"
+        ],
+        "line_item": "capital_expenditures"
+      },
+      "context": "use 'capital_expenditures' for investments in long-term assets.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'capital_expenditures' not 'capex' or 'capital_investments' - use the full parameter name.",
+      "tags": [
+        "capex",
+        "capital",
+        "investments"
+      ]
+    },
+    {
+      "query": "what are the dividends paid for <company_coca_cola> over the last 5 years?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "KO"
+        ],
+        "line_item": "dividends_paid",
+        "start_year": 2019,
+        "end_year": 2023
+      },
+      "context": "use 'dividends_paid' for cash dividends distributed to shareholders.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'dividends_paid' not 'dividend_payments' or 'cash_dividends' - dividends_paid is the standard parameter.",
+      "tags": [
+        "dividends",
+        "cash",
+        "shareholders",
+        "time_range"
+      ]
+    },
+    {
+      "query": "show me the earnings per share for <company_g>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "NFLX"
+        ],
+        "line_item": "earnings_per_share"
+      },
+      "context": "use 'earnings_per_share' for net income divided by shares outstanding.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'earnings_per_share' not 'eps' or 'net_income_per_share' - use the full parameter name.",
+      "tags": [
+        "eps",
+        "earnings",
+        "per_share"
+      ]
+    },
+    {
+      "query": "what is the book value per share for <company_n>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "F"
+        ],
+        "line_item": "book_value_per_share"
+      },
+      "context": "use 'book_value_per_share' for stockholders equity divided by shares outstanding.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'book_value_per_share' not 'bvps' or 'equity_per_share' - use the full parameter name.",
+      "tags": [
+        "book_value",
+        "per_share",
+        "equity"
+      ]
+    },
+    {
+      "query": "get the return on assets for <company_l>",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "WMT"
+        ],
+        "line_item": "return_on_assets"
+      },
+      "context": "use 'return_on_assets' for net income divided by total assets.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'return_on_assets' not 'roa' or 'asset_turnover' - return_on_assets is the profitability ratio.",
+      "tags": [
+        "roa",
+        "return",
+        "assets",
+        "ratio"
+      ]
+    },
+    {
+      "query": "what is the return on equity for <company_b>?",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "MSFT"
+        ],
+        "line_item": "return_on_equity"
+      },
+      "context": "use 'return_on_equity' for net income divided by stockholders equity.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "use 'return_on_equity' not 'roe' or 'equity_return' - return_on_equity is the standard parameter.",
+      "tags": [
+        "roe",
+        "return",
+        "equity",
+        "ratio"
+      ]
+    },
+    {
+      "query": "show me quarterly net income for <company_a> from q1 2022 to q4 2023",
+      "tool_name": "get_financial_line_item_from_identifiers",
+      "parameters": {
+        "identifiers": [
+          "AAPL"
+        ],
+        "line_item": "net_income",
+        "period_type": "quarterly",
+        "start_year": 2022,
+        "start_quarter": 1,
+        "end_year": 2023,
+        "end_quarter": 4
+      },
+      "context": "for multi-quarter ranges, specify start and end quarters with their respective years.",
+      "permissions_required": [
+        "STATEMENTS"
+      ],
+      "disambiguation_note": "when requesting quarterly ranges across years, ensure start_year/start_quarter and end_year/end_quarter are properly aligned.",
+      "tags": [
+        "quarterly",
+        "multi_period",
+        "net_income",
+        "time_range"
+      ]
+    }
+  ]
+}

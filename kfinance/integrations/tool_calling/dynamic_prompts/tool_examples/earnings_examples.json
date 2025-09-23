@@ -1,0 +1,219 @@
+{
+  "description": "Examples for earnings-related tools",
+  "tools": [
+    {
+      "tool_name": "get_earnings_from_identifiers",
+      "examples": [
+        {
+          "query": "get all earnings announcements for <company_a>",
+          "tool_name": "get_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ]
+          },
+          "context": "use get_earnings_from_identifiers to get the complete list of all earnings announcements for companies.",
+          "permissions_required": [
+            "EARNINGS"
+          ],
+          "disambiguation_note": "this returns all earnings (historical list), not just the latest or next earnings.",
+          "tags": [
+            "earnings",
+            "all_earnings",
+            "historical",
+            "announcements"
+          ]
+        },
+        {
+          "query": "show me all earnings dates for <company_b> and <company_c>",
+          "tool_name": "get_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT",
+              "GOOGL"
+            ]
+          },
+          "context": "get comprehensive earnings history for multiple companies in one call.",
+          "permissions_required": [
+            "EARNINGS"
+          ],
+          "disambiguation_note": "use this for complete earnings history, not just recent or upcoming earnings.",
+          "tags": [
+            "earnings",
+            "multiple_companies",
+            "earnings_history",
+            "batching"
+          ]
+        },
+        {
+          "query": "what are all of <company_f>'s earnings announcement dates?",
+          "tool_name": "get_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "TSLA"
+            ]
+          },
+          "context": "returns a complete list of earnings announcements with dates and key development ids.",
+          "permissions_required": [
+            "EARNINGS"
+          ],
+          "disambiguation_note": "this gives you the full historical list, use get_latest_earnings for just the most recent.",
+          "tags": [
+            "earnings_dates",
+            "announcements",
+            "complete_list",
+            "historical"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_latest_earnings_from_identifiers",
+      "examples": [
+        {
+          "query": "when was <company_a>'s most recent earnings announcement?",
+          "tool_name": "get_latest_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ]
+          },
+          "context": "use get_latest_earnings_from_identifiers for the most recent earnings announcement only.",
+          "permissions_required": [
+            "EARNINGS"
+          ],
+          "disambiguation_note": "this returns only the latest earnings, not the complete history or future earnings.",
+          "tags": [
+            "latest_earnings",
+            "most_recent",
+            "recent_announcement"
+          ]
+        },
+        {
+          "query": "what were the latest earnings dates for <company_d> and <company_g>?",
+          "tool_name": "get_latest_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AMZN",
+              "NFLX"
+            ]
+          },
+          "context": "get the most recent earnings announcement for multiple companies.",
+          "permissions_required": [
+            "EARNINGS"
+          ],
+          "disambiguation_note": "use this for 'latest' or 'most recent' earnings questions, not historical or future.",
+          "tags": [
+            "latest_earnings",
+            "multiple_companies",
+            "recent",
+            "most_recent"
+          ]
+        },
+        {
+          "query": "when did <company_b> last report earnings?",
+          "tool_name": "get_latest_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT"
+            ]
+          },
+          "context": "get the date and details of the most recent earnings report.",
+          "permissions_required": [
+            "EARNINGS"
+          ],
+          "disambiguation_note": "use 'latest' for past earnings, 'next' for future earnings.",
+          "tags": [
+            "last_reported",
+            "latest_earnings",
+            "recent_report"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_next_earnings_from_identifiers",
+      "examples": [
+        {
+          "query": "when is <company_a>'s next earnings announcement?",
+          "tool_name": "get_next_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ]
+          },
+          "context": "use get_next_earnings_from_identifiers for upcoming/future earnings announcements.",
+          "permissions_required": [
+            "EARNINGS"
+          ],
+          "disambiguation_note": "this returns future earnings only, not past or current earnings.",
+          "tags": [
+            "next_earnings",
+            "upcoming",
+            "future",
+            "scheduled"
+          ]
+        },
+        {
+          "query": "what are the upcoming earnings dates for <company_f> and <company_n>?",
+          "tool_name": "get_next_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "TSLA",
+              "F"
+            ]
+          },
+          "context": "get scheduled future earnings announcements for multiple companies.",
+          "permissions_required": [
+            "EARNINGS"
+          ],
+          "disambiguation_note": "use this for 'next', 'upcoming', or 'scheduled' earnings questions.",
+          "tags": [
+            "next_earnings",
+            "upcoming",
+            "multiple_companies",
+            "scheduled"
+          ]
+        },
+        {
+          "query": "when will <company_c> report their next earnings?",
+          "tool_name": "get_next_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "GOOGL"
+            ]
+          },
+          "context": "get the scheduled date for the next earnings announcement.",
+          "permissions_required": [
+            "EARNINGS"
+          ],
+          "disambiguation_note": "use 'next' for future earnings, 'latest' for past earnings.",
+          "tags": [
+            "next_earnings",
+            "future_report",
+            "scheduled_announcement"
+          ]
+        },
+        {
+          "query": "show me the next earnings schedule for <company_h>",
+          "tool_name": "get_next_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "JPM"
+            ]
+          },
+          "context": "get upcoming earnings schedule information.",
+          "permissions_required": [
+            "EARNINGS"
+          ],
+          "disambiguation_note": "this provides the next scheduled earnings, not earnings history.",
+          "tags": [
+            "earnings_schedule",
+            "next_earnings",
+            "upcoming_schedule"
+          ]
+        }
+      ]
+    }
+  ]
+}
