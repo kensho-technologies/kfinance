@@ -33,10 +33,7 @@ def simple_tool_calling_with_dynamic_prompts(
     results = []
     for tool_call in llm_response.get("tool_calls", []):
         # Execute the tool (replace with your actual tool execution)
-        tool_result = execute_kfinance_tool(
-            tool_call["name"],
-            tool_call["parameters"]
-        )
+        tool_result = execute_kfinance_tool(tool_call["name"], tool_call["parameters"])
         results.append(tool_result)
 
     return {
@@ -83,26 +80,29 @@ if __name__ == "__main__":
                     "identifiers": {"type": "array", "items": {"type": "string"}},
                     "line_item": {"type": "string"},
                 },
-                "required": ["identifiers", "line_item"]
-            }
+                "required": ["identifiers", "line_item"],
+            },
         }
     ]
 
     # Mock LLM client (replace with your actual client)
     class MockLLMClient:
         """Mock LLM client for demonstration purposes."""
-        
+
         def generate_with_tools(self, prompt: str, tools: List[Dict]) -> Dict:
+            """Generate tool calls from prompt and available tools."""
             # Your LLM would analyze the prompt and return tool calls
             return {
-                "tool_calls": [{
-                    "name": "get_financial_line_item_from_identifiers",
-                    "parameters": {
-                        "identifiers": ["AAPL"],
-                        "line_item": "additional_paid_in_capital_preferred_stock"
+                "tool_calls": [
+                    {
+                        "name": "get_financial_line_item_from_identifiers",
+                        "parameters": {
+                            "identifiers": ["AAPL"],
+                            "line_item": "additional_paid_in_capital_preferred_stock",
+                        },
                     }
-                }],
-                "reasoning": "Based on the examples, using correct parameter name."
+                ],
+                "reasoning": "Based on the examples, using correct parameter name.",
             }
 
     # Process the query
@@ -112,4 +112,3 @@ if __name__ == "__main__":
         llm_client=MockLLMClient(),
         available_tools=available_tools,
     )
-

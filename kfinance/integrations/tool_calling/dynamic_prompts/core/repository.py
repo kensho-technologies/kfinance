@@ -42,13 +42,19 @@ class ExampleRepository:
         self.cache_embeddings = cache_embeddings
 
         # Initialize embedding cache
-        self.embedding_cache = EmbeddingCache(
-            cache_dir=cache_dir,
-            embedding_model_name=embedding_model,
-        ) if cache_embeddings else None
+        self.embedding_cache = (
+            EmbeddingCache(
+                cache_dir=cache_dir,
+                embedding_model_name=embedding_model,
+            )
+            if cache_embeddings
+            else None
+        )
 
         # Get embedding model from cache (lazy loaded)
-        self.embedding_model = self.embedding_cache.embedding_model if self.embedding_cache else None
+        self.embedding_model = (
+            self.embedding_cache.embedding_model if self.embedding_cache else None
+        )
 
         # Entity processing
         self.entity_processor = EntityProcessor()
@@ -74,7 +80,7 @@ class ExampleRepository:
     def _load_examples(self) -> None:
         """Load tool usage examples from JSON files."""
         if not self.examples_dir.exists():
-            logger.warning(f"Examples directory not found: {self.examples_dir}")
+            logger.warning("Examples directory not found: %s", self.examples_dir)
             return
 
         for json_file in self.examples_dir.glob("*_examples.json"):
@@ -86,17 +92,19 @@ class ExampleRepository:
                     example = ToolExample.from_dict(example_data)
                     self.examples.append(example)
 
-                logger.info(f"Loaded {len(data.get('examples', []))} examples from {json_file.name}")
+                logger.info(
+                    "Loaded %d examples from %s", len(data.get("examples", [])), json_file.name
+                )
 
-            except Exception as e:
-                logger.error(f"Failed to load examples from {json_file}: {e}")
+            except (OSError, json.JSONDecodeError, KeyError, ValueError) as e:
+                logger.error("Failed to load examples from %s: %s", json_file, e)
 
     def _load_parameter_descriptors(self) -> None:
         """Load parameter descriptors from JSON files."""
         descriptors_dir = self.examples_dir.parent / "parameter_descriptors"
 
         if not descriptors_dir.exists():
-            logger.warning(f"Parameter descriptors directory not found: {descriptors_dir}")
+            logger.warning("Parameter descriptors directory not found: %s", descriptors_dir)
             return
 
         for json_file in descriptors_dir.glob("*_params.json"):
@@ -114,10 +122,10 @@ class ExampleRepository:
                     descriptors.append(descriptor)
 
                 self.parameter_descriptors[tool_name] = descriptors
-                logger.info(f"Loaded {len(descriptors)} parameter descriptors for {tool_name}")
+                logger.info("Loaded %d parameter descriptors for %s", len(descriptors), tool_name)
 
-            except Exception as e:
-                logger.error(f"Failed to load parameter descriptors from {json_file}: {e}")
+            except (OSError, json.JSONDecodeError, KeyError, ValueError) as e:
+                logger.error("Failed to load parameter descriptors from %s: %s", json_file, e)
 
     def _load_or_compute_embeddings(self) -> None:
         """Load cached embeddings or compute new ones as needed."""
@@ -131,10 +139,10 @@ class ExampleRepository:
             # Clean up orphaned embeddings
             self.embedding_cache.cleanup_orphaned_embeddings(self.examples)
 
-            logger.info(f"Loaded/computed embeddings for {len(self.examples)} examples")
+            logger.info("Loaded/computed embeddings for %d examples", len(self.examples))
 
-        except Exception as e:
-            logger.error(f"Failed to load/compute embeddings: {e}")
+        except (RuntimeError, ValueError, OSError) as e:
+            logger.error("Failed to load/compute embeddings: %s", e)
 
     def normalize_query_for_search(self, query: str) -> Tuple[str, Dict[str, str]]:
         """Normalize a query for semantic search by replacing entities with placeholders.
@@ -192,8 +200,8 @@ class ExampleRepository:
         # Compute query embedding using normalized query
         try:
             query_embedding = self.embedding_model.encode([normalized_query])[0]
-        except Exception as e:
-            logger.error(f"Failed to compute query embedding: {e}")
+        except (RuntimeError, ValueError, OSError) as e:
+            logger.error("Failed to compute query embedding: %s", e)
             return []
 
         # Calculate similarities
@@ -226,26 +234,24 @@ class ExampleRepository:
                 examples_with_embeddings = self.embedding_cache.get_or_compute_embeddings([example])
                 if examples_with_embeddings and examples_with_embeddings[0].embedding is not None:
                     example.embedding = examples_with_embeddings[0].embedding
-            except Exception as e:
-                logger.error(f"Failed to compute embedding for new example: {e}")
+            except (RuntimeError, ValueError, OSError) as e:
+                logger.error("Failed to compute embedding for new example: %s", e)
         elif self.embedding_model:
             # Fallback to direct computation if no cache
             try:
                 embedding = self.embedding_model.encode([example.query])[0]
                 example.embedding = embedding
-            except Exception as e:
-                logger.error(f"Failed to compute embedding for new example: {e}")
+            except (RuntimeError, ValueError, OSError) as e:
+                logger.error("Failed to compute embedding for new example (fallback): %s", e)
 
     def save_examples(self, output_file: Path) -> None:
         """Save examples to a JSON file."""
-        data = {
-            "examples": [example.to_dict() for example in self.examples]
-        }
+        data = {"examples": [example.to_dict() for example in self.examples]}
 
         with open(output_file, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
-        logger.info(f"Saved {len(self.examples)} examples to {output_file}")
+        logger.info("Saved %d examples to %s", len(self.examples), output_file)
 
     def precompute_embeddings(self, force_recompute: bool = False) -> None:
         """Precompute embeddings for all examples.
@@ -258,10 +264,9 @@ class ExampleRepository:
             return
 
         self.examples = self.embedding_cache.get_or_compute_embeddings(
-            self.examples,
-            force_recompute=force_recompute
+            self.examples, force_recompute=force_recompute
         )
-        logger.info(f"Precomputed embeddings for {len(self.examples)} examples")
+        logger.info("Precomputed embeddings for %d examples", len(self.examples))
 
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get embedding cache statistics."""

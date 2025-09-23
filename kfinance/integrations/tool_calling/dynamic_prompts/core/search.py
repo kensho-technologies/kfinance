@@ -35,11 +35,13 @@ class SimilaritySearchEngine:
         else:
             try:
                 self.embedding_model = SentenceTransformer(embedding_model_name)
-            except Exception as e:
-                logger.error(f"Failed to load embedding model {embedding_model_name}: {e}")
+            except (OSError, ImportError, RuntimeError) as e:
+                logger.error("Failed to load embedding model %s: %s", embedding_model_name, e)
                 self.embedding_model = None
 
-    def compute_similarity(self, query_embedding: np.ndarray, example_embedding: np.ndarray) -> float:
+    def compute_similarity(
+        self, query_embedding: np.ndarray, example_embedding: np.ndarray
+    ) -> float:
         """Compute cosine similarity between two embeddings.
 
         Args:
@@ -55,8 +57,8 @@ class SimilaritySearchEngine:
             )
             # Ensure similarity is between 0 and 1
             return max(0.0, min(1.0, similarity))
-        except Exception as e:
-            logger.error(f"Failed to compute similarity: {e}")
+        except (ValueError, ZeroDivisionError, RuntimeError) as e:
+            logger.error("Failed to compute similarity: %s", e)
             return 0.0
 
     def search_examples(
@@ -96,8 +98,8 @@ class SimilaritySearchEngine:
         # Compute query embedding
         try:
             query_embedding = self.embedding_model.encode([query])[0]
-        except Exception as e:
-            logger.error(f"Failed to compute query embedding: {e}")
+        except (RuntimeError, ValueError, OSError) as e:
+            logger.error("Failed to compute query embedding: %s", e)
             return []
 
         # Calculate similarities
@@ -212,8 +214,8 @@ class SimilaritySearchEngine:
 
         try:
             param_embedding = self.embedding_model.encode([parameter_name])[0]
-        except Exception as e:
-            logger.error(f"Failed to compute parameter embedding: {e}")
+        except (RuntimeError, ValueError, OSError) as e:
+            logger.error("Failed to compute parameter embedding: %s", e)
             return []
 
         similar_params = []
@@ -236,8 +238,8 @@ class SimilaritySearchEngine:
                     if similarity >= threshold and param_name != parameter_name:
                         similar_params.append((param_name, similarity))
 
-                except Exception as e:
-                    logger.error(f"Failed to compute similarity for parameter {param_name}: {e}")
+                except (RuntimeError, ValueError, ZeroDivisionError) as e:
+                    logger.error("Failed to compute similarity for parameter %s: %s", param_name, e)
                     continue
 
         # Sort by similarity
@@ -258,6 +260,6 @@ class SimilaritySearchEngine:
 
         try:
             return self.embedding_model.encode([text])[0]
-        except Exception as e:
-            logger.error(f"Failed to encode text: {e}")
+        except (RuntimeError, ValueError, OSError) as e:
+            logger.error("Failed to encode text: %s", e)
             return None

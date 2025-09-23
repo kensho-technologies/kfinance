@@ -41,10 +41,10 @@ class EnhancedToolCaller:
             # Check if user has required permissions for this tool
             if hasattr(tool_class, "accepted_permissions") and tool_class.accepted_permissions:
                 if tool_class.accepted_permissions.intersection(self.user_permissions):
-                    available_tools.append(tool_class.name)
+                    available_tools.append(tool_class.__name__)
             else:
                 # Tool doesn't require specific permissions
-                available_tools.append(tool_class.name)
+                available_tools.append(tool_class.__name__)
 
         return available_tools
 
@@ -73,8 +73,7 @@ class EnhancedToolCaller:
 
             return dynamic_prompt
 
-        except Exception:
-
+        except (RuntimeError, ValueError, OSError, ImportError):
             if self.fallback_to_static:
                 return BASE_PROMPT
             else:
@@ -96,9 +95,7 @@ def example_usage() -> None:
         "What are the total receivables for Microsoft?",
     ]
 
-
     for i, query in enumerate(test_queries, 1):
-
         # Get dynamic prompt
         tool_caller.get_prompt_for_query(query)
 
@@ -106,10 +103,8 @@ def example_usage() -> None:
         # along with the available tools for the actual tool calling
 
 
-
 def compare_static_vs_dynamic() -> None:
     """Compare static vs dynamic prompt approaches."""
-
 
     user_permissions = {Permission.StatementsPermission}
 
@@ -124,20 +119,18 @@ def compare_static_vs_dynamic() -> None:
             user_permissions=user_permissions,
         )
 
-
         # Count examples in dynamic prompt
         dynamic_prompt.count('Query: "')
 
         # Show token difference
         len(dynamic_prompt.split()) - len(BASE_PROMPT.split())
 
-    except Exception:
+    except (RuntimeError, ValueError, OSError, ImportError):
         pass
 
 
 def integration_with_existing_client() -> None:
     """Example of integrating with existing kfinance client."""
-
 
     # This is how you might modify the existing client to use dynamic prompts
     class EnhancedKFinanceClient:
@@ -180,7 +173,7 @@ if __name__ == "__main__":
         compare_static_vs_dynamic()
         integration_with_existing_client()
 
-
-    except Exception:
+    except (RuntimeError, ValueError, OSError, ImportError):
         import traceback
+
         traceback.print_exc()

@@ -7,8 +7,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from kfinance.client.permission_models import Permission
+from kfinance.integrations.tool_calling.prompts import BASE_PROMPT
 
 from .constructor import DynamicPromptConstructor
+from .models import ToolExample
 from .repository import ExampleRepository
 from .search import SimilaritySearchEngine
 
@@ -75,8 +77,8 @@ class DynamicPromptManager:
             self._initialized = True
             logger.info("Dynamic prompt manager initialized successfully")
 
-        except Exception as e:
-            logger.error(f"Failed to initialize dynamic prompt manager: {e}")
+        except (OSError, ImportError, RuntimeError, ValueError) as e:
+            logger.error("Failed to initialize dynamic prompt manager: %s", e)
             # Fall back to None components - will use static prompts
             self._repository = None
             self._similarity_engine = None
@@ -104,7 +106,6 @@ class DynamicPromptManager:
 
         if not self._prompt_constructor:
             # Fall back to base prompt if initialization failed
-            from kfinance.integrations.tool_calling.prompts import BASE_PROMPT
             logger.warning("Dynamic prompt construction not available, using base prompt")
             return BASE_PROMPT
 
@@ -115,10 +116,9 @@ class DynamicPromptManager:
                 available_tools=available_tools,
                 min_similarity=min_similarity,
             )
-        except Exception as e:
-            logger.error(f"Failed to construct dynamic prompt: {e}")
+        except (RuntimeError, ValueError, AttributeError) as e:
+            logger.error("Failed to construct dynamic prompt: %s", e)
             # Fall back to base prompt
-            from kfinance.integrations.tool_calling.prompts import BASE_PROMPT
             return BASE_PROMPT
 
     def get_prompt_with_stats(
@@ -136,7 +136,6 @@ class DynamicPromptManager:
         self._initialize()
 
         if not self._prompt_constructor:
-            from kfinance.integrations.tool_calling.prompts import BASE_PROMPT
             return BASE_PROMPT, {"error": "Dynamic prompt construction not available"}
 
         try:
@@ -146,9 +145,8 @@ class DynamicPromptManager:
                 available_tools=available_tools,
                 min_similarity=min_similarity,
             )
-        except Exception as e:
-            logger.error(f"Failed to construct dynamic prompt with stats: {e}")
-            from kfinance.integrations.tool_calling.prompts import BASE_PROMPT
+        except (RuntimeError, ValueError, AttributeError) as e:
+            logger.error("Failed to construct dynamic prompt with stats: %s", e)
             return BASE_PROMPT, {"error": str(e)}
 
     def search_similar_examples(
@@ -184,8 +182,8 @@ class DynamicPromptManager:
 
             return results
 
-        except Exception as e:
-            logger.error(f"Failed to search similar examples: {e}")
+        except (RuntimeError, ValueError, AttributeError) as e:
+            logger.error("Failed to search similar examples: %s", e)
             return []
 
     def add_example_from_query(
@@ -209,8 +207,6 @@ class DynamicPromptManager:
             return False
 
         try:
-            from .models import ToolExample
-
             example = ToolExample(
                 query=query,
                 tool_name=tool_name,
@@ -222,11 +218,11 @@ class DynamicPromptManager:
             )
 
             self._repository.add_example(example)
-            logger.info(f"Added new example for tool {tool_name}")
+            logger.info("Added new example for tool %s", tool_name)
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to add example: {e}")
+        except (ValueError, AttributeError, TypeError) as e:
+            logger.error("Failed to add example: %s", e)
             return False
 
     def get_repository_stats(self) -> Dict[str, Any]:
@@ -245,7 +241,8 @@ class DynamicPromptManager:
                 "total_examples": len(self._repository.examples),
                 "examples_by_tool": {},
                 "total_parameter_descriptors": sum(
-                    len(descriptors) for descriptors in self._repository.parameter_descriptors.values()
+                    len(descriptors)
+                    for descriptors in self._repository.parameter_descriptors.values()
                 ),
                 "tools_with_descriptors": len(self._repository.parameter_descriptors),
             }
@@ -264,8 +261,8 @@ class DynamicPromptManager:
 
             return stats
 
-        except Exception as e:
-            logger.error(f"Failed to get repository stats: {e}")
+        except (RuntimeError, ValueError, AttributeError) as e:
+            logger.error("Failed to get repository stats: %s", e)
             return {"error": str(e)}
 
     def precompute_embeddings(self, force_recompute: bool = False) -> bool:
@@ -286,8 +283,8 @@ class DynamicPromptManager:
             self._repository.precompute_embeddings(force_recompute=force_recompute)
             logger.info("Successfully precomputed embeddings")
             return True
-        except Exception as e:
-            logger.error(f"Failed to precompute embeddings: {e}")
+        except (RuntimeError, ValueError, OSError) as e:
+            logger.error("Failed to precompute embeddings: %s", e)
             return False
 
     def get_cache_stats(self) -> dict:
@@ -318,23 +315,28 @@ class DynamicPromptManager:
             self._repository.invalidate_cache()
             logger.info("Successfully invalidated cache")
             return True
-        except Exception as e:
-            logger.error(f"Failed to invalidate cache: {e}")
+        except (RuntimeError, OSError) as e:
+            logger.error("Failed to invalidate cache: %s", e)
             return False
 
 
 # Global instance for easy access
-_global_prompt_manager: Optional[DynamicPromptManager] = None
+class _GlobalManagerHolder:
+    """Holder for global prompt manager instance."""
+
+    _instance: Optional[DynamicPromptManager] = None
+
+    @classmethod
+    def get_instance(cls) -> DynamicPromptManager:
+        """Get the global dynamic prompt manager instance."""
+        if cls._instance is None:
+            cls._instance = DynamicPromptManager()
+        return cls._instance
 
 
 def get_dynamic_prompt_manager() -> DynamicPromptManager:
     """Get the global dynamic prompt manager instance."""
-    global _global_prompt_manager
-
-    if _global_prompt_manager is None:
-        _global_prompt_manager = DynamicPromptManager()
-
-    return _global_prompt_manager
+    return _GlobalManagerHolder.get_instance()
 
 
 def construct_dynamic_prompt(

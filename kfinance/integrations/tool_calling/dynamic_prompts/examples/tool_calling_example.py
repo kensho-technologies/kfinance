@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Set
 
 from kfinance.client.permission_models import Permission
-from kfinance.integrations.tool_calling.dynamic_prompts.integration import DynamicPromptManager
+from kfinance.integrations.tool_calling.dynamic_prompts.core.manager import DynamicPromptManager
+from kfinance.integrations.tool_calling.prompts import BASE_PROMPT
 
 
 # Mock LLM client for demonstration (replace with your actual LLM client)
@@ -23,36 +24,39 @@ class MockLLMClient:
         # Simulate LLM response based on prompt content
         if "preferred stock additional paid in capital" in prompt.lower():
             return {
-                "tool_calls": [{
-                    "name": "get_financial_line_item_from_identifiers",
-                    "parameters": {
-                        "identifiers": ["AAPL"],
-                        "line_item": "additional_paid_in_capital_preferred_stock"
+                "tool_calls": [
+                    {
+                        "name": "get_financial_line_item_from_identifiers",
+                        "parameters": {
+                            "identifiers": ["AAPL"],
+                            "line_item": "additional_paid_in_capital_preferred_stock",
+                        },
                     }
-                }],
-                "reasoning": "Based on the examples provided, I should use 'additional_paid_in_capital_preferred_stock' for preferred stock capital above par value."
+                ],
+                "reasoning": "Based on the examples provided, I should use 'additional_paid_in_capital_preferred_stock' for preferred stock capital above par value.",
             }
         elif "convertible preferred stock" in prompt.lower():
             return {
-                "tool_calls": [{
-                    "name": "get_financial_line_item_from_identifiers",
-                    "parameters": {
-                        "identifiers": ["TSLA"],
-                        "line_item": "preferred_stock_convertible"
+                "tool_calls": [
+                    {
+                        "name": "get_financial_line_item_from_identifiers",
+                        "parameters": {
+                            "identifiers": ["TSLA"],
+                            "line_item": "preferred_stock_convertible",
+                        },
                     }
-                }],
-                "reasoning": "The examples show to use 'preferred_stock_convertible' not 'convertible_preferred_stock'."
+                ],
+                "reasoning": "The examples show to use 'preferred_stock_convertible' not 'convertible_preferred_stock'.",
             }
         else:
             return {
-                "tool_calls": [{
-                    "name": "get_financial_line_item_from_identifiers",
-                    "parameters": {
-                        "identifiers": ["AAPL"],
-                        "line_item": "revenue"
+                "tool_calls": [
+                    {
+                        "name": "get_financial_line_item_from_identifiers",
+                        "parameters": {"identifiers": ["AAPL"], "line_item": "revenue"},
                     }
-                }],
-                "reasoning": "Generic revenue query."
+                ],
+                "reasoning": "Generic revenue query.",
             }
 
 
@@ -80,8 +84,8 @@ def execute_tool(tool_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
                 "identifiers": identifiers,
                 "value": value,
                 "currency": "USD",
-                "period": "2023"
-            }
+                "period": "2023",
+            },
         }
 
     return {"success": False, "error": f"Unknown tool: {tool_name}"}
@@ -108,9 +112,9 @@ class EnhancedFinancialQueryProcessor:
         self.enable_dynamic_prompts = enable_dynamic_prompts
 
         # Initialize dynamic prompt manager
-        self.prompt_manager = DynamicPromptManager(
-            enable_caching=True
-        ) if enable_dynamic_prompts else None
+        self.prompt_manager = (
+            DynamicPromptManager(enable_caching=True) if enable_dynamic_prompts else None
+        )
 
         # Available tools (simplified for demo)
         self.available_tools = [
@@ -123,20 +127,20 @@ class EnhancedFinancialQueryProcessor:
                         "identifiers": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "Company identifiers (tickers)"
+                            "description": "Company identifiers (tickers)",
                         },
                         "line_item": {
                             "type": "string",
-                            "description": "Financial line item to retrieve"
+                            "description": "Financial line item to retrieve",
                         },
                         "period_type": {
                             "type": "string",
                             "enum": ["annual", "quarterly"],
-                            "description": "Period type for data"
-                        }
+                            "description": "Period type for data",
+                        },
                     },
-                    "required": ["identifiers", "line_item"]
-                }
+                    "required": ["identifiers", "line_item"],
+                },
             }
         ]
 
@@ -152,12 +156,10 @@ class EnhancedFinancialQueryProcessor:
 
         # Step 1: Construct dynamic prompt or use static prompt
         if self.enable_dynamic_prompts and self.prompt_manager:
-
             prompt, stats = self.prompt_manager.get_prompt_with_stats(
                 query=query,
                 user_permissions=self.user_permissions,
             )
-
 
             # Show similar examples found
             similar_examples = self.prompt_manager.search_similar_examples(
@@ -171,36 +173,29 @@ class EnhancedFinancialQueryProcessor:
                     example.get("similarity_score", 0)
                     example.get("query", "Unknown")
         else:
-            from kfinance.integrations.tool_calling.prompts import BASE_PROMPT
             prompt = BASE_PROMPT
             stats = {"example_count": 0, "total_words": len(prompt.split())}
 
         # Step 2: Generate LLM response with tool calling
 
         llm_response = self.llm_client.generate_with_tools(
-            prompt=prompt,
-            available_tools=self.available_tools
+            prompt=prompt, available_tools=self.available_tools
         )
-
 
         # Step 3: Execute tool calls
         results = []
         tool_calls = llm_response.get("tool_calls", [])
 
         if tool_calls:
-
             for i, tool_call in enumerate(tool_calls, 1):
                 tool_name = tool_call["name"]
                 parameters = tool_call["parameters"]
 
-
                 # Execute the tool
                 tool_result = execute_tool(tool_name, parameters)
-                results.append({
-                    "tool_name": tool_name,
-                    "parameters": parameters,
-                    "result": tool_result
-                })
+                results.append(
+                    {"tool_name": tool_name, "parameters": parameters, "result": tool_result}
+                )
 
                 if tool_result.get("success"):
                     data = tool_result.get("data", {})
@@ -227,8 +222,7 @@ def demo_basic_usage() -> None:
     # Initialize processor with user permissions
     user_permissions = {Permission.StatementsPermission}
     processor = EnhancedFinancialQueryProcessor(
-        user_permissions=user_permissions,
-        enable_dynamic_prompts=True
+        user_permissions=user_permissions, enable_dynamic_prompts=True
     )
 
     # Test queries that should benefit from dynamic prompts
@@ -247,7 +241,6 @@ def demo_basic_usage() -> None:
             pass
 
 
-
 def demo_static_vs_dynamic_comparison() -> None:
     """Compare static vs dynamic prompt performance."""
 
@@ -256,8 +249,7 @@ def demo_static_vs_dynamic_comparison() -> None:
 
     # Test with static prompts
     static_processor = EnhancedFinancialQueryProcessor(
-        user_permissions=user_permissions,
-        enable_dynamic_prompts=False
+        user_permissions=user_permissions, enable_dynamic_prompts=False
     )
 
     static_result = static_processor.process_query(test_query)
@@ -267,8 +259,7 @@ def demo_static_vs_dynamic_comparison() -> None:
         static_tool_calls[0].get("parameters", {})
 
     dynamic_processor = EnhancedFinancialQueryProcessor(
-        user_permissions=user_permissions,
-        enable_dynamic_prompts=True
+        user_permissions=user_permissions, enable_dynamic_prompts=True
     )
 
     dynamic_result = dynamic_processor.process_query(test_query)
@@ -281,23 +272,12 @@ def demo_static_vs_dynamic_comparison() -> None:
 
     # Check if dynamic approach used correct parameter
     correct_param = "additional_paid_in_capital_preferred_stock"
-    any(
-        correct_param in str(call.get("parameters", {}))
-        for call in dynamic_tool_calls
-    )
-    any(
-        correct_param in str(call.get("parameters", {}))
-        for call in static_tool_calls
-    )
-
+    any(correct_param in str(call.get("parameters", {})) for call in dynamic_tool_calls)
+    any(correct_param in str(call.get("parameters", {})) for call in static_tool_calls)
 
 
 def demo_real_world_integration() -> None:
     """Show how this would integrate with real kfinance client."""
-
-
-
-
 
 
 if __name__ == "__main__":
@@ -307,7 +287,7 @@ if __name__ == "__main__":
         demo_static_vs_dynamic_comparison()
         demo_real_world_integration()
 
-
-    except Exception:
+    except (RuntimeError, ValueError, OSError, ImportError):
         import traceback
+
         traceback.print_exc()

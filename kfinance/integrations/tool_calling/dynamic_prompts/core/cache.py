@@ -60,9 +60,9 @@ class EmbeddingCache:
         if self._embedding_model is None:
             try:
                 self._embedding_model = SentenceTransformer(self.embedding_model_name)
-                logger.info(f"Loaded embedding model: {self.embedding_model_name}")
-            except Exception as e:
-                logger.error(f"Failed to load embedding model: {e}")
+                logger.info("Loaded embedding model: %s", self.embedding_model_name)
+            except (OSError, ImportError, RuntimeError) as e:
+                logger.error("Failed to load embedding model: %s", e)
                 raise
         return self._embedding_model
 
@@ -89,7 +89,7 @@ class EmbeddingCache:
             if self.embeddings_cache_file.exists():
                 with open(self.embeddings_cache_file, "rb") as f:
                     self.cached_embeddings = pickle.load(f)
-                logger.info(f"Loaded {len(self.cached_embeddings)} cached embeddings")
+                logger.info("Loaded %d cached embeddings", len(self.cached_embeddings))
 
             # Load metadata
             if self.metadata_cache_file.exists():
@@ -97,8 +97,8 @@ class EmbeddingCache:
                     self.cached_metadata = json.load(f)
                 logger.info("Loaded embedding cache metadata")
 
-        except Exception as e:
-            logger.error(f"Failed to load embedding cache: {e}")
+        except (OSError, json.JSONDecodeError, pickle.PickleError) as e:
+            logger.error("Failed to load embedding cache: %s", e)
             # Reset cache on error
             self.cached_embeddings = {}
             self.cached_metadata = {}
@@ -114,10 +114,10 @@ class EmbeddingCache:
             with open(self.metadata_cache_file, "w") as f:
                 json.dump(self.cached_metadata, f, indent=2)
 
-            logger.info(f"Saved {len(self.cached_embeddings)} embeddings to cache")
+            logger.info("Saved %d embeddings to cache", len(self.cached_embeddings))
 
-        except Exception as e:
-            logger.error(f"Failed to save embedding cache: {e}")
+        except (OSError, TypeError, ValueError, pickle.PickleError) as e:
+            logger.error("Failed to save embedding cache: %s", e)
 
     def get_or_compute_embeddings(
         self,
@@ -153,7 +153,7 @@ class EmbeddingCache:
 
         # Compute new embeddings if needed
         if new_embeddings_needed:
-            logger.info(f"Computing embeddings for {len(new_embeddings_needed)} new examples")
+            logger.info("Computing embeddings for %d new examples", len(new_embeddings_needed))
 
             try:
                 new_embeddings = self.embedding_model.encode(new_embeddings_needed)
@@ -165,17 +165,19 @@ class EmbeddingCache:
                     self.cached_embeddings[example_hash] = embedding
 
                 # Update metadata
-                self.cached_metadata.update({
-                    "model_name": self.embedding_model_name,
-                    "total_embeddings": len(self.cached_embeddings),
-                    "last_updated": str(np.datetime64("now")),
-                })
+                self.cached_metadata.update(
+                    {
+                        "model_name": self.embedding_model_name,
+                        "total_embeddings": len(self.cached_embeddings),
+                        "last_updated": str(np.datetime64("now")),
+                    }
+                )
 
                 # Save updated cache
                 self._save_cache()
 
-            except Exception as e:
-                logger.error(f"Failed to compute new embeddings: {e}")
+            except (RuntimeError, ValueError, OSError) as e:
+                logger.error("Failed to compute new embeddings: %s", e)
                 # Return examples without new embeddings
                 pass
 
@@ -193,7 +195,7 @@ class EmbeddingCache:
             force_recompute: Whether to force recomputation of all embeddings
         """
         if not examples_dir.exists():
-            logger.warning(f"Examples directory not found: {examples_dir}")
+            logger.warning("Examples directory not found: %s", examples_dir)
             return
 
         all_examples = []
@@ -208,13 +210,15 @@ class EmbeddingCache:
                     example = ToolExample.from_dict(example_data)
                     all_examples.append(example)
 
-                logger.info(f"Loaded {len(data.get('examples', []))} examples from {json_file.name}")
+                logger.info(
+                    "Loaded %d examples from %s", len(data.get("examples", [])), json_file.name
+                )
 
-            except Exception as e:
-                logger.error(f"Failed to load examples from {json_file}: {e}")
+            except (OSError, json.JSONDecodeError, KeyError, ValueError) as e:
+                logger.error("Failed to load examples from %s: %s", json_file, e)
 
         if all_examples:
-            logger.info(f"Precomputing embeddings for {len(all_examples)} examples")
+            logger.info("Precomputing embeddings for %d examples", len(all_examples))
             self.get_or_compute_embeddings(all_examples, force_recompute=force_recompute)
         else:
             logger.warning("No examples found to precompute embeddings for")
@@ -231,8 +235,8 @@ class EmbeddingCache:
             if self.metadata_cache_file.exists():
                 self.metadata_cache_file.unlink()
             logger.info("Invalidated embedding cache")
-        except Exception as e:
-            logger.error(f"Failed to invalidate cache: {e}")
+        except OSError as e:
+            logger.error("Failed to invalidate cache: %s", e)
 
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get statistics about the cache."""
@@ -260,7 +264,7 @@ class EmbeddingCache:
         orphaned_hashes = cached_hashes - current_hashes
 
         if orphaned_hashes:
-            logger.info(f"Removing {len(orphaned_hashes)} orphaned embeddings from cache")
+            logger.info("Removing %d orphaned embeddings from cache", len(orphaned_hashes))
             for hash_key in orphaned_hashes:
                 del self.cached_embeddings[hash_key]
 
@@ -302,8 +306,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Precompute embeddings for examples")
     parser.add_argument("--examples-dir", type=Path, help="Directory containing example JSON files")
     parser.add_argument("--cache-dir", type=Path, help="Directory to store cache files")
-    parser.add_argument("--model", default="sentence-transformers/all-MiniLM-L6-v2", help="Embedding model name")
-    parser.add_argument("--force", action="store_true", help="Force recomputation of all embeddings")
+    parser.add_argument(
+        "--model", default="sentence-transformers/all-MiniLM-L6-v2", help="Embedding model name"
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Force recomputation of all embeddings"
+    )
 
     args = parser.parse_args()
 

@@ -14,9 +14,7 @@ from .processing.entities import EntityProcessor
 
 
 def construct_dynamic_prompt(
-    query: str,
-    user_permissions: Set[Permission],
-    enable_caching: bool = True
+    query: str, user_permissions: Set[Permission], enable_caching: bool = True
 ) -> str:
     """Convenience function to construct a dynamic prompt for a given query.
 

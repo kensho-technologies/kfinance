@@ -6,6 +6,9 @@ from pathlib import Path
 import sys
 from typing import Any, Dict
 
+from kfinance.client.permission_models import Permission
+from kfinance.integrations.tool_calling.prompts import BASE_PROMPT
+
 from ..core.cache import precompute_all_embeddings
 from ..core.manager import DynamicPromptManager
 
@@ -36,13 +39,21 @@ def calculate_prompt_metrics(base_prompt: str, dynamic_prompt: str) -> Dict[str,
             "lines_added": dynamic_lines - base_lines,
             "words_added": dynamic_words - base_words,
             "characters_added": dynamic_chars - base_chars,
-            "size_increase_percent": round(((dynamic_chars - base_chars) / base_chars) * 100, 1) if base_chars > 0 else 0,
-        }
+            "size_increase_percent": round(((dynamic_chars - base_chars) / base_chars) * 100, 1)
+            if base_chars > 0
+            else 0,
+        },
     }
 
 
-def generate_markdown_report(query: str, entity_mapping: Dict[str, str], metrics: Dict[str, Any],
-                           similar_examples: list, base_prompt: str, dynamic_prompt: str) -> str:
+def generate_markdown_report(
+    query: str,
+    entity_mapping: Dict[str, str],
+    metrics: Dict[str, Any],
+    similar_examples: list,
+    base_prompt: str,
+    dynamic_prompt: str,
+) -> str:
     """Generate a markdown report for prompt comparison."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -68,10 +79,10 @@ def generate_markdown_report(query: str, entity_mapping: Dict[str, str], metrics
 
 | Metric | Base Prompt | Dynamic Prompt | Change |
 |--------|-------------|----------------|---------|
-| Lines | {metrics['base_prompt']['lines']} | {metrics['dynamic_prompt']['lines']} | +{metrics['comparison']['lines_added']} |
-| Words | {metrics['base_prompt']['words']} | {metrics['dynamic_prompt']['words']} | +{metrics['comparison']['words_added']} |
-| Characters | {metrics['base_prompt']['characters']} | {metrics['dynamic_prompt']['characters']} | +{metrics['comparison']['characters_added']} |
-| Size Increase | - | - | {metrics['comparison']['size_increase_percent']}% |
+| Lines | {metrics["base_prompt"]["lines"]} | {metrics["dynamic_prompt"]["lines"]} | +{metrics["comparison"]["lines_added"]} |
+| Words | {metrics["base_prompt"]["words"]} | {metrics["dynamic_prompt"]["words"]} | +{metrics["comparison"]["words_added"]} |
+| Characters | {metrics["base_prompt"]["characters"]} | {metrics["dynamic_prompt"]["characters"]} | +{metrics["comparison"]["characters_added"]} |
+| Size Increase | - | - | {metrics["comparison"]["size_increase_percent"]}% |
 
 ## Similar Examples Found
 
@@ -118,7 +129,7 @@ def precompute_command(args: argparse.Namespace) -> None:
             force_recompute=args.force,
         )
 
-    except Exception:
+    except (RuntimeError, OSError, ValueError):
         sys.exit(1)
 
 
@@ -149,7 +160,7 @@ def stats_command(args: argparse.Namespace) -> None:
         else:
             pass
 
-    except Exception:
+    except (RuntimeError, ValueError):
         sys.exit(1)
 
 
@@ -168,7 +179,7 @@ def invalidate_command(args: argparse.Namespace) -> None:
         else:
             sys.exit(1)
 
-    except Exception:
+    except (RuntimeError, OSError):
         sys.exit(1)
 
 
@@ -176,9 +187,6 @@ def test_command(args: argparse.Namespace) -> None:
     """Test dynamic prompt construction with a sample query."""
 
     try:
-        from kfinance.client.permission_models import Permission
-        from kfinance.integrations.tool_calling.prompts import BASE_PROMPT
-
         manager = DynamicPromptManager(
             examples_dir=args.examples_dir,
             cache_dir=args.cache_dir,
@@ -186,24 +194,26 @@ def test_command(args: argparse.Namespace) -> None:
         )
 
         # Test query
-        test_query = args.query or "What is the preferred stock additional paid in capital for Apple?"
+        test_query = (
+            args.query or "What is the preferred stock additional paid in capital for Apple?"
+        )
         user_permissions = {Permission.StatementsPermission}
-
 
         # Show entity normalization
         entity_mapping: Dict[str, str] = {}
         try:
             # Access the repository to get the entity processor
-            manager._initialize()  # Ensure repository is loaded
-            if manager._repository and hasattr(manager._repository, "normalize_query_for_search"):
-                normalized_query, entity_mapping = manager._repository.normalize_query_for_search(test_query)
+            manager._initialize()  # Ensure repository is loaded  # noqa: SLF001
+            if manager._repository and hasattr(manager._repository, "normalize_query_for_search"):  # noqa: SLF001
+                normalized_query, entity_mapping = manager._repository.normalize_query_for_search(  # noqa: SLF001
+                    test_query
+                )
                 if entity_mapping:
                     pass
                 else:
                     pass
-        except Exception:
+        except (RuntimeError, ValueError, AttributeError):
             pass
-
 
         # Get both base and dynamic prompts
         base_prompt = BASE_PROMPT
@@ -243,7 +253,7 @@ def test_command(args: argparse.Namespace) -> None:
                 metrics=metrics,
                 similar_examples=similar_examples,
                 base_prompt=base_prompt,
-                dynamic_prompt=dynamic_prompt
+                dynamic_prompt=dynamic_prompt,
             )
 
             output_path = Path(args.output_markdown)
@@ -253,7 +263,7 @@ def test_command(args: argparse.Namespace) -> None:
         if args.show_prompt:
             pass
 
-    except Exception:
+    except (RuntimeError, ValueError):
         sys.exit(1)
 
 
@@ -278,24 +288,14 @@ Examples:
 
   # Force recompute all embeddings
   python -m kfinance.integrations.tool_calling.dynamic_prompts.cli precompute --force
-        """
+        """,
     )
 
     # Global arguments
+    parser.add_argument("--examples-dir", type=Path, help="Directory containing example JSON files")
+    parser.add_argument("--cache-dir", type=Path, help="Directory to store cache files")
     parser.add_argument(
-        "--examples-dir",
-        type=Path,
-        help="Directory containing example JSON files"
-    )
-    parser.add_argument(
-        "--cache-dir",
-        type=Path,
-        help="Directory to store cache files"
-    )
-    parser.add_argument(
-        "--model",
-        default="sentence-transformers/all-MiniLM-L6-v2",
-        help="Embedding model name"
+        "--model", default="sentence-transformers/all-MiniLM-L6-v2", help="Embedding model name"
     )
 
     # Subcommands
@@ -303,13 +303,10 @@ Examples:
 
     # Precompute command
     precompute_parser = subparsers.add_parser(
-        "precompute",
-        help="Precompute embeddings for all examples"
+        "precompute", help="Precompute embeddings for all examples"
     )
     precompute_parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Force recomputation of all embeddings"
+        "--force", action="store_true", help="Force recomputation of all embeddings"
     )
 
     # Stats command
@@ -319,19 +316,17 @@ Examples:
     subparsers.add_parser("invalidate", help="Invalidate the embedding cache")
 
     # Test command
-    test_parser = subparsers.add_parser("test", help="Test dynamic prompt construction with entity normalization and metrics")
+    test_parser = subparsers.add_parser(
+        "test", help="Test dynamic prompt construction with entity normalization and metrics"
+    )
     test_parser.add_argument(
         "--query",
-        help="Query to test with (default: sample query). Shows entity normalization using spaCy NER."
+        help="Query to test with (default: sample query). Shows entity normalization using spaCy NER.",
     )
-    test_parser.add_argument(
-        "--show-prompt",
-        action="store_true",
-        help="Show the generated prompt"
-    )
+    test_parser.add_argument("--show-prompt", action="store_true", help="Show the generated prompt")
     test_parser.add_argument(
         "--output-markdown",
-        help="Output detailed comparison report to markdown file (e.g., report.md)"
+        help="Output detailed comparison report to markdown file (e.g., report.md)",
     )
 
     # Parse arguments

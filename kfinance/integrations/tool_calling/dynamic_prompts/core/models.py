@@ -37,18 +37,15 @@ PERMISSION_MAPPING = {
     "STATEMENTS": Permission.StatementsPermission,
     "PRICING": Permission.PricingPermission,
     "EARNINGS": Permission.EarningsPermission,
-
     # Company data permissions
     "COMPANY_INTELLIGENCE": Permission.CompanyIntelligencePermission,
     "MERGERS": Permission.MergersPermission,
     "RELATIONSHIPS": Permission.RelationshipPermission,
     "SEGMENTS": Permission.SegmentsPermission,
     "COMPETITORS": Permission.CompetitorsPermission,
-
     # Identifier and utility permissions
     "ID": Permission.IDPermission,
     "TRANSCRIPTS": Permission.TranscriptsPermission,
-
     # Handle both singular and plural forms
     "RELATIONSHIP": Permission.RelationshipPermission,
 }
@@ -73,7 +70,7 @@ def resolve_permissions(permission_refs: List[str]) -> Set[Permission]:
             try:
                 resolved_permissions.add(Permission(ref))
             except (ValueError, AttributeError):
-                logger.warning(f"Could not resolve permission reference: {ref}")
+                logger.warning("Could not resolve permission reference: %s", ref)
 
     return resolved_permissions
 

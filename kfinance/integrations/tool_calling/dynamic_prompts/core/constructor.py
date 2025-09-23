@@ -113,7 +113,7 @@ class DynamicPromptConstructor:
         examples = [example for _, example in similarity_results]
 
         # Limit total examples
-        return examples[:self.max_total_examples]
+        return examples[: self.max_total_examples]
 
     def _group_examples_by_tool(self, examples: List[ToolExample]) -> Dict[str, List[ToolExample]]:
         """Group examples by tool name, respecting per-tool limits."""
@@ -154,9 +154,7 @@ class DynamicPromptConstructor:
         parts = [f'{index}. Query: "{example.query}"']
 
         # Format function call
-        params_str = ", ".join([
-            f"{k}={repr(v)}" for k, v in example.parameters.items()
-        ])
+        params_str = ", ".join([f"{k}={repr(v)}" for k, v in example.parameters.items()])
         function_call = f"   Function: {example.tool_name}({params_str})"
         parts.append(function_call)
 
