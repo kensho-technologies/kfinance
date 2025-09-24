@@ -1,4 +1,7 @@
 # Changelog
+# 3.2.11
+- Add Handling of status code 400 for Capitalizations, Modify EV/TEV ratio to target quarterly or LTM
+
 # 3.2.10
 - Add CIQ company_id to GetInfoFromIdentifiersResp
 

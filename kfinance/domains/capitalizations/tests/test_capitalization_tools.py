@@ -67,7 +67,7 @@ class TestGetCapitalizationFromCompanyIds:
                             shares_outstanding=None,
                         ),
                     ]
-                )
+                ),
             },
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
@@ -77,6 +77,26 @@ class TestGetCapitalizationFromCompanyIds:
         tool = GetCapitalizationFromIdentifiers(kfinance_client=mock_client)
         args = GetCapitalizationFromIdentifiersArgs(
             identifiers=["SPGI", "non-existent"], capitalization=Capitalization.market_cap
+        )
+        response = tool.run(args.model_dump(mode="json"))
+        assert response == expected_response
+
+    def test_get_capitalization_from_identifiers_property_400(
+        self, requests_mock: Mocker, mock_client: Client
+    ) -> None:
+        requests_mock.get(
+            url=f"https://kfinance.kensho.com/api/v1/market_cap/1/none/none",
+            status_code=400,
+        )
+
+        expected_response = GetCapitalizationFromIdentifiersResp(
+            capitalization=Capitalization.market_cap,
+            results={"C_1": Capitalizations(market_caps=list())},
+        )
+
+        tool = GetCapitalizationFromIdentifiers(kfinance_client=mock_client)
+        args = GetCapitalizationFromIdentifiersArgs(
+            identifiers=["C_1"], capitalization=Capitalization.market_cap
         )
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response

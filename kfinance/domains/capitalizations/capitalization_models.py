@@ -32,6 +32,16 @@ class Capitalizations(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
+    def handle_field_alias(cls, data: Any) -> Any:
+        """Handle both 'capitalizations' and 'market_caps' field names"""
+        if isinstance(data, dict):
+            if "capitalizations" in data and "market_caps" not in data:
+                data = deepcopy(data)
+                data["market_caps"] = data["capitalizations"]
+        return data
+
+    @model_validator(mode="before")
+    @classmethod
     def inject_currency_into_data(cls, data: Any) -> Any:
         """Inject the currency into each market_cap and TEV.
 

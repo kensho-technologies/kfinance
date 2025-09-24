@@ -158,7 +158,9 @@ def resolve_future_with_error_handling(future: Future) -> Any:
         return future.result()
     except HTTPError as http_err:
         error_code = http_err.response.status_code
-        if error_code == 404:
+        if error_code == 400:
+            return None
+        elif error_code == 404:
             return None
         else:
             raise http_err
