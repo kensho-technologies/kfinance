@@ -133,22 +133,26 @@ class ExampleRepository:
                             descriptor = ParameterDescriptor.from_dict(param_data)
                             descriptors.append(descriptor)
                         self.parameter_descriptors[tool_name] = descriptors
-                        logger.debug("Loaded %d parameter descriptors for %s", len(descriptors), tool_name)
-                
+                        logger.debug(
+                            "Loaded %d parameter descriptors for %s", len(descriptors), tool_name
+                        )
+
                 elif "tools" in data:
                     # New format: {"tools": [{"tool_name": "...", "parameters": [...]}]}
                     for tool_data in data["tools"]:
                         tool_name = tool_data.get("tool_name")
                         if not tool_name:
                             continue
-                        
+
                         descriptors = []
                         for param_data in tool_data.get("parameters", []):
                             descriptor = ParameterDescriptor.from_dict(param_data)
                             descriptors.append(descriptor)
-                        
+
                         self.parameter_descriptors[tool_name] = descriptors
-                        logger.debug("Loaded %d parameter descriptors for %s", len(descriptors), tool_name)
+                        logger.debug(
+                            "Loaded %d parameter descriptors for %s", len(descriptors), tool_name
+                        )
 
             except (OSError, json.JSONDecodeError, KeyError, ValueError) as e:
                 logger.error("Failed to load parameter descriptors from %s: %s", json_file, e)
