@@ -8,12 +8,12 @@
           "parameter_name": "identifiers",
           "tool_name": "get_mergers_from_identifiers",
           "description": "List of company identifiers to find all M&A transactions where the company was involved as buyer, seller, or target. Returns transaction_ids for use with other M&A tools.",
-          "examples": [
-            "['MSFT']",
-            "['BJ']",
-            "['PFE']",
-            "['AAPL', 'GOOGL']"
-          ],
+          "examples": {
+            "['MSFT']": "",
+            "['BJ']": "",
+            "['PFE']": "",
+            "['AAPL', 'GOOGL']": ""
+          },
           "common_mistakes": [
             "Using this tool to get detailed transaction information (use get_merger_info_from_transaction_id instead)",
             "Not using the returned transaction_ids with other M&A tools",
@@ -31,11 +31,11 @@
           "parameter_name": "transaction_id",
           "tool_name": "get_merger_info_from_transaction_id",
           "description": "The specific transaction ID for comprehensive M&A transaction information. Must be obtained from get_mergers_from_identifiers first.",
-          "examples": [
-            "67890",
-            "11111",
-            "12345"
-          ],
+          "examples": {
+            "67890": "",
+            "11111": "",
+            "12345": ""
+          },
           "common_mistakes": [
             "Using company identifier instead of transaction_id",
             "Not finding transaction_id first using get_mergers_from_identifiers",
@@ -53,11 +53,11 @@
           "parameter_name": "identifier",
           "tool_name": "get_advisors_for_company_in_transaction_from_identifier",
           "description": "Single company identifier (not array) for the company whose advisors you want to find in a specific transaction.",
-          "examples": [
-            "SPGI",
-            "BJ",
-            "VOD"
-          ],
+          "examples": {
+            "SPGI": "",
+            "BJ": "",
+            "VOD": ""
+          },
           "common_mistakes": [
             "Using array format instead of single identifier",
             "Not providing transaction_id (required parameter)",
@@ -69,11 +69,11 @@
           "parameter_name": "transaction_id",
           "tool_name": "get_advisors_for_company_in_transaction_from_identifier",
           "description": "The specific transaction ID for the M&A deal. Must be obtained from get_mergers_from_identifiers first.",
-          "examples": [
-            "12345",
-            "67890",
-            "11111"
-          ],
+          "examples": {
+            "12345": "",
+            "67890": "",
+            "11111": ""
+          },
           "common_mistakes": [
             "Not providing transaction_id (this parameter is required)",
             "Using company name instead of transaction_id",

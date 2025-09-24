@@ -8,11 +8,11 @@
           "parameter_name": "statement",
           "tool_name": "get_financial_statement_from_identifiers",
           "description": "The type of financial statement to retrieve. Must be one of the three main financial statements.",
-          "examples": [
-            "balance_sheet",
-            "income_statement",
-            "cash_flow_statement"
-          ],
+          "examples": {
+            "balance_sheet": "Statement of financial position showing assets, liabilities, and equity at a point in time",
+            "income_statement": "Statement of earnings showing revenues, expenses, and profit over a period",
+            "cash_flow_statement": "Statement showing cash inflows and outflows from operating, investing, and financing activities"
+          },
           "common_mistakes": [
             "Using 'balance_sheet_statement' instead of 'balance_sheet'",
             "Using 'profit_and_loss' or 'p_and_l' instead of 'income_statement'",
@@ -24,11 +24,11 @@
           "parameter_name": "identifiers",
           "tool_name": "get_financial_statement_from_identifiers",
           "description": "List of company identifiers (ticker symbols, ISINs, CUSIPs, or company_ids). Always batch multiple companies in a single call when possible.",
-          "examples": [
-            "['AAPL']",
-            "['MSFT', 'GOOGL']",
-            "['JPM', 'BAC', 'WFC']"
-          ],
+          "examples": {
+            "['AAPL']": "",
+            "['MSFT', 'GOOGL']": "",
+            "['JPM', 'BAC', 'WFC']": ""
+          },
           "common_mistakes": [
             "Making separate API calls for each company instead of batching",
             "Using incorrect ticker symbols",
@@ -40,10 +40,10 @@
           "parameter_name": "period_type",
           "tool_name": "get_financial_statement_from_identifiers",
           "description": "Specifies whether to retrieve annual or quarterly statements. Required when requesting quarterly data.",
-          "examples": [
-            "annual",
-            "quarterly"
-          ],
+          "examples": {
+            "annual": "",
+            "quarterly": ""
+          },
           "common_mistakes": [
             "Forgetting to set period_type to 'quarterly' when requesting quarterly statements",
             "Using 'quarter' instead of 'quarterly'",
@@ -55,11 +55,11 @@
           "parameter_name": "start_year",
           "tool_name": "get_financial_statement_from_identifiers",
           "description": "Starting year for the data range. Use calendar years. Leave empty for most recent data.",
-          "examples": [
-            "2020",
-            "2022",
-            "2023"
-          ],
+          "examples": {
+            "2020": "",
+            "2022": "",
+            "2023": ""
+          },
           "common_mistakes": [
             "Using fiscal years instead of calendar years",
             "Using string format instead of integer",
@@ -71,10 +71,10 @@
           "parameter_name": "end_year",
           "tool_name": "get_financial_statement_from_identifiers",
           "description": "Ending year for the data range. Use calendar years. Must be >= start_year.",
-          "examples": [
-            "2023",
-            "2024"
-          ],
+          "examples": {
+            "2023": "",
+            "2024": ""
+          },
           "common_mistakes": [
             "Using fiscal years instead of calendar years",
             "Setting end_year before start_year",
@@ -86,12 +86,12 @@
           "parameter_name": "start_quarter",
           "tool_name": "get_financial_statement_from_identifiers",
           "description": "Starting quarter (1-4) when requesting quarterly statements. Only used with period_type='quarterly'.",
-          "examples": [
-            "1",
-            "2",
-            "3",
-            "4"
-          ],
+          "examples": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": ""
+          },
           "common_mistakes": [
             "Using quarter numbers outside 1-4 range",
             "Forgetting to set period_type to 'quarterly'",
@@ -103,12 +103,12 @@
           "parameter_name": "end_quarter",
           "tool_name": "get_financial_statement_from_identifiers",
           "description": "Ending quarter (1-4) when requesting quarterly statements. Only used with period_type='quarterly'.",
-          "examples": [
-            "1",
-            "2",
-            "3",
-            "4"
-          ],
+          "examples": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": ""
+          },
           "common_mistakes": [
             "Using quarter numbers outside 1-4 range",
             "Setting end_quarter before start_quarter in same year",

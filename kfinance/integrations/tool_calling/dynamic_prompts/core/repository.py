@@ -123,17 +123,32 @@ class ExampleRepository:
                 with open(json_file, "r") as f:
                     data = json.load(f)
 
-                tool_name = data.get("tool_name")
-                if not tool_name:
-                    continue
-
-                descriptors = []
-                for param_data in data.get("parameters", []):
-                    descriptor = ParameterDescriptor.from_dict(param_data)
-                    descriptors.append(descriptor)
-
-                self.parameter_descriptors[tool_name] = descriptors
-                logger.debug("Loaded %d parameter descriptors for %s", len(descriptors), tool_name)
+                # Handle both old format (tool_name at top level) and new format (tools array)
+                if "tool_name" in data:
+                    # Old format: {"tool_name": "...", "parameters": [...]}
+                    tool_name = data.get("tool_name")
+                    if tool_name:
+                        descriptors = []
+                        for param_data in data.get("parameters", []):
+                            descriptor = ParameterDescriptor.from_dict(param_data)
+                            descriptors.append(descriptor)
+                        self.parameter_descriptors[tool_name] = descriptors
+                        logger.debug("Loaded %d parameter descriptors for %s", len(descriptors), tool_name)
+                
+                elif "tools" in data:
+                    # New format: {"tools": [{"tool_name": "...", "parameters": [...]}]}
+                    for tool_data in data["tools"]:
+                        tool_name = tool_data.get("tool_name")
+                        if not tool_name:
+                            continue
+                        
+                        descriptors = []
+                        for param_data in tool_data.get("parameters", []):
+                            descriptor = ParameterDescriptor.from_dict(param_data)
+                            descriptors.append(descriptor)
+                        
+                        self.parameter_descriptors[tool_name] = descriptors
+                        logger.debug("Loaded %d parameter descriptors for %s", len(descriptors), tool_name)
 
             except (OSError, json.JSONDecodeError, KeyError, ValueError) as e:
                 logger.error("Failed to load parameter descriptors from %s: %s", json_file, e)
@@ -195,8 +210,8 @@ class ExampleRepository:
         # Filter examples by permissions and tool names
         filtered_examples = []
         for example in self.examples:
-            # Check permissions
-            if not example.permissions_required.issubset(user_permissions):
+            # Check permissions - user needs at least one of the required permissions
+            if not example.permissions_required.intersection(user_permissions):
                 continue
 
             # Check tool names if specified

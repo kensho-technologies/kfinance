@@ -134,8 +134,8 @@ class SimilaritySearchEngine:
         filtered_examples = []
 
         for example in examples:
-            # Check permissions
-            if not example.permissions_required.issubset(user_permissions):
+            # Check permissions - user needs at least one of the required permissions
+            if not example.permissions_required.intersection(user_permissions):
                 continue
 
             # Check tool names if specified

@@ -8,11 +8,11 @@
           "parameter_name": "identifiers",
           "tool_name": "get_competitors_from_identifiers",
           "description": "List of company identifiers to find competitors for. Always batch multiple identifiers when possible.",
-          "examples": [
-            "['AAPL']",
-            "['TSLA']",
-            "['AAPL', 'MSFT', 'GOOGL']"
-          ],
+          "examples": {
+            "['AAPL']": "",
+            "['TSLA']": "",
+            "['AAPL', 'MSFT', 'GOOGL']": ""
+          },
           "common_mistakes": [
             "Making separate API calls for each company instead of batching",
             "Using incorrect ticker symbols",
@@ -25,14 +25,14 @@
           "parameter_name": "competitor_source",
           "tool_name": "get_competitors_from_identifiers",
           "description": "The source type of competitor information. Must be exact source names from the system.",
-          "examples": [
-            "filing",
-            "key_dev",
-            "contact",
-            "third_party",
-            "self_identified",
-            "named_by_competitor"
-          ],
+          "examples": {
+            "filing": "Competitors mentioned in SEC filings and regulatory documents",
+            "key_dev": "Competitors identified through key developments and news events",
+            "contact": "Competitors identified through contact and relationship data",
+            "third_party": "Competitors identified by third-party research and analysis",
+            "self_identified": "Competitors that the company identifies as its own competitors",
+            "named_by_competitor": "Companies that have named this company as their competitor"
+          },
           "common_mistakes": [
             "Using 'sec_filing' instead of 'filing'",
             "Using 'self_reported' instead of 'self_identified'",

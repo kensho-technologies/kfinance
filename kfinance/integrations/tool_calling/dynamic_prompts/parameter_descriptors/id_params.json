@@ -8,12 +8,12 @@
           "parameter_name": "identifiers",
           "tool_name": "get_capitalization_from_identifiers",
           "description": "List of company identifiers for capitalization metrics. Always batch multiple identifiers when possible.",
-          "examples": [
-            "['AAPL']",
-            "['AAPL', 'MSFT']",
-            "['TSLA']",
-            "['GOOGL', 'META', 'AMZN']"
-          ],
+          "examples": {
+            "['AAPL']": "",
+            "['AAPL', 'MSFT']": "",
+            "['TSLA']": "",
+            "['GOOGL', 'META', 'AMZN']": ""
+          },
           "common_mistakes": [
             "Making separate API calls for each company instead of batching",
             "Using incorrect ticker symbols",
@@ -26,11 +26,11 @@
           "parameter_name": "capitalization",
           "tool_name": "get_capitalization_from_identifiers",
           "description": "The type of capitalization metric to retrieve. Must be exact parameter names.",
-          "examples": [
-            "market_cap",
-            "tev",
-            "shares_outstanding"
-          ],
+          "examples": {
+            "market_cap": "Market capitalization (share price × shares outstanding)",
+            "tev": "Total enterprise value (market cap + debt - cash)",
+            "shares_outstanding": "Total number of shares currently outstanding"
+          },
           "common_mistakes": [
             "Using 'market_capitalization' instead of 'market_cap'",
             "Using 'enterprise_value' or 'ev' instead of 'tev'",
@@ -44,11 +44,11 @@
           "parameter_name": "start_date",
           "tool_name": "get_capitalization_from_identifiers",
           "description": "Starting date for historical capitalization retrieval in YYYY-MM-DD format. Leave empty for most recent values.",
-          "examples": [
-            "2023-01-01",
-            "2022-12-31",
-            "2023-06-30"
-          ],
+          "examples": {
+            "2023-01-01": "",
+            "2022-12-31": "",
+            "2023-06-30": ""
+          },
           "common_mistakes": [
             "Using incorrect date format (should be YYYY-MM-DD)",
             "Setting start_date without end_date for ranges",
@@ -61,11 +61,11 @@
           "parameter_name": "end_date",
           "tool_name": "get_capitalization_from_identifiers",
           "description": "Ending date for historical capitalization retrieval in YYYY-MM-DD format. Must be >= start_date.",
-          "examples": [
-            "2023-12-31",
-            "2023-06-30",
-            "2023-09-30"
-          ],
+          "examples": {
+            "2023-12-31": "",
+            "2023-06-30": "",
+            "2023-09-30": ""
+          },
           "common_mistakes": [
             "Using incorrect date format (should be YYYY-MM-DD)",
             "Setting end_date before start_date",
@@ -83,11 +83,11 @@
           "parameter_name": "identifiers",
           "tool_name": "get_cusip_from_identifiers",
           "description": "List of company identifiers to get CUSIP identifiers for. Always batch multiple identifiers when possible.",
-          "examples": [
-            "['AAPL']",
-            "['MSFT']",
-            "['AAPL', 'MSFT', 'GOOGL']"
-          ],
+          "examples": {
+            "['AAPL']": "",
+            "['MSFT']": "",
+            "['AAPL', 'MSFT', 'GOOGL']": ""
+          },
           "common_mistakes": [
             "Making separate API calls for each company instead of batching",
             "Using incorrect ticker symbols",
@@ -105,11 +105,11 @@
           "parameter_name": "identifiers",
           "tool_name": "get_isin_from_identifiers",
           "description": "List of company identifiers to get ISIN identifiers for. Always batch multiple identifiers when possible.",
-          "examples": [
-            "['AAPL']",
-            "['MSFT']",
-            "['AAPL', 'MSFT', 'GOOGL']"
-          ],
+          "examples": {
+            "['AAPL']": "",
+            "['MSFT']": "",
+            "['AAPL', 'MSFT', 'GOOGL']": ""
+          },
           "common_mistakes": [
             "Making separate API calls for each company instead of batching",
             "Using incorrect ticker symbols",
@@ -127,10 +127,10 @@
           "parameter_name": "use_local_timezone",
           "tool_name": "get_latest",
           "description": "Whether to use the local timezone of the user instead of UTC. Optional parameter, defaults to false (UTC).",
-          "examples": [
-            "true",
-            "false"
-          ],
+          "examples": {
+            "true": "Use the user's local timezone for date/time calculations",
+            "false": "Use UTC (Coordinated Universal Time) for date/time calculations"
+          },
           "common_mistakes": [
             "Using string values 'true'/'false' instead of boolean true/false",
             "Not understanding the difference between local timezone and UTC",
@@ -148,12 +148,12 @@
           "parameter_name": "n",
           "tool_name": "get_n_quarters_ago",
           "description": "Number of quarters before the current quarter to calculate. Must be a positive integer.",
-          "examples": [
-            "1",
-            "2",
-            "4",
-            "6"
-          ],
+          "examples": {
+            "1": "",
+            "2": "",
+            "4": "",
+            "6": ""
+          },
           "common_mistakes": [
             "Using negative numbers (n must be positive)",
             "Using 0 (use 1 for previous quarter)",

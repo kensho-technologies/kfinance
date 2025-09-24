@@ -213,7 +213,22 @@ def test_command(args: argparse.Namespace) -> None:
         test_query = (
             args.query or "What is the preferred stock additional paid in capital for Apple?"
         )
-        user_permissions = {Permission.StatementsPermission}
+        # Include all available permissions for comprehensive testing
+        user_permissions = {
+            Permission.CompetitorsPermission,
+            Permission.EarningsPermission,
+            Permission.GICSPermission,
+            Permission.IDPermission,
+            Permission.ISCRSPermission,
+            Permission.MergersPermission,
+            Permission.PricingPermission,
+            Permission.RelationshipPermission,
+            Permission.SegmentsPermission,
+            Permission.StatementsPermission,
+            Permission.TranscriptsPermission,
+            Permission.PrivateCompanyFinancialsPermission,
+            Permission.CompanyIntelligencePermission,
+        }
 
         # Show entity normalization
         logger.info("Testing Query: %s", test_query)

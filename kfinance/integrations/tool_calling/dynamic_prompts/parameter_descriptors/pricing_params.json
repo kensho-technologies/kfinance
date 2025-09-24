@@ -8,13 +8,13 @@
           "parameter_name": "identifiers",
           "tool_name": "get_prices_from_identifiers",
           "description": "List of company identifiers (ticker symbols, ISINs, CUSIPs, or company_ids). Always batch multiple identifiers in a single call when possible.",
-          "examples": [
-            "['AAPL']",
-            "['AAPL', 'MSFT']",
-            "['GOOGL', 'META', 'AMZN']",
-            "['TSLA']",
-            "['JPM', 'BAC', 'WFC']"
-          ],
+          "examples": {
+            "['AAPL']": "",
+            "['AAPL', 'MSFT']": "",
+            "['GOOGL', 'META', 'AMZN']": "",
+            "['TSLA']": "",
+            "['JPM', 'BAC', 'WFC']": ""
+          },
           "common_mistakes": [
             "Making separate API calls for each company instead of batching identifiers",
             "Using incorrect ticker symbols",
@@ -27,12 +27,12 @@
           "parameter_name": "start_date",
           "tool_name": "get_prices_from_identifiers",
           "description": "Starting date for historical price retrieval in YYYY-MM-DD format. Leave empty for most recent prices.",
-          "examples": [
-            "2023-01-01",
-            "2023-10-01",
-            "2022-11-01",
-            "2023-06-15"
-          ],
+          "examples": {
+            "2023-01-01": "",
+            "2023-10-01": "",
+            "2022-11-01": "",
+            "2023-06-15": ""
+          },
           "common_mistakes": [
             "Using incorrect date format (should be YYYY-MM-DD)",
             "Using relative terms like 'last month' instead of specific dates",
@@ -45,12 +45,12 @@
           "parameter_name": "end_date",
           "tool_name": "get_prices_from_identifiers",
           "description": "Ending date for historical price retrieval in YYYY-MM-DD format. Must be >= start_date. Leave empty for most recent prices.",
-          "examples": [
-            "2023-12-31",
-            "2023-10-31",
-            "2023-10-27",
-            "2023-06-15"
-          ],
+          "examples": {
+            "2023-12-31": "",
+            "2023-10-31": "",
+            "2023-10-27": "",
+            "2023-06-15": ""
+          },
           "common_mistakes": [
             "Using incorrect date format (should be YYYY-MM-DD)",
             "Setting end_date before start_date",
@@ -63,11 +63,11 @@
           "parameter_name": "periodicity",
           "tool_name": "get_prices_from_identifiers",
           "description": "The frequency at which data points are sampled or aggregated. Controls data granularity, not date range.",
-          "examples": [
-            "daily",
-            "weekly",
-            "monthly"
-          ],
+          "examples": {
+            "daily": "One data point per trading day (highest granularity)",
+            "weekly": "One data point per week (typically Friday close or week-end)",
+            "monthly": "One data point per month (typically month-end close)"
+          },
           "common_mistakes": [
             "Confusing periodicity with date range (periodicity is frequency, not time span)",
             "Using 'day' instead of 'daily'",
@@ -81,10 +81,10 @@
           "parameter_name": "adjusted",
           "tool_name": "get_prices_from_identifiers",
           "description": "Whether to retrieve adjusted prices that account for corporate actions such as dividends and splits. True for adjusted, false for raw historical prices.",
-          "examples": [
-            "true",
-            "false"
-          ],
+          "examples": {
+            "true": "Adjusted prices accounting for dividends, splits, and other corporate actions",
+            "false": "Raw historical prices as they were traded (not adjusted for corporate actions)"
+          },
           "common_mistakes": [
             "Using string values 'true'/'false' instead of boolean true/false",
             "Not understanding the difference between adjusted and unadjusted prices",

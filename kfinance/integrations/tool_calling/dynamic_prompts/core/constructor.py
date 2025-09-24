@@ -84,7 +84,7 @@ class DynamicPromptConstructor:
 
             # Add parameter descriptors if enabled
             if self.include_parameter_descriptors:
-                descriptors_section = self._build_parameter_descriptors_section(examples_by_tool)
+                descriptors_section = self._build_parameter_descriptors_section(examples_by_tool, query)
                 if descriptors_section:
                     prompt_parts.append(descriptors_section)
 
@@ -169,7 +169,7 @@ class DynamicPromptConstructor:
         return "\n".join(parts)
 
     def _build_parameter_descriptors_section(
-        self, examples_by_tool: Dict[str, List[ToolExample]]
+        self, examples_by_tool: Dict[str, List[ToolExample]], query: str = ""
     ) -> str:
         """Build the parameter descriptors section of the prompt."""
         section_parts: List[str] = []
@@ -191,7 +191,10 @@ class DynamicPromptConstructor:
                 section_parts.append(f"\n{tool_name} Parameters:")
 
                 for descriptor in relevant_descriptors:
-                    descriptor_text = self._format_parameter_descriptor(descriptor)
+                    # Use contextual formatting with query and examples
+                    descriptor_text = self._format_parameter_descriptor_with_context(
+                        descriptor, examples_by_tool[tool_name], query
+                    )
                     section_parts.append(descriptor_text)
 
         return "\n".join(section_parts) if section_parts else ""
@@ -226,6 +229,102 @@ class DynamicPromptConstructor:
             parts.append(f"  Common mistakes: {mistakes_str}")
 
         return "\n".join(parts)
+
+    def _format_parameter_descriptor_with_context(
+        self, descriptor: ParameterDescriptor, examples: List[ToolExample], query: str
+    ) -> str:
+        """Format a parameter descriptor with contextually relevant examples."""
+        parts = [f"- {descriptor.parameter_name}: {descriptor.description}"]
+
+        if descriptor.examples:
+            # Smart example selection based on context
+            relevant_examples = self._select_relevant_examples(
+                descriptor.examples, descriptor.parameter_name, examples, query
+            )
+            
+            # Format examples with descriptions when available
+            example_parts = []
+            for example_key, example_desc in relevant_examples[:3]:  # Limit to 3
+                if example_desc and example_desc.strip():
+                    # Include description if available
+                    example_parts.append(f'"{example_key}" ({example_desc})')
+                else:
+                    # Just the key if no description
+                    example_parts.append(f'"{example_key}"')
+            
+            if example_parts:
+                examples_str = ", ".join(example_parts)
+                parts.append(f"  Examples: {examples_str}")
+
+        if descriptor.common_mistakes:
+            mistakes_str = "; ".join(descriptor.common_mistakes[:2])  # Limit mistakes
+            parts.append(f"  Common mistakes: {mistakes_str}")
+
+        return "\n".join(parts)
+
+    def _select_relevant_examples(
+        self, 
+        examples_data, 
+        parameter_name: str, 
+        tool_examples: List[ToolExample], 
+        query: str
+    ) -> List[tuple]:
+        """Select the most relevant examples based on context.
+        
+        Returns list of (example_key, example_description) tuples.
+        """
+        # Handle both dict and list formats for backward compatibility
+        if isinstance(examples_data, dict):
+            all_examples = list(examples_data.keys())
+            example_descriptions = examples_data
+        elif isinstance(examples_data, list):
+            all_examples = examples_data
+            example_descriptions = {ex: "" for ex in examples_data}
+        else:
+            return []
+
+        if not all_examples:
+            return []
+
+        # Priority 1: Examples that appear in the selected tool examples
+        used_values = set()
+        for example in tool_examples:
+            if parameter_name in example.parameters:
+                param_value = example.parameters[parameter_name]
+                if isinstance(param_value, str) and param_value in all_examples:
+                    used_values.add(param_value)
+
+        # Priority 2: Examples that match query terms (case-insensitive)
+        query_lower = query.lower()
+        query_words = set(query_lower.split())
+        
+        # Score ALL examples by relevance (including used values for proper ordering)
+        all_scored = []
+        for example in all_examples:
+            example_lower = example.lower()
+            score = 0
+            
+            # Exact substring match gets highest score
+            if example_lower in query_lower:
+                score = 100
+            # Word matches get lower scores
+            else:
+                example_words = set(example_lower.replace('_', ' ').split())
+                word_matches = len(query_words.intersection(example_words))
+                if word_matches > 0:
+                    score = word_matches * 10
+            
+            # Boost score if it's also a used value (appears in examples)
+            if example in used_values:
+                score += 1000  # High boost for used values
+            
+            all_scored.append((score, example))
+        
+        # Sort by score (highest first)
+        all_scored.sort(key=lambda x: x[0], reverse=True)
+        
+        # Return examples with descriptions ordered by relevance score (highest first)
+        return [(ex, example_descriptions.get(ex, "")) for _, ex in all_scored]
 
     def get_prompt_stats(self, prompt: str) -> Dict[str, int]:
         """Get statistics about the constructed prompt.
