@@ -1,4 +1,7 @@
 # Changelog
+# 3.2.12
+- Modify line item tool desc to bias "ltm" for multiples
+
 # 3.2.11
 - Add Handling of status code 400 for Capitalizations, Modify EV/TEV ratio to target quarterly or LTM
 
