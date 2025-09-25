@@ -1,0 +1,138 @@
+{
+  "description": "Examples for earnings-related tools",
+  "tools": [
+    {
+      "tool_name": "get_earnings_from_identifiers",
+      "examples": [
+        {
+          "query": "get all earnings announcements for <company_a>",
+          "tool_name": "get_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ]
+          },
+          "context": "use get_earnings_from_identifiers to get the complete list of all earnings announcements for companies.",
+          "permissions_required": [
+            "EarningsPermission"
+          ],
+          "disambiguation_note": "this returns all earnings (historical list), not just the latest or next earnings.",
+          "tags": [
+            "earnings",
+            "all_earnings",
+            "historical",
+            "announcements"
+          ]
+        },
+        {
+          "query": "show me all earnings dates for <company_b> and <company_c>",
+          "tool_name": "get_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT",
+              "GOOGL"
+            ]
+          },
+          "context": "get comprehensive earnings history for multiple companies in one call.",
+          "permissions_required": [
+            "EarningsPermission"
+          ],
+          "disambiguation_note": "use this for complete earnings history, not just recent or upcoming earnings.",
+          "tags": [
+            "earnings",
+            "multiple_companies",
+            "earnings_history",
+            "batching"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_latest_earnings_from_identifiers",
+      "examples": [
+        {
+          "query": "when was <company_a>'s most recent earnings announcement?",
+          "tool_name": "get_latest_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ]
+          },
+          "context": "use get_latest_earnings_from_identifiers for the most recent earnings announcement only.",
+          "permissions_required": [
+            "EarningsPermission"
+          ],
+          "disambiguation_note": "this returns only the latest earnings, not the complete history or future earnings.",
+          "tags": [
+            "latest_earnings",
+            "most_recent",
+            "recent_announcement"
+          ]
+        },
+        {
+          "query": "when did <company_b> last report earnings?",
+          "tool_name": "get_latest_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT"
+            ]
+          },
+          "context": "get the date and details of the most recent earnings report.",
+          "permissions_required": [
+            "EarningsPermission"
+          ],
+          "disambiguation_note": "use 'latest' for past earnings, 'next' for future earnings.",
+          "tags": [
+            "last_reported",
+            "latest_earnings",
+            "recent_report"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_next_earnings_from_identifiers",
+      "examples": [
+        {
+          "query": "when is <company_a>'s next earnings announcement?",
+          "tool_name": "get_next_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ]
+          },
+          "context": "use get_next_earnings_from_identifiers for upcoming/future earnings announcements.",
+          "permissions_required": [
+            "EarningsPermission"
+          ],
+          "disambiguation_note": "this returns future earnings only, not past or current earnings.",
+          "tags": [
+            "next_earnings",
+            "upcoming",
+            "future",
+            "scheduled"
+          ]
+        },
+        {
+          "query": "when will <company_c> report their next earnings?",
+          "tool_name": "get_next_earnings_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "GOOGL"
+            ]
+          },
+          "context": "get the scheduled date for the next earnings announcement.",
+          "permissions_required": [
+            "EarningsPermission"
+          ],
+          "disambiguation_note": "use 'next' for future earnings, 'latest' for past earnings.",
+          "tags": [
+            "next_earnings",
+            "future_report",
+            "scheduled_announcement"
+          ]
+        }
+      ]
+    }
+  ]
+}
