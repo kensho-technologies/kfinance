@@ -2,7 +2,7 @@ from copy import deepcopy
 from datetime import date
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from strenum import StrEnum
 
 from kfinance.client.models.decimal_with_unit import Money, Shares
@@ -28,17 +28,8 @@ class DailyCapitalization(BaseModel):
 class Capitalizations(BaseModel):
     """Capitalizations represents market cap, TEV, and shares outstanding for a date range"""
 
+    model_config = ConfigDict(validate_by_name=True)
     capitalizations: list[DailyCapitalization] = Field(validation_alias="market_caps")
-
-    @model_validator(mode="before")
-    @classmethod
-    def handle_field_alias(cls, data: Any) -> Any:
-        """Handle both 'capitalizations' and 'market_caps' field names"""
-        if isinstance(data, dict):
-            if "capitalizations" in data and "market_caps" not in data:
-                data = deepcopy(data)
-                data["market_caps"] = data["capitalizations"]
-        return data
 
     @model_validator(mode="before")
     @classmethod
