@@ -1,4 +1,7 @@
 # Changelog
+# 3.2.12
+- Remove multiples line item support
+
 # 3.2.11
 - Add Handling of status code 400 for Capitalizations, Modify EV/TEV ratio to target quarterly or LTM
 

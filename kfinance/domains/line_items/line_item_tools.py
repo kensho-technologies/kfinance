@@ -45,12 +45,6 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         - To fetch the most recent value for the line item, leave start_year, start_quarter, end_year, and end_quarter as None.
         - The tool accepts arguments in calendar years, and all outputs will be presented in terms of calendar years. Please note that these calendar years may not align with the company's fiscal year.
         - All aliases for a line item return identical data (e.g., "revenue", "normal_revenue", and "regular_revenue" all return the same financial data).
-        - For the following Enterprise Value (EV) ratio line items, always specify period_type as either "quarterly" or "ltm" (Last Twelve Months) - do not rely on the default annual period:
-            - last_close_tev_to_ebit (and its aliases: ev_to_ebit, enterprise_value_to_ebit, tev_to_ebit, etc.)
-            - last_close_tev_to_ebitda (and its aliases: ev_to_ebitda, enterprise_value_to_ebitda, tev_to_ebitda, etc.)
-            - ev_to_employees (and its aliases: ev_to_employee_count, tev_to_employees, enterprise_value_to_employees, etc.)
-            - ev_to_total_revenue (and its aliases: tev_to_total_revenue, enterprise_value_to_total_revenue, etc.)
-        - When requesting these EV ratios, explicitly set period_type="quarterly" or period_type="ltm" for optimal data availability.
 
         Example:
         Query: "What are the revenues of Lowe's and Home Depot?"
