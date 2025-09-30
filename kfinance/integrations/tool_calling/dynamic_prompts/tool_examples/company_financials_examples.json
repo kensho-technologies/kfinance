@@ -179,6 +179,221 @@
             "earnings",
             "per_share"
           ]
+        },
+        {
+          "query": "get the depreciation and amortization for <company_a> for 2024",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["AAPL"],
+            "line_item": "depreciation_and_amortization",
+            "start_year": 2024,
+            "end_year": 2024
+          },
+          "context": "use 'depreciation_and_amortization' when you need both depreciation and amortization values combined.",
+          "disambiguation_note": "use 'depreciation_and_amortization' not just 'depreciation' when you need the combined value.",
+          "tags": ["depreciation", "amortization", "disambiguation"]
+        },
+        {
+          "query": "pull accumulated depreciation for <company_b> from 2022 through 2024",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["MSFT"],
+            "line_item": "accumulated_depreciation",
+            "start_year": 2022,
+            "end_year": 2024
+          },
+          "context": "balance sheet roll-forward requests must include both start_year and end_year to cover the full range.",
+          "disambiguation_note": "do not substitute 'depreciation_and_amortization' for balance sheet accounts like 'accumulated_depreciation'.",
+          "tags": ["balance_sheet", "accumulated_depreciation", "date_range"]
+        },
+        {
+          "query": "show me the total debt to equity for <company_b> in 2024",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["MSFT"],
+            "line_item": "total_debt_to_equity",
+            "start_year": 2024,
+            "end_year": 2024
+          },
+          "context": "Use 'total_debt_to_equity' to get the company's financial leverage ratio, which compares total debt to shareholders' equity.",
+          "disambiguation_note": "use 'total_debt_to_equity' not 'total_debt_to_equity_ratio' - the parameter name doesn't include 'ratio'.",
+          "tags": ["debt", "equity", "ratio", "disambiguation"]
+        },
+        {
+          "query": "what is the preferred stock dividend for <company_c> in 2023",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["GOOGL"],
+            "line_item": "preferred_stock_dividend",
+            "start_year": 2023,
+            "end_year": 2023
+          },
+          "context": "Use 'preferred_stock_dividend' to retrieve the amount of dividends paid to preferred shareholders, which typically have priority over common stock dividends.",
+          "disambiguation_note": "use 'preferred_stock_dividend' not 'preferred_dividends_paid' - the first is the correct parameter name.",
+          "tags": ["preferred", "dividend", "disambiguation"]
+        },
+        {
+          "query": "show me the total receivables for <company_d> in 2023 Q3",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["AMZN"],
+            "line_item": "total_receivable",
+            "period_type": "quarterly",
+            "start_year": 2023,
+            "start_quarter": 3,
+            "end_year": 2023,
+            "end_quarter": 3
+          },
+          "context": "Use 'total_receivable' to get the sum of all amounts owed to the company, including both current and non-current receivables.",
+          "disambiguation_note": "use 'total_receivable' (singular) not 'total_receivables' (plural) - the parameter name is singular.",
+          "tags": ["receivables", "disambiguation", "quarterly"]
+        },
+        {
+          "query": "what was <company_c>'s net interest expense for q2 2025?",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["GOOGL"],
+            "line_item": "net_interest_expense",
+            "period_type": "quarterly",
+            "start_year": 2025,
+            "start_quarter": 2,
+            "end_year": 2025,
+            "end_quarter": 2
+          },
+          "context": "for quarter-specific queries, include period_type='quarterly' and both start/end quarter fields.",
+          "disambiguation_note": "never use 'ltm' when the user asks for an explicit quarter.",
+          "tags": ["interest_expense", "quarterly", "period_params"]
+        },
+        {
+          "query": "get the current accounts receivable for <company_e>",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["META"],
+            "line_item": "accounts_receivable"
+          },
+          "context": "Use 'accounts_receivable' to get the amount of money owed to the company by customers for goods or services provided on credit.",
+          "disambiguation_note": "use 'accounts_receivable' not 'current_accounts_receivable' - the parameter name doesn't include 'current'.",
+          "tags": ["receivables", "current_assets", "disambiguation"]
+        },
+        {
+          "query": "show me the net income for <company_f> from 2022 to 2024",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["TSLA"],
+            "line_item": "net_income",
+            "start_year": 2022,
+            "end_year": 2024
+          },
+          "context": "Use 'net_income' to retrieve the company's bottom-line profit after all expenses, taxes, and interest have been deducted from total revenue.",
+          "disambiguation_note": "use 'net_income' not 'net_income_to_company' - the first is the standard parameter name.",
+          "tags": ["net_income", "disambiguation", "time_series"]
+        },
+        {
+          "query": "get the quarterly revenue for <company_g> in Q2 2025",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["NFLX"],
+            "line_item": "total_revenue",
+            "period_type": "quarterly",
+            "start_year": 2025,
+            "start_quarter": 2,
+            "end_year": 2025,
+            "end_quarter": 2
+          },
+          "context": "Use 'total_revenue' with 'period_type' set to 'quarterly' to get the company's top-line earnings for a specific quarter.",
+          "disambiguation_note": "when requesting quarterly data, always specify both start_quarter and end_quarter, and set period_type to 'quarterly'.",
+          "tags": ["revenue", "quarterly", "specific_period"]
+        },
+        {
+          "query": "retrieve foreign exchange adjustments ytd 2025 for <company_i>",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["V"],
+            "line_item": "foreign_exchange_adjustments",
+            "period_type": "ytd",
+            "start_year": 2025
+          },
+          "context": "use period_type='ytd' when the user explicitly asks for year-to-date amounts.",
+          "disambiguation_note": "the correct line item is 'foreign_exchange_adjustments', not 'foreign_exchange_rate_adjustments'.",
+          "tags": ["cta", "ytd", "fx"]
+        },
+        {
+          "query": "what were <company_j>'s divestitures from 2021 to 2024?",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["IBM"],
+            "line_item": "divestitures",
+            "start_year": 2021,
+            "end_year": 2024
+          },
+          "context": "range queries must include both start_year and end_year for bounded periods.",
+          "disambiguation_note": "do not substitute 'sale_of_real_estate' unless the user explicitly states real estate only.",
+          "tags": ["divestitures", "multi_year", "boundaries"]
+        },
+        {
+          "query": "show me the finance division debt non-current portion for <company_h>",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["JPM"],
+            "line_item": "finance_division_debt_non_current_portion"
+          },
+          "context": "Use 'finance_division_debt_non_current_portion' to get the long-term debt obligations specifically related to the company's financing division.",
+          "disambiguation_note": "use 'finance_division_debt_non_current_portion' not 'finance_division_debt_long_term_portion' - the first is the correct parameter name.",
+          "tags": ["finance_division", "debt", "non_current", "disambiguation"]
+        },
+        {
+          "query": "what is the short term deferred tax asset for <company_i>",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["V"],
+            "line_item": "short_term_deferred_tax_asset"
+          },
+          "context": "Use 'short_term_deferred_tax_asset' to get the portion of deferred tax assets expected to be realized within one year.",
+          "disambiguation_note": "use 'short_term_deferred_tax_asset' not 'deferred_tax_asset_current_portion' - the first is the correct parameter name.",
+          "tags": ["deferred_tax", "current_assets", "disambiguation"]
+        }
+        ,
+        {
+          "query": "provide total unusual items for <company_k> from 2019 through 2024",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["GE"],
+            "line_item": "total_unusual_items",
+            "start_year": 2019,
+            "end_year": 2024
+          },
+          "context": "use both start_year and end_year for multi-year roll-ups of unusual items.",
+          "disambiguation_note": "ensure 'end_year' is populated; leaving it null will truncate the range.",
+          "tags": ["unusual_items", "multi_year", "range"]
+        },
+        {
+          "query": "get basic eps for <company_l> in 2024",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["SBUX"],
+            "line_item": "basic_eps",
+            "start_year": 2024,
+            "end_year": 2024
+          },
+          "context": "even when period_type defaults to annual, include explicit start/end years for clarity.",
+          "disambiguation_note": "do not shift years; both start_year and end_year should match the requested year.",
+          "tags": ["eps", "annual", "year_alignment"]
+        },
+        {
+          "query": "fetch current income taxes payable quarterly from q2 2022 to q2 2023 for <company_m>",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["ORCL"],
+            "line_item": "current_income_taxes_payable",
+            "period_type": "quarterly",
+            "start_year": 2022,
+            "start_quarter": 2,
+            "end_year": 2023,
+            "end_quarter": 2
+          },
+          "context": "boundary quarters must be provided for both start and end when querying multiple quarters.",
+          "disambiguation_note": "ensure period_type='quarterly' whenever quarter fields are present.",
+          "tags": ["taxes", "quarterly", "bounded_range"]
         }
       ]
     }
