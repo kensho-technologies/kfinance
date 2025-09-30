@@ -15,11 +15,11 @@ class Prices(BaseModel):
     """
 
     date: str
-    open: Money
-    high: Money
-    low: Money
-    close: Money
-    volume: Shares
+    open: Money | None
+    high: Money | None
+    low: Money | None
+    close: Money | None  # For Consistency with other OHLC dtype
+    volume: Shares | None
 
 
 class PriceHistory(BaseModel):
@@ -58,7 +58,8 @@ class PriceHistory(BaseModel):
             currency = data["currency"]
             for capitalization in data["prices"]:
                 for key in ["open", "high", "low", "close"]:
-                    capitalization[key] = dict(unit=currency, value=capitalization[key])
+                    if capitalization[key] is not None:
+                        capitalization[key] = dict(unit=currency, value=capitalization[key])
         return data
 
 
