@@ -1,4 +1,7 @@
 # Changelog
+# 3.2.13
+- Fix Prices validator to handle null OHLC price data
+
 # 3.2.12
 - Remove multiples line item support
 
