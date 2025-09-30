@@ -18,7 +18,7 @@ class Prices(BaseModel):
     open: Money | None
     high: Money | None
     low: Money | None
-    close: Money | None # For Consistency with other OHLC dtype
+    close: Money | None  # For Consistency with other OHLC dtype
     volume: Shares | None
 
 
