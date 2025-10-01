@@ -1,4 +1,7 @@
 # Changelog
+# 3.2.14
+- Fix Capitalizations validator to handle nulls
+
 # 3.2.13
 - Fix Prices validator to handle null OHLC price data
 
