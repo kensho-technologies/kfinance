@@ -114,6 +114,29 @@
             "batching",
             "current_prices"
           ]
+        },
+        {
+          "query": "analyze META's stock performance across 2020 earnings and regulatory events",
+          "tool_name": "get_prices_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "META"
+            ],
+            "start_date": "2020-01-01",
+            "end_date": "2020-12-31",
+            "periodicity": "daily"
+          },
+          "context": "When a question references multiple events across a calendar year, cover the entire period with explicit start and end dates.",
+          "permissions_required": [
+            "PricingPermission"
+          ],
+          "disambiguation_note": "Use the full-year window instead of narrowing to a single month. Failure 208 resulted from truncating the date range.",
+          "tags": [
+            "event_window",
+            "daily_prices",
+            "inclusive_range",
+            "regulatory_events"
+          ]
         }
       ]
     }

@@ -30,6 +30,39 @@
             "Using 'ltm' period_type when the query specifies explicit quarters (use 'quarterly' with quarter parameters instead)", 
             "Leaving year or quarter parameters null when the user asks for explicit periods"
           ], 
+          "high_risk_confusions": [
+            "Use 'accumulated_depreciation'; avoid 'depreciation_and_amortization' when the user references cumulative balances", 
+            "Use 'cash_and_equivalents'; avoid plain 'cash' for balance sheet cash positions", 
+            "Use 'cash_from_financing'; avoid 'cash_from_financing_activities' for standard financing cash flow totals", 
+            "Use 'capital_expenditure'; avoid shorthand 'capex' for capital spending", 
+            "Use 'total_receivable'; avoid 'total_receivables' in any context", 
+            "Use 'preferred_stock_dividend'; avoid 'preferred_dividends_paid' for preferred payouts", 
+            "Use 'diluted_earning_per_share_excluding_extra_items'; avoid 'diluted_eps_excluding_extra_items'", 
+            "Use 'change_in_net_operating_assets'; avoid 'change_in_other_net_operating_assets' unless the user explicitly narrows it.", 
+            "Use 'interest_expense_finance_division'; avoid 'finance_division_interest_expense'", 
+            "Use 'finance_division_loans_and_leases_short_term'; avoid elongated variants like 'short_term_loans_and_leases_of_the_finance_division'"
+          ], 
+          "finance_division_aliases": {
+            "finance_division_loans_and_leases_short_term": [
+              "short_term_loans_and_leases_of_the_finance_division",
+              "finance_division_short_term_loans_and_leases"
+            ],
+            "finance_division_other_non_current_assets": [
+              "other_non_current_assets_of_the_finance_division"
+            ],
+            "finance_division_other_non_current_liabilities": [
+              "finance_division_other_long_term_liabilities"
+            ],
+            "finance_division_other_current_liabilities": [
+              "other_current_liabilities_of_the_finance_division"
+            ],
+            "finance_division_debt_non_current_portion": [
+              "finance_division_debt_long_term_portion"
+            ],
+            "interest_expense_finance_division": [
+              "finance_division_interest_expense"
+            ]
+          }, 
           "examples": {
             "restructuring_charges": "Charges related to restructuring initiatives such as layoffs or facility closures.", 
             "operating_expense_insurance_division": "Alternate label for insurance division operating expenses.", 
@@ -558,6 +591,11 @@
             "ytd": "Year-to-date aggregation matching the current fiscal year", 
             "annual": ""
           }, 
+          "boundary_callouts": {
+            "quarterly": "When the user specifies quarters (e.g., 'last three quarters', 'Q2 2025'), set period_type='quarterly' and populate both quarter parameters.",
+            "annual": "For multi-year spans you must still set start_year and end_year.",
+            "ytd": "Pair year-to-date requests with start_year equal to the referenced fiscal year; do not fall back to ltm." 
+          },
           "tool_name": "get_financial_line_item_from_identifiers"
         }, 
         {
@@ -578,6 +616,7 @@
             "2020": "", 
             "2023": ""
           }, 
+          "boundary_callouts": "Required for any historical range. Do not leave null alongside end_year", 
           "tool_name": "get_financial_line_item_from_identifiers"
         }, 
         {
@@ -597,6 +636,7 @@
             "2024": "", 
             "2023": ""
           }, 
+          "boundary_callouts": "Whenever start_year is provided or the user cites an ending period, populate end_year.", 
           "tool_name": "get_financial_line_item_from_identifiers"
         }, 
         {
@@ -620,6 +660,7 @@
             "2": "", 
             "4": ""
           }, 
+          "boundary_callouts": "If the user references a starting quarter, set start_quarter and align start_year.", 
           "tool_name": "get_financial_line_item_from_identifiers"
         }, 
         {
@@ -643,6 +684,7 @@
             "2": "", 
             "4": ""
           }, 
+          "boundary_callouts": "Always pair end_quarter with end_year and ensure it is populated when the query ends on a specific quarter.", 
           "tool_name": "get_financial_line_item_from_identifiers"
         }
       ]

@@ -39,6 +39,7 @@
             "Setting start_date without end_date for ranges",
             "Using future dates for historical data"
           ],
+          "boundary_callouts": "Always pair start_date with an end_date for ranged questions. Leave both empty only when the user explicitly asks for the latest quote.",
           "related_parameters": ["end_date", "periodicity"]
         },
         {
@@ -57,6 +58,7 @@
             "Using future dates beyond current date",
             "Not specifying end_date when start_date is provided"
           ],
+          "boundary_callouts": "The end_date should bracket the last event referenced in the question. See failures 201, 203, 208 where the window was truncated.",
           "related_parameters": ["start_date", "periodicity"]
         },
         {

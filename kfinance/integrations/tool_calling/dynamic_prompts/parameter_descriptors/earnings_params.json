@@ -64,6 +64,85 @@
           "related_parameters": []
         }
       ]
+    },
+    {
+      "tool_name": "get_earnings_call_datetimes_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_earnings_call_datetimes_from_identifiers",
+          "description": "List of company identifiers (tickers, ISINs, etc.) to retrieve earnings call timestamps for. Batch multiple identifiers when comparing call schedules across peers.",
+          "examples": {
+            "['AAPL']": "",
+            "['AAPL', 'MSFT']": ""
+          },
+          "common_mistakes": [
+            "Omitting identifiers entirely—this tool requires at least one company",
+            "Supplying key_dev_id instead of identifiers (use transcripts tool for key_dev_id)",
+            "Making separate calls instead of batching related companies"
+          ],
+          "related_parameters": [
+            "call_type",
+            "start_date",
+            "end_date"
+          ]
+        },
+        {
+          "parameter_name": "call_type",
+          "tool_name": "get_earnings_call_datetimes_from_identifiers",
+          "description": "Type of call to retrieve. For standard earnings calls use 'earnings_call'. Other types include 'investor_day' or 'conference_call' when available.",
+          "examples": {
+            "earnings_call": "Standard quarterly earnings call",
+            "investor_day": "Investor day presentations"
+          },
+          "common_mistakes": [
+            "Leaving call_type blank (defaults vary and may cause description errors)",
+            "Using natural language like 'earnings' or 'call' instead of the canonical option",
+            "Requesting transcript content (use transcripts tools)"
+          ],
+          "related_parameters": [
+            "identifiers",
+            "start_date",
+            "end_date"
+          ]
+        },
+        {
+          "parameter_name": "start_date",
+          "tool_name": "get_earnings_call_datetimes_from_identifiers",
+          "description": "Lower bound (inclusive) for call schedule queries. Use YYYY-MM-DD. Required when the user references specific historic windows (e.g., 'Q4 2023').",
+          "examples": {
+            "2023-10-01": "Quarter start for Q4 2023",
+            "2024-01-01": "Start of fiscal year 2024"
+          },
+          "common_mistakes": [
+            "Leaving start_date empty while providing end_date, causing mismatched ranges",
+            "Using natural language like 'last quarter' instead of explicit date",
+            "Setting start_date after end_date"
+          ],
+          "related_parameters": [
+            "end_date",
+            "identifiers"
+          ]
+        },
+        {
+          "parameter_name": "end_date",
+          "tool_name": "get_earnings_call_datetimes_from_identifiers",
+          "description": "Upper bound (inclusive) for call schedule queries. Use YYYY-MM-DD. Pair with start_date to cover the period requested.",
+          "examples": {
+            "2023-12-31": "Quarter end for Q4 2023",
+            "2024-03-31": "Quarter end for Q1 2024"
+          },
+          "common_mistakes": [
+            "Leaving end_date empty when start_date is provided", 
+            "Setting end_date before start_date",
+            "Using ambiguous phrases like 'quarter end' without exact dates"
+          ],
+          "related_parameters": [
+            "start_date",
+            "identifiers"
+          ]
+        }
+      ]
     }
   ]
 }

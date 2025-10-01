@@ -184,7 +184,7 @@
           "query": "get the depreciation and amortization for <company_a> for 2024",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["AAPL"],
+            "identifiers": ["TICKER"],
             "line_item": "depreciation_and_amortization",
             "start_year": 2024,
             "end_year": 2024
@@ -197,7 +197,7 @@
           "query": "pull accumulated depreciation for <company_b> from 2022 through 2024",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["MSFT"],
+            "identifiers": ["TICKER"],
             "line_item": "accumulated_depreciation",
             "start_year": 2022,
             "end_year": 2024
@@ -210,7 +210,7 @@
           "query": "show me the total debt to equity for <company_b> in 2024",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["MSFT"],
+            "identifiers": ["TICKER"],
             "line_item": "total_debt_to_equity",
             "start_year": 2024,
             "end_year": 2024
@@ -223,7 +223,7 @@
           "query": "what is the preferred stock dividend for <company_c> in 2023",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["GOOGL"],
+            "identifiers": ["TICKER"],
             "line_item": "preferred_stock_dividend",
             "start_year": 2023,
             "end_year": 2023
@@ -236,7 +236,7 @@
           "query": "show me the total receivables for <company_d> in 2023 Q3",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["AMZN"],
+            "identifiers": ["TICKER"],
             "line_item": "total_receivable",
             "period_type": "quarterly",
             "start_year": 2023,
@@ -252,7 +252,7 @@
           "query": "what was <company_c>'s net interest expense for q2 2025?",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["GOOGL"],
+            "identifiers": ["TICKER"],
             "line_item": "net_interest_expense",
             "period_type": "quarterly",
             "start_year": 2025,
@@ -268,7 +268,7 @@
           "query": "get the current accounts receivable for <company_e>",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["META"],
+            "identifiers": ["TICKER"],
             "line_item": "accounts_receivable"
           },
           "context": "Use 'accounts_receivable' to get the amount of money owed to the company by customers for goods or services provided on credit.",
@@ -279,7 +279,7 @@
           "query": "show me the net income for <company_f> from 2022 to 2024",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["TSLA"],
+            "identifiers": ["TICKER"],
             "line_item": "net_income",
             "start_year": 2022,
             "end_year": 2024
@@ -292,7 +292,7 @@
           "query": "get the quarterly revenue for <company_g> in Q2 2025",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["NFLX"],
+            "identifiers": ["TICKER"],
             "line_item": "total_revenue",
             "period_type": "quarterly",
             "start_year": 2025,
@@ -308,7 +308,7 @@
           "query": "retrieve foreign exchange adjustments ytd 2025 for <company_i>",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["V"],
+            "identifiers": ["TICKER"],
             "line_item": "foreign_exchange_adjustments",
             "period_type": "ytd",
             "start_year": 2025
@@ -321,7 +321,7 @@
           "query": "what were <company_j>'s divestitures from 2021 to 2024?",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["IBM"],
+            "identifiers": ["TICKER"],
             "line_item": "divestitures",
             "start_year": 2021,
             "end_year": 2024
@@ -334,7 +334,7 @@
           "query": "show me the finance division debt non-current portion for <company_h>",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["JPM"],
+            "identifiers": ["TICKER"],
             "line_item": "finance_division_debt_non_current_portion"
           },
           "context": "Use 'finance_division_debt_non_current_portion' to get the long-term debt obligations specifically related to the company's financing division.",
@@ -345,7 +345,7 @@
           "query": "what is the short term deferred tax asset for <company_i>",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["V"],
+            "identifiers": ["TICKER"],
             "line_item": "short_term_deferred_tax_asset"
           },
           "context": "Use 'short_term_deferred_tax_asset' to get the portion of deferred tax assets expected to be realized within one year.",
@@ -357,7 +357,7 @@
           "query": "provide total unusual items for <company_k> from 2019 through 2024",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["GE"],
+            "identifiers": ["TICKER"],
             "line_item": "total_unusual_items",
             "start_year": 2019,
             "end_year": 2024
@@ -370,7 +370,7 @@
           "query": "get basic eps for <company_l> in 2024",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["SBUX"],
+            "identifiers": ["TICKER"],
             "line_item": "basic_eps",
             "start_year": 2024,
             "end_year": 2024
@@ -383,7 +383,7 @@
           "query": "fetch current income taxes payable quarterly from q2 2022 to q2 2023 for <company_m>",
           "tool_name": "get_financial_line_item_from_identifiers",
           "parameters": {
-            "identifiers": ["ORCL"],
+            "identifiers": ["TICKER"],
             "line_item": "current_income_taxes_payable",
             "period_type": "quarterly",
             "start_year": 2022,
@@ -394,6 +394,65 @@
           "context": "boundary quarters must be provided for both start and end when querying multiple quarters.",
           "disambiguation_note": "ensure period_type='quarterly' whenever quarter fields are present.",
           "tags": ["taxes", "quarterly", "bounded_range"]
+        },
+        {
+          "query": "report the cash and equivalents for <company_n> at year end 2024",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["TICKER"],
+            "line_item": "cash_and_equivalents",
+            "start_year": 2024,
+            "end_year": 2024
+          },
+          "context": "Balance sheet cash positions must use the canonical 'cash_and_equivalents' line item to include cash plus near-cash investments.",
+          "disambiguation_note": "Avoid the shorter 'cash' alias when a more appropriate line item is available.",
+          "tags": ["cash", "balance_sheet", "disambiguation"]
+        },
+        {
+          "query": "measure finance division interest expense for <company_o> over the last three reported quarters",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["TICKER"],
+            "line_item": "interest_expense_finance_division",
+            "period_type": "quarterly",
+            "start_year": 2024,
+            "start_quarter": 4,
+            "end_year": 2025,
+            "end_quarter": 2
+          },
+          "context": "Finance-division metrics retain the `finance_division_` prefix. Populate all quarter boundaries when covering multiple sequential quarters.",
+          "permissions_required": [
+            "StatementsPermission",
+            "PrivateCompanyFinancialsPermission"
+          ],
+          "disambiguation_note": "Use 'interest_expense_finance_division', not 'finance_division_interest_expense'. Failures 60 and 142 came from swapping the order.",
+          "tags": ["finance_division", "interest_expense", "quarterly", "disambiguation"]
+        },
+        {
+          "query": "show the diluted eps excluding extraordinary items for <company_p> in 2023 and 2024",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["TICKER"],
+            "line_item": "diluted_earning_per_share_excluding_extra_items",
+            "start_year": 2023,
+            "end_year": 2024
+          },
+          "context": "Explicit multi-year EPS comparisons require both start_year and end_year.",
+          "disambiguation_note": "The canonical parameter is 'diluted_earning_per_share_excluding_extra_items'.",
+          "tags": ["eps", "multi_year", "disambiguation"]
+        },
+        {
+          "query": "provide the net change in cash for <company_q> across fiscal 2022 and 2023",
+          "tool_name": "get_financial_line_item_from_identifiers",
+          "parameters": {
+            "identifiers": ["TICKER"],
+            "line_item": "net_change_in_cash",
+            "start_year": 2022,
+            "end_year": 2023
+          },
+          "context": "Multi-year cash flow roll-ups must include both boundary years to avoid null parameters.",
+          "disambiguation_note": "Use the canonical 'net_change_in_cash'.",
+          "tags": ["cash_flow", "multi_year", "boundaries", "disambiguation"]
         }
       ]
     }

@@ -9,7 +9,7 @@
           "tool_name": "get_earnings_from_identifiers",
           "parameters": {
             "identifiers": [
-              "AAPL"
+              "TICKER"
             ]
           },
           "context": "use get_earnings_from_identifiers to get the complete list of all earnings announcements for companies.",
@@ -29,8 +29,8 @@
           "tool_name": "get_earnings_from_identifiers",
           "parameters": {
             "identifiers": [
-              "MSFT",
-              "GOOGL"
+              "TICKER",
+              "TICKER"
             ]
           },
           "context": "get comprehensive earnings history for multiple companies in one call.",
@@ -55,7 +55,7 @@
           "tool_name": "get_latest_earnings_from_identifiers",
           "parameters": {
             "identifiers": [
-              "AAPL"
+              "TICKER"
             ]
           },
           "context": "use get_latest_earnings_from_identifiers for the most recent earnings announcement only.",
@@ -74,7 +74,7 @@
           "tool_name": "get_latest_earnings_from_identifiers",
           "parameters": {
             "identifiers": [
-              "MSFT"
+              "TICKER"
             ]
           },
           "context": "get the date and details of the most recent earnings report.",
@@ -98,7 +98,7 @@
           "tool_name": "get_next_earnings_from_identifiers",
           "parameters": {
             "identifiers": [
-              "AAPL"
+              "TICKER"
             ]
           },
           "context": "use get_next_earnings_from_identifiers for upcoming/future earnings announcements.",
@@ -118,7 +118,7 @@
           "tool_name": "get_next_earnings_from_identifiers",
           "parameters": {
             "identifiers": [
-              "GOOGL"
+              "TICKER"
             ]
           },
           "context": "get the scheduled date for the next earnings announcement.",
@@ -130,6 +130,57 @@
             "next_earnings",
             "future_report",
             "scheduled_announcement"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_earnings_call_datetimes_from_identifiers",
+      "examples": [
+        {
+          "query": "when did <company_a> and <company_b> host their Q4 2023 earnings calls?",
+          "tool_name": "get_earnings_call_datetimes_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "TICKER",
+              "TICKER"
+            ],
+            "call_type": "earnings_call",
+            "start_date": "2023-10-01",
+            "end_date": "2023-12-31"
+          },
+          "context": "Use this tool to retrieve scheduled or completed earnings call timestamps. Provide a bounded date window when the question references a specific quarter.",
+          "permissions_required": [
+            "EarningsPermission",
+            "TranscriptsPermission"
+          ],
+          "disambiguation_note": "Include both start_date and end_date to cover the entire quarter. The tool expects 'call_type'='earnings_call' for standard earnings call timestamps.",
+          "tags": [
+            "earnings_calls",
+            "timestamps",
+            "bounded_range",
+            "multi_company"
+          ]
+        },
+        {
+          "query": "what time is <company_c>'s upcoming earnings call?",
+          "tool_name": "get_earnings_call_datetimes_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "TICKER"
+            ],
+            "call_type": "earnings_call"
+          },
+          "context": "If the user asks for the scheduled time of the next call without specifying a range, omit date filters to receive the next known call.",
+          "permissions_required": [
+            "EarningsPermission",
+            "TranscriptsPermission"
+          ],
+          "disambiguation_note": "Leave dates blank for the next upcoming call. Add date bounds to avoid tool_description_not_found errors when targeting historical windows.",
+          "tags": [
+            "earnings_calls",
+            "upcoming",
+            "scheduling"
           ]
         }
       ]
