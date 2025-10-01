@@ -66,7 +66,8 @@ class Capitalizations(BaseModel):
             currency = data["currency"]
             for capitalization in data["market_caps"]:
                 for key in ["market_cap", "tev"]:
-                    capitalization[key] = dict(unit=currency, value=capitalization[key])
+                    if capitalization[key] is not None:
+                        capitalization[key] = dict(unit=currency, value=capitalization[key])
         return data
 
     def model_dump_json_single_metric(
