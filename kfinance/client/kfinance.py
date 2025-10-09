@@ -12,7 +12,6 @@ from urllib.parse import urljoin
 import webbrowser
 
 import google.ai.generativelanguage_v1beta.types as gapic
-from kfinance.domains.rounds_of_funding.rounds_of_funding_models import RoundOfFundingInfo, RoundOfFundingInfoTimeline
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_google_genai._function_utils import convert_to_genai_function_declarations
 import pandas as pd
@@ -48,6 +47,10 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models imp
     MergerTimelineElement,
 )
 from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
+from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
+    RoundOfFundingInfo,
+    RoundOfFundingInfoTimeline,
+)
 
 
 if TYPE_CHECKING:
@@ -667,7 +670,6 @@ class Company(CompanyFunctionsMetaClass):
         return self._rounds_of_funding
 
 
-
 class ParticipantInMerger:
     """A Company that has been involved in a transaction is a company that may have been advised."""
 
@@ -710,10 +712,16 @@ class ParticipantInMerger:
             for advisor in advisors
         ]
 
+
 class ParticipantInRoF:
     """A Company that has been involved in a round of funding is a company that may have been advised."""
+
     def __init__(
-        self, kfinance_api_client: KFinanceApiClient, transaction_id: int, company: Company, target: bool,
+        self,
+        kfinance_api_client: KFinanceApiClient,
+        transaction_id: int,
+        company: Company,
+        target: bool,
     ):
         """Initialize the AdvisedCompany object
 
@@ -722,7 +730,7 @@ class ParticipantInRoF:
         :param transaction_id: The S&P Global CIP Transaction Id
         :type transaction_id: int
         :param target: If the partipant is the raiser, return True. If the participant is an investor, return False.
-        :type target: bool        
+        :type target: bool
         :param company: The company object
         :type company: Company
         """
@@ -744,9 +752,11 @@ class ParticipantInRoF:
                 transaction_id=self.transaction_id,
             )["advisors"]
         else:
-            advisors = self.kfinance_api_client.fetch_advisors_for_company_investing_in_round_of_funding(
-                transaction_id=self.transaction_id, advised_company_id=self._company.company_id
-            )["advisors"]
+            advisors = (
+                self.kfinance_api_client.fetch_advisors_for_company_investing_in_round_of_funding(
+                    transaction_id=self.transaction_id, advised_company_id=self._company.company_id
+                )["advisors"]
+            )
         return [
             Advisor(
                 advisor_type_name=str(advisor["advisor_type_name"]),
@@ -1322,6 +1332,7 @@ class BusinessRelationships(NamedTuple):
         }
         return f"{type(self).__module__}.{type(self).__qualname__} of {str(dictionary)}"
 
+
 class RoundOfFunding:
     """An object that represents a round of funding of a company"""
 
@@ -1348,7 +1359,9 @@ class RoundOfFunding:
     def round_of_funding_info(self) -> RoundOfFundingInfo:
         """Property for the combined information in the round of funding."""
         if not self._round_of_funding_info:
-            self._round_of_funding_info = self.kfinance_api_client.fetch_round_of_funding_info(self.transaction_id)
+            self._round_of_funding_info = self.kfinance_api_client.fetch_round_of_funding_info(
+                self.transaction_id
+            )
         return self._round_of_funding_info
 
     @property
@@ -1387,6 +1400,7 @@ class RoundOfFunding:
                 for company in self.round_of_funding_info.participants.investors
             ],
         }
+
 
 class MergerOrAcquisition:
     """An object that represents a merger or an acquisition of a company."""
@@ -1661,6 +1675,7 @@ class MergersAndAcquisitions(set):
             )
             for id_and_title in ids_and_titles
         )
+
 
 @add_methods_of_singular_class_to_iterable_class(RoundOfFunding)
 class RoundsOfFunding(set):
@@ -2042,9 +2057,7 @@ class Client:
         rounds_of_funding = self.kfinance_api_client.fetch_rounds_of_funding_for_company(
             company_id=company_id
         ).model_dump(mode="json")
-        return RoundsOfFunding(
-                self.kfinance_api_client, rounds_of_funding["rounds_of_funding"]
-        )
+        return RoundsOfFunding(self.kfinance_api_client, rounds_of_funding["rounds_of_funding"])
 
     @staticmethod
     def get_latest(use_local_timezone: bool = True) -> LatestPeriods:

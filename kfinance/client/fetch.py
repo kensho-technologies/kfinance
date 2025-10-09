@@ -31,7 +31,10 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models imp
     MergersResp,
 )
 from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
-from kfinance.domains.rounds_of_funding.rounds_of_funding_models import RoundOfFundingInfo, RoundsOfFundingResp
+from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
+    RoundOfFundingInfo,
+    RoundsOfFundingResp,
+)
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.domains.statements.statement_models import StatementsResp
 
@@ -714,12 +717,12 @@ class KFinanceApiClient:
 
         :param transaction_id: The transaction ID to filter on.
         :type transaction_id: int
-        :return: A RoundOfFundingInfo, containing the timeline, participants, transaction, and security of the round. 
+        :return: A RoundOfFundingInfo, containing the timeline, participants, transaction, and security of the round.
         :rtype: RoundOfFundingInfo
         """
         url = f"{self.url_base}fundingrounds/info/{transaction_id}"
         return RoundOfFundingInfo.model_validate(self.fetch(url))
-    
+
     def fetch_advisors_for_company_raising_round_of_funding(
         self,
         transaction_id: int,
@@ -752,4 +755,3 @@ class KFinanceApiClient:
         """
         url = f"{self.url_base}fundingrounds/info/{transaction_id}/advisors/investor/{advised_company_id}"
         return self.fetch(url)
-    

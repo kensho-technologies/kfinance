@@ -1,15 +1,16 @@
 from textwrap import dedent
 from typing import Type
 
-from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import AdvisorResp
 from pydantic import BaseModel, Field
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
-from kfinance.client.kfinance import Company, ParticipantInMerger, ParticipantInRoF
+from kfinance.client.kfinance import Company, ParticipantInRoF
 from kfinance.client.permission_models import Permission
-from kfinance.domains.rounds_of_funding.rounds_of_funding_models import(
+from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import AdvisorResp
+from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
     RoundOfFundingInfo,
-    RoundsOfFundingResp,RoundsofFundingRole
+    RoundsOfFundingResp,
+    RoundsofFundingRole,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -23,6 +24,7 @@ class GetRoundsofFundingFromIdentifiersArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
     role: RoundsofFundingRole
 
+
 class GetRoundsOfFundingFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, RoundsOfFundingResp]
 
@@ -35,7 +37,9 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = GetRoundsofFundingFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    def _run(self, identifiers: list[str], role: RoundsofFundingRole) -> GetRoundsOfFundingFromIdentifiersResp:
+    def _run(
+        self, identifiers: list[str], role: RoundsofFundingRole
+    ) -> GetRoundsOfFundingFromIdentifiersResp:
         """Sample Response:
 
         {
@@ -63,15 +67,17 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
         id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
         tasks = [
             Task(
-                func=api_client.fetch_rounds_of_funding_for_company if role is RoundsofFundingRole.company_raising_funds else api_client.fetch_rounds_of_funding_for_investing_company,
+                func=api_client.fetch_rounds_of_funding_for_company
+                if role is RoundsofFundingRole.company_raising_funds
+                else api_client.fetch_rounds_of_funding_for_investing_company,
                 kwargs=dict(company_id=id_triple.company_id),
                 result_key=identifier,
             )
             for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
         ]
 
-        rounds_of_funding_responses: dict[str, RoundsOfFundingResp] = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
+        rounds_of_funding_responses: dict[str, RoundsOfFundingResp] = (
+            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
         )
         return GetRoundsOfFundingFromIdentifiersResp(
             results=rounds_of_funding_responses, errors=list(id_triple_resp.errors.values())
@@ -79,7 +85,10 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
 
 
 class GetRoundOfFundingInfoFromTransactionIdArgs(BaseModel):
-    transaction_id: int | None = Field(description="The transaction ID of the round of funding.", default=None)
+    transaction_id: int | None = Field(
+        description="The transaction ID of the round of funding.", default=None
+    )
+
 
 class GetRoundOfFundingInfoFromTransactionId(KfinanceTool):
     name: str = "get_round_of_funding_info_from_transaction_id"
@@ -107,7 +116,7 @@ class GetAdvisorsForCompanyInRoundOfFundingFromIdentifierResp(ToolRespWithErrors
 class GetAdvisorsForCompanyInRoundOfFundingFromIdentifier(KfinanceTool):
     name: str = "get_advisors_for_company_in_round_of_funding_from_identifier"
     description: str = dedent("""
-        "Returns a list of advisor companies that provided advisory services to the specified company identifier that is either of `role` company_raising_funds or company_investing_in_round_of_funding during a round of funding. Use this tool to answer questions like 
+        "Returns a list of advisor companies that provided advisory services to the specified company identifier that is either of `role` company_raising_funds or company_investing_in_round_of_funding during a round of funding. Use this tool to answer questions like
                               'Who advised Uber in their Series B?', 'Who advised SR One on their investment in Avenzo Therapeutics's Series B?'."
     """).strip()
 
@@ -127,14 +136,14 @@ class GetAdvisorsForCompanyInRoundOfFundingFromIdentifier(KfinanceTool):
 
         id_triple = id_triple_resp.identifiers_to_id_triples[identifier]
 
-        round_of_funding = ParticipantInRoF (
+        round_of_funding = ParticipantInRoF(
             kfinance_api_client=api_client,
             transaction_id=transaction_id,
             company=Company(
                 kfinance_api_client=api_client,
                 company_id=id_triple.company_id,
             ),
-            target=True if role is RoundsofFundingRole.company_raising_funds else False
+            target=True if role is RoundsofFundingRole.company_raising_funds else False,
         )
 
         advisors = round_of_funding.advisors
