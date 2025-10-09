@@ -108,8 +108,9 @@ class GetAdvisorsForCompanyInRoundOfFundingFromIdentifier(KfinanceTool):
     name: str = "get_advisors_for_company_in_round_of_funding_from_identifier"
     description: str = dedent("""
         "Returns a list of advisor companies that provided advisory services to the specified company identifier that is either of `role` company_raising_funds or company_investing_in_round_of_funding during a round of funding. Use this tool to answer questions like 
-                              'Who advised S&P Global during their purchase of Kensho?', 'Which firms advised Ben & Jerry's in their acquisition?'."
+                              'Who advised Uber in their Series B?', 'Who advised SR One on their investment in Avenzo Therapeutics's Series B?'."
     """).strip()
+
     args_schema: Type[BaseModel] = GetAdvisorsForCompanyInRoundOfFundingFromIdentifierResp
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
