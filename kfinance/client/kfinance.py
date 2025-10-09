@@ -14,7 +14,6 @@ import webbrowser
 import google.ai.generativelanguage_v1beta.types as gapic
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_google_genai._function_utils import convert_to_genai_function_declarations
-import pandas as pd
 from PIL.Image import Image, open as image_open
 
 from kfinance.client.batch_request_handling import add_methods_of_singular_class_to_iterable_class
@@ -191,7 +190,7 @@ class TradingItem:
                 datetime.strptime(start_date, "%Y-%m-%d").date()
                 > datetime.strptime(end_date, "%Y-%m-%d").date()
             ):
-                return pd.DataFrame()
+                return image_open(BytesIO())
 
         content = self.kfinance_api_client.fetch_price_chart(
             trading_item_id=self.trading_item_id,
