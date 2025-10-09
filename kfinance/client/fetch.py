@@ -31,6 +31,7 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models imp
     MergersResp,
 )
 from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
+from kfinance.domains.rounds_of_funding.rounds_of_funding_models import RoundOfFundingInfo, RoundsOfFundingResp
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.domains.statements.statement_models import StatementsResp
 
@@ -676,3 +677,79 @@ class KFinanceApiClient:
         """
         url = f"{self.url_base}merger/info/{transaction_id}/advisors/{advised_company_id}"
         return self.fetch(url)
+
+    def fetch_rounds_of_funding_for_company(
+        self,
+        company_id: int,
+    ) -> RoundsOfFundingResp:
+        """Fetches the rounds of funding the specified company that was raising rounds of funding.
+
+        :param company_id: The target company ID to filter on.
+        :type company_id: int
+        :return: A RoundsOfFundingResp, containing transaction id, closed_date, and funding_round_notes for each round of funding.
+        :rtype: RoundsOfFundingResp
+        """
+        url = f"{self.url_base}fundingrounds/target/{company_id}"
+        return RoundsOfFundingResp.model_validate(self.fetch(url))
+
+    def fetch_rounds_of_funding_for_investing_company(
+        self,
+        company_id: int,
+    ) -> RoundsOfFundingResp:
+        """Fetches the rounds of funding the specified company invested in.
+
+        :param company_id: The company ID to filter on that invested in rounds of funding.
+        :type company_id: int
+        :return: A RoundsOfFundingResp, containing transaction id, closed_date, and funding_round_notes for each round of funding.
+        :rtype: RoundsOfFundingResp
+        """
+        url = f"{self.url_base}fundingrounds/investor/{company_id}"
+        return RoundsOfFundingResp.model_validate(self.fetch(url))
+
+    def fetch_round_of_funding_info(
+        self,
+        transaction_id: int,
+    ) -> RoundOfFundingInfo:
+        """Fetches detailed information about a round of funding, including the timeline, the participants, transaction, and security of the round.
+
+        :param transaction_id: The transaction ID to filter on.
+        :type transaction_id: int
+        :return: A RoundOfFundingInfo, containing the timeline, participants, transaction, and security of the round. 
+        :rtype: RoundOfFundingInfo
+        """
+        url = f"{self.url_base}fundingrounds/info/{transaction_id}"
+        return RoundOfFundingInfo.model_validate(self.fetch(url))
+    
+    def fetch_advisors_for_company_raising_round_of_funding(
+        self,
+        transaction_id: int,
+    ) -> dict[str, list[dict[str, int | str]]]:
+        """Fetch information about the advisors and their types for a company raising a round of funding.
+
+        Returns a dictionary of shape {"advisors": [{"advisor_company_id": <advisor_company_id>, "advisor_company_name": <advisor_company_name>, "advisor_type_name": <advisor_type_name>},...]}
+        :param transaction_id: The transaction ID to filter on.
+        :type transaction_id: int
+        :return: A dictionary containing the list of companies advising a company raising a round of funding, along with their advisor type.
+        :rtype: dict[str, list[dict[str, int | str]]]
+        """
+        url = f"{self.url_base}fundingrounds/info/{transaction_id}/advisors/target"
+        return self.fetch(url)
+
+    def fetch_advisors_for_company_investing_in_round_of_funding(
+        self,
+        transaction_id: int,
+        advised_company_id: int,
+    ) -> dict[str, list[dict[str, int | str]]]:
+        """Fetch information about the advisors and their types for a company buying into a round of funding.
+
+        Returns a dictionary of shape {"advisors": [{"advisor_company_id": <advisor_company_id>, "advisor_company_name": <advisor_company_name>, "advisor_type_name": <advisor_type_name>},...]}
+        :param transaction_id: The transaction ID to filter on.
+        :type transaction_id: int
+        :param advised_company_id: The company ID investing in the round of funding.
+        :type advised_company_id: int
+        :return: A dictionary containing the list of companies advising a company involved with a round of funding, along with their advisor type.
+        :rtype: dict[str, list[dict[str, int | str]]]
+        """
+        url = f"{self.url_base}fundingrounds/info/{transaction_id}/advisors/investor/{advised_company_id}"
+        return self.fetch(url)
+    
