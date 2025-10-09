@@ -1,3 +1,5 @@
+from typing import Type
+
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.permission_models import Permission
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
@@ -20,7 +22,7 @@ class GetCompetitorsFromIdentifiersResp(ToolRespWithErrors):
 class GetCompetitorsFromIdentifiers(KfinanceTool):
     name: str = "get_competitors_from_identifiers"
     description: str = "Retrieves a list of company_id and company_name that are competitors for a list of companies, optionally filtered by the source of the competitor information."
-    args_schema = GetCompetitorsFromIdentifiersArgs
+    args_schema: Type[GetCompetitorsFromIdentifiersArgs] = GetCompetitorsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.CompetitorsPermission}
 
     def _run(
