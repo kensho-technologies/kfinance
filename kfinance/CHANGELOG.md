@@ -1,4 +1,7 @@
 # Changelog
+# 3.3.0
+- Add Rounds of Funding tools
+
 # 3.2.14
 - Fix Capitalizations validator to handle nulls
 

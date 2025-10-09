@@ -69,4 +69,8 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetAdvisorsForCompanyInTransactionFromIdentifier,
     GetMergerInfoFromTransactionId,
     GetMergersFromIdentifiers,
+    # Rounds of Funding,
+    # GetRoundsOfFundingFromIdentifiers,
+    # GetRoundOfFundingInfoFromTransactionId,
+    # GetAdvisorsForCompanyInRoundOfFundingFromIdentifier,
 ]
