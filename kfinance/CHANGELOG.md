@@ -4,11 +4,9 @@
 - Add smart line item validation with intelligent suggestions and descriptions to reduce token consumption by 75%
 
 # 3.2.14
-
 - Fix Capitalizations validator to handle nulls
 
 # 3.2.13
-
 - Fix Prices validator to handle null OHLC price data
 
 # 3.2.12
