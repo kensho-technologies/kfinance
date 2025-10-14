@@ -1,6 +1,6 @@
 from difflib import SequenceMatcher
 from textwrap import dedent
-from typing import Dict, Literal, Type
+from typing import Literal, Type
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -9,8 +9,9 @@ from kfinance.client.models.date_and_period_models import PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
     LINE_ITEM_NAMES_AND_ALIASES,
-    LINE_ITEMS,
+    LINE_ITEM_TO_DESCRIPTIONS_MAP,
     LineItemResponse,
+    LineItemScore,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -20,27 +21,9 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
-def _load_line_item_descriptors() -> Dict[str, str]:
-    """Load line item descriptions from LINE_ITEMS data structure."""
-    descriptors = {}
-
-    for item in LINE_ITEMS:
-        name = item["name"]
-        description = item.get("description", "")
-        if description:  # Only include items with descriptions
-            descriptors[name] = description
-
-        # Also include aliases with the same description
-        for alias in item["aliases"]:
-            if description:
-                descriptors[alias] = description
-
-    return descriptors
-
-
 def _find_similar_line_items(
     invalid_item: str, descriptors: dict[str, str], max_suggestions: int = 8
-) -> list[tuple[str, str]]:
+) -> list[LineItemScore]:
     """Find similar line items using keyword matching and string similarity.
 
     Args:
@@ -49,13 +32,13 @@ def _find_similar_line_items(
         max_suggestions: Maximum number of suggestions to return
 
     Returns:
-        List of tuples containing (line_item_name, description) for the best matches
+        List of LineItemScore objects for the best matches
     """
     if not descriptors:
         return []
 
     invalid_lower = invalid_item.lower()
-    scores = []
+    scores: list[LineItemScore] = []
 
     for line_item, description in descriptors.items():
         # Calculate similarity scores
@@ -81,26 +64,23 @@ def _find_similar_line_items(
             + description_match_score * 0.2  # Keyword matches in description
         )
 
-        scores.append((total_score, line_item, description))
+        scores.append(LineItemScore(name=line_item, description=description, score=total_score))
 
     # Sort by score (descending) and return top matches
-    scores.sort(reverse=True, key=lambda x: x[0])
-    return [
-        (item, desc) for _, item, desc in scores[:max_suggestions] if _ > 0.1
-    ]  # Filter out very low scores
+    scores.sort(reverse=True, key=lambda x: x.score)
+    return [item for item in scores[:max_suggestions] if item.score > 0.1]
 
 
 def _smart_line_item_validator(v: str) -> str:
     """Custom validator that provides intelligent suggestions for invalid line items."""
     if v not in LINE_ITEM_NAMES_AND_ALIASES:
-        # Load descriptors and find similar items
-        descriptors = _load_line_item_descriptors()
-        suggestions = _find_similar_line_items(v, descriptors)
+        # Find similar items using pre-computed descriptors
+        suggestions = _find_similar_line_items(v, LINE_ITEM_TO_DESCRIPTIONS_MAP)
 
         if suggestions:
             suggestion_text = "\n\nDid you mean one of these?\n"
-            for item, desc in suggestions:
-                suggestion_text += f"  • '{item}': {desc}\n"
+            for item in suggestions:
+                suggestion_text += f"  • '{item.name}': {item.description}\n"
 
             error_msg = f"Invalid line_item '{v}'.{suggestion_text}"
         else:
@@ -129,21 +109,8 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
         """Custom validator that provides intelligent suggestions for invalid line items."""
         if isinstance(values, dict) and "line_item" in values:
             line_item = values["line_item"]
-            if line_item not in LINE_ITEM_NAMES_AND_ALIASES:
-                # Load descriptors and find similar items
-                descriptors = _load_line_item_descriptors()
-                suggestions = _find_similar_line_items(line_item, descriptors)
-
-                if suggestions:
-                    suggestion_text = "\n\nDid you mean one of these?\n"
-                    for item, desc in suggestions:
-                        suggestion_text += f"  • '{item}': {desc}\n"
-
-                    error_msg = f"Invalid line_item '{line_item}'.{suggestion_text}"
-                else:
-                    error_msg = f"Invalid line_item '{line_item}'. Please refer to the tool documentation for valid options."
-
-                raise ValueError(error_msg)
+            # Use the helper function to validate and provide suggestions
+            _smart_line_item_validator(line_item)
         return values
 
 

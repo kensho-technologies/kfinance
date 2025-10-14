@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from decimal import Decimal
 from itertools import chain
 from typing import TypedDict
@@ -7,6 +8,15 @@ from pydantic import BaseModel
 
 class LineItemResponse(BaseModel):
     line_item: dict[str, Decimal | None]
+
+
+@dataclass
+class LineItemScore:
+    """Represents a line item match with its similarity score."""
+
+    name: str
+    description: str
+    score: float
 
 
 class LineItemType(TypedDict):
@@ -1888,3 +1898,25 @@ LINE_ITEMS: list[LineItemType] = [
 LINE_ITEM_NAMES_AND_ALIASES: list[str] = list(
     chain(*[[line_item["name"]] + list(line_item["aliases"]) for line_item in LINE_ITEMS])
 )
+
+
+def _get_line_item_to_descriptions_map() -> dict[str, str]:
+    """Build line item to descriptions mapping from LINE_ITEMS data structure."""
+    descriptors = {}
+
+    for item in LINE_ITEMS:
+        name = item["name"]
+        description = item.get("description", "")
+        if description:  # Only include items with descriptions
+            descriptors[name] = description
+
+        # Also include aliases with the same description
+        for alias in item["aliases"]:
+            if description:
+                descriptors[alias] = description
+
+    return descriptors
+
+
+# Pre-computed constant to avoid recreating on each validation error
+LINE_ITEM_TO_DESCRIPTIONS_MAP: dict[str, str] = _get_line_item_to_descriptions_map()
