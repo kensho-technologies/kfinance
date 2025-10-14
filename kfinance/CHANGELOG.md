@@ -1,4 +1,8 @@
 # Changelog
+
+## v3.2.15
+- Add smart line item validation with intelligent suggestions and descriptions to reduce token consumption by 75%
+
 # 3.2.14
 - Fix Capitalizations validator to handle nulls
 

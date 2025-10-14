@@ -1,14 +1,17 @@
+from difflib import SequenceMatcher
 from textwrap import dedent
 from typing import Literal, Type
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.models.date_and_period_models import PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
     LINE_ITEM_NAMES_AND_ALIASES,
+    LINE_ITEM_TO_DESCRIPTIONS_MAP,
     LineItemResponse,
+    LineItemScore,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -16,6 +19,75 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolRespWithErrors,
     ValidQuarter,
 )
+
+
+def _find_similar_line_items(
+    invalid_item: str, descriptors: dict[str, str], max_suggestions: int = 8
+) -> list[LineItemScore]:
+    """Find similar line items using keyword matching and string similarity.
+
+    Args:
+        invalid_item: The invalid line item provided by the user
+        descriptors: Dictionary mapping line item names to descriptions
+        max_suggestions: Maximum number of suggestions to return
+
+    Returns:
+        List of LineItemScore objects for the best matches
+    """
+    if not descriptors:
+        return []
+
+    invalid_lower = invalid_item.lower()
+    scores: list[LineItemScore] = []
+
+    for line_item, description in descriptors.items():
+        # Calculate similarity scores
+        name_similarity = SequenceMatcher(None, invalid_lower, line_item.lower()).ratio()
+
+        # Check for keyword matches in the line item name
+        invalid_words = set(invalid_lower.replace("_", " ").split())
+        item_words = set(line_item.lower().replace("_", " ").split())
+        keyword_match_score = len(invalid_words.intersection(item_words)) / max(
+            len(invalid_words), 1
+        )
+
+        # Check for keyword matches in description
+        description_words = set(description.lower().split())
+        description_match_score = len(invalid_words.intersection(description_words)) / max(
+            len(invalid_words), 1
+        )
+
+        # Combined score (weighted)
+        total_score = (
+            name_similarity * 0.5  # Direct name similarity
+            + keyword_match_score * 0.3  # Keyword matches in name
+            + description_match_score * 0.2  # Keyword matches in description
+        )
+
+        scores.append(LineItemScore(name=line_item, description=description, score=total_score))
+
+    # Sort by score (descending) and return top matches
+    scores.sort(reverse=True, key=lambda x: x.score)
+    return [item for item in scores[:max_suggestions] if item.score > 0.1]
+
+
+def _smart_line_item_validator(v: str) -> str:
+    """Custom validator that provides intelligent suggestions for invalid line items."""
+    if v not in LINE_ITEM_NAMES_AND_ALIASES:
+        # Find similar items using pre-computed descriptors
+        suggestions = _find_similar_line_items(v, LINE_ITEM_TO_DESCRIPTIONS_MAP)
+
+        if suggestions:
+            suggestion_text = "\n\nDid you mean one of these?\n"
+            for item in suggestions:
+                suggestion_text += f"  • '{item.name}': {item.description}\n"
+
+            error_msg = f"Invalid line_item '{v}'.{suggestion_text}"
+        else:
+            error_msg = f"Invalid line_item '{v}'. Please refer to the tool documentation for valid options."
+
+        raise ValueError(error_msg)
+    return v
 
 
 class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
@@ -30,6 +102,16 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
     end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_line_item_with_suggestions(cls, values: dict) -> dict:
+        """Custom validator that provides intelligent suggestions for invalid line items."""
+        if isinstance(values, dict) and "line_item" in values:
+            line_item = values["line_item"]
+            # Use the helper function to validate and provide suggestions
+            _smart_line_item_validator(line_item)
+        return values
 
 
 class GetFinancialLineItemFromIdentifiersResp(ToolRespWithErrors):
