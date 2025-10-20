@@ -327,7 +327,7 @@ class MockKFinanceApiClient:
 
     def fetch_history_metadata(self, trading_item_id):
         """Get history metadata"""
-        return MOCK_TRADING_ITEM_DB[trading_item_id]["metadata"].copy()
+        return MOCK_TRADING_ITEM_DB[trading_item_id]["metadata"].model_copy()
 
     def fetch_price_chart(
         self, trading_item_id, is_adjusted, start_date, end_date, periodicity
@@ -448,7 +448,7 @@ class TestTradingItem(TestCase):
         """test history metadata"""
         expected_history_metadata: HistoryMetadataResp = MOCK_TRADING_ITEM_DB[msft_trading_item_id][
             "metadata"
-        ].copy()
+        ].model_copy()
         history_metadata = self.msft_trading_item_from_id.history_metadata
         assert history_metadata == expected_history_metadata
 
@@ -729,7 +729,9 @@ class TestTicker(TestCase):
 
     def test_history_metadata(self) -> None:
         """test history metadata"""
-        expected_history_metadata = MOCK_TRADING_ITEM_DB[msft_trading_item_id]["metadata"].copy()
+        expected_history_metadata = MOCK_TRADING_ITEM_DB[msft_trading_item_id][
+            "metadata"
+        ].model_copy()
         history_metadata = self.msft_ticker_from_ticker.history_metadata
         expected_exchange_code = "NasdaqGS"
         self.assertEqual(expected_history_metadata, history_metadata)
