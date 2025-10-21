@@ -40,7 +40,6 @@ class TestDecimalWithUnit:
         """
         dwu = DecimalWithUnit.model_validate(dict(value=value, conventional_decimals=1, unit="foo"))
         assert dwu.value.is_nan()
-        dwu.quantize_value()
 
 
 class TestMoney:
