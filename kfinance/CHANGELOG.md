@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.2.16
+- Allow None and "NaN" for DecimalWithValue
+
 ## v3.2.15
 - Add smart line item validation with intelligent suggestions and descriptions to reduce token consumption by 75%
 
