@@ -2,7 +2,7 @@ from copy import deepcopy
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing_extensions import Self
 
 from kfinance.client.models.currency_models import ISO_CODE_TO_CURRENCY
@@ -20,10 +20,22 @@ class DecimalWithUnit(BaseModel):
     existing subclass like `Money` or `Shares` or create a new one.
     """
 
-    value: Decimal
+    value: Decimal = Field(allow_inf_nan=True)
     unit: str
     # exclude conventional_decimals from serialization
     conventional_decimals: int = Field(exclude=True)
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def convert_none_to_nan(cls, v: Any) -> Any:
+        """Convert None values to NaN.
+
+        Price data can include None for open prices.
+        https://kfinance.kensho.com/api/v1/pricing/37284793/2003-01-01/2024-12-31/month/adjusted
+        """
+        if v is None:
+            return Decimal("NaN")
+        return v
 
     @model_validator(mode="after")
     def quantize_value(self) -> Self:
