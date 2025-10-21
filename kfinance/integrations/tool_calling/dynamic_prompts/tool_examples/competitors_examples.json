@@ -1,0 +1,130 @@
+{
+  "description": "Comprehensive examples for competitor queries covering all competitor sources",
+  "tools": [
+    {
+      "tool_name": "get_competitors_from_identifiers",
+      "examples": [
+        {
+          "query": "who are <company_a>'s competitors according to sec filings?",
+          "tool_name": "get_competitors_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ],
+            "competitor_source": "filing"
+          },
+          "context": "use get_competitors_from_identifiers with specific sources to find competitor relationships.",
+          "permissions_required": [
+            "CompetitorsPermission"
+          ],
+          "disambiguation_note": "competitor_source must be exact: 'filing', 'key_dev', 'contact', 'third_party', 'self_identified', 'named_by_competitor'.",
+          "tags": [
+            "competitors",
+            "sec_filings",
+            "competitive_landscape"
+          ]
+        },
+        {
+          "query": "what companies does <company_f> consider as competitors?",
+          "tool_name": "get_competitors_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "TSLA"
+            ],
+            "competitor_source": "self_identified"
+          },
+          "context": "use 'self_identified' for competitors that the company itself identifies.",
+          "permissions_required": [
+            "CompetitorsPermission"
+          ],
+          "disambiguation_note": "different sources provide different perspectives on competitive relationships.",
+          "tags": [
+            "self_identified_competitors",
+            "company_perspective",
+            "competitive_analysis"
+          ]
+        },
+        {
+          "query": "who are <company_b>'s competitors from key developments?",
+          "tool_name": "get_competitors_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT"
+            ],
+            "competitor_source": "key_dev"
+          },
+          "context": "use 'key_dev' for competitors identified through key business developments and news.",
+          "permissions_required": [
+            "CompetitorsPermission"
+          ],
+          "disambiguation_note": "use 'key_dev' not 'key_development' - the parameter is abbreviated.",
+          "tags": [
+            "key_development_competitors",
+            "news_based",
+            "market_intelligence"
+          ]
+        },
+        {
+          "query": "what competitors does <company_c> have through contact relationships?",
+          "tool_name": "get_competitors_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "GOOGL"
+            ],
+            "competitor_source": "contact"
+          },
+          "context": "use 'contact' for competitors identified through business contact relationships.",
+          "permissions_required": [
+            "CompetitorsPermission"
+          ],
+          "disambiguation_note": "use 'contact' for relationship-based competitor identification.",
+          "tags": [
+            "contact_competitors",
+            "relationship_based",
+            "business_networks"
+          ]
+        },
+        {
+          "query": "who are <company_d>'s competitors according to third-party sources?",
+          "tool_name": "get_competitors_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AMZN"
+            ],
+            "competitor_source": "third_party"
+          },
+          "context": "use 'third_party' for competitors identified by external research and analysis firms.",
+          "permissions_required": [
+            "CompetitorsPermission"
+          ],
+          "disambiguation_note": "use 'third_party' not 'third_party_source' - the parameter is just 'third_party'.",
+          "tags": [
+            "third_party_competitors",
+            "external_research",
+            "analyst_identified"
+          ]
+        },
+        {
+          "query": "what companies name <company_g> as a competitor?",
+          "tool_name": "get_competitors_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "NFLX"
+            ],
+            "competitor_source": "named_by_competitor"
+          },
+          "context": "use 'named_by_competitor' for reverse competitive relationships where other companies identify this company as their competitor.",
+          "permissions_required": [
+            "CompetitorsPermission"
+          ],
+          "disambiguation_note": "use 'named_by_competitor' for reverse competitive analysis - who considers this company a competitor.",
+          "tags": [
+            "named_by_competitor",
+            "reverse_competitive_analysis",
+            "market_position"
+          ]
+        }
+      ]
+    }
+  ]
+}
