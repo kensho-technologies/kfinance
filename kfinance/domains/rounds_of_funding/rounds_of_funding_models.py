@@ -5,6 +5,7 @@ from pydantic import BaseModel, field_serializer
 from strenum import StrEnum
 
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX, CompanyIdAndName
+from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import AdvisorResp
 
 
 class RoundOfFunding(BaseModel):
@@ -96,3 +97,7 @@ class RoundOfFundingInfo(BaseModel):
     participants: RoundOfFundingParticipants
     transaction: RoundOfFundingInfoTransaction
     security: RoundOfFundingInfoSecurity
+
+
+class AdvisorsResp(BaseModel):
+    advisors: list[AdvisorResp]

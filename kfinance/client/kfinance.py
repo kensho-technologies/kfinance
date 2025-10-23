@@ -747,25 +747,27 @@ class ParticipantInRoF:
     def advisors(self) -> list[Advisor] | None:
         """Get the companies that advised this company during the current transaction."""
         if self.target is True:
-            advisors = self.kfinance_api_client.fetch_advisors_for_company_raising_round_of_funding(
-                transaction_id=self.transaction_id,
-            )["advisors"]
+            advisors_resp = (
+                self.kfinance_api_client.fetch_advisors_for_company_raising_round_of_funding(
+                    transaction_id=self.transaction_id,
+                )
+            )
         else:
-            advisors = (
+            advisors_resp = (
                 self.kfinance_api_client.fetch_advisors_for_company_investing_in_round_of_funding(
                     transaction_id=self.transaction_id, advised_company_id=self._company.company_id
-                )["advisors"]
+                )
             )
         return [
             Advisor(
-                advisor_type_name=str(advisor["advisor_type_name"]),
+                advisor_type_name=advisor.advisor_type_name,
                 company=Company(
                     kfinance_api_client=self.kfinance_api_client,
-                    company_id=int(advisor["advisor_company_id"]),
-                    company_name=str(advisor["advisor_company_name"]),
+                    company_id=advisor.advisor_company_id,
+                    company_name=advisor.advisor_company_name,
                 ),
             )
-            for advisor in advisors
+            for advisor in advisors_resp.advisors
         ]
 
 

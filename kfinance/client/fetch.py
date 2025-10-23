@@ -32,6 +32,7 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models imp
 )
 from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
+    AdvisorsResp,
     RoundOfFundingInfo,
     RoundsOfFundingResp,
 )
@@ -726,7 +727,7 @@ class KFinanceApiClient:
     def fetch_advisors_for_company_raising_round_of_funding(
         self,
         transaction_id: int,
-    ) -> dict[str, list[dict[str, int | str]]]:
+    ) -> AdvisorsResp:
         """Fetch information about the advisors and their types for a company raising a round of funding.
 
         Returns a dictionary of shape {"advisors": [{"advisor_company_id": <advisor_company_id>, "advisor_company_name": <advisor_company_name>, "advisor_type_name": <advisor_type_name>},...]}
@@ -736,13 +737,13 @@ class KFinanceApiClient:
         :rtype: dict[str, list[dict[str, int | str]]]
         """
         url = f"{self.url_base}fundingrounds/info/{transaction_id}/advisors/target"
-        return self.fetch(url)
+        return AdvisorsResp.model_validate(self.fetch(url))
 
     def fetch_advisors_for_company_investing_in_round_of_funding(
         self,
         transaction_id: int,
         advised_company_id: int,
-    ) -> dict[str, list[dict[str, int | str]]]:
+    ) -> AdvisorsResp:
         """Fetch information about the advisors and their types for a company buying into a round of funding.
 
         Returns a dictionary of shape {"advisors": [{"advisor_company_id": <advisor_company_id>, "advisor_company_name": <advisor_company_name>, "advisor_type_name": <advisor_type_name>},...]}
@@ -754,4 +755,4 @@ class KFinanceApiClient:
         :rtype: dict[str, list[dict[str, int | str]]]
         """
         url = f"{self.url_base}fundingrounds/info/{transaction_id}/advisors/investor/{advised_company_id}"
-        return self.fetch(url)
+        return AdvisorsResp.model_validate(self.fetch(url))

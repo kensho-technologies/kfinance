@@ -1,7 +1,5 @@
 from typing import Type
 
-from pydantic import BaseModel
-
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.permission_models import Permission
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
