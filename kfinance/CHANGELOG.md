@@ -1,6 +1,13 @@
 # Changelog
+
 # 3.3.0
 - Add Rounds of Funding tools
+
+## v3.2.16
+- Allow None and "NaN" for DecimalWithValue
+
+## v3.2.15
+- Add smart line item validation with intelligent suggestions and descriptions to reduce token consumption by 75%
 
 # 3.2.14
 - Fix Capitalizations validator to handle nulls

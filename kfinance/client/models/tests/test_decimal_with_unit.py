@@ -32,6 +32,15 @@ class TestDecimalWithUnit:
         )
         assert dwu.value == expected_value
 
+    @pytest.mark.parametrize("value", [None, "NaN"])
+    def test_null_nan_allowed(self, value: str | None):
+        """
+        WHEN a DecimalWithUnit gets deserialized with None or "NaN"
+        THEN the deserialized value is Decimal("NaN")
+        """
+        dwu = DecimalWithUnit.model_validate(dict(value=value, conventional_decimals=1, unit="foo"))
+        assert dwu.value.is_nan()
+
 
 class TestMoney:
     @pytest.mark.parametrize("currency, expected_conventional_decimals", [("USD", 2), ("BIF", 0)])
