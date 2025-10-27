@@ -26,6 +26,11 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools impo
     GetMergersFromIdentifiers,
 )
 from kfinance.domains.prices.price_tools import GetPricesFromIdentifiers
+from kfinance.domains.rounds_of_funding.rounds_of_funding_tools import (
+    GetAdvisorsForCompanyInRoundOfFundingFromIdentifier,
+    GetRoundOfFundingInfoFromTransactionId,
+    GetRoundsOfFundingFromIdentifiers,
+)
 from kfinance.domains.segments.segment_tools import GetSegmentsFromIdentifiers
 from kfinance.domains.statements.statement_tools import GetFinancialStatementFromIdentifiers
 from kfinance.integrations.tool_calling.static_tools.get_latest import GetLatest
@@ -69,8 +74,8 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetAdvisorsForCompanyInTransactionFromIdentifier,
     GetMergerInfoFromTransactionId,
     GetMergersFromIdentifiers,
-    # Rounds of Funding,
-    # GetRoundsOfFundingFromIdentifiers,
-    # GetRoundOfFundingInfoFromTransactionId,
-    # GetAdvisorsForCompanyInRoundOfFundingFromIdentifier,
+    # Rounds of Funding
+    GetRoundsOfFundingFromIdentifiers,
+    GetRoundOfFundingInfoFromTransactionId,
+    GetAdvisorsForCompanyInRoundOfFundingFromIdentifier,
 ]

@@ -721,7 +721,7 @@ class KFinanceApiClient:
         :return: A RoundOfFundingInfo, containing the timeline, participants, transaction, and security of the round.
         :rtype: RoundOfFundingInfo
         """
-        url = f"{self.url_base}fundingrounds/info/{transaction_id}"
+        url = f"{self.url_base}fundinground/info/{transaction_id}"
         return RoundOfFundingInfo.model_validate(self.fetch(url))
 
     def fetch_advisors_for_company_raising_round_of_funding(
@@ -736,7 +736,7 @@ class KFinanceApiClient:
         :return: A dictionary containing the list of companies advising a company raising a round of funding, along with their advisor type.
         :rtype: dict[str, list[dict[str, int | str]]]
         """
-        url = f"{self.url_base}fundingrounds/info/{transaction_id}/advisors/target"
+        url = f"{self.url_base}fundinground/info/{transaction_id}/advisors/target"
         return AdvisorsResp.model_validate(self.fetch(url))
 
     def fetch_advisors_for_company_investing_in_round_of_funding(
@@ -754,5 +754,5 @@ class KFinanceApiClient:
         :return: A dictionary containing the list of companies advising a company involved with a round of funding, along with their advisor type.
         :rtype: dict[str, list[dict[str, int | str]]]
         """
-        url = f"{self.url_base}fundingrounds/info/{transaction_id}/advisors/investor/{advised_company_id}"
+        url = f"{self.url_base}fundinground/info/{transaction_id}/advisors/investor/{advised_company_id}"
         return AdvisorsResp.model_validate(self.fetch(url))
