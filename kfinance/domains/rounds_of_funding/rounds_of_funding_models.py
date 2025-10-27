@@ -10,7 +10,7 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models imp
 
 class RoundOfFunding(BaseModel):
     transaction_id: int
-    funding_round_notes: str
+    funding_round_notes: str | None
     closed_date: date | None
 
 
