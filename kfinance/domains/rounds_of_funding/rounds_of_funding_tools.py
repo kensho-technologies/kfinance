@@ -120,7 +120,7 @@ class GetAdvisorsForCompanyInRoundOfFundingFromIdentifier(KfinanceTool):
                               'Who advised Uber in their Series B?', 'Who advised SR One on their investment in Avenzo Therapeutics's Series B?'."
     """).strip()
 
-    args_schema: Type[BaseModel] = GetAdvisorsForCompanyInRoundOfFundingFromIdentifierResp
+    args_schema: Type[BaseModel] = GetAdvisorsForCompanyInRoundOfFundingFromIdentifierArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
     def _run(
