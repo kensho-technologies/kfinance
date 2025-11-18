@@ -690,7 +690,7 @@ class KFinanceApiClient:
 
         :param company_id: The target company ID to filter on.
         :type company_id: int
-        :return: A RoundsOfFundingResp, containing transaction id, closed_date, and funding_round_notes for each round of funding.
+        :return: A RoundsOfFundingResp, containing transaction id, closed_date, funding_round_notes, and funding_round_type for each round of funding.
         :rtype: RoundsOfFundingResp
         """
         url = f"{self.url_base}fundingrounds/target/{company_id}"
@@ -704,7 +704,7 @@ class KFinanceApiClient:
 
         :param company_id: The company ID to filter on that invested in rounds of funding.
         :type company_id: int
-        :return: A RoundsOfFundingResp, containing transaction id, closed_date, and funding_round_notes for each round of funding.
+        :return: A RoundsOfFundingResp, containing transaction id, closed_date, funding_round_notes, and funding_round_type for each round of funding.
         :rtype: RoundsOfFundingResp
         """
         url = f"{self.url_base}fundingrounds/investor/{company_id}"
@@ -730,11 +730,11 @@ class KFinanceApiClient:
     ) -> AdvisorsResp:
         """Fetch information about the advisors and their types for a company raising a round of funding.
 
-        Returns a dictionary of shape {"advisors": [{"advisor_company_id": <advisor_company_id>, "advisor_company_name": <advisor_company_name>, "advisor_type_name": <advisor_type_name>},...]}
+        Returns an AdvisorsResp model containing advisor information.
         :param transaction_id: The transaction ID to filter on.
         :type transaction_id: int
-        :return: A dictionary containing the list of companies advising a company raising a round of funding, along with their advisor type.
-        :rtype: dict[str, list[dict[str, int | str]]]
+        :return: An AdvisorsResp model containing the list of companies advising a company raising a round of funding, along with their advisor type.
+        :rtype: AdvisorsResp
         """
         url = f"{self.url_base}fundinground/info/{transaction_id}/advisors/target"
         return AdvisorsResp.model_validate(self.fetch(url))
@@ -746,13 +746,13 @@ class KFinanceApiClient:
     ) -> AdvisorsResp:
         """Fetch information about the advisors and their types for a company buying into a round of funding.
 
-        Returns a dictionary of shape {"advisors": [{"advisor_company_id": <advisor_company_id>, "advisor_company_name": <advisor_company_name>, "advisor_type_name": <advisor_type_name>},...]}
+        Returns an AdvisorsResp model containing advisor information.
         :param transaction_id: The transaction ID to filter on.
         :type transaction_id: int
         :param advised_company_id: The company ID investing in the round of funding.
         :type advised_company_id: int
-        :return: A dictionary containing the list of companies advising a company involved with a round of funding, along with their advisor type.
-        :rtype: dict[str, list[dict[str, int | str]]]
+        :return: An AdvisorsResp model containing the list of companies advising a company involved with a round of funding, along with their advisor type.
+        :rtype: AdvisorsResp
         """
         url = f"{self.url_base}fundinground/info/{transaction_id}/advisors/investor/{advised_company_id}"
         return AdvisorsResp.model_validate(self.fetch(url))

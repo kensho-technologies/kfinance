@@ -185,13 +185,6 @@ class TradingItem:
         :rtype: Image
         """
 
-        if start_date and end_date:
-            if (
-                datetime.strptime(start_date, "%Y-%m-%d").date()
-                > datetime.strptime(end_date, "%Y-%m-%d").date()
-            ):
-                return image_open(BytesIO())
-
         content = self.kfinance_api_client.fetch_price_chart(
             trading_item_id=self.trading_item_id,
             is_adjusted=adjusted,

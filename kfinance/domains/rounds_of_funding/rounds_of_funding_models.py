@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, Field, computed_field, field_serializer
 from strenum import StrEnum
 
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX, CompanyIdAndName
@@ -12,6 +12,10 @@ class RoundOfFunding(BaseModel):
     transaction_id: int
     funding_round_notes: str | None
     closed_date: date | None
+    funding_round_type: str | None = Field(
+        alias="funding_type",
+        description="e.g., 'Series A', 'Series B', 'Debt Financing'"
+    )
 
 
 class RoundsOfFundingResp(BaseModel):
@@ -38,7 +42,7 @@ class InvestorInRoundOfFunding(BaseModel):
         return f"{COMPANY_ID_PREFIX}{company_id}"
 
 
-class RoundsofFundingRole(StrEnum):
+class RoundsOfFundingRole(StrEnum):
     """The role of the company involved in the round of funding"""
 
     company_raising_funds = "company_raising_funds"
@@ -92,11 +96,63 @@ class RoundOfFundingInfoTimeline(BaseModel):
     closed_date: date | None
 
 
+class InvestorParticipation(BaseModel):
+    investor_name: str
+    investment_amount: float | None
+    ownership_percentage_pre: float | None
+    ownership_percentage_post: float | None
+    board_seat_granted: bool | None
+    lead_investor: bool
+
+
 class RoundOfFundingInfo(BaseModel):
     timeline: RoundOfFundingInfoTimeline
     participants: RoundOfFundingParticipants
     transaction: RoundOfFundingInfoTransaction
     security: RoundOfFundingInfoSecurity
+    investor_participations: list[InvestorParticipation] | None = None
+
+    @computed_field
+    @property
+    def gross_amount_initially_announced(self) -> float | None:
+        """The initially announced gross amount for the funding round."""
+        return float(self.transaction.initial_gross_amount_offered) if self.transaction.initial_gross_amount_offered else None
+
+    @computed_field
+    @property
+    def gross_amount_final_raised(self) -> float | None:
+        """The final gross amount raised in the funding round."""
+        return float(self.transaction.aggregate_amount_raised) if self.transaction.aggregate_amount_raised else None
+
+    @computed_field
+    @property
+    def upsizing_amount(self) -> float | None:
+        """The amount by which the funding round was upsized."""
+        return float(self.transaction.upsized_amount) if self.transaction.upsized_amount else None
+
+    @computed_field
+    @property
+    def upsizing_percentage(self) -> float | None:
+        """The percentage by which the funding round was upsized."""
+        return float(self.transaction.upsized_amount_percent) if self.transaction.upsized_amount_percent else None
+
+
+class AdvisorInfo(BaseModel):
+    advisor_name: str
+    advisor_role: str  # "Legal Counsel", "Financial Advisor", "Lead Underwriter"
+    is_lead: bool
+    fees_disclosed: bool
+    advisor_fee_amount: float | None
+    advisor_fee_currency: str | None
+
+
+class FundingSummary(BaseModel):
+    company_id: str
+    total_capital_raised: float | None
+    total_rounds: int
+    first_funding_date: date | None
+    most_recent_funding_date: date | None
+    rounds_by_type: dict[str, int]  # {"Series A": 1, "Series B": 1, ...}
 
 
 class AdvisorsResp(BaseModel):
