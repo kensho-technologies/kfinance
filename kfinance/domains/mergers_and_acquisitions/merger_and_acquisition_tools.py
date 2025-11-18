@@ -111,7 +111,7 @@ class GetAdvisorsForCompanyInTransactionFromIdentifierResp(ToolRespWithErrors):
 
 
 class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
-    name: str = "get_advisors_for_company_in_transaction_from_identifier"
+    name: str = "get_advisors_for_company_in_transaction"
     description: str = dedent("""
         "Returns a list of advisor companies that provided advisory services to the specified company during a particular merger or acquisition transaction. Use this tool to answer questions like 'Who advised S&P Global during their purchase of Kensho?', 'Which firms advised Ben & Jerry's in their acquisition?'."
     """).strip()

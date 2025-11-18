@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.2.17
+- Shorten `get_advisors_for_company_in_transaction_from_identifier` tool name.
+
 ## v3.2.16
 - Allow None and "NaN" for DecimalWithValue
 
