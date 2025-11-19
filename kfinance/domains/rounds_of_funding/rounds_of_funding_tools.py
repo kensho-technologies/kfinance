@@ -51,7 +51,7 @@ class GetRoundsOfFundingFromIdentifiersResp(ToolRespWithErrors):
 class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
     name: str = "get_rounds_of_funding_from_identifiers"
     description: str = dedent(f"""
-        "Retrieves rounds of funding for each specified company identifier that is either of `role` {RoundsOfFundingRole.company_raising_funds} or {RoundsOfFundingRole.company_investing_in_round_of_funding}. Provides the transaction_id, funding_round_notes, funding_type, and transaction closed_date (finalization). Supports temporal filtering by start_date and end_date, sorting by closed_date (desc=most recent first, asc=oldest first), and limiting to N most recent rounds. Use this tool to answer questions like 'What was the latest funding round for ElevenLabs?', 'What were Microsoft's 3 most recent investments?', 'What funding rounds did Microsoft participate in during 2023?', or 'Which Series A rounds did Sequoia Capital invest in between 2020 and 2022?'"
+        "Retrieves rounds of funding for each specified company identifier that is either of `role` {RoundsOfFundingRole.company_raising_funds} or {RoundsOfFundingRole.company_investing_in_round_of_funding}. Provides the transaction_id, funding_round_notes, funding_type, and transaction closed_date (finalization). Supports temporal filtering by start_date and end_date (inclusive), sorting by closed_date (desc=most recent first, asc=oldest first), and limiting to N most recent rounds. Use this tool to answer questions like 'What was the completion date of the funding of Nasdaq Private Market, LLC by Citigroup Inc.', 'What was the latest funding round for ElevenLabs?', 'What were Microsoft's 3 most recent investments?', 'What funding rounds did Microsoft participate in during 2023?', or 'Which Series A rounds did Sequoia Capital invest in between 2020 and 2022?'"
     """).strip()
     args_schema: Type[BaseModel] = GetRoundsofFundingFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -101,7 +101,6 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
             process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
         )
 
-        # Apply temporal filtering if specified
         if start_date or end_date:
             filtered_responses = {}
             for identifier, response in rounds_of_funding_responses.items():
@@ -111,7 +110,6 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
                     if round_of_funding.closed_date is None:
                         continue
 
-                    # Apply date filters
                     if start_date and round_of_funding.closed_date < start_date:
                         continue
                     if end_date and round_of_funding.closed_date > end_date:
@@ -119,12 +117,10 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
 
                     filtered_rounds.append(round_of_funding)
 
-                # Create new response with filtered rounds
                 filtered_responses[identifier] = RoundsOfFundingResp(rounds_of_funding=filtered_rounds)
 
             rounds_of_funding_responses = filtered_responses
 
-        # Apply sorting and limiting
         final_responses = {}
         for identifier, response in rounds_of_funding_responses.items():
             rounds = response.rounds_of_funding
