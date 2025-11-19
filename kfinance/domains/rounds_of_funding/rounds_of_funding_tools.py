@@ -161,44 +161,14 @@ class GetRoundsOfFundingInfoFromTransactionIdsResp(ToolRespWithErrors):
 class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
     name: str = "get_rounds_of_funding_info_from_transaction_ids"
     description: str = dedent("""
-        "Provides comprehensive information about multiple rounds of funding at once, including timeline, participants, funding details, amounts, and fees for each transaction. Use this tool when you need detailed information for several rounds simultaneously, such as 'What was the total amount raised across all of Anysphere's funding rounds?' or 'Compare the pre-money valuations of OpenAI's Series A, B, and C rounds'. Much more efficient than calling get_round_of_funding_info_from_transaction_id multiple times."
+        "Provides comprehensive information for multiple rounds of funding at once, including for each round of funding its timeline (announced date, closed date), participants' company_name and company_id (target and investors), funding_type, amount_offered, fees, amounts etc. Use this tool to answer questions like 'How much did Harvey raise in their Series D?', 'Who were Google's angel investors?', 'What was the total amount raised across all of Anysphere's funding rounds?', 'What is the liquidation price reported in each funding round for Anysphere?', 'What is the announcement date of the funding of Veza Technologies, Inc by JPMorgan Chase & Co?'. Always call this for announcement or transaction value related questions."
     """).strip()
     args_schema: Type[BaseModel] = GetRoundsOfFundingInfoFromTransactionIdsArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
     def _run(self, transaction_ids: list[int]) -> GetRoundsOfFundingInfoFromTransactionIdsResp:
-        """Sample Response:
-
-        {
-            'results': {
-                334220: {
-                    "timeline": {
-                        "announced_date": "2013-12-01",
-                        "closed_date": "2013-12-31"
-                    },
-                    "participants": {
-                        "target": {"company_id": 12345, "company_name": "Kensho Technologies Inc."},
-                        "investors": [{"company_id": 67890, "company_name": "Impresa Management LLC", "lead_investor": True, "investment_value": 5000000.00}]
-                    },
-                    "transaction": {
-                        "funding_type": "Series A",
-                        "amount_offered": 5000000.00,
-                        "currency_name": "USD",
-                        "legal_fees": 150000.00,
-                        "other_fees": 75000.00,
-                        "pre_money_valuation": 15000000.00,
-                        "post_money_valuation": 20000000.00
-                    },
-                    "security": {...}
-                },
-                242311: { ... }
-            },
-            'errors': []
-        }
-        """
         api_client = self.kfinance_client.kfinance_api_client
 
-        # Create tasks for parallel execution
         tasks = [
             Task(
                 func=api_client.fetch_round_of_funding_info,
@@ -208,7 +178,6 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
             for transaction_id in transaction_ids
         ]
 
-        # Execute in parallel using the existing batch processing infrastructure
         round_info_responses: dict[int, RoundOfFundingInfo] = (
             process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
         )
