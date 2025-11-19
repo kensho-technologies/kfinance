@@ -316,7 +316,6 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
         api_client = self.kfinance_client.kfinance_api_client
         id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
 
-        # Fetch all rounds for each company (assuming company_raising_funds role)
         tasks = [
             Task(
                 func=api_client.fetch_rounds_of_funding_for_company,
@@ -330,30 +329,53 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
             process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
         )
 
-        # Create summary for each company
+        # Fetch detailed info for all rounds to calculate total capital raised
+        all_transaction_ids = []
+        identifier_to_transaction_ids = {}
+
+        for identifier, response in rounds_of_funding_responses.items():
+            transaction_ids = [r.transaction_id for r in response.rounds_of_funding]
+            all_transaction_ids.extend(transaction_ids)
+            identifier_to_transaction_ids[identifier] = transaction_ids
+
+        detail_tasks = [
+            Task(
+                func=api_client.fetch_round_of_funding_info,
+                kwargs=dict(transaction_id=transaction_id),
+                result_key=transaction_id,
+            )
+            for transaction_id in all_transaction_ids
+        ]
+
+        detailed_round_info: dict[int, RoundOfFundingInfo] = (
+            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=detail_tasks)
+        )
+
         summaries = {}
         for identifier, response in rounds_of_funding_responses.items():
             rounds = response.rounds_of_funding
+            company_transaction_ids = identifier_to_transaction_ids[identifier]
 
-            # Calculate summary statistics
             total_rounds = len(rounds)
             dates = [r.closed_date for r in rounds if r.closed_date is not None]
             first_funding_date = min(dates) if dates else None
             most_recent_funding_date = max(dates) if dates else None
 
-            # Count rounds by type
             rounds_by_type = {}
             for round_of_funding in rounds:
-                funding_type = round_of_funding.funding_type or "Unknown"
+                funding_type = round_of_funding.funding_round_type or "Unknown"
                 rounds_by_type[funding_type] = rounds_by_type.get(funding_type, 0) + 1
 
-            # For total capital raised, we'd need to fetch detailed info for each round
-            # Since this is meant to be an efficient summary endpoint, we'll set it to None for now
-            # In a real implementation, the API might provide aggregate amounts directly
+            total_capital_raised = 0.0
+            for transaction_id in company_transaction_ids:
+                if transaction_id in detailed_round_info:
+                    round_detail = detailed_round_info[transaction_id]
+                    if round_detail.transaction.aggregate_amount_raised:
+                        total_capital_raised += float(round_detail.transaction.aggregate_amount_raised)
 
             summaries[identifier] = FundingSummary(
                 company_id=identifier,
-                total_capital_raised=None,  # Would need detailed round info to calculate
+                total_capital_raised=total_capital_raised if total_capital_raised > 0 else None,
                 total_rounds=total_rounds,
                 first_funding_date=first_funding_date,
                 most_recent_funding_date=most_recent_funding_date,
