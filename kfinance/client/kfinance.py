@@ -1690,7 +1690,7 @@ class RoundsOfFunding(set):
                 transaction_id=round_of_funding["transaction_id"],
                 funding_round_notes=round_of_funding["funding_round_notes"],
                 closed_date=round_of_funding["closed_date"],
-                funding_round_type=round_of_funding.get("funding_type"),
+                funding_type=round_of_funding.get("funding_type"),
             )
             for round_of_funding in rounds_of_funding
         )

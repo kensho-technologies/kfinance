@@ -12,7 +12,7 @@ class RoundOfFunding(BaseModel):
     transaction_id: int
     funding_round_notes: str | None
     closed_date: date | None
-    funding_round_type: str | None = None
+    funding_type: str | None = None
 
 
 class RoundsOfFundingResp(BaseModel):

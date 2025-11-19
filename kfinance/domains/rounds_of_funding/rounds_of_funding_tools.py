@@ -51,7 +51,7 @@ class GetRoundsOfFundingFromIdentifiersResp(ToolRespWithErrors):
 class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
     name: str = "get_rounds_of_funding_from_identifiers"
     description: str = dedent(f"""
-        "Retrieves rounds of funding for each specified company identifier that is either of `role` {RoundsOfFundingRole.company_raising_funds} or {RoundsOfFundingRole.company_investing_in_round_of_funding}. Provides the transaction_id, funding_round_notes, funding_round_type, and transaction closed_date (finalization). Supports temporal filtering by start_date and end_date, sorting by closed_date (desc=most recent first, asc=oldest first), and limiting to N most recent rounds. Use this tool to answer questions like 'What was the latest funding round for ElevenLabs?', 'What were Microsoft's 3 most recent investments?', 'What funding rounds did Microsoft participate in during 2023?', or 'Which Series A rounds did Sequoia Capital invest in between 2020 and 2022?'"
+        "Retrieves rounds of funding for each specified company identifier that is either of `role` {RoundsOfFundingRole.company_raising_funds} or {RoundsOfFundingRole.company_investing_in_round_of_funding}. Provides the transaction_id, funding_round_notes, funding_type, and transaction closed_date (finalization). Supports temporal filtering by start_date and end_date, sorting by closed_date (desc=most recent first, asc=oldest first), and limiting to N most recent rounds. Use this tool to answer questions like 'What was the latest funding round for ElevenLabs?', 'What were Microsoft's 3 most recent investments?', 'What funding rounds did Microsoft participate in during 2023?', or 'Which Series A rounds did Sequoia Capital invest in between 2020 and 2022?'"
     """).strip()
     args_schema: Type[BaseModel] = GetRoundsofFundingFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -69,13 +69,13 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
                             "transaction_id": 334220,
                             "funding_round_notes": "Kensho Technologies Inc. announced that it has received funding from new investor, Impresa Management LLC in 2013.",
                             "closed_date": "2013-12-31",
-                            "funding_round_type": "Series A",
+                            "funding_type": "Series A",
                         },
                         {
                             "transaction_id": 242311,
                             "funding_round_notes": "Kensho Technologies Inc. announced that it will receive $740,000 in funding on January 29, 2014. The company will issue convertible debt securities in the transaction. The company will issue securities pursuant to exemption provided under Regulation D.",
                             "closed_date": "2014-02-13",
-                            "funding_round_type": "Convertible Note",
+                            "funding_type": "Convertible Note",
                         },
                     ],
                 }
@@ -167,6 +167,34 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
     def _run(self, transaction_ids: list[int]) -> GetRoundsOfFundingInfoFromTransactionIdsResp:
+        """Sample Response:
+        {
+            'results': {
+                334220: {
+                    "timeline": {
+                        "announced_date": "2013-12-01",
+                        "closed_date": "2013-12-31"
+                    },
+                    "participants": {
+                        "target": {"company_id": "C_12345", "company_name": "Kensho Technologies Inc."},
+                        "investors": [{"company_id": "C_67890", "company_name": "Impresa Management LLC", "lead_investor": True, "investment_value": 5000000.00}]
+                    },
+                    "transaction": {
+                        "funding_type": "Series A",
+                        "amount_offered": 5000000.00,
+                        "currency_name": "USD",
+                        "legal_fees": 150000.00,
+                        "other_fees": 75000.00,
+                        "pre_money_valuation": 15000000.00,
+                        "post_money_valuation": 20000000.00
+                    },
+                    "security": {...}
+                },
+                242311: { ... }
+            },
+            'errors': []
+        }
+        """
         api_client = self.kfinance_client.kfinance_api_client
 
         tasks = [
@@ -320,7 +348,7 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
             # Count rounds by type
             rounds_by_type = {}
             for round_of_funding in rounds:
-                funding_type = round_of_funding.funding_round_type or "Unknown"
+                funding_type = round_of_funding.funding_type or "Unknown"
                 rounds_by_type[funding_type] = rounds_by_type.get(funding_type, 0) + 1
 
             # For total capital raised, we'd need to fetch detailed info for each round

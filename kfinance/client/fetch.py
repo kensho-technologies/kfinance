@@ -690,7 +690,7 @@ class KFinanceApiClient:
 
         :param company_id: The target company ID to filter on.
         :type company_id: int
-        :return: A RoundsOfFundingResp, containing transaction id, closed_date, funding_round_notes, and funding_round_type for each round of funding.
+        :return: A RoundsOfFundingResp, containing transaction id, closed_date, funding_round_notes, and funding_type for each round of funding.
         :rtype: RoundsOfFundingResp
         """
         url = f"{self.url_base}fundingrounds/target/{company_id}"
@@ -704,7 +704,7 @@ class KFinanceApiClient:
 
         :param company_id: The company ID to filter on that invested in rounds of funding.
         :type company_id: int
-        :return: A RoundsOfFundingResp, containing transaction id, closed_date, funding_round_notes, and funding_round_type for each round of funding.
+        :return: A RoundsOfFundingResp, containing transaction id, closed_date, funding_round_notes, and funding_type for each round of funding.
         :rtype: RoundsOfFundingResp
         """
         url = f"{self.url_base}fundingrounds/investor/{company_id}"
