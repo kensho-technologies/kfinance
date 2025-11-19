@@ -1680,7 +1680,7 @@ class RoundsOfFunding(set):
 
         :param kfinance_api_client: The KFinanceApiClient used to fetch data.
         :type kfinance_api_client: KFinanceApiClient
-        :param rounds_of_funding: A iterable of transaction IDs, funding round notes, and closed dates.
+        :param rounds_of_funding: A iterable of transaction IDs, funding round notes, closed dates, and funding round types.
         :type rounds_of_funding: Iterable[dict]
         """
         self.kfinance_api_client = kfinance_api_client
@@ -1690,6 +1690,7 @@ class RoundsOfFunding(set):
                 transaction_id=round_of_funding["transaction_id"],
                 funding_round_notes=round_of_funding["funding_round_notes"],
                 closed_date=round_of_funding["closed_date"],
+                funding_round_type=round_of_funding.get("funding_type"),
             )
             for round_of_funding in rounds_of_funding
         )
