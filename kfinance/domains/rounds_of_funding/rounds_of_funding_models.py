@@ -146,6 +146,7 @@ class AdvisorInfo(BaseModel):
 class FundingSummary(BaseModel):
     company_id: str
     total_capital_raised: float | None
+    total_capital_raised_currency: str | None
     total_rounds: int
     first_funding_date: date | None
     most_recent_funding_date: date | None

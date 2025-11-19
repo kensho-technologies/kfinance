@@ -367,15 +367,20 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
                 rounds_by_type[funding_type] = rounds_by_type.get(funding_type, 0) + 1
 
             total_capital_raised = 0.0
+            currency = None
             for transaction_id in company_transaction_ids:
                 if transaction_id in detailed_round_info:
                     round_detail = detailed_round_info[transaction_id]
                     if round_detail.transaction.aggregate_amount_raised:
                         total_capital_raised += float(round_detail.transaction.aggregate_amount_raised)
+                        # Use the currency from the first round that has an amount
+                        if currency is None and round_detail.transaction.currency_name:
+                            currency = round_detail.transaction.currency_name
 
             summaries[identifier] = FundingSummary(
                 company_id=identifier,
                 total_capital_raised=total_capital_raised if total_capital_raised > 0 else None,
+                total_capital_raised_currency=currency,
                 total_rounds=total_rounds,
                 first_funding_date=first_funding_date,
                 most_recent_funding_date=most_recent_funding_date,
