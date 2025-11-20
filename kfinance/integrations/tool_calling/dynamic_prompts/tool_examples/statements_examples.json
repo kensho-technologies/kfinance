@@ -1,0 +1,80 @@
+{
+  "description": "Examples for financial statements tools (excluding line items)",
+  "tools": [
+    {
+      "tool_name": "get_financial_statement_from_identifiers",
+      "examples": [
+        {
+          "query": "get the balance sheet for <company_a>",
+          "tool_name": "get_financial_statement_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ],
+            "statement": "balance_sheet"
+          },
+          "context": "use 'balance_sheet' to get assets, liabilities, and equity information.",
+          "permissions_required": [
+            "StatementsPermission"
+          ],
+          "disambiguation_note": "use 'balance_sheet' not 'balance_sheet_statement' - the parameter name is just 'balance_sheet'.",
+          "tags": [
+            "balance_sheet",
+            "assets",
+            "liabilities",
+            "equity"
+          ]
+        },
+        {
+          "query": "show me the income statement for <company_b> and <company_c>",
+          "tool_name": "get_financial_statement_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT",
+              "GOOGL"
+            ],
+            "statement": "income_statement"
+          },
+          "context": "use 'income_statement' to get revenue, expenses, and profit information.",
+          "permissions_required": [
+            "StatementsPermission"
+          ],
+          "disambiguation_note": "use 'income_statement' not 'profit_and_loss' or 'p_and_l' - income_statement is the standard parameter.",
+          "tags": [
+            "income_statement",
+            "revenue",
+            "expenses",
+            "profit",
+            "multiple_companies"
+          ]
+        },
+        {
+          "query": "get quarterly income statements for <company_d> from q1 2022 to q4 2023",
+          "tool_name": "get_financial_statement_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AMZN"
+            ],
+            "statement": "income_statement",
+            "period_type": "quarterly",
+            "start_year": 2022,
+            "start_quarter": 1,
+            "end_year": 2023,
+            "end_quarter": 4
+          },
+          "context": "for quarterly statements, set period_type to 'quarterly' and specify quarter ranges.",
+          "permissions_required": [
+            "StatementsPermission"
+          ],
+          "disambiguation_note": "always set period_type to 'quarterly' when requesting quarterly data and include both start and end quarters.",
+          "tags": [
+            "income_statement",
+            "quarterly",
+            "multi_period",
+            "time_range"
+          ]
+        }
+      ]
+    }
+  ]
+}

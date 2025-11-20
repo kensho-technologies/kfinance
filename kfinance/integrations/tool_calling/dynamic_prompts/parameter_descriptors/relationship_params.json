@@ -1,0 +1,53 @@
+{
+  "description": "Parameter descriptors for business relationship queries with relationship type disambiguation",
+  "tools": [
+    {
+      "tool_name": "get_business_relationship_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "description": "List of company identifiers to find companies with specific business relationships. Always batch multiple identifiers when possible.",
+          "examples": {
+            "['JPM']": "",
+            "['AAPL']": "",
+            "['MSFT']": "",
+            "['AAPL', 'MSFT', 'GOOGL']": ""
+          },
+          "common_mistakes": [
+            "Making separate API calls for each company instead of batching",
+            "Using incorrect ticker symbols",
+            "Not using array format for single identifiers",
+            "Expecting financial data (this tool only provides relationship information)"
+          ],
+          "related_parameters": ["business_relationship"]
+        },
+        {
+          "parameter_name": "business_relationship",
+          "tool_name": "get_business_relationship_from_identifiers",
+          "description": "The type of business relationship to search for. Must match exact relationship types from the system.",
+          "examples": {
+            "borrower": "Companies that have borrowed money or received financing",
+            "supplier": "Companies that provide goods or services to the queried company",
+            "customer": "Companies that purchase goods or services from the queried company",
+            "lender": "Companies that have provided loans or financing to others",
+            "partner": "Companies with strategic partnerships or joint ventures",
+            "distributor": "Companies that distribute or resell the queried company's products",
+            "vendor": "Companies that provide supplies, services, or components",
+            "client": "Companies that are clients or customers for professional services"
+          },
+          "common_mistakes": [
+            "Using plural forms like 'suppliers' instead of 'supplier'",
+            "Using 'vendors' instead of 'vendor'",
+            "Using 'customers' instead of 'customer'",
+            "Using 'borrowers' instead of 'borrower'",
+            "Using generic terms like 'business_partner' instead of 'partner'",
+            "Not using exact relationship type names from the system",
+            "Using synonyms instead of exact parameter values"
+          ],
+          "related_parameters": ["identifiers"]
+        }
+      ]
+    }
+  ]
+}
