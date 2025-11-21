@@ -50,8 +50,7 @@ class GetEarningsFromIdentifiers(KfinanceTool):
 
         Returns a list of dictionaries, with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier.
 
-
-        To fetch the full transcript for an earnings call, call the {GetTranscriptFromKeyDevId.name} tool with the key_dev_id of the earnings call.
+        To fetch the full transcript for an earnings call, call the {GetTranscriptFromKeyDevId.model_fields["name"].default} tool with the key_dev_id of the earnings call.
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {
@@ -88,7 +87,7 @@ class GetLatestEarningsFromIdentifiers(KfinanceTool):
 
         Returns a dictionary with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier.
 
-        To fetch the corresponding full transcript, call the {GetTranscriptFromKeyDevId.name} tool with the key_dev_id of the earnings call.
+        To fetch the corresponding full transcript, call the {GetTranscriptFromKeyDevId.model_fields["name"].default} tool with the key_dev_id of the earnings call.
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {
