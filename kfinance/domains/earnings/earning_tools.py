@@ -14,6 +14,27 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
+class GetTranscriptFromKeyDevIdArgs(BaseModel):
+    """Tool argument with a key_dev_id."""
+
+    key_dev_id: int = Field(description="The key_dev_id for the earnings call")
+
+
+class GetTranscriptFromKeyDevIdResp(BaseModel):
+    transcript: str
+
+
+class GetTranscriptFromKeyDevId(KfinanceTool):
+    name: str = "get_transcript_from_key_dev_id"
+    description: str = "Get the raw transcript text for an earnings call by key_dev_id."
+    args_schema: Type[BaseModel] = GetTranscriptFromKeyDevIdArgs
+    accepted_permissions: set[Permission] | None = {Permission.TranscriptsPermission}
+
+    def _run(self, key_dev_id: int) -> GetTranscriptFromKeyDevIdResp:
+        transcript = self.kfinance_client.transcript(key_dev_id)
+        return GetTranscriptFromKeyDevIdResp(transcript=transcript.raw)
+
+
 class GetEarningsFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, EarningsCallResp]
 
@@ -24,10 +45,13 @@ class GetNextOrLatestEarningsFromIdentifiersResp(ToolRespWithErrors):
 
 class GetEarningsFromIdentifiers(KfinanceTool):
     name: str = "get_earnings_from_identifiers"
-    description: str = dedent("""
+    description: str = dedent(f"""
         Get all earnings for a list of identifiers.
 
         Returns a list of dictionaries, with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier.
+
+
+        To fetch the full transcript for an earnings call, call the {GetTranscriptFromKeyDevId.name} tool with the key_dev_id of the earnings call.
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {
@@ -59,10 +83,12 @@ class GetEarningsFromIdentifiers(KfinanceTool):
 
 class GetLatestEarningsFromIdentifiers(KfinanceTool):
     name: str = "get_latest_earnings_from_identifiers"
-    description: str = dedent("""
+    description: str = dedent(f"""
         Get the latest earnings for a list of identifiers.
 
         Returns a dictionary with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier.
+
+        To fetch the corresponding full transcript, call the {GetTranscriptFromKeyDevId.name} tool with the key_dev_id of the earnings call.
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {
@@ -161,24 +187,3 @@ def get_earnings_from_identifiers(
         results=earnings_responses, errors=list(id_triple_resp.errors.values())
     )
     return resp_model
-
-
-class GetTranscriptFromKeyDevIdArgs(BaseModel):
-    """Tool argument with a key_dev_id."""
-
-    key_dev_id: int = Field(description="The key dev ID for the earnings call")
-
-
-class GetTranscriptFromKeyDevIdResp(BaseModel):
-    transcript: str
-
-
-class GetTranscriptFromKeyDevId(KfinanceTool):
-    name: str = "get_transcript_from_key_dev_id"
-    description: str = "Get the raw transcript text for an earnings call by key dev ID."
-    args_schema: Type[BaseModel] = GetTranscriptFromKeyDevIdArgs
-    accepted_permissions: set[Permission] | None = {Permission.TranscriptsPermission}
-
-    def _run(self, key_dev_id: int) -> GetTranscriptFromKeyDevIdResp:
-        transcript = self.kfinance_client.transcript(key_dev_id)
-        return GetTranscriptFromKeyDevIdResp(transcript=transcript.raw)
