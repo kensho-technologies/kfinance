@@ -18,7 +18,7 @@ classifiers = [
 
 
 dependencies = [
-    "cachetools>=5.5,<6",
+    "cachetools>=6,<7",
     "click>=8.2.1,<=9",
     "fastmcp>=2.11",
     "langchain-core>=0.3.15",
