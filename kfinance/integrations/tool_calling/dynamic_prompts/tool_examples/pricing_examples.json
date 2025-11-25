@@ -1,0 +1,144 @@
+{
+  "description": "Examples for stock price queries with focus on date ranges and periodicity",
+  "tools": [
+    {
+      "tool_name": "get_prices_from_identifiers",
+      "examples": [
+        {
+          "query": "what are the current stock prices for <company_a> and <company_b>?",
+          "tool_name": "get_prices_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL",
+              "MSFT"
+            ]
+          },
+          "context": "for current/most recent prices, omit start_date and end_date parameters.",
+          "permissions_required": [
+            "PricingPermission"
+          ],
+          "disambiguation_note": "leave date parameters empty to get the most recent available prices automatically.",
+          "tags": [
+            "current_prices",
+            "most_recent",
+            "multiple_companies"
+          ]
+        },
+        {
+          "query": "get <company_f>'s stock price for the last month",
+          "tool_name": "get_prices_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "TSLA"
+            ],
+            "start_date": "2023-10-01",
+            "end_date": "2023-10-31"
+          },
+          "context": "for specific date ranges, provide both start_date and end_date in yyyy-mm-dd format.",
+          "permissions_required": [
+            "PricingPermission"
+          ],
+          "disambiguation_note": "use specific dates rather than relative terms like 'last month' - calculate the actual dates.",
+          "tags": [
+            "date_range",
+            "monthly_data",
+            "historical_prices"
+          ]
+        },
+        {
+          "query": "show me <company_d>'s daily stock prices for q3 2023",
+          "tool_name": "get_prices_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AMZN"
+            ],
+            "start_date": "2023-07-01",
+            "end_date": "2023-09-30",
+            "periodicity": "daily"
+          },
+          "context": "use periodicity parameter to specify the frequency of data points (daily, weekly, monthly).",
+          "permissions_required": [
+            "PricingPermission"
+          ],
+          "disambiguation_note": "periodicity controls data frequency, not the date range. default is daily if not specified.",
+          "tags": [
+            "daily_prices",
+            "quarterly_range",
+            "periodicity"
+          ]
+        },
+        {
+          "query": "what were <company_g>'s adjusted stock prices in 2022?",
+          "tool_name": "get_prices_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "NFLX"
+            ],
+            "start_date": "2022-01-01",
+            "end_date": "2022-12-31",
+            "adjusted": true
+          },
+          "context": "use adjusted=true to get prices adjusted for splits, dividends, and other corporate actions.",
+          "permissions_required": [
+            "PricingPermission"
+          ],
+          "disambiguation_note": "adjusted prices account for corporate actions - use for historical analysis and comparisons.",
+          "tags": [
+            "adjusted_prices",
+            "yearly_data",
+            "corporate_actions"
+          ]
+        },
+        {
+          "query": "get the latest stock prices for all major tech companies",
+          "tool_name": "get_prices_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL",
+              "MSFT",
+              "GOOGL",
+              "AMZN",
+              "META",
+              "TSLA",
+              "NFLX"
+            ]
+          },
+          "context": "batch multiple companies efficiently rather than making separate calls.",
+          "permissions_required": [
+            "PricingPermission"
+          ],
+          "disambiguation_note": "always batch multiple companies in one call for better performance.",
+          "tags": [
+            "multiple_companies",
+            "tech_stocks",
+            "batching",
+            "current_prices"
+          ]
+        },
+        {
+          "query": "analyze META's stock performance across 2020 earnings and regulatory events",
+          "tool_name": "get_prices_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "META"
+            ],
+            "start_date": "2020-01-01",
+            "end_date": "2020-12-31",
+            "periodicity": "daily"
+          },
+          "context": "When a question references multiple events across a calendar year, cover the entire period with explicit start and end dates.",
+          "permissions_required": [
+            "PricingPermission"
+          ],
+          "disambiguation_note": "Use the full-year window instead of narrowing to a single month. Failure 208 resulted from truncating the date range.",
+          "tags": [
+            "event_window",
+            "daily_prices",
+            "inclusive_range",
+            "regulatory_events"
+          ]
+        }
+      ]
+    }
+  ]
+}

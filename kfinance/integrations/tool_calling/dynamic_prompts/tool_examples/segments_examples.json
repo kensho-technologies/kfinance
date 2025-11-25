@@ -1,0 +1,160 @@
+{
+  "description": "Comprehensive examples for company segment queries covering all segment types and time periods",
+  "tools": [
+    {
+      "tool_name": "get_segments_from_identifiers",
+      "examples": [
+        {
+          "query": "what are <company_a>'s business segments?",
+          "tool_name": "get_segments_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ],
+            "segment_type": "business"
+          },
+          "context": "use get_segments_from_identifiers to get business segment breakdowns for companies.",
+          "permissions_required": [
+            "SegmentsPermission"
+          ],
+          "disambiguation_note": "segment_type must match available segment types - 'business', 'geographic', etc.",
+          "tags": [
+            "business_segments",
+            "segment_breakdown",
+            "business_units"
+          ]
+        },
+        {
+          "query": "show me the geographic segments for <company_coca_cola>",
+          "tool_name": "get_segments_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "KO"
+            ],
+            "segment_type": "geographic"
+          },
+          "context": "get geographic/regional segment information for global companies.",
+          "permissions_required": [
+            "SegmentsPermission"
+          ],
+          "disambiguation_note": "use 'geographic' for regional breakdowns, 'business' for product/service segments.",
+          "tags": [
+            "geographic_segments",
+            "regional_breakdown",
+            "global_operations"
+          ]
+        },
+        {
+          "query": "get quarterly business segments for <company_d> in 2023",
+          "tool_name": "get_segments_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AMZN"
+            ],
+            "segment_type": "business",
+            "period_type": "quarterly",
+            "start_year": 2023,
+            "end_year": 2023
+          },
+          "context": "segment data can be retrieved for specific time periods and frequencies.",
+          "permissions_required": [
+            "SegmentsPermission"
+          ],
+          "disambiguation_note": "use same date parameters as financial statement tools for consistency.",
+          "tags": [
+            "quarterly_segments",
+            "business_segments",
+            "time_specific"
+          ]
+        },
+        {
+          "query": "what are <company_b>'s product segments?",
+          "tool_name": "get_segments_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT"
+            ],
+            "segment_type": "product"
+          },
+          "context": "get product-based segment breakdowns for companies with diverse product lines.",
+          "permissions_required": [
+            "SegmentsPermission"
+          ],
+          "disambiguation_note": "use 'product' for product-based segments, 'business' for broader business unit segments.",
+          "tags": [
+            "product_segments",
+            "product_lines",
+            "segment_analysis"
+          ]
+        },
+        {
+          "query": "show me the service segments for <company_h>",
+          "tool_name": "get_segments_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "JPM"
+            ],
+            "segment_type": "service"
+          },
+          "context": "get service-based segment information for service-oriented companies.",
+          "permissions_required": [
+            "SegmentsPermission"
+          ],
+          "disambiguation_note": "use 'service' for service-based segments, particularly for financial services and consulting companies.",
+          "tags": [
+            "service_segments",
+            "service_lines",
+            "financial_services"
+          ]
+        },
+        {
+          "query": "get revenue segments for <company_c> over the last 2 years",
+          "tool_name": "get_segments_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "GOOGL"
+            ],
+            "segment_type": "revenue",
+            "start_year": 2022,
+            "end_year": 2023
+          },
+          "context": "get revenue-based segment breakdowns showing how revenue is distributed across different areas.",
+          "permissions_required": [
+            "SegmentsPermission"
+          ],
+          "disambiguation_note": "use 'revenue' for revenue-based segments, useful for understanding revenue composition.",
+          "tags": [
+            "revenue_segments",
+            "revenue_breakdown",
+            "multi_year"
+          ]
+        },
+        {
+          "query": "what are the operating segments for <company_f> in q4 2023?",
+          "tool_name": "get_segments_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "TSLA"
+            ],
+            "segment_type": "operating",
+            "period_type": "quarterly",
+            "start_year": 2023,
+            "start_quarter": 4,
+            "end_year": 2023,
+            "end_quarter": 4
+          },
+          "context": "get operating segment information for specific quarters.",
+          "permissions_required": [
+            "SegmentsPermission"
+          ],
+          "disambiguation_note": "use 'operating' for operational segment breakdowns, with quarterly parameters for specific periods.",
+          "tags": [
+            "operating_segments",
+            "quarterly_data",
+            "operational_breakdown"
+          ]
+        }
+      ]
+    }
+  ]
+}
