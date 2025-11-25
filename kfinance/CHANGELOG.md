@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.2.19
+## v4.0.0
 - Update line items, statements, and segments models for fiscal lookup
 
 ## v3.2.18

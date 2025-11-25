@@ -10,7 +10,7 @@ from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
     LINE_ITEM_NAMES_AND_ALIASES,
     LINE_ITEM_TO_DESCRIPTIONS_MAP,
-    LineItemResponse,
+    LineItemResp,
     LineItemScore,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
@@ -115,7 +115,7 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 
 class GetFinancialLineItemFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, LineItemResponse]
+    results: dict[str, LineItemResp]
 
 
 class GetFinancialLineItemFromIdentifiers(KfinanceTool):
@@ -178,7 +178,7 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
             for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
         ]
 
-        line_item_responses: dict[str, LineItemResponse] = process_tasks_in_thread_pool_executor(
+        line_item_responses: dict[str, LineItemResp] = process_tasks_in_thread_pool_executor(
             api_client=api_client, tasks=tasks
         )
 

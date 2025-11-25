@@ -1,37 +1,28 @@
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from itertools import chain
-from typing import Optional, TypedDict
-from datetime import date
+from typing import TypedDict
 
 from pydantic import BaseModel
 
-from kfinance.client.models.date_and_period_models import CalendarType
 
-
-class LineItemResponse(BaseModel):
-    line_item: dict[str, Decimal | None]
-
-
-class PeriodMetadata(BaseModel):
-    """Metadata for a specific period"""
+class LineItemPeriodData(BaseModel):
     period_end_date: date
     num_months: int
-    value: Optional[Decimal]
+    value: Decimal | None
 
 
-class LineItemCurrencyResponse(BaseModel):
-    """Response for line item data including currency and enhanced period metadata"""
-    currency: Optional[str]
-    line_item: dict[str, PeriodMetadata]
+class LineItemResp(BaseModel):
+    currency: str | None
+    line_item: dict[str, LineItemPeriodData]  # period -> line item and period data
 
 
-class MultiCompanyLineItemResponse(BaseModel):
+class MultiCompanyLineItemResp(BaseModel):
     """Response for multiple companies line item requests"""
-    results: dict[str, LineItemCurrencyResponse]  # company_id -> response
+
+    results: dict[str, LineItemResp]  # company_id -> response
     errors: dict[str, str]  # company_id -> error_message
-
-
 
 
 @dataclass

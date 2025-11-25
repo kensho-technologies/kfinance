@@ -6,7 +6,7 @@ from requests_mock import Mocker
 from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
-from kfinance.domains.line_items.line_item_models import LineItemResponse, LineItemScore
+from kfinance.domains.line_items.line_item_models import LineItemResp, LineItemScore
 from kfinance.domains.line_items.line_item_tools import (
     GetFinancialLineItemFromIdentifiers,
     GetFinancialLineItemFromIdentifiersArgs,
@@ -35,7 +35,7 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={
-                "SPGI": LineItemResponse(
+                "SPGI": LineItemResp(
                     line_item={
                         "2022": Decimal(11181000000),
                         "2023": Decimal(12497000000),
@@ -69,7 +69,7 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         company_ids = [1, 2]
 
-        line_item_resp = LineItemResponse(line_item={"2024": Decimal(14208000000)})
+        line_item_resp = LineItemResp(line_item={"2024": Decimal(14208000000)})
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={"C_1": line_item_resp, "C_2": line_item_resp},
         )
@@ -97,8 +97,8 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         company_ids = [1, 2]
 
-        c_1_line_item_resp = LineItemResponse(line_item={})
-        c_2_line_item_resp = LineItemResponse(line_item={"2024": Decimal(14208000000)})
+        c_1_line_item_resp = LineItemResp(line_item={})
+        c_2_line_item_resp = LineItemResp(line_item={"2024": Decimal(14208000000)})
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={"C_1": c_1_line_item_resp, "C_2": c_2_line_item_resp},
         )

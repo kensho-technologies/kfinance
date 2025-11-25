@@ -25,7 +25,7 @@ from kfinance.domains.companies.company_models import (
 )
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.domains.earnings.earning_models import EarningsCallResp
-from kfinance.domains.line_items.line_item_models import LineItemResponse
+from kfinance.domains.line_items.line_item_models import LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerInfo,
     MergersResp,
@@ -429,7 +429,7 @@ class KFinanceApiClient:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
-    ) -> LineItemResponse:
+    ) -> LineItemResp:
         """Get a specified financial line item for a specified duration."""
         url = (
             f"{self.url_base}line_item/{company_id}/{line_item}/"
@@ -439,7 +439,7 @@ class KFinanceApiClient:
             f"{start_quarter if start_quarter is not None else 'none'}/"
             f"{end_quarter if end_quarter is not None else 'none'}"
         )
-        return LineItemResponse.model_validate(self.fetch(url))
+        return LineItemResp.model_validate(self.fetch(url))
 
     def fetch_info(self, company_id: int) -> dict:
         """Get the company info."""
