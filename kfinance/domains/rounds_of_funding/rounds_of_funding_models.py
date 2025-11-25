@@ -93,21 +93,11 @@ class RoundOfFundingInfoTimeline(BaseModel):
     closed_date: date | None
 
 
-class InvestorParticipation(BaseModel):
-    investor_name: str
-    investment_amount: float | None
-    ownership_percentage_pre: float | None
-    ownership_percentage_post: float | None
-    board_seat_granted: bool | None
-    lead_investor: bool
-
-
 class RoundOfFundingInfo(BaseModel):
     timeline: RoundOfFundingInfoTimeline
     participants: RoundOfFundingParticipants
     transaction: RoundOfFundingInfoTransaction
     security: RoundOfFundingInfoSecurity
-    investor_participations: list[InvestorParticipation] | None = None
 
     @computed_field
     @property
@@ -134,15 +124,6 @@ class RoundOfFundingInfo(BaseModel):
         return float(self.transaction.upsized_amount_percent) if self.transaction.upsized_amount_percent else None
 
 
-class AdvisorInfo(BaseModel):
-    advisor_name: str
-    advisor_role: str  # "Legal Counsel", "Financial Advisor", "Lead Underwriter"
-    is_lead: bool
-    fees_disclosed: bool
-    advisor_fee_amount: float | None
-    advisor_fee_currency: str | None
-
-
 class FundingSummary(BaseModel):
     company_id: str
     total_capital_raised: float | None
@@ -153,5 +134,22 @@ class FundingSummary(BaseModel):
     rounds_by_type: dict[str, int]  # {"Series A": 1, "Series B": 1, ...}
 
 
+class AdvisorResp(BaseModel):
+    advisor_company_id: int
+    advisor_company_name: str
+    advisor_type_name: str | None
+    data_item_559_value: float | None = None  # Fee rate/percentage
+    data_item_561_value: float | None = None  # Fee amount
+
+    @field_serializer("advisor_company_id")
+    def serialize_with_prefix(self, company_id: int) -> str:
+        """Serialize the advisor_company_id with a prefix ("C_<company_id>").
+
+        Including the prefix allows us to distinguish tickers and company_ids.
+        """
+        return f"{COMPANY_ID_PREFIX}{company_id}"
+
+
 class AdvisorsResp(BaseModel):
     advisors: list[AdvisorResp]
+

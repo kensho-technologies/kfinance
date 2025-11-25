@@ -724,19 +724,25 @@ class KFinanceApiClient:
         url = f"{self.url_base}fundinground/info/{transaction_id}"
         return RoundOfFundingInfo.model_validate(self.fetch(url))
 
+
     def fetch_advisors_for_company_raising_round_of_funding(
         self,
         transaction_id: int,
+        include_fees: bool = True,
     ) -> AdvisorsResp:
-        """Fetch information about the advisors and their types for a company raising a round of funding.
+        """Fetch information about the advisors and their types for a company raising a round of funding, including fee information.
 
-        Returns an AdvisorsResp model containing advisor information.
+        Returns an AdvisorsResp model containing advisor information with fee data.
         :param transaction_id: The transaction ID to filter on.
         :type transaction_id: int
-        :return: An AdvisorsResp model containing the list of companies advising a company raising a round of funding, along with their advisor type.
+        :param include_fees: Whether to include fee information from data items 559 and 561.
+        :type include_fees: bool
+        :return: An AdvisorsResp model containing the list of companies advising a company raising a round of funding, along with their advisor type and fee information.
         :rtype: AdvisorsResp
         """
         url = f"{self.url_base}fundinground/info/{transaction_id}/advisors/target"
+        if include_fees:
+            url += "?include_fees=true"
         return AdvisorsResp.model_validate(self.fetch(url))
 
     def fetch_advisors_for_company_investing_in_round_of_funding(

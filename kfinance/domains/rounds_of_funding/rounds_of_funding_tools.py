@@ -5,19 +5,15 @@ from typing import Literal, Type
 from pydantic import BaseModel, Field
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
-from kfinance.client.kfinance import Company, ParticipantInRoF
 from kfinance.client.permission_models import Permission
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
-    AdvisorInfo,
     FundingSummary,
-    InvestorParticipation,
     RoundOfFundingInfo,
     RoundsOfFundingResp,
     RoundsOfFundingRole,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
-    ToolArgsWithIdentifier,
     ToolArgsWithIdentifiers,
     ToolRespWithErrors,
 )
@@ -206,92 +202,9 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
             process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
         )
 
-        # Post-process to populate investor_participations from existing participants data
-        for round_info in round_info_responses.values():
-            if round_info.participants and round_info.participants.investors:
-                investor_participations = []
-                for investor in round_info.participants.investors:
-                    investor_participations.append(
-                        InvestorParticipation(
-                            investor_name=investor.company_name,
-                            investment_amount=float(investor.investment_value) if investor.investment_value else None,
-                            ownership_percentage_pre=None,  # Not available in current API response
-                            ownership_percentage_post=None,  # Not available in current API response
-                            board_seat_granted=None,  # Not available in current API response
-                            lead_investor=investor.lead_investor,
-                        )
-                    )
-                round_info.investor_participations = investor_participations
-
         return GetRoundsOfFundingInfoFromTransactionIdsResp(
             results=round_info_responses,
             errors=[]  # Individual API failures would be captured in process_tasks_in_thread_pool_executor
-        )
-
-
-class GetAdvisorsForCompanyInRoundOfFundingFromIdentifierArgs(ToolArgsWithIdentifier):
-    transaction_id: int | None = Field(description="The ID of the round of funding.", default=None)
-    role: RoundsOfFundingRole
-
-
-class GetAdvisorsForCompanyInRoundOfFundingFromIdentifierResp(ToolRespWithErrors):
-    results: list[AdvisorInfo]
-
-
-class GetAdvisorsForCompanyInRoundOfFundingFromIdentifier(KfinanceTool):
-    name: str = "get_advisors_for_company_in_round_of_funding_from_identifier"
-    description: str = dedent("""
-        "Returns detailed advisor information including fee disclosures for companies that provided advisory services to the specified company identifier during a round of funding. Provides advisor name, role (Legal Counsel, Financial Advisor, Lead Underwriter), lead status, fee disclosure status, and fee amounts with currency. Use this tool to answer questions like 'Who advised Uber in their Series B?', 'What were the advisor fees in OpenAI's Series C round?', or 'Which advisors had lead roles and disclosed fees in Company X's funding round?'"
-    """).strip()
-
-    args_schema: Type[BaseModel] = GetAdvisorsForCompanyInRoundOfFundingFromIdentifierArgs
-    accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
-
-    def _run(
-        self, identifier: str, transaction_id: int, role: RoundsOfFundingRole
-    ) -> GetAdvisorsForCompanyInRoundOfFundingFromIdentifierResp:
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=[identifier])
-        # If the identifier cannot be resolved, return the associated error.
-        if id_triple_resp.errors:
-            return GetAdvisorsForCompanyInRoundOfFundingFromIdentifierResp(
-                results=[], errors=list(id_triple_resp.errors.values())
-            )
-
-        id_triple = id_triple_resp.identifiers_to_id_triples[identifier]
-
-        round_of_funding = ParticipantInRoF(
-            kfinance_api_client=api_client,
-            transaction_id=transaction_id,
-            company=Company(
-                kfinance_api_client=api_client,
-                company_id=id_triple.company_id,
-            ),
-            target=True if role is RoundsOfFundingRole.company_raising_funds else False,
-        )
-
-        advisors = round_of_funding.advisors
-
-        advisors_response: list[AdvisorInfo] = []
-        if advisors:
-            for advisor in advisors:
-                # Map advisor_type_name to advisor_role and determine if it's a lead role
-                advisor_role = advisor.advisor_type_name or "Unknown"
-                is_lead = "lead" in advisor_role.lower() if advisor_role else False
-
-                advisors_response.append(
-                    AdvisorInfo(
-                        advisor_name=advisor.company.name,
-                        advisor_role=advisor_role,
-                        is_lead=is_lead,
-                        fees_disclosed=False,  # Default to False since individual advisor fees aren't available in current API
-                        advisor_fee_amount=None,  # Individual advisor fees not available in current API
-                        advisor_fee_currency=None,  # Individual advisor fees not available in current API
-                    )
-                )
-
-        return GetAdvisorsForCompanyInRoundOfFundingFromIdentifierResp(
-            results=advisors_response, errors=list(id_triple_resp.errors.values())
         )
 
 
