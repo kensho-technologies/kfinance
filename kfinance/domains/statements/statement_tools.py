@@ -26,7 +26,8 @@ class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 
 class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, StatementsResp]
+    results: dict[str, StatementsResp]  # company_id -> response
+    errors: dict[str, str]  # company_id -> error_message
 
 
 class GetFinancialStatementFromIdentifiers(KfinanceTool):

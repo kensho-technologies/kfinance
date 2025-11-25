@@ -115,7 +115,8 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 
 class GetFinancialLineItemFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, LineItemResp]
+    results: dict[str, LineItemResp]  # company_id -> response
+    errors: dict[str, str]  # company_id -> error_message
 
 
 class GetFinancialLineItemFromIdentifiers(KfinanceTool):

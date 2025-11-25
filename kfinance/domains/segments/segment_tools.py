@@ -26,7 +26,8 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 
 class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, SegmentsResp]
+    results: dict[str, SegmentsResp]  # company_id -> response
+    errors: dict[str, str]  # company_id -> error_message
 
 
 class GetSegmentsFromIdentifiers(KfinanceTool):

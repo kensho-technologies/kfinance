@@ -22,10 +22,3 @@ class StatementPeriodData(BaseModel):
 class StatementsResp(BaseModel):
     currency: str | None
     statements: dict[str, StatementPeriodData]  # period -> statement and period data
-
-
-class MultiCompanyStatementsResp(BaseModel):
-    """Response for multiple companies statements requests"""
-
-    results: dict[str, StatementsResp]  # company_id -> response
-    errors: dict[str, str]  # company_id -> error_message

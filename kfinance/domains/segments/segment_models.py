@@ -21,10 +21,3 @@ class SegmentPeriodData(BaseModel):
 class SegmentsResp(BaseModel):
     currency: str | None
     segments: dict[str, SegmentPeriodData]  # period -> segment and period data
-
-
-class MultiCompanySegmentsResp(BaseModel):
-    """Response for multiple companies segments requests"""
-
-    results: dict[str, SegmentsResp]  # company_id -> response
-    errors: dict[str, str]  # company_id -> error_message

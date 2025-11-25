@@ -18,13 +18,6 @@ class LineItemResp(BaseModel):
     line_item: dict[str, LineItemPeriodData]  # period -> line item and period data
 
 
-class MultiCompanyLineItemResp(BaseModel):
-    """Response for multiple companies line item requests"""
-
-    results: dict[str, LineItemResp]  # company_id -> response
-    errors: dict[str, str]  # company_id -> error_message
-
-
 @dataclass
 class LineItemScore:
     """Represents a line item match with its similarity score."""
