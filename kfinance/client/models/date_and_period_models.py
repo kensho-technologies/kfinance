@@ -13,6 +13,12 @@ class PeriodType(StrEnum):
     ytd = "ytd"
 
 
+class CalendarType(StrEnum):
+    """Calendar type for financial data"""
+    CALENDAR = "calendar"
+    FISCAL = "fiscal"
+
+
 class Periodicity(StrEnum):
     """The frequency or interval at which the historical data points are sampled or aggregated. Periodicity is not the same as the date range. The date range specifies the time span over which the data is retrieved, while periodicity determines how the data within that date range is aggregated."""
 
