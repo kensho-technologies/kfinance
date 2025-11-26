@@ -6,7 +6,7 @@ from requests_mock import Mocker
 from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
-from kfinance.domains.line_items.line_item_models import LineItemResponse, LineItemScore
+from kfinance.domains.line_items.line_item_models import LineItemResp, LineItemScore
 from kfinance.domains.line_items.line_item_tools import (
     GetFinancialLineItemFromIdentifiers,
     GetFinancialLineItemFromIdentifiersArgs,
@@ -17,11 +17,12 @@ from kfinance.domains.line_items.line_item_tools import (
 
 class TestGetFinancialLineItemFromCompanyIds:
     line_item_resp = {
+        "currency": "USD",
         "line_item": {
-            "2022": "11181000000.000000",
-            "2023": "12497000000.000000",
-            "2024": "14208000000.000000",
-        }
+            "2022": {"value": 11181000000.0, "period_end_date": None, "num_months": None},
+            "2023": {"value": 12497000000.0, "period_end_date": None, "num_months": None},
+            "2024": {"value": 14208000000.0, "period_end_date": None, "num_months": None},
+        },
     }
 
     def test_get_financial_line_item_from_identifiers(
@@ -35,12 +36,25 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={
-                "SPGI": LineItemResponse(
-                    line_item={
-                        "2022": Decimal(11181000000),
-                        "2023": Decimal(12497000000),
-                        "2024": Decimal(14208000000),
-                    }
+                "SPGI": LineItemResp(
+                    currency="USD",
+                    periods={
+                        "2022": {
+                            "period_end_date": None,
+                            "num_months": None,
+                            "line_item": {"revenue": Decimal(11181000000)},
+                        },
+                        "2023": {
+                            "period_end_date": None,
+                            "num_months": None,
+                            "line_item": {"revenue": Decimal(12497000000)},
+                        },
+                        "2024": {
+                            "period_end_date": None,
+                            "num_months": None,
+                            "line_item": {"revenue": Decimal(14208000000)},
+                        },
+                    },
                 )
             },
             errors=[
@@ -49,7 +63,7 @@ class TestGetFinancialLineItemFromCompanyIds:
         )
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/{SPGI_COMPANY_ID}/revenue/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/line_item/{SPGI_COMPANY_ID}/revenue/none/none/none/none/none/none/none/none",
             json=self.line_item_resp,
         )
 
@@ -69,14 +83,23 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         company_ids = [1, 2]
 
-        line_item_resp = LineItemResponse(line_item={"2024": Decimal(14208000000)})
+        line_item_resp = LineItemResp(
+            currency="USD",
+            periods={
+                "2024": {
+                    "period_end_date": None,
+                    "num_months": None,
+                    "line_item": {"revenue": Decimal(14208000000)},
+                }
+            },
+        )
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={"C_1": line_item_resp, "C_2": line_item_resp},
         )
 
         for company_id in company_ids:
             requests_mock.get(
-                url=f"https://kfinance.kensho.com/api/v1/line_item/{company_id}/revenue/none/none/none/none/none",
+                url=f"https://kfinance.kensho.com/api/v1/line_item/{company_id}/revenue/none/none/none/none/none/none/none/none",
                 json=self.line_item_resp,
             )
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
@@ -97,18 +120,27 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         company_ids = [1, 2]
 
-        c_1_line_item_resp = LineItemResponse(line_item={})
-        c_2_line_item_resp = LineItemResponse(line_item={"2024": Decimal(14208000000)})
+        c_1_line_item_resp = LineItemResp(currency="USD", periods={})
+        c_2_line_item_resp = LineItemResp(
+            currency="USD",
+            periods={
+                "2024": {
+                    "period_end_date": None,
+                    "num_months": None,
+                    "line_item": {"revenue": Decimal(14208000000)},
+                }
+            },
+        )
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={"C_1": c_1_line_item_resp, "C_2": c_2_line_item_resp},
         )
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/1/revenue/none/none/none/none/none",
-            json={"line_item": {}},
+            url=f"https://kfinance.kensho.com/api/v1/line_item/1/revenue/none/none/none/none/none/none/none/none",
+            json={"currency": "USD", "line_item": {}},
         )
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/2/revenue/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/line_item/2/revenue/none/none/none/none/none/none/none/none",
             json=self.line_item_resp,
         )
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)

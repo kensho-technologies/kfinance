@@ -13,10 +13,11 @@ from kfinance.domains.statements.statement_tools import (
 
 class TestGetFinancialStatementFromIdentifiers:
     statement_resp = {
+        "currency": "USD",
         "statements": {
             "2020": {"Revenues": "7442000000.000000", "Total Revenues": "7442000000.000000"},
             "2021": {"Revenues": "8243000000.000000", "Total Revenues": "8243000000.000000"},
-        }
+        },
     }
 
     def test_get_financial_statement_from_identifiers(
@@ -29,23 +30,32 @@ class TestGetFinancialStatementFromIdentifiers:
         """
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/{SPGI_COMPANY_ID}/income_statement/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/statements/{SPGI_COMPANY_ID}/income_statement/none/none/none/none/none/none/none/none",
             json=self.statement_resp,
         )
         expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
             {
                 "results": {
                     "SPGI": {
-                        "statements": {
+                        "currency": "USD",
+                        "periods": {
                             "2020": {
-                                "Revenues": "7442000000.000000",
-                                "Total Revenues": "7442000000.000000",
+                                "period_end_date": None,
+                                "num_months": None,
+                                "statements": {
+                                    "Revenues": "7442000000.000000",
+                                    "Total Revenues": "7442000000.000000",
+                                },
                             },
                             "2021": {
-                                "Revenues": "8243000000.000000",
-                                "Total Revenues": "8243000000.000000",
+                                "period_end_date": None,
+                                "num_months": None,
+                                "statements": {
+                                    "Revenues": "8243000000.000000",
+                                    "Total Revenues": "8243000000.000000",
+                                },
                             },
-                        }
+                        },
                     }
                 },
                 "errors": [
@@ -73,20 +83,30 @@ class TestGetFinancialStatementFromIdentifiers:
             {
                 "results": {
                     "C_1": {
-                        "statements": {
+                        "currency": "USD",
+                        "periods": {
                             "2021": {
-                                "Revenues": "8243000000.000000",
-                                "Total Revenues": "8243000000.000000",
+                                "period_end_date": None,
+                                "num_months": None,
+                                "statements": {
+                                    "Revenues": "8243000000.000000",
+                                    "Total Revenues": "8243000000.000000",
+                                },
                             }
-                        }
+                        },
                     },
                     "C_2": {
-                        "statements": {
+                        "currency": "USD",
+                        "periods": {
                             "2021": {
-                                "Revenues": "8243000000.000000",
-                                "Total Revenues": "8243000000.000000",
+                                "period_end_date": None,
+                                "num_months": None,
+                                "statements": {
+                                    "Revenues": "8243000000.000000",
+                                    "Total Revenues": "8243000000.000000",
+                                },
                             }
-                        }
+                        },
                     },
                 }
             }
@@ -94,7 +114,7 @@ class TestGetFinancialStatementFromIdentifiers:
 
         for company_id in company_ids:
             requests_mock.get(
-                url=f"https://kfinance.kensho.com/api/v1/statements/{company_id}/income_statement/none/none/none/none/none",
+                url=f"https://kfinance.kensho.com/api/v1/statements/{company_id}/income_statement/none/none/none/none/none/none/none/none",
                 json=self.statement_resp,
             )
 
@@ -118,25 +138,30 @@ class TestGetFinancialStatementFromIdentifiers:
         expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
             {
                 "results": {
-                    "C_1": {"statements": {}},
+                    "C_1": {"currency": "USD", "periods": {}},
                     "C_2": {
-                        "statements": {
+                        "currency": "USD",
+                        "periods": {
                             "2021": {
-                                "Revenues": "8243000000.000000",
-                                "Total Revenues": "8243000000.000000",
+                                "period_end_date": None,
+                                "num_months": None,
+                                "statements": {
+                                    "Revenues": "8243000000.000000",
+                                    "Total Revenues": "8243000000.000000",
+                                },
                             }
-                        }
+                        },
                     },
                 }
             }
         )
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/1/income_statement/none/none/none/none/none",
-            json={"statements": {}},
+            url=f"https://kfinance.kensho.com/api/v1/statements/1/income_statement/none/none/none/none/none/none/none/none",
+            json={"currency": "USD", "statements": {}},
         )
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/2/income_statement/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/statements/2/income_statement/none/none/none/none/none/none/none/none",
             json=self.statement_resp,
         )
 

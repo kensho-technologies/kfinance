@@ -4,8 +4,9 @@ from typing import Literal, Type
 from pydantic import BaseModel, Field
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
-from kfinance.client.models.date_and_period_models import PeriodType
+from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.permission_models import Permission
+from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -23,10 +24,15 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
     end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
+    calendar_type: CalendarType | None = Field(
+        default=None, description="Fiscal year or calendar year"
+    )
+    num_periods: NumPeriods | None = Field(default=None)
+    num_periods_back: NumPeriodsBack | None = Field(default=None)
 
 
 class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, SegmentsResp]
+    results: dict[str, SegmentsResp]  # company_id -> response
 
 
 class GetSegmentsFromIdentifiers(KfinanceTool):
@@ -48,21 +54,27 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         end_year: int | None = None,
         start_quarter: Literal[1, 2, 3, 4] | None = None,
         end_quarter: Literal[1, 2, 3, 4] | None = None,
+        calendar_type: CalendarType | None = None,
+        num_periods: int | None = None,
+        num_periods_back: int | None = None,
     ) -> GetSegmentsFromIdentifiersResp:
         """Sample Response:
 
         {
             'results': {
                 'SPGI': {
+                    'currency': 'USD',
                     'segments': {
-                        '2021': {
+                        'CY2021': {
                             'Commodity Insights': {'CAPEX': -2000000.0, 'D&A': 12000000.0},
-                            'Unallocated Assets Held for Sale': {'Total Assets': 321000000.0}
+                            'Unallocated Assets Held for Sale': {'Total Assets': 321000000.0},
+                            'period_end_date': '2021-12-31',
+                            'num_months': 12
                         }
                     }
                 }
             },
-            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
+            'errors': {'NON-EXISTENT': 'No identification triple found for the provided identifier: NON-EXISTENT of type: ticker'}
         }
 
 
@@ -82,6 +94,9 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
                     end_year=end_year,
                     start_quarter=start_quarter,
                     end_quarter=end_quarter,
+                    calendar_type=calendar_type,
+                    num_periods=num_periods,
+                    num_periods_back=num_periods_back,
                 ),
                 result_key=identifier,
             )
@@ -103,10 +118,10 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
             and len(segments_responses) > 1
         ):
             for segments_response in segments_responses.values():
-                if segments_response.segments:
-                    most_recent_year = max(segments_response.segments.keys())
-                    most_recent_year_data = segments_response.segments[most_recent_year]
-                    segments_response.segments = {most_recent_year: most_recent_year_data}
+                if segments_response.periods:
+                    most_recent_year = max(segments_response.periods.keys())
+                    most_recent_year_data = segments_response.periods[most_recent_year]
+                    segments_response.periods = {most_recent_year: most_recent_year_data}
 
         return GetSegmentsFromIdentifiersResp(
             results=segments_responses, errors=list(id_triple_resp.errors.values())

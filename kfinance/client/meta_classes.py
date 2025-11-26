@@ -85,21 +85,23 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return pd.DataFrame()
 
-        return (
-            pd.DataFrame(
-                self.kfinance_api_client.fetch_statement(
-                    company_id=self.company_id,
-                    statement_type=statement_type,
-                    period_type=period_type,
-                    start_year=start_year,
-                    end_year=end_year,
-                    start_quarter=start_quarter,
-                    end_quarter=end_quarter,
-                ).model_dump(mode="json")["statements"]
-            )
-            .apply(pd.to_numeric)
-            .replace(np.nan, None)
-        )
+        periods = self.kfinance_api_client.fetch_statement(
+            company_id=self.company_id,
+            statement_type=statement_type,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        ).model_dump(mode="json")["periods"]
+
+        # Extract statements data from each period
+        statements_data = {}
+        for period_key, period_data in periods.items():
+            if isinstance(period_data, dict) and "statements" in period_data:
+                statements_data[period_key] = period_data["statements"]
+
+        return pd.DataFrame(statements_data).apply(pd.to_numeric).replace(np.nan, None)
 
     def income_statement(
         self,
@@ -222,7 +224,7 @@ class CompanyFunctionsMetaClass:
             end_quarter=end_quarter,
         )
         return (
-            pd.DataFrame({"line_item": line_item_response.line_item})
+            pd.DataFrame({"line_item": line_item_response.periods})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)
@@ -359,7 +361,7 @@ class CompanyFunctionsMetaClass:
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
-        ).model_dump(mode="json")["segments"]
+        ).model_dump(mode="json")["periods"]
 
     def business_segments(
         self,

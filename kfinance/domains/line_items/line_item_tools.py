@@ -5,12 +5,13 @@ from typing import Literal, Type
 from pydantic import BaseModel, Field, model_validator
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
-from kfinance.client.models.date_and_period_models import PeriodType
+from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
     LINE_ITEM_NAMES_AND_ALIASES,
     LINE_ITEM_TO_DESCRIPTIONS_MAP,
-    LineItemResponse,
+    CalendarType,
+    LineItemResp,
     LineItemScore,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
@@ -102,6 +103,11 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
     end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
+    calendar_type: CalendarType | None = Field(
+        default=None, description="Fiscal year or calendar year"
+    )
+    num_periods: NumPeriods | None = Field(default=None)
+    num_periods_back: NumPeriodsBack | None = Field(default=None)
 
     @model_validator(mode="before")
     @classmethod
@@ -115,7 +121,7 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 
 class GetFinancialLineItemFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, LineItemResponse]
+    results: dict[str, LineItemResp]  # company_id -> response
 
 
 class GetFinancialLineItemFromIdentifiers(KfinanceTool):
@@ -147,14 +153,32 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         end_year: int | None = None,
         start_quarter: Literal[1, 2, 3, 4] | None = None,
         end_quarter: Literal[1, 2, 3, 4] | None = None,
+        calendar_type: CalendarType | None = None,
+        num_periods: int | None = None,
+        num_periods_back: int | None = None,
     ) -> GetFinancialLineItemFromIdentifiersResp:
         """Sample response:
 
         {
             'SPGI': {
-                '2022': {'revenue': 11181000000.0},
-                '2023': {'revenue': 12497000000.0},
-                '2024': {'revenue': 14208000000.0}
+                'currency': 'USD',
+                'line_item': {
+                    'CY2022': {
+                        'revenue': 11181000000.0,
+                        'period_end_date': '2021-12-31',
+                        'num_months': 12
+                    },
+                    'CY2023': {
+                        'revenue': 12497000000.0,
+                        'period_end_date': '2021-12-31',
+                        'num_months': 12
+                    },
+                    'CY2024': {
+                        'revenue': 14208000000.0,
+                        'period_end_date': '2021-12-31',
+                        'num_months': 12
+                    }
+                }
             }
         }
         """
@@ -163,24 +187,34 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
 
         tasks = [
             Task(
-                func=api_client.fetch_line_item,
-                kwargs=dict(
-                    company_id=id_triple.company_id,
-                    line_item=line_item,
-                    period_type=period_type,
-                    start_year=start_year,
-                    end_year=end_year,
-                    start_quarter=start_quarter,
-                    end_quarter=end_quarter,
+                func=api_client.fetch,
+                args=(
+                    f"{api_client.url_base}line_item/{id_triple.company_id}/{line_item}/"
+                    f"{period_type if period_type else 'none'}/"
+                    f"{start_year if start_year is not None else 'none'}/"
+                    f"{end_year if end_year is not None else 'none'}/"
+                    f"{start_quarter if start_quarter is not None else 'none'}/"
+                    f"{end_quarter if end_quarter is not None else 'none'}/"
+                    f"{calendar_type if calendar_type else 'none'}/"
+                    f"{num_periods if num_periods is not None else 'none'}/"
+                    f"{num_periods_back if num_periods_back is not None else 'none'}",
                 ),
                 result_key=identifier,
             )
             for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
         ]
 
-        line_item_responses: dict[str, LineItemResponse] = process_tasks_in_thread_pool_executor(
+        # Get raw responses from the API
+        raw_responses: dict[str, dict] = process_tasks_in_thread_pool_executor(
             api_client=api_client, tasks=tasks
         )
+
+        # Convert raw responses to LineItemResp objects with line item name context
+        line_item_responses: dict[str, LineItemResp] = {}
+        for identifier, raw_response in raw_responses.items():
+            line_item_responses[identifier] = LineItemResp.from_api_response(
+                raw_response, line_item
+            )
 
         # If no date and multiple companies, only return the most recent value.
         # By default, we return 5 years of data, which can be too much when
@@ -193,10 +227,10 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
             and len(line_item_responses) > 1
         ):
             for line_item_response in line_item_responses.values():
-                if line_item_response.line_item:
-                    most_recent_year = max(line_item_response.line_item.keys())
-                    most_recent_year_data = line_item_response.line_item[most_recent_year]
-                    line_item_response.line_item = {most_recent_year: most_recent_year_data}
+                if line_item_response.periods:
+                    most_recent_year = max(line_item_response.periods.keys())
+                    most_recent_year_data = line_item_response.periods[most_recent_year]
+                    line_item_response.periods = {most_recent_year: most_recent_year_data}
 
         return GetFinancialLineItemFromIdentifiersResp(
             results=line_item_responses, errors=list(id_triple_resp.errors.values())

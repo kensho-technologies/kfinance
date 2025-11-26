@@ -25,7 +25,7 @@ from kfinance.domains.companies.company_models import (
 )
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.domains.earnings.earning_models import EarningsCallResp
-from kfinance.domains.line_items.line_item_models import LineItemResponse
+from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerInfo,
     MergersResp,
@@ -359,6 +359,9 @@ class KFinanceApiClient:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
+        calendar_type: Optional[CalendarType] = None,
+        num_periods: Optional[int] = None,
+        num_periods_back: Optional[int] = None,
     ) -> SegmentsResp:
         """Get a specified segment type for a specified duration."""
         url = (
@@ -367,7 +370,10 @@ class KFinanceApiClient:
             f"{start_year if start_year is not None else 'none'}/"
             f"{end_year if end_year is not None else 'none'}/"
             f"{start_quarter if start_quarter is not None else 'none'}/"
-            f"{end_quarter if end_quarter is not None else 'none'}"
+            f"{end_quarter if end_quarter is not None else 'none'}/"
+            f"{calendar_type if calendar_type else 'none'}/"
+            f"{num_periods if num_periods is not None else 'none'}/"
+            f"{num_periods_back if num_periods_back is not None else 'none'}"
         )
         return SegmentsResp.model_validate(self.fetch(url))
 
@@ -408,6 +414,9 @@ class KFinanceApiClient:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
+        calendar_type: Optional[CalendarType] = None,
+        num_periods: Optional[int] = None,
+        num_periods_back: Optional[int] = None,
     ) -> StatementsResp:
         """Get a specified financial statement for a specified duration."""
         url = (
@@ -416,7 +425,10 @@ class KFinanceApiClient:
             f"{start_year if start_year is not None else 'none'}/"
             f"{end_year if end_year is not None else 'none'}/"
             f"{start_quarter if start_quarter is not None else 'none'}/"
-            f"{end_quarter if end_quarter is not None else 'none'}"
+            f"{end_quarter if end_quarter is not None else 'none'}/"
+            f"{calendar_type if calendar_type else 'none'}/"
+            f"{num_periods if num_periods is not None else 'none'}/"
+            f"{num_periods_back if num_periods_back is not None else 'none'}"
         )
         return StatementsResp.model_validate(self.fetch(url))
 
@@ -429,7 +441,10 @@ class KFinanceApiClient:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
-    ) -> LineItemResponse:
+        calendar_type: Optional[CalendarType] = None,
+        num_periods: Optional[int] = None,
+        num_periods_back: Optional[int] = None,
+    ) -> LineItemResp:
         """Get a specified financial line item for a specified duration."""
         url = (
             f"{self.url_base}line_item/{company_id}/{line_item}/"
@@ -437,9 +452,12 @@ class KFinanceApiClient:
             f"{start_year if start_year is not None else 'none'}/"
             f"{end_year if end_year is not None else 'none'}/"
             f"{start_quarter if start_quarter is not None else 'none'}/"
-            f"{end_quarter if end_quarter is not None else 'none'}"
+            f"{end_quarter if end_quarter is not None else 'none'}/"
+            f"{calendar_type if calendar_type else 'none'}/"
+            f"{num_periods if num_periods is not None else 'none'}/"
+            f"{num_periods_back if num_periods_back is not None else 'none'}"
         )
-        return LineItemResponse.model_validate(self.fetch(url))
+        return LineItemResp.from_api_response(self.fetch(url), line_item)
 
     def fetch_info(self, company_id: int) -> dict:
         """Get the company info."""

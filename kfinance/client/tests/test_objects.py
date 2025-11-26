@@ -27,7 +27,7 @@ from kfinance.domains.business_relationships.business_relationship_models import
 from kfinance.domains.capitalizations.capitalization_models import Capitalizations
 from kfinance.domains.companies.company_models import CompanyIdAndName, IdentificationTriple
 from kfinance.domains.earnings.earning_models import EarningsCallResp
-from kfinance.domains.line_items.line_item_models import LineItemResponse
+from kfinance.domains.line_items.line_item_models import LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerInfo,
     MergersResp,
@@ -105,20 +105,23 @@ MOCK_COMPANY_DB = {
             }
         ),
         "line_items": {
-            "revenue": LineItemResponse.model_validate(
+            "revenue": LineItemResp.model_validate(
                 {
+                    "currency": "USD",
                     "line_item": {
                         "2019": "125843000000.000000",
                         "2020": "143015000000.000000",
                         "2021": "168088000000.000000",
                         "2022": "198270000000.000000",
                         "2023": "211915000000.000000",
-                    }
+                    },
+                    "_line_item_name": "revenue",
                 }
             )
         },
         "segments": SegmentsResp.model_validate(
             {
+                "currency": "USD",
                 "segments": {
                     "2024": {
                         "Intelligent Cloud": {
@@ -134,7 +137,7 @@ MOCK_COMPANY_DB = {
                             "Revenue": 77728000000.0,
                         },
                     }
-                }
+                },
             }
         ),
         "advisors": {
@@ -193,12 +196,13 @@ MOCK_TRANSCRIPT_DB = {
 
 INCOME_STATEMENT = StatementsResp.model_validate(
     {
+        "currency": "USD",
         "statements": {
             "2019": {
                 "Revenues": "125843000000.000000",
                 "Total Revenues": "125843000000.000000",
             }
-        }
+        },
     }
 )
 
@@ -357,7 +361,17 @@ class MockKFinanceApiClient:
         return INCOME_STATEMENT
 
     def fetch_line_item(
-        self, company_id, line_item, period_type, start_year, end_year, start_quarter, end_quarter
+        self,
+        company_id,
+        line_item,
+        period_type,
+        start_year,
+        end_year,
+        start_quarter,
+        end_quarter,
+        calendar_type=None,
+        num_periods=None,
+        num_periods_back=None,
     ):
         """Get a statement"""
         return MOCK_COMPANY_DB[company_id]["line_items"][line_item]
@@ -523,10 +537,15 @@ class TestCompany(TestCase):
 
     def test_income_statement(self) -> None:
         """test income statement"""
+        # Extract statements data from the periods structure
+        periods_data = INCOME_STATEMENT.model_dump(mode="json")["periods"]
+        statements_data = {}
+        for period_key, period_data in periods_data.items():
+            if isinstance(period_data, dict) and "statements" in period_data:
+                statements_data[period_key] = period_data["statements"]
+
         expected_income_statement = (
-            pd.DataFrame(INCOME_STATEMENT.model_dump(mode="json")["statements"])
-            .apply(pd.to_numeric)
-            .replace(np.nan, None)
+            pd.DataFrame(statements_data).apply(pd.to_numeric).replace(np.nan, None)
         )
 
         income_statement = self.msft_company.company.income_statement()
@@ -534,11 +553,9 @@ class TestCompany(TestCase):
 
     def test_revenue(self) -> None:
         """test revenue"""
-        line_item_response: LineItemResponse = MOCK_COMPANY_DB[msft_company_id]["line_items"][
-            "revenue"
-        ]
+        line_item_response: LineItemResp = MOCK_COMPANY_DB[msft_company_id]["line_items"]["revenue"]
         expected_revenue = (
-            pd.DataFrame({"line_item": line_item_response.line_item})
+            pd.DataFrame({"line_item": line_item_response.periods})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)
@@ -550,7 +567,7 @@ class TestCompany(TestCase):
     def test_business_segments(self) -> None:
         """test business statement"""
         expected_segments = MOCK_COMPANY_DB[msft_company_id]["segments"].model_dump(mode="json")[
-            "segments"
+            "periods"
         ]
 
         business_segment = self.msft_company.company.business_segments()
@@ -844,10 +861,15 @@ class TestTicker(TestCase):
 
     def test_income_statement(self) -> None:
         """test income statement"""
+        # Extract statements data from the periods structure
+        periods_data = INCOME_STATEMENT.model_dump(mode="json")["periods"]
+        statements_data = {}
+        for period_key, period_data in periods_data.items():
+            if isinstance(period_data, dict) and "statements" in period_data:
+                statements_data[period_key] = period_data["statements"]
+
         expected_income_statement = (
-            pd.DataFrame(INCOME_STATEMENT.model_dump(mode="json")["statements"])
-            .apply(pd.to_numeric)
-            .replace(np.nan, None)
+            pd.DataFrame(statements_data).apply(pd.to_numeric).replace(np.nan, None)
         )
 
         income_statement = self.msft_ticker_from_ticker.income_statement()
@@ -864,11 +886,9 @@ class TestTicker(TestCase):
 
     def test_revenue(self) -> None:
         """test revenue"""
-        line_item_response: LineItemResponse = MOCK_COMPANY_DB[msft_company_id]["line_items"][
-            "revenue"
-        ]
+        line_item_response: LineItemResp = MOCK_COMPANY_DB[msft_company_id]["line_items"]["revenue"]
         expected_revenue = (
-            pd.DataFrame({"line_item": line_item_response.line_item})
+            pd.DataFrame({"line_item": line_item_response.periods})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)
