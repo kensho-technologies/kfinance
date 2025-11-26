@@ -4,8 +4,9 @@ from typing import Literal, Type
 from pydantic import BaseModel, Field
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
-from kfinance.client.models.date_and_period_models import PeriodType
+from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.permission_models import Permission
+from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -13,7 +14,6 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolRespWithErrors,
     ValidQuarter,
 )
-from kfinance.domains.line_items.line_item_models import CalendarType
 
 
 class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
@@ -24,14 +24,15 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
     end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
-    calendar_type: CalendarType | None = Field(default=None, description="Fiscal year or calendar year")
-    num_periods: int | None = Field(default=None, description="The number of periods to retrieve data for")
-    num_periods_back: int | None = Field(default=None, description="The end period of the data range expressed as number of periods back relative to the present period")
+    calendar_type: CalendarType | None = Field(
+        default=None, description="Fiscal year or calendar year"
+    )
+    num_periods: NumPeriods | None = Field(default=None)
+    num_periods_back: NumPeriodsBack | None = Field(default=None)
 
 
 class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, SegmentsResp]  # company_id -> response
-    errors: dict[str, str]  # company_id -> error_message
 
 
 class GetSegmentsFromIdentifiers(KfinanceTool):
@@ -117,11 +118,11 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
             and len(segments_responses) > 1
         ):
             for segments_response in segments_responses.values():
-                if segments_response.segments:
-                    most_recent_year = max(segments_response.segments.keys())
-                    most_recent_year_data = segments_response.segments[most_recent_year]
-                    segments_response.segments = {most_recent_year: most_recent_year_data}
+                if segments_response.periods:
+                    most_recent_year = max(segments_response.periods.keys())
+                    most_recent_year_data = segments_response.periods[most_recent_year]
+                    segments_response.periods = {most_recent_year: most_recent_year_data}
 
         return GetSegmentsFromIdentifiersResp(
-            results=segments_responses, errors=id_triple_resp.errors
+            results=segments_responses, errors=list(id_triple_resp.errors.values())
         )

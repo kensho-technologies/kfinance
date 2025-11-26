@@ -107,18 +107,21 @@ MOCK_COMPANY_DB = {
         "line_items": {
             "revenue": LineItemResp.model_validate(
                 {
+                    "currency": "USD",
                     "line_item": {
                         "2019": "125843000000.000000",
                         "2020": "143015000000.000000",
                         "2021": "168088000000.000000",
                         "2022": "198270000000.000000",
                         "2023": "211915000000.000000",
-                    }
+                    },
+                    "_line_item_name": "revenue"
                 }
             )
         },
         "segments": SegmentsResp.model_validate(
             {
+                "currency": "USD",
                 "segments": {
                     "2024": {
                         "Intelligent Cloud": {
@@ -193,6 +196,7 @@ MOCK_TRANSCRIPT_DB = {
 
 INCOME_STATEMENT = StatementsResp.model_validate(
     {
+        "currency": "USD",
         "statements": {
             "2019": {
                 "Revenues": "125843000000.000000",
@@ -357,7 +361,8 @@ class MockKFinanceApiClient:
         return INCOME_STATEMENT
 
     def fetch_line_item(
-        self, company_id, line_item, period_type, start_year, end_year, start_quarter, end_quarter
+        self, company_id, line_item, period_type, start_year, end_year, start_quarter, end_quarter,
+        calendar_type=None, num_periods=None, num_periods_back=None
     ):
         """Get a statement"""
         return MOCK_COMPANY_DB[company_id]["line_items"][line_item]
@@ -523,8 +528,15 @@ class TestCompany(TestCase):
 
     def test_income_statement(self) -> None:
         """test income statement"""
+        # Extract statements data from the periods structure
+        periods_data = INCOME_STATEMENT.model_dump(mode="json")["periods"]
+        statements_data = {}
+        for period_key, period_data in periods_data.items():
+            if isinstance(period_data, dict) and "statements" in period_data:
+                statements_data[period_key] = period_data["statements"]
+
         expected_income_statement = (
-            pd.DataFrame(INCOME_STATEMENT.model_dump(mode="json")["statements"])
+            pd.DataFrame(statements_data)
             .apply(pd.to_numeric)
             .replace(np.nan, None)
         )
@@ -536,7 +548,7 @@ class TestCompany(TestCase):
         """test revenue"""
         line_item_response: LineItemResp = MOCK_COMPANY_DB[msft_company_id]["line_items"]["revenue"]
         expected_revenue = (
-            pd.DataFrame({"line_item": line_item_response.line_item})
+            pd.DataFrame({"line_item": line_item_response.periods})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)
@@ -548,7 +560,7 @@ class TestCompany(TestCase):
     def test_business_segments(self) -> None:
         """test business statement"""
         expected_segments = MOCK_COMPANY_DB[msft_company_id]["segments"].model_dump(mode="json")[
-            "segments"
+            "periods"
         ]
 
         business_segment = self.msft_company.company.business_segments()
@@ -842,8 +854,15 @@ class TestTicker(TestCase):
 
     def test_income_statement(self) -> None:
         """test income statement"""
+        # Extract statements data from the periods structure
+        periods_data = INCOME_STATEMENT.model_dump(mode="json")["periods"]
+        statements_data = {}
+        for period_key, period_data in periods_data.items():
+            if isinstance(period_data, dict) and "statements" in period_data:
+                statements_data[period_key] = period_data["statements"]
+
         expected_income_statement = (
-            pd.DataFrame(INCOME_STATEMENT.model_dump(mode="json")["statements"])
+            pd.DataFrame(statements_data)
             .apply(pd.to_numeric)
             .replace(np.nan, None)
         )
@@ -864,7 +883,7 @@ class TestTicker(TestCase):
         """test revenue"""
         line_item_response: LineItemResp = MOCK_COMPANY_DB[msft_company_id]["line_items"]["revenue"]
         expected_revenue = (
-            pd.DataFrame({"line_item": line_item_response.line_item})
+            pd.DataFrame({"line_item": line_item_response.periods})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)

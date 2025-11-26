@@ -13,13 +13,13 @@ from kfinance.domains.segments.segment_tools import (
 
 class TestGetSegmentsFromIdentifier:
     segments_response = {
+        "currency": "USD",
         "segments": {
             "2020": {
                 "Commodity Insights": {
                     "CAPEX": -7000000.0,
                     "D&A": 17000000.0,
                 },
-                "Unallocated Assets Held for Sale": None,
             },
             "2021": {
                 "Commodity Insights": {
@@ -39,7 +39,7 @@ class TestGetSegmentsFromIdentifier:
         """
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/segments/{SPGI_COMPANY_ID}/business/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/segments/{SPGI_COMPANY_ID}/business/none/none/none/none/none/none/none/none",
             # truncated from the original API response
             json=self.segments_response,
         )
@@ -71,15 +71,15 @@ class TestGetSegmentsFromIdentifier:
         expected_response = GetSegmentsFromIdentifiersResp.model_validate(
             {
                 "results": {
-                    "C_1": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
-                    "C_2": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
+                    "C_1": {"currency": "USD", "periods": {"2021": {"period_end_date": None, "num_months": None, "segments": self.segments_response["segments"]["2021"]}}},
+                    "C_2": {"currency": "USD", "periods": {"2021": {"period_end_date": None, "num_months": None, "segments": self.segments_response["segments"]["2021"]}}},
                 }
             }
         )
 
         for company_id in company_ids:
             requests_mock.get(
-                url=f"https://kfinance.kensho.com/api/v1/segments/{company_id}/business/none/none/none/none/none",
+                url=f"https://kfinance.kensho.com/api/v1/segments/{company_id}/business/none/none/none/none/none/none/none/none",
                 json=self.segments_response,
             )
 
@@ -103,18 +103,18 @@ class TestGetSegmentsFromIdentifier:
         expected_response = GetSegmentsFromIdentifiersResp.model_validate(
             {
                 "results": {
-                    "C_1": {"segments": {}},
-                    "C_2": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
+                    "C_1": {"currency": "USD", "periods": {}},
+                    "C_2": {"currency": "USD", "periods": {"2021": {"period_end_date": None, "num_months": None, "segments": self.segments_response["segments"]["2021"]}}},
                 }
             }
         )
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/segments/1/business/none/none/none/none/none",
-            json={"segments": {}},
+            url=f"https://kfinance.kensho.com/api/v1/segments/1/business/none/none/none/none/none/none/none/none",
+            json={"currency": "USD", "segments": {}},
         )
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/segments/2/business/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/segments/2/business/none/none/none/none/none/none/none/none",
             json=self.segments_response,
         )
 

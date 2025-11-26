@@ -1,7 +1,29 @@
 from datetime import date
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, BeforeValidator, Field
 from strenum import StrEnum
+
+
+def convert_str_to_int(v) -> int:
+    """Convert strings to integers if possible."""
+    if isinstance(v, str) and v.isdigit():
+        return int(v)
+    return v
+
+
+# Constrained integer types for period counts
+NumPeriods = Annotated[
+    int,
+    BeforeValidator(convert_str_to_int),
+    Field(ge=1, le=99, description="Number of periods (1-99)")
+]
+
+NumPeriodsBack = Annotated[
+    int,
+    BeforeValidator(convert_str_to_int),
+    Field(ge=0, le=99, description="Number of periods back (0-99)")
+]
 
 
 class PeriodType(StrEnum):

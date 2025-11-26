@@ -85,6 +85,7 @@ def test_run_notebook(jupyter_kernel_name: str):
         )
 
         balance_sheet_resp = {
+            "currency": "USD",
             "statements": {
                 "2022Q3": {"Cash And Equivalents": "1387000000.000000"},
                 "2022Q4": {"Cash And Equivalents": "1286000000.000000"}
@@ -93,13 +94,13 @@ def test_run_notebook(jupyter_kernel_name: str):
 
         # spgi.balance_sheet()
         mocker.get(
-            url="https://kfinance.kensho.com/api/v1/statements/21719/balance_sheet/none/none/none/none/none",
+            url="https://kfinance.kensho.com/api/v1/statements/21719/balance_sheet/none/none/none/none/none/none/none/none",
             json=balance_sheet_resp
         )
 
         # spgi.balance_sheet(period_type=PeriodType.annual, start_year=2010, end_year=2019)
         mocker.get(
-            url="https://kfinance.kensho.com/api/v1/statements/21719/balance_sheet/annual/2010/2019/none/none",
+            url="https://kfinance.kensho.com/api/v1/statements/21719/balance_sheet/annual/2010/2019/none/none/none/none/none",
             json=balance_sheet_resp
         )
 
@@ -113,8 +114,8 @@ def test_run_notebook(jupyter_kernel_name: str):
 
         # spgi.net_income(period_type=PeriodType.annual, start_year=2010, end_year=2019)
         mocker.get(
-            url="https://kfinance.kensho.com/api/v1/line_item/21719/net_income/annual/2010/2019/none/none",
-            json={"line_item": {"2010": "828000000.000000"}}
+            url="https://kfinance.kensho.com/api/v1/line_item/21719/net_income/annual/2010/2019/none/none/none/none/none",
+            json={"currency": "USD", "line_item": {"2010": "828000000.000000"}}
         )
 
         prices_resp = {
