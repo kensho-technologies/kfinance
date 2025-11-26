@@ -104,8 +104,8 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
     end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
     calendar_type: CalendarType | None = Field(default=None, description="Fiscal year or calendar year")
-    num_periods: int | None = Field(default=None, description="The number of periods to retrieve data")
-    num_periods_back: int | None = Field(default=None, description="The number of periods back to start retrieving data")
+    num_periods: int | None = Field(default=None, description="The number of periods to retrieve data for")
+    num_periods_back: int | None = Field(default=None, description="The end period of the data range expressed as number of periods back relative to the present period")
 
     @model_validator(mode="before")
     @classmethod
@@ -162,9 +162,21 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
             'SPGI': {
                 'currency': 'USD',
                 'line_item': {
-                    'CY2022': {'revenue': 11181000000.0},
-                    'CY2023': {'revenue': 12497000000.0},
-                    'CY2024': {'revenue': 14208000000.0}
+                    'CY2022': {
+                        'revenue': 11181000000.0, 
+                        'period_end_date': '2021-12-31',
+                        'num_months': 12
+                    },
+                    'CY2023': {
+                        'revenue': 12497000000.0, 
+                        'period_end_date': '2021-12-31',
+                        'num_months': 12
+                    },
+                    'CY2024': {
+                        'revenue': 14208000000.0, 
+                        'period_end_date': '2021-12-31',
+                        'num_months': 12
+                    }
                 }
             }
         }
@@ -213,5 +225,5 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
                     line_item_response.line_item = {most_recent_year: most_recent_year_data}
 
         return GetFinancialLineItemFromIdentifiersResp(
-            results=line_item_responses, errors=list(id_triple_resp.errors.values())
+            results=line_item_responses, errors=id_triple_resp.errors
         )

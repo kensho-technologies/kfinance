@@ -25,8 +25,8 @@ class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers):
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
     end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
     calendar_type: CalendarType | None = Field(default=None, description="Fiscal year or calendar year")
-    num_periods: int | None = Field(default=None, description="The number of periods to retrieve data")
-    num_periods_back: int | None = Field(default=None, description="The number of periods back to start retrieving data")
+    num_periods: int | None = Field(default=None, description="The number of periods to retrieve data for")
+    num_periods_back: int | None = Field(default=None, description="The end period of the data range expressed as number of periods back relative to the present period")
 
 class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, StatementsResp]  # company_id -> response
@@ -71,8 +71,8 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
                 'SPGI': {
                     'currency': 'USD',
                     'statements': {
-                        'CY2020': {'Revenues': '7442000000.000000', 'Total Revenues': '7442000000.000000'},
-                        'CY2021': {'Revenues': '8243000000.000000', 'Total Revenues': '8243000000.000000'}
+                        'CY2020': {'Revenues': '7442000000.000000', 'Total Revenues': '7442000000.000000', 'period_end_date': '2020-12-31', 'num_months': 12},
+                        'CY2021': {'Revenues': '8243000000.000000', 'Total Revenues': '8243000000.000000', 'period_end_date': '2021-12-31', 'num_months': 12}
                     }
                 }
             },

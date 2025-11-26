@@ -25,8 +25,8 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
     end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
     calendar_type: CalendarType | None = Field(default=None, description="Fiscal year or calendar year")
-    num_periods: int | None = Field(default=None, description="The number of periods to retrieve data")
-    num_periods_back: int | None = Field(default=None, description="The number of periods back to start retrieving data")
+    num_periods: int | None = Field(default=None, description="The number of periods to retrieve data for")
+    num_periods_back: int | None = Field(default=None, description="The end period of the data range expressed as number of periods back relative to the present period")
 
 
 class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
@@ -66,7 +66,9 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
                     'segments': {
                         'CY2021': {
                             'Commodity Insights': {'CAPEX': -2000000.0, 'D&A': 12000000.0},
-                            'Unallocated Assets Held for Sale': {'Total Assets': 321000000.0}
+                            'Unallocated Assets Held for Sale': {'Total Assets': 321000000.0},
+                            'period_end_date': '2021-12-31',
+                            'num_months': 12
                         }
                     }
                 }
@@ -121,5 +123,5 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
                     segments_response.segments = {most_recent_year: most_recent_year_data}
 
         return GetSegmentsFromIdentifiersResp(
-            results=segments_responses, errors=list(id_triple_resp.errors.values())
+            results=segments_responses, errors=id_triple_resp.errors
         )
