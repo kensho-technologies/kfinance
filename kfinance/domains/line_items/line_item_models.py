@@ -3,8 +3,13 @@ from datetime import date
 from decimal import Decimal
 from itertools import chain
 from typing import TypedDict
+from strenum import StrEnum
 
 from pydantic import BaseModel
+
+class CalendarType(StrEnum):
+    FISCAL = "FISCAL"
+    CALENDAR = "CALENDAR"
 
 
 class LineItemPeriodData(BaseModel):

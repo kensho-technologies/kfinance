@@ -10,6 +10,7 @@ from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
     LINE_ITEM_NAMES_AND_ALIASES,
     LINE_ITEM_TO_DESCRIPTIONS_MAP,
+    CalendarType,
     LineItemResp,
     LineItemScore,
 )
@@ -102,6 +103,9 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
     end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
+    calendar_type: CalendarType | None = Field(default=None, description="Fiscal year or calendar year")
+    num_periods: int | None = Field(default=None, description="The number of periods to retrieve data")
+    num_periods_back: int | None = Field(default=None, description="The number of periods back to start retrieving data")
 
     @model_validator(mode="before")
     @classmethod
@@ -148,14 +152,20 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         end_year: int | None = None,
         start_quarter: Literal[1, 2, 3, 4] | None = None,
         end_quarter: Literal[1, 2, 3, 4] | None = None,
+        calendar_type: CalendarType | None = None,
+        num_periods: int | None = None,
+        num_periods_back: int | None = None,
     ) -> GetFinancialLineItemFromIdentifiersResp:
         """Sample response:
 
         {
             'SPGI': {
-                '2022': {'revenue': 11181000000.0},
-                '2023': {'revenue': 12497000000.0},
-                '2024': {'revenue': 14208000000.0}
+                'currency': 'USD',
+                'line_item': {
+                    'CY2022': {'revenue': 11181000000.0},
+                    'CY2023': {'revenue': 12497000000.0},
+                    'CY2024': {'revenue': 14208000000.0}
+                }
             }
         }
         """
@@ -173,6 +183,9 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
                     end_year=end_year,
                     start_quarter=start_quarter,
                     end_quarter=end_quarter,
+                    calendar_type=calendar_type,
+                    num_periods=num_periods,
+                    num_periods_back=num_periods_back,
                 ),
                 result_key=identifier,
             )

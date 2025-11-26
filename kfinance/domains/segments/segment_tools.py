@@ -13,6 +13,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolRespWithErrors,
     ValidQuarter,
 )
+from kfinance.domains.line_items.line_item_models import CalendarType
 
 
 class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
@@ -23,6 +24,9 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
     end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
+    calendar_type: CalendarType | None = Field(default=None, description="Fiscal year or calendar year")
+    num_periods: int | None = Field(default=None, description="The number of periods to retrieve data")
+    num_periods_back: int | None = Field(default=None, description="The number of periods back to start retrieving data")
 
 
 class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
@@ -49,21 +53,25 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         end_year: int | None = None,
         start_quarter: Literal[1, 2, 3, 4] | None = None,
         end_quarter: Literal[1, 2, 3, 4] | None = None,
+        calendar_type: CalendarType | None = None,
+        num_periods: int | None = None,
+        num_periods_back: int | None = None,
     ) -> GetSegmentsFromIdentifiersResp:
         """Sample Response:
 
         {
             'results': {
                 'SPGI': {
+                    'currency': 'USD',
                     'segments': {
-                        '2021': {
+                        'CY2021': {
                             'Commodity Insights': {'CAPEX': -2000000.0, 'D&A': 12000000.0},
                             'Unallocated Assets Held for Sale': {'Total Assets': 321000000.0}
                         }
                     }
                 }
             },
-            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
+            'errors': {'NON-EXISTENT': 'No identification triple found for the provided identifier: NON-EXISTENT of type: ticker'}
         }
 
 
@@ -83,6 +91,9 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
                     end_year=end_year,
                     start_quarter=start_quarter,
                     end_quarter=end_quarter,
+                    calendar_type=calendar_type,
+                    num_periods=num_periods,
+                    num_periods_back=num_periods_back,
                 ),
                 result_key=identifier,
             )
