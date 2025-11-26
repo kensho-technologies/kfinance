@@ -457,7 +457,7 @@ class KFinanceApiClient:
             f"{num_periods if num_periods is not None else 'none'}/"
             f"{num_periods_back if num_periods_back is not None else 'none'}"
         )
-        return LineItemResp.model_validate(self.fetch(url))
+        return LineItemResp.from_api_response(self.fetch(url), line_item)
 
     def fetch_info(self, company_id: int) -> dict:
         """Get the company info."""

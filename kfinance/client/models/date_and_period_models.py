@@ -5,24 +5,26 @@ from pydantic import BaseModel, BeforeValidator, Field
 from strenum import StrEnum
 
 
-def convert_str_to_int(v) -> int:
+def convert_str_to_int(v: str | int) -> int:
     """Convert strings to integers if possible."""
     if isinstance(v, str) and v.isdigit():
         return int(v)
-    return v
+    elif isinstance(v, int):
+        return v
+    raise ValueError("Received string that cannot be converted to int")
 
 
 # Constrained integer types for period counts
 NumPeriods = Annotated[
     int,
     BeforeValidator(convert_str_to_int),
-    Field(ge=1, le=99, description="Number of periods (1-99)")
+    Field(ge=1, le=99, description="The number of periods to retrieve data for (1-99)")
 ]
 
 NumPeriodsBack = Annotated[
     int,
     BeforeValidator(convert_str_to_int),
-    Field(ge=0, le=99, description="Number of periods back (0-99)")
+    Field(ge=0, le=99, description="The end period of the data range expressed as number of periods back relative to the present period (0-99)")
 ]
 
 

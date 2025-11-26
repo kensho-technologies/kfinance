@@ -85,7 +85,6 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return pd.DataFrame()
 
-        # Get the response and extract the statements data from the periods structure
         periods = self.kfinance_api_client.fetch_statement(
             company_id=self.company_id,
             statement_type=statement_type,

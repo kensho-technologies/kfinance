@@ -74,9 +74,9 @@ class LineItemResp(BaseModel):
             transformed_periods = {}
 
             # Get the line item name from the data (needs to be passed from the query)
-            line_item_name = data.get(
-                "_line_item_name", "value"
-            )  # fallback to "value" if not provided
+            line_item_name = data.get("_line_item_name")
+            if line_item_name is None:
+                raise ValueError("_line_item_name is required but not provided in the data")
 
             for period_key, period_data in data["line_item"].items():
                 if not isinstance(period_data, dict):
