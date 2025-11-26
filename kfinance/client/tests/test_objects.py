@@ -115,7 +115,7 @@ MOCK_COMPANY_DB = {
                         "2022": "198270000000.000000",
                         "2023": "211915000000.000000",
                     },
-                    "_line_item_name": "revenue"
+                    "_line_item_name": "revenue",
                 }
             )
         },
@@ -137,7 +137,7 @@ MOCK_COMPANY_DB = {
                             "Revenue": 77728000000.0,
                         },
                     }
-                }
+                },
             }
         ),
         "advisors": {
@@ -202,7 +202,7 @@ INCOME_STATEMENT = StatementsResp.model_validate(
                 "Revenues": "125843000000.000000",
                 "Total Revenues": "125843000000.000000",
             }
-        }
+        },
     }
 )
 
@@ -361,8 +361,17 @@ class MockKFinanceApiClient:
         return INCOME_STATEMENT
 
     def fetch_line_item(
-        self, company_id, line_item, period_type, start_year, end_year, start_quarter, end_quarter,
-        calendar_type=None, num_periods=None, num_periods_back=None
+        self,
+        company_id,
+        line_item,
+        period_type,
+        start_year,
+        end_year,
+        start_quarter,
+        end_quarter,
+        calendar_type=None,
+        num_periods=None,
+        num_periods_back=None,
     ):
         """Get a statement"""
         return MOCK_COMPANY_DB[company_id]["line_items"][line_item]
@@ -536,9 +545,7 @@ class TestCompany(TestCase):
                 statements_data[period_key] = period_data["statements"]
 
         expected_income_statement = (
-            pd.DataFrame(statements_data)
-            .apply(pd.to_numeric)
-            .replace(np.nan, None)
+            pd.DataFrame(statements_data).apply(pd.to_numeric).replace(np.nan, None)
         )
 
         income_statement = self.msft_company.company.income_statement()
@@ -862,9 +869,7 @@ class TestTicker(TestCase):
                 statements_data[period_key] = period_data["statements"]
 
         expected_income_statement = (
-            pd.DataFrame(statements_data)
-            .apply(pd.to_numeric)
-            .replace(np.nan, None)
+            pd.DataFrame(statements_data).apply(pd.to_numeric).replace(np.nan, None)
         )
 
         income_statement = self.msft_ticker_from_ticker.income_statement()

@@ -17,7 +17,7 @@ class TestGetFinancialStatementFromIdentifiers:
         "statements": {
             "2020": {"Revenues": "7442000000.000000", "Total Revenues": "7442000000.000000"},
             "2021": {"Revenues": "8243000000.000000", "Total Revenues": "8243000000.000000"},
-        }
+        },
     }
 
     def test_get_financial_statement_from_identifiers(
@@ -45,7 +45,7 @@ class TestGetFinancialStatementFromIdentifiers:
                                 "statements": {
                                     "Revenues": "7442000000.000000",
                                     "Total Revenues": "7442000000.000000",
-                                }
+                                },
                             },
                             "2021": {
                                 "period_end_date": None,
@@ -53,9 +53,9 @@ class TestGetFinancialStatementFromIdentifiers:
                                 "statements": {
                                     "Revenues": "8243000000.000000",
                                     "Total Revenues": "8243000000.000000",
-                                }
+                                },
                             },
-                        }
+                        },
                     }
                 },
                 "errors": [
@@ -91,9 +91,9 @@ class TestGetFinancialStatementFromIdentifiers:
                                 "statements": {
                                     "Revenues": "8243000000.000000",
                                     "Total Revenues": "8243000000.000000",
-                                }
+                                },
                             }
-                        }
+                        },
                     },
                     "C_2": {
                         "currency": "USD",
@@ -104,9 +104,9 @@ class TestGetFinancialStatementFromIdentifiers:
                                 "statements": {
                                     "Revenues": "8243000000.000000",
                                     "Total Revenues": "8243000000.000000",
-                                }
+                                },
                             }
-                        }
+                        },
                     },
                 }
             }
@@ -148,9 +148,9 @@ class TestGetFinancialStatementFromIdentifiers:
                                 "statements": {
                                     "Revenues": "8243000000.000000",
                                     "Total Revenues": "8243000000.000000",
-                                }
+                                },
                             }
-                        }
+                        },
                     },
                 }
             }

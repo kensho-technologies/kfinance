@@ -19,22 +19,10 @@ class TestGetFinancialLineItemFromCompanyIds:
     line_item_resp = {
         "currency": "USD",
         "line_item": {
-            "2022": {
-                "value": 11181000000.0,
-                "period_end_date": None,
-                "num_months": None
-            },
-            "2023": {
-                "value": 12497000000.0,
-                "period_end_date": None,
-                "num_months": None
-            },
-            "2024": {
-                "value": 14208000000.0,
-                "period_end_date": None,
-                "num_months": None
-            },
-        }
+            "2022": {"value": 11181000000.0, "period_end_date": None, "num_months": None},
+            "2023": {"value": 12497000000.0, "period_end_date": None, "num_months": None},
+            "2024": {"value": 14208000000.0, "period_end_date": None, "num_months": None},
+        },
     }
 
     def test_get_financial_line_item_from_identifiers(
@@ -54,19 +42,19 @@ class TestGetFinancialLineItemFromCompanyIds:
                         "2022": {
                             "period_end_date": None,
                             "num_months": None,
-                            "line_item": {"revenue": Decimal(11181000000)}
+                            "line_item": {"revenue": Decimal(11181000000)},
                         },
                         "2023": {
                             "period_end_date": None,
                             "num_months": None,
-                            "line_item": {"revenue": Decimal(12497000000)}
+                            "line_item": {"revenue": Decimal(12497000000)},
                         },
                         "2024": {
                             "period_end_date": None,
                             "num_months": None,
-                            "line_item": {"revenue": Decimal(14208000000)}
-                        }
-                    }
+                            "line_item": {"revenue": Decimal(14208000000)},
+                        },
+                    },
                 )
             },
             errors=[
@@ -95,7 +83,16 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         company_ids = [1, 2]
 
-        line_item_resp = LineItemResp(currency="USD", periods={"2024": {"period_end_date": None, "num_months": None, "line_item": {"revenue": Decimal(14208000000)}}})
+        line_item_resp = LineItemResp(
+            currency="USD",
+            periods={
+                "2024": {
+                    "period_end_date": None,
+                    "num_months": None,
+                    "line_item": {"revenue": Decimal(14208000000)},
+                }
+            },
+        )
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={"C_1": line_item_resp, "C_2": line_item_resp},
         )
@@ -124,7 +121,16 @@ class TestGetFinancialLineItemFromCompanyIds:
         company_ids = [1, 2]
 
         c_1_line_item_resp = LineItemResp(currency="USD", periods={})
-        c_2_line_item_resp = LineItemResp(currency="USD", periods={"2024": {"period_end_date": None, "num_months": None, "line_item": {"revenue": Decimal(14208000000)}}})
+        c_2_line_item_resp = LineItemResp(
+            currency="USD",
+            periods={
+                "2024": {
+                    "period_end_date": None,
+                    "num_months": None,
+                    "line_item": {"revenue": Decimal(14208000000)},
+                }
+            },
+        )
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={"C_1": c_1_line_item_resp, "C_2": c_2_line_item_resp},
         )

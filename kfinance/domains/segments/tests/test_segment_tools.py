@@ -71,8 +71,26 @@ class TestGetSegmentsFromIdentifier:
         expected_response = GetSegmentsFromIdentifiersResp.model_validate(
             {
                 "results": {
-                    "C_1": {"currency": "USD", "periods": {"2021": {"period_end_date": None, "num_months": None, "segments": self.segments_response["segments"]["2021"]}}},
-                    "C_2": {"currency": "USD", "periods": {"2021": {"period_end_date": None, "num_months": None, "segments": self.segments_response["segments"]["2021"]}}},
+                    "C_1": {
+                        "currency": "USD",
+                        "periods": {
+                            "2021": {
+                                "period_end_date": None,
+                                "num_months": None,
+                                "segments": self.segments_response["segments"]["2021"],
+                            }
+                        },
+                    },
+                    "C_2": {
+                        "currency": "USD",
+                        "periods": {
+                            "2021": {
+                                "period_end_date": None,
+                                "num_months": None,
+                                "segments": self.segments_response["segments"]["2021"],
+                            }
+                        },
+                    },
                 }
             }
         )
@@ -104,7 +122,16 @@ class TestGetSegmentsFromIdentifier:
             {
                 "results": {
                     "C_1": {"currency": "USD", "periods": {}},
-                    "C_2": {"currency": "USD", "periods": {"2021": {"period_end_date": None, "num_months": None, "segments": self.segments_response["segments"]["2021"]}}},
+                    "C_2": {
+                        "currency": "USD",
+                        "periods": {
+                            "2021": {
+                                "period_end_date": None,
+                                "num_months": None,
+                                "segments": self.segments_response["segments"]["2021"],
+                            }
+                        },
+                    },
                 }
             }
         )

@@ -101,11 +101,7 @@ class CompanyFunctionsMetaClass:
             if isinstance(period_data, dict) and "statements" in period_data:
                 statements_data[period_key] = period_data["statements"]
 
-        return (
-            pd.DataFrame(statements_data)
-            .apply(pd.to_numeric)
-            .replace(np.nan, None)
-        )
+        return pd.DataFrame(statements_data).apply(pd.to_numeric).replace(np.nan, None)
 
     def income_statement(
         self,

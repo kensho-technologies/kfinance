@@ -18,13 +18,17 @@ def convert_str_to_int(v: str | int) -> int:
 NumPeriods = Annotated[
     int,
     BeforeValidator(convert_str_to_int),
-    Field(ge=1, le=99, description="The number of periods to retrieve data for (1-99)")
+    Field(ge=1, le=99, description="The number of periods to retrieve data for (1-99)"),
 ]
 
 NumPeriodsBack = Annotated[
     int,
     BeforeValidator(convert_str_to_int),
-    Field(ge=0, le=99, description="The end period of the data range expressed as number of periods back relative to the present period (0-99)")
+    Field(
+        ge=0,
+        le=99,
+        description="The end period of the data range expressed as number of periods back relative to the present period (0-99)",
+    ),
 ]
 
 
