@@ -108,36 +108,112 @@ MOCK_COMPANY_DB = {
             "revenue": LineItemResp.model_validate(
                 {
                     "currency": "USD",
-                    "line_item": {
-                        "2019": "125843000000.000000",
-                        "2020": "143015000000.000000",
-                        "2021": "168088000000.000000",
-                        "2022": "198270000000.000000",
-                        "2023": "211915000000.000000",
-                    },
-                    "_line_item_name": "revenue",
+                    "periods": {
+                        "CY2019": {
+                            "period_end_date": "2019-12-31",
+                            "num_months": 12,
+                            "line_item": {
+                                "name": "Revenue",
+                                "value": "125843000000.000000",
+                                "sources": []
+                            }
+                        },
+                        "CY2020": {
+                            "period_end_date": "2020-12-31",
+                            "num_months": 12,
+                            "line_item": {
+                                "name": "Revenue",
+                                "value": "143015000000.000000",
+                                "sources": []
+                            }
+                        },
+                        "CY2021": {
+                            "period_end_date": "2021-12-31",
+                            "num_months": 12,
+                            "line_item": {
+                                "name": "Revenue",
+                                "value": "168088000000.000000",
+                                "sources": []
+                            }
+                        },
+                        "CY2022": {
+                            "period_end_date": "2022-12-31",
+                            "num_months": 12,
+                            "line_item": {
+                                "name": "Revenue",
+                                "value": "198270000000.000000",
+                                "sources": []
+                            }
+                        },
+                        "CY2023": {
+                            "period_end_date": "2023-12-31",
+                            "num_months": 12,
+                            "line_item": {
+                                "name": "Revenue",
+                                "value": "211915000000.000000",
+                                "sources": []
+                            }
+                        }
+                    }
                 }
             )
         },
         "segments": SegmentsResp.model_validate(
             {
                 "currency": "USD",
-                "segments": {
-                    "2024": {
-                        "Intelligent Cloud": {
-                            "Operating Income": 49584000000.0,
-                            "Revenue": 105362000000.0,
-                        },
-                        "More Personal Computing": {
-                            "Operating Income": 19309000000.0,
-                            "Revenue": 62032000000.0,
-                        },
-                        "Productivity and Business Processes": {
-                            "Operating Income": 40540000000.0,
-                            "Revenue": 77728000000.0,
-                        },
+                "periods": {
+                    "CY2024": {
+                        "period_end_date": "2024-12-31",
+                        "num_months": 12,
+                        "segments": [
+                            {
+                                "name": "Intelligent Cloud",
+                                "line_items": [
+                                    {
+                                        "name": "Operating Income",
+                                        "value": 49584000000.0,
+                                        "sources": []
+                                    },
+                                    {
+                                        "name": "Revenue",
+                                        "value": 105362000000.0,
+                                        "sources": []
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "More Personal Computing",
+                                "line_items": [
+                                    {
+                                        "name": "Operating Income",
+                                        "value": 19309000000.0,
+                                        "sources": []
+                                    },
+                                    {
+                                        "name": "Revenue",
+                                        "value": 62032000000.0,
+                                        "sources": []
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "Productivity and Business Processes",
+                                "line_items": [
+                                    {
+                                        "name": "Operating Income",
+                                        "value": 40540000000.0,
+                                        "sources": []
+                                    },
+                                    {
+                                        "name": "Revenue",
+                                        "value": 77728000000.0,
+                                        "sources": []
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                },
+                }
             }
         ),
         "advisors": {
@@ -197,12 +273,29 @@ MOCK_TRANSCRIPT_DB = {
 INCOME_STATEMENT = StatementsResp.model_validate(
     {
         "currency": "USD",
-        "statements": {
-            "2019": {
-                "Revenues": "125843000000.000000",
-                "Total Revenues": "125843000000.000000",
+        "periods": {
+            "CY2019": {
+                "period_end_date": "2019-12-31",
+                "num_months": 12,
+                "statements": [
+                    {
+                        "name": "Income Statement",
+                        "line_items": [
+                            {
+                                "name": "Revenues",
+                                "value": "125843000000.000000",
+                                "sources": []
+                            },
+                            {
+                                "name": "Total Revenues",
+                                "value": "125843000000.000000",
+                                "sources": []
+                            }
+                        ]
+                    }
+                ]
             }
-        },
+        }
     }
 )
 
@@ -541,8 +634,11 @@ class TestCompany(TestCase):
         periods_data = INCOME_STATEMENT.model_dump(mode="json")["periods"]
         statements_data = {}
         for period_key, period_data in periods_data.items():
-            if isinstance(period_data, dict) and "statements" in period_data:
-                statements_data[period_key] = period_data["statements"]
+            period_statements = {}
+            for statement in period_data.get("statements", []):
+                for line_item in statement.get("line_items", []):
+                    period_statements[line_item["name"]] = line_item["value"]
+            statements_data[period_key] = period_statements
 
         expected_income_statement = (
             pd.DataFrame(statements_data).apply(pd.to_numeric).replace(np.nan, None)
@@ -554,8 +650,14 @@ class TestCompany(TestCase):
     def test_revenue(self) -> None:
         """test revenue"""
         line_item_response: LineItemResp = MOCK_COMPANY_DB[msft_company_id]["line_items"]["revenue"]
+
+        # Extract line item values from each period
+        line_item_data = {}
+        for period_key, period_data in line_item_response.periods.items():
+            line_item_data[period_key] = period_data.line_item.value
+
         expected_revenue = (
-            pd.DataFrame({"line_item": line_item_response.periods})
+            pd.DataFrame({"line_item": line_item_data})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)
@@ -865,8 +967,11 @@ class TestTicker(TestCase):
         periods_data = INCOME_STATEMENT.model_dump(mode="json")["periods"]
         statements_data = {}
         for period_key, period_data in periods_data.items():
-            if isinstance(period_data, dict) and "statements" in period_data:
-                statements_data[period_key] = period_data["statements"]
+            period_statements = {}
+            for statement in period_data.get("statements", []):
+                for line_item in statement.get("line_items", []):
+                    period_statements[line_item["name"]] = line_item["value"]
+            statements_data[period_key] = period_statements
 
         expected_income_statement = (
             pd.DataFrame(statements_data).apply(pd.to_numeric).replace(np.nan, None)
@@ -887,8 +992,14 @@ class TestTicker(TestCase):
     def test_revenue(self) -> None:
         """test revenue"""
         line_item_response: LineItemResp = MOCK_COMPANY_DB[msft_company_id]["line_items"]["revenue"]
+
+        # Extract line item values from each period
+        line_item_data = {}
+        for period_key, period_data in line_item_response.periods.items():
+            line_item_data[period_key] = period_data.line_item.value
+
         expected_revenue = (
-            pd.DataFrame({"line_item": line_item_response.periods})
+            pd.DataFrame({"line_item": line_item_data})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)

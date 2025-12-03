@@ -99,7 +99,14 @@ class CompanyFunctionsMetaClass:
         statements_data = {}
         for period_key, period_data in periods.items():
             if isinstance(period_data, dict) and "statements" in period_data:
-                statements_data[period_key] = period_data["statements"]
+                period_statements = {}
+                # Flatten the statements array structure
+                for statement in period_data["statements"]:
+                    if isinstance(statement, dict) and "line_items" in statement:
+                        for line_item in statement["line_items"]:
+                            if isinstance(line_item, dict) and "name" in line_item and "value" in line_item:
+                                period_statements[line_item["name"]] = line_item["value"]
+                statements_data[period_key] = period_statements
 
         return pd.DataFrame(statements_data).apply(pd.to_numeric).replace(np.nan, None)
 
@@ -226,7 +233,6 @@ class CompanyFunctionsMetaClass:
         # Extract line item values from each period
         line_item_data = {}
         for period_key, period_data in line_item_response.periods.items():
-            # The new structure has line_item.value instead of line_item[name]
             line_item_data[period_key] = period_data.line_item.value
 
         return (

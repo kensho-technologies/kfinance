@@ -72,9 +72,51 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
             'results': {
                 'SPGI': {
                     'currency': 'USD',
-                    'statements': {
-                        'CY2020': {'Revenues': '7442000000.000000', 'Total Revenues': '7442000000.000000', 'period_end_date': '2020-12-31', 'num_months': 12},
-                        'CY2021': {'Revenues': '8243000000.000000', 'Total Revenues': '8243000000.000000', 'period_end_date': '2021-12-31', 'num_months': 12}
+                    'periods': {
+                        'CY2020': {
+                            'period_end_date': '2020-12-31',
+                            'num_months': 12,
+                            'statements': [
+                                {
+                                    'name': 'Income Statement',
+                                    'line_items': [
+                                        {
+                                            'name': 'Revenues',
+                                            'value': 7442000000.0,
+                                            'sources': [
+                                                {
+                                                    'type': 'doc-viewer statement',
+                                                    'url': 'https://www.capitaliq.spglobal.com/...'
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            'name': 'Total Revenues',
+                                            'value': 7442000000.0
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        'CY2021': {
+                            'period_end_date': '2021-12-31',
+                            'num_months': 12,
+                            'statements': [
+                                {
+                                    'name': 'Income Statement',
+                                    'line_items': [
+                                        {
+                                            'name': 'Revenues',
+                                            'value': 8243000000.0
+                                        },
+                                        {
+                                            'name': 'Total Revenues',
+                                            'value': 8243000000.0
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
                     }
                 }
             },

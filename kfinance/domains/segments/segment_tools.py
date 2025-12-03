@@ -58,26 +58,52 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         num_periods: int | None = None,
         num_periods_back: int | None = None,
     ) -> GetSegmentsFromIdentifiersResp:
-        """Sample Response:
+        """Sample response:
 
         {
             'results': {
                 'SPGI': {
                     'currency': 'USD',
-                    'segments': {
+                    'periods': {
                         'CY2021': {
-                            'Commodity Insights': {'CAPEX': -2000000.0, 'D&A': 12000000.0},
-                            'Unallocated Assets Held for Sale': {'Total Assets': 321000000.0},
                             'period_end_date': '2021-12-31',
-                            'num_months': 12
+                            'num_months': 12,
+                            'segments': [
+                                {
+                                    'name': 'Commodity Insights',
+                                    'line_items': [
+                                        {
+                                            'name': 'CAPEX',
+                                            'value': -2000000.0,
+                                            'sources': [
+                                                {
+                                                    'type': 'doc-viewer segment',
+                                                    'url': 'https://www.capitaliq.spglobal.com/...'
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            'name': 'D&A',
+                                            'value': 12000000.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    'name': 'Unallocated Assets Held for Sale',
+                                    'line_items': [
+                                        {
+                                            'name': 'Total Assets',
+                                            'value': 321000000.0
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     }
                 }
             },
             'errors': {'NON-EXISTENT': 'No identification triple found for the provided identifier: NON-EXISTENT of type: ticker'}
         }
-
-
         """
 
         api_client = self.kfinance_client.kfinance_api_client

@@ -157,49 +157,39 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         num_periods: int | None = None,
         num_periods_back: int | None = None,
     ) -> GetFinancialLineItemFromIdentifiersResp:
-        """Sample response (processed LineItemResp objects):
+        """Sample response:
 
         {
             'SPGI': {
                 'currency': 'USD',
                 'periods': {
-                    'CY2022': {
+                    'FY2022': {
                         'period_end_date': '2022-12-31',
                         'num_months': 12,
                         'line_item': {
-                            'revenue': 11181000000.0
+                            'name': 'Revenue',
+                            'value': 11181000000.0,
+                            'sources': [
+                                {
+                                    'type': 'doc-viewer line item',
+                                    'url': 'https://www.capitaliq.spglobal.com/...'
+                                }
+                            ]
                         }
                     },
-                    'CY2023': {
+                    'FY2023': {
                         'period_end_date': '2023-12-31',
                         'num_months': 12,
                         'line_item': {
-                            'revenue': 12497000000.0
+                            'name': 'Revenue',
+                            'value': 12497000000.0,
+                            'sources': [
+                                {
+                                    'type': 'doc-viewer line item',
+                                    'url': 'https://www.capitaliq.spglobal.com/...'
+                                }
+                            ]
                         }
-                    },
-                    'CY2024': {
-                        'period_end_date': '2024-12-31',
-                        'num_months': 12,
-                        'line_item': {
-                            'revenue': 14208000000.0
-                        }
-                    }
-                }
-            }
-        }
-
-        Note: The raw API response has a different structure that gets transformed by LineItemResp.from_api_response().
-        Raw API format:
-        {
-            'currency': 'USD',
-            'periods': {
-                'FY2023Q1': {
-                    'period_end_date': '2022-12-31',
-                    'num_months': 3,
-                    'line_item': {
-                        'name': 'Net Property Plant And Equipment',
-                        'value': '42951000000.000000',
-                        'sources': [...]
                     }
                 }
             }
