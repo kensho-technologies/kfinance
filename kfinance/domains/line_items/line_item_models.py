@@ -4,7 +4,7 @@ from decimal import Decimal
 from itertools import chain
 from typing import Any, TypedDict
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel
 from strenum import StrEnum
 
 
@@ -13,104 +13,21 @@ class CalendarType(StrEnum):
     CALENDAR = "CALENDAR"
 
 
+class LineItemData(BaseModel):
+    name: str
+    value: Decimal | None
+    sources: list[dict[str, Any]] | None = None
+
+
 class LineItemPeriodData(BaseModel):
-    period_end_date: date | None = None
-    num_months: int | None = None
-    line_item: dict[str, Decimal | None]  # line_item_name -> value
+    period_end_date: date
+    num_months: int
+    line_item: LineItemData
 
 
 class LineItemResp(BaseModel):
     currency: str | None
     periods: dict[str, LineItemPeriodData]  # period -> line item and period data
-
-    @classmethod
-    def from_api_response(cls, data: dict[str, Any], line_item_name: str) -> "LineItemResp":
-        """Create LineItemResp from API response with line item name context."""
-        # Inject the line item name into the data
-        data_with_name = {**data, "_line_item_name": line_item_name}
-        return cls(**data_with_name)
-
-    @model_validator(mode="before")
-    @classmethod
-    def reshape_api_response(cls, data: Any) -> Any:
-        """Transform the API response format to match the model structure.
-
-        Actual API response format:
-        {
-            "currency": "USD",
-            "line_item": {
-                "CY2023": {
-                    "value": 12497000000.0,
-                    "period_end_date": "2021-12-31",
-                    "num_months": 12
-                }
-            },
-            "_line_item_name": "revenue"  # This needs to be passed from the query
-        }
-
-        Post-processed API response:
-        {
-            "currency": "USD",
-            "periods": {
-                "CY2023": {
-                    "period_end_date": "2021-12-31",
-                    "num_months": 12,
-                    "line_item": {
-                        "revenue": 12497000000.0
-                    }
-                }
-            }
-        }
-        """
-        if not isinstance(data, dict):
-            return data
-
-        # If we already have "periods", no transformation needed
-        if "periods" in data:
-            return data
-
-        # If we have "line_item", transform it to "periods"
-        if "line_item" in data:
-            transformed_periods = {}
-
-            # Get the line item name from the data (needs to be passed from the query)
-            line_item_name = data.get("_line_item_name")
-            if line_item_name is None:
-                raise ValueError("_line_item_name is required but not provided in the data")
-
-            for period_key, period_data in data["line_item"].items():
-                if not isinstance(period_data, dict):
-                    continue
-
-                # Extract the metadata fields
-                period_end_date = period_data.get("period_end_date")
-                num_months = period_data.get("num_months")
-
-                # Extract the value and map it to the line item name
-                value = period_data.get("value")
-
-                # Create line item data with the actual line item name as key
-                line_item_data = {line_item_name: value}
-
-                transformed_period = {"line_item": line_item_data}
-
-                if period_end_date is not None:
-                    transformed_period["period_end_date"] = period_end_date
-                if num_months is not None:
-                    transformed_period["num_months"] = num_months
-
-                transformed_periods[period_key] = transformed_period
-
-            return {
-                **{k: v for k, v in data.items() if k not in ("line_item", "_line_item_name")},
-                "periods": transformed_periods,
-            }
-
-        # If neither "periods" nor "line_item" exist, add empty periods
-        if "periods" not in data:
-            return {**data, "periods": {}}
-
-        return data
 
 
 @dataclass

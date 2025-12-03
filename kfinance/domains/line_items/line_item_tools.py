@@ -157,30 +157,54 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         num_periods: int | None = None,
         num_periods_back: int | None = None,
     ) -> GetFinancialLineItemFromIdentifiersResp:
-        """Sample response:
+        """Sample response (processed LineItemResp objects):
 
         {
             'SPGI': {
                 'currency': 'USD',
-                'line_item': {
+                'periods': {
                     'CY2022': {
-                        'revenue': 11181000000.0,
-                        'period_end_date': '2021-12-31',
-                        'num_months': 12
+                        'period_end_date': '2022-12-31',
+                        'num_months': 12,
+                        'line_item': {
+                            'revenue': 11181000000.0
+                        }
                     },
                     'CY2023': {
-                        'revenue': 12497000000.0,
-                        'period_end_date': '2021-12-31',
-                        'num_months': 12
+                        'period_end_date': '2023-12-31',
+                        'num_months': 12,
+                        'line_item': {
+                            'revenue': 12497000000.0
+                        }
                     },
                     'CY2024': {
-                        'revenue': 14208000000.0,
-                        'period_end_date': '2021-12-31',
-                        'num_months': 12
+                        'period_end_date': '2024-12-31',
+                        'num_months': 12,
+                        'line_item': {
+                            'revenue': 14208000000.0
+                        }
                     }
                 }
             }
         }
+
+        Note: The raw API response has a different structure that gets transformed by LineItemResp.from_api_response().
+        Raw API format:
+        {
+            'currency': 'USD',
+            'periods': {
+                'FY2023Q1': {
+                    'period_end_date': '2022-12-31',
+                    'num_months': 3,
+                    'line_item': {
+                        'name': 'Net Property Plant And Equipment',
+                        'value': '42951000000.000000',
+                        'sources': [...]
+                    }
+                }
+            }
+        }
+
         """
         api_client = self.kfinance_client.kfinance_api_client
         id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
@@ -209,12 +233,10 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
             api_client=api_client, tasks=tasks
         )
 
-        # Convert raw responses to LineItemResp objects with line item name context
+        # Convert raw responses to LineItemResp objects
         line_item_responses: dict[str, LineItemResp] = {}
         for identifier, raw_response in raw_responses.items():
-            line_item_responses[identifier] = LineItemResp.from_api_response(
-                raw_response, line_item
-            )
+            line_item_responses[identifier] = LineItemResp.model_validate(raw_response)
 
         # If no date and multiple companies, only return the most recent value.
         # By default, we return 5 years of data, which can be too much when

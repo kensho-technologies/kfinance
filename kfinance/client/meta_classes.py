@@ -223,8 +223,14 @@ class CompanyFunctionsMetaClass:
             start_quarter=start_quarter,
             end_quarter=end_quarter,
         )
+        # Extract line item values from each period
+        line_item_data = {}
+        for period_key, period_data in line_item_response.periods.items():
+            # The new structure has line_item.value instead of line_item[name]
+            line_item_data[period_key] = period_data.line_item.value
+
         return (
-            pd.DataFrame({"line_item": line_item_response.periods})
+            pd.DataFrame({"line_item": line_item_data})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)
