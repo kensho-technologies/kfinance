@@ -24,13 +24,6 @@ class GetCusipFromIdentifiers(KfinanceTool):
         Get the CUSIPs for a group of identifiers.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-
-        Examples:
-        Query: "What is the CUSIP for Microsoft?"
-        Function: get_cusip_from_identifiers(identifiers=["Microsoft"])
-
-        Query: "Get CUSIPs for AAPL and Amazon"
-        Function: get_cusip_from_identifiers(identifiers=["AAPL", "Amazon"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.IDPermission}

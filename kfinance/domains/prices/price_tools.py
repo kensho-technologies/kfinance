@@ -41,6 +41,7 @@ class GetPricesFromIdentifiers(KfinanceTool):
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - When requesting the most recent values, leave start_date and end_date empty.
+        - If requesting prices for a long periods of time (e.g., multiple years), consider using a coarser periodicity (e.g., weekly or monthly) to reduce the amount of data returned.
 
         Examples:
         Query: "What are the prices of Facebook and Google?"
@@ -135,8 +136,6 @@ class GetHistoryMetadataFromIdentifiers(KfinanceTool):
         Query: "What exchange does Apple trade on?"
         Function: get_history_metadata_from_identifiers(identifiers=["Apple"])
 
-        Query: "Get metadata for AAPL and MSFT"
-        Function: get_history_metadata_from_identifiers(identifiers=["AAPL", "MSFT"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = None

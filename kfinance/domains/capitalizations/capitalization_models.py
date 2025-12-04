@@ -66,6 +66,7 @@ class Capitalizations(BaseModel):
             currency = data["currency"]
             for capitalization in data["market_caps"]:
                 for key in ["market_cap", "tev"]:
+                    # Only inject unit if the value is not None
                     if capitalization[key] is not None:
                         capitalization[key] = dict(unit=currency, value=capitalization[key])
         return data

@@ -124,13 +124,16 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         Get the financial line item associated with a list of identifiers.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - To fetch the most recent value for the line item, leave start_year, start_quarter, end_year, and end_quarter as None.
-        - The tool accepts arguments in calendar years, and all outputs will be presented in terms of calendar years. Please note that these calendar years may not align with the company's fiscal year.
-        - All aliases for a line item return identical data (e.g., "revenue", "normal_revenue", and "regular_revenue" all return the same financial data).
+        - To fetch the most recent value, leave start_year, start_quarter, end_year, and end_quarter as None.
+        - The tool accepts arguments in calendar years, and all outputs will be in calendar years (may not align with fiscal year).
+        - All aliases for a line item return identical data (e.g., 'revenue', 'normal_revenue', and 'regular_revenue' return the same data).
 
-        Example:
+        Examples:
         Query: "What are the revenues of Lowe's and Home Depot?"
-        Function: get_financial_line_item_from_identifiers(line_item="revenue", company_ids=["LW", "HD"])
+        Function: get_financial_line_item_from_identifiers(line_item="revenue", identifiers=["Lowe's", "Home Depot"])
+
+        Query: "Get MSFT and AAPL revenue"
+        Function: get_financial_line_item_from_identifiers(line_item="revenue", identifiers=["MSFT", "AAPL"])
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialLineItemFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {

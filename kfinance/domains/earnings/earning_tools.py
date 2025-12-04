@@ -58,8 +58,8 @@ class GetEarningsFromIdentifiers(KfinanceTool):
 
         Returns a list of dictionaries with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier.
 
-        - Use get_latest_earnings_from_identifiers for only the most recent earnings
-        - Use get_next_earnings_from_identifiers for upcoming earnings
+        - Use get_latest_earnings_from_identifiers to get only the most recent earnings
+        - Use get_next_earnings_from_identifiers to get only the next upcoming earnings
         - To fetch the full transcript, call get_transcript_from_key_dev_id with the key_dev_id
 
         Examples:
