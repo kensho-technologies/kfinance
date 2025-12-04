@@ -26,7 +26,19 @@ class GetMergersFromIdentifiersResp(ToolRespWithErrors):
 class GetMergersFromIdentifiers(KfinanceTool):
     name: str = "get_mergers_from_identifiers"
     description: str = dedent("""
-        "Retrieves all merger and acquisition transactions involving the specified company identifier for each specified company identifier. The results are categorized by the company's role in each transaction: target, buyer, or seller. Provides the transaction_id, merger_title, and transaction closed_date (finalization) . Use this tool to answer questions like 'Which companies did Microsoft purchase?', 'Which company acquired Ben & Jerry's?', and 'Who did Pfizer acquire?'"
+        Retrieves all merger and acquisition transactions involving the specified company.
+
+        Results are categorized by the company's role: target (being acquired), buyer (making the acquisition), or seller (divesting an asset).
+
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - Provides transaction_id, merger_title, and transaction closed_date.
+
+        Examples:
+        Query: "Which companies did Microsoft purchase?"
+        Function: get_mergers_from_identifiers(identifiers=["Microsoft"])
+
+        Query: "Get acquisitions for AAPL and GOOGL"
+        Function: get_mergers_from_identifiers(identifiers=["AAPL", "GOOGL"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -91,7 +103,16 @@ class GetMergerInfoFromTransactionIdArgs(BaseModel):
 class GetMergerInfoFromTransactionId(KfinanceTool):
     name: str = "get_merger_info_from_transaction_id"
     description: str = dedent("""
-        "Provides comprehensive information about a specific merger or acquisition transaction, including its timeline (announced date, closed date), participants' company_name and company_id (target, buyers, sellers), and financial consideration details (including monetary values). Use this tool to answer questions like 'When was the acquisition Ben & Jerry's announced?', 'What was the transaction size of Vodafone's acquisition of Mannesmann?', 'How much did S&P purchase Kensho for?'. Always call this for announcement related questions"
+        Provides comprehensive information about a specific merger or acquisition transaction, including its timeline (announced date, closed date), participants' company_name and company_id (target, buyers, sellers), and financial consideration details (including monetary values).
+
+        Use this tool for questions about announcement dates and transaction details.
+
+        Examples:
+        Query: "When was the acquisition of Ben & Jerry's announced?"
+        Function: get_merger_info_from_transaction_id(transaction_id=12345)
+
+        Query: "What was the transaction size of Vodafone's acquisition of Mannesmann?"
+        Function: get_merger_info_from_transaction_id(transaction_id=67890)
     """).strip()
     args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIdArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -113,7 +134,14 @@ class GetAdvisorsForCompanyInTransactionFromIdentifierResp(ToolRespWithErrors):
 class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
     name: str = "get_advisors_for_company_in_transaction"
     description: str = dedent("""
-        "Returns a list of advisor companies that provided advisory services to the specified company during a particular merger or acquisition transaction. Use this tool to answer questions like 'Who advised S&P Global during their purchase of Kensho?', 'Which firms advised Ben & Jerry's in their acquisition?'."
+        Returns a list of advisor companies that provided advisory services to the specified company during a particular merger or acquisition transaction.
+
+        Examples:
+        Query: "Who advised S&P Global during their purchase of Kensho?"
+        Function: get_advisors_for_company_in_transaction(identifier="S&P Global", transaction_id=12345)
+
+        Query: "Which firms advised AAPL in transaction 67890?"
+        Function: get_advisors_for_company_in_transaction(identifier="AAPL", transaction_id=67890)
     """).strip()
     args_schema: Type[BaseModel] = GetAdvisorsForCompanyInTransactionFromIdentifierArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}

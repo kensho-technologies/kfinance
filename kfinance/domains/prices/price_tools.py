@@ -42,13 +42,12 @@ class GetPricesFromIdentifiers(KfinanceTool):
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - When requesting the most recent values, leave start_date and end_date empty.
 
-        Example:
+        Examples:
         Query: "What are the prices of Facebook and Google?"
-        Do:
-            get_prices_from_identifiers(identifiers=["META", "GOOGL"])
-        Don't:
-            get_prices_from_identifiers(trading_item_ids=["META"])
-            get_prices_from_identifiers(trading_item_ids=["GOOGL"])
+        Function: get_prices_from_identifiers(identifiers=["Facebook", "Google"])
+
+        Query: "Get prices for META and GOOGL"
+        Function: get_prices_from_identifiers(identifiers=["META", "GOOGL"])
     """).strip()
     args_schema: Type[BaseModel] = GetPricesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.PricingPermission}
@@ -131,6 +130,13 @@ class GetHistoryMetadataFromIdentifiers(KfinanceTool):
         Get the history metadata associated with a list of identifiers. History metadata includes currency, symbol, exchange name, instrument type, and first trade date.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+
+        Examples:
+        Query: "What exchange does Apple trade on?"
+        Function: get_history_metadata_from_identifiers(identifiers=["Apple"])
+
+        Query: "Get metadata for AAPL and MSFT"
+        Function: get_history_metadata_from_identifiers(identifiers=["AAPL", "MSFT"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = None

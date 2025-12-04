@@ -32,9 +32,18 @@ class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
 class GetSegmentsFromIdentifiers(KfinanceTool):
     name: str = "get_segments_from_identifiers"
     description: str = dedent("""
-        Get the templated segments associated with a list of identifiers.
+        Get the templated business or geographic segments associated with a list of identifiers.
 
-        - The tool accepts arguments in calendar years, and all outputs will be presented in terms of calendar years. Please note that these calendar years may not align with the company's fiscal year.
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - The tool accepts arguments in calendar years, and all outputs will be in calendar years (may not align with fiscal year).
+        - To fetch the most recent segment data, leave start_year, start_quarter, end_year, and end_quarter as None.
+
+        Examples:
+        Query: "What are the business segments for Microsoft?"
+        Function: get_segments_from_identifiers(identifiers=["Microsoft"], segment_type="business")
+
+        Query: "Get geographic segments for AAPL and TSLA"
+        Function: get_segments_from_identifiers(identifiers=["AAPL", "TSLA"], segment_type="geographic")
     """).strip()
     args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.SegmentsPermission}

@@ -32,14 +32,18 @@ class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
 class GetFinancialStatementFromIdentifiers(KfinanceTool):
     name: str = "get_financial_statement_from_identifiers"
     description: str = dedent("""
-        Get a financial statement associated with a group of identifiers.
+        Get a financial statement (balance_sheet, income_statement, or cashflow) for a group of identifiers.
 
-        - To fetch the most recent value for the statement, leave start_year, start_quarter, end_year, and end_quarter as None.
-        - The tool accepts arguments in calendar years, and all outputs will be presented in terms of calendar years. Please note that these calendar years may not align with the company's fiscal year.
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - To fetch the most recent statement, leave start_year, start_quarter, end_year, and end_quarter as None.
+        - The tool accepts arguments in calendar years, and all outputs will be in calendar years (may not align with fiscal year).
 
-        Example:
-        Query: "Fetch the balance sheets of BAC and GS for 2024"
-        Function: get_financial_statement_from_company_ids(identifiers=["BAC", "GS"], statement=StatementType.balance_sheet, start_year=2024, end_year=2024)
+        Examples:
+        Query: "Fetch the balance sheets of Bank of America and Goldman Sachs for 2024"
+        Function: get_financial_statement_from_identifiers(identifiers=["Bank of America", "Goldman Sachs"], statement="balance_sheet", start_year=2024, end_year=2024)
+
+        Query: "Get income statements for BAC and GS"
+        Function: get_financial_statement_from_identifiers(identifiers=["BAC", "GS"], statement="income_statement")
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialStatementFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {
