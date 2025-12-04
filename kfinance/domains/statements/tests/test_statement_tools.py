@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
@@ -54,7 +56,7 @@ class TestGetFinancialStatementFromIdentifiers:
         """
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/{SPGI_COMPANY_ID}/income_statement/none/none/none/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote(f'[{SPGI_COMPANY_ID}]')}/income_statement/none/none/none/none/none/none",
             json=self.statement_resp,
         )
         expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
@@ -190,7 +192,7 @@ class TestGetFinancialStatementFromIdentifiers:
 
         for company_id in company_ids:
             requests_mock.get(
-                url=f"https://kfinance.kensho.com/api/v1/statements/{company_id}/income_statement/none/none/none/none/none/none/none/none",
+                url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote(f'[{company_id}]')}/income_statement/none/none/none/none/none/none",
                 json=self.statement_resp,
             )
 
@@ -246,11 +248,11 @@ class TestGetFinancialStatementFromIdentifiers:
         )
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/1/income_statement/none/none/none/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote('[1]')}/income_statement/none/none/none/none/none/none",
             json={"currency": "USD", "periods": {}},
         )
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/2/income_statement/none/none/none/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote('[2]')}/income_statement/none/none/none/none/none/none",
             json=self.statement_resp,
         )
 

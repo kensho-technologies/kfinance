@@ -95,7 +95,7 @@ class TestFetchItem(TestCase):
     def test_fetch_statement(self) -> None:
         company_id = 21719
         statement_type = "BS"
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}statements/{company_id}/{statement_type}/none/none/none/none/none/none/none/none"
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}statements/absolute/[{company_id}]/{statement_type}/none/none/none/none/none/none"
         # Validation error is ok, we only care that the function was called with the correct url
         with pytest.raises(ValidationError):
             self.kfinance_api_client.fetch_statement(
@@ -107,7 +107,7 @@ class TestFetchItem(TestCase):
         end_year = 2024
         start_quarter = 1
         end_quarter = 4
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}statements/{company_id}/{statement_type}/{period_type.value}/{start_year}/{end_year}/{start_quarter}/{end_quarter}/none/none/none"
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}statements/absolute/[{company_id}]/{statement_type}/{period_type.value}/{start_year}/{end_year}/{start_quarter}/{end_quarter}/none"
         # Validation error is ok, we only care that the function was called with the correct url
         with pytest.raises(ValidationError):
             self.kfinance_api_client.fetch_statement(
@@ -124,7 +124,7 @@ class TestFetchItem(TestCase):
     def test_fetch_line_item(self) -> None:
         company_id = 21719
         line_item = "cash"
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}line_item/{company_id}/{line_item}/none/none/none/none/none/none/none/none"
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}line_item/absolute/[{company_id}]/{line_item}/none/none/none/none/none/none"
         # Validation error is ok, we only care that the function was called with the correct url
         with pytest.raises(ValidationError):
             self.kfinance_api_client.fetch_line_item(company_id=company_id, line_item=line_item)
@@ -134,7 +134,7 @@ class TestFetchItem(TestCase):
         end_year = 2024
         start_quarter = 1
         end_quarter = 4
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}line_item/{company_id}/{line_item}/{period_type.value}/{start_year}/{end_year}/{start_quarter}/{end_quarter}/none/none/none"
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}line_item/absolute/[{company_id}]/{line_item}/{period_type.value}/{start_year}/{end_year}/{start_quarter}/{end_quarter}/none"
 
         # Validation error is ok, we only care that the function was called with the correct url
         with pytest.raises(ValidationError):
@@ -276,7 +276,7 @@ class TestFetchItem(TestCase):
     def test_fetch_segments(self) -> None:
         company_id = 21719
         segment_type = "business"
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}segments/{company_id}/{segment_type}/none/none/none/none/none/none/none/none"
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}segments/absolute/[{company_id}]/{segment_type}/none/none/none/none/none/none"
         with pytest.raises(ValidationError):
             self.kfinance_api_client.fetch_segments(
                 company_id=company_id, segment_type=segment_type
@@ -287,7 +287,7 @@ class TestFetchItem(TestCase):
         end_year = 2023
         start_quarter = 1
         end_quarter = 4
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}segments/{company_id}/{segment_type}/{period_type.value}/{start_year}/{end_year}/{start_quarter}/{end_quarter}/none/none/none"
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}segments/absolute/[{company_id}]/{segment_type}/{period_type.value}/{start_year}/{end_year}/{start_quarter}/{end_quarter}/none"
         with pytest.raises(ValidationError):
             self.kfinance_api_client.fetch_segments(
                 company_id=company_id,

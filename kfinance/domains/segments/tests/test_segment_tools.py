@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
@@ -58,7 +60,7 @@ class TestGetSegmentsFromIdentifier:
         """
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/segments/{SPGI_COMPANY_ID}/business/none/none/none/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/segments/absolute/{quote(f'[{SPGI_COMPANY_ID}]')}/business/none/none/none/none/none/none",
             # truncated from the original API response
             json=self.segments_response,
         )
@@ -116,7 +118,7 @@ class TestGetSegmentsFromIdentifier:
 
         for company_id in company_ids:
             requests_mock.get(
-                url=f"https://kfinance.kensho.com/api/v1/segments/{company_id}/business/none/none/none/none/none/none/none/none",
+                url=f"https://kfinance.kensho.com/api/v1/segments/absolute/{quote(f'[{company_id}]')}/business/none/none/none/none/none/none",
                 json=self.segments_response,
             )
 
@@ -156,11 +158,11 @@ class TestGetSegmentsFromIdentifier:
         )
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/segments/1/business/none/none/none/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/segments/absolute/{quote('[1]')}/business/none/none/none/none/none/none",
             json={"currency": "USD", "periods": {}},
         )
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/segments/2/business/none/none/none/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/segments/absolute/{quote('[2]')}/business/none/none/none/none/none/none",
             json=self.segments_response,
         )
 

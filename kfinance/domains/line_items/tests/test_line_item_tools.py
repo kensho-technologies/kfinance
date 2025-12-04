@@ -1,4 +1,5 @@
 from decimal import Decimal
+from urllib.parse import quote
 
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from requests_mock import Mocker
@@ -87,7 +88,7 @@ class TestGetFinancialLineItemFromCompanyIds:
         )
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/{SPGI_COMPANY_ID}/revenue/none/none/none/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/line_item/absolute/{quote(f'[{SPGI_COMPANY_ID}]')}/revenue/none/none/none/none/none/none",
             json=self.line_item_resp,
         )
 
@@ -123,7 +124,7 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         for company_id in company_ids:
             requests_mock.get(
-                url=f"https://kfinance.kensho.com/api/v1/line_item/{company_id}/revenue/none/none/none/none/none/none/none/none",
+                url=f"https://kfinance.kensho.com/api/v1/line_item/absolute/{quote(f'[{company_id}]')}/revenue/none/none/none/none/none/none",
                 json=self.line_item_resp,
             )
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
@@ -160,11 +161,11 @@ class TestGetFinancialLineItemFromCompanyIds:
         )
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/1/revenue/none/none/none/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/line_item/absolute/{quote('[1]')}/revenue/none/none/none/none/none/none",
             json={"currency": "USD", "periods": {}},
         )
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/2/revenue/none/none/none/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/line_item/absolute/{quote('[2]')}/revenue/none/none/none/none/none/none",
             json=self.line_item_resp,
         )
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)

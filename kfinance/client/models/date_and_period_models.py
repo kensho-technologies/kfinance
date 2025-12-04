@@ -50,6 +50,13 @@ class Periodicity(StrEnum):
     year = "year"
 
 
+class EndpointType(StrEnum):
+    """The type of API endpoint to use for financial data retrieval"""
+
+    absolute = "absolute"
+    relative = "relative"
+
+
 class YearAndQuarter(BaseModel):
     year: int
     quarter: int
