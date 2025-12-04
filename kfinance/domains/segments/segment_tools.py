@@ -102,7 +102,7 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
                     }
                 }
             },
-            'errors': {'NON-EXISTENT': 'No identification triple found for the provided identifier: NON-EXISTENT of type: ticker'}
+            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
         }
         """
 

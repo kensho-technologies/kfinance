@@ -120,7 +120,7 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
                     }
                 }
             },
-            'errors': {'NON-EXISTENT': 'No identification triple found for the provided identifier: NON-EXISTENT of type: ticker'}
+            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
         }
         """
         api_client = self.kfinance_client.kfinance_api_client
