@@ -37,13 +37,13 @@ class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
 
         Examples:
         Query: "Who are the current and previous suppliers of Microsoft?"
-        Function: get_business_relationship_from_identifiers(identifiers=["Microsoft"], business_relationship=BusinessRelationshipType.supplier)
+        Function: get_business_relationship_from_identifiers(identifiers=["Microsoft"], business_relationship="supplier")
 
         Query: "What are the borrowers of SPGI and JPM?"
-        Function: get_business_relationship_from_identifiers(identifiers=["SPGI", "JPM"], business_relationship=BusinessRelationshipType.borrower)
+        Function: get_business_relationship_from_identifiers(identifiers=["SPGI", "JPM"], business_relationship="borrower")
 
         Query: "Who are Apple's customers?"
-        Function: get_business_relationship_from_identifiers(identifiers=["Apple"], business_relationship=BusinessRelationshipType.customer)
+        Function: get_business_relationship_from_identifiers(identifiers=["Apple"], business_relationship="customer")
     """).strip()
     args_schema: Type[BaseModel] = GetBusinessRelationshipFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.RelationshipPermission}
