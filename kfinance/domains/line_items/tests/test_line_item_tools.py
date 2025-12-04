@@ -18,10 +18,22 @@ from kfinance.domains.line_items.line_item_tools import (
 class TestGetFinancialLineItemFromCompanyIds:
     line_item_resp = {
         "currency": "USD",
-        "line_item": {
-            "2022": {"value": 11181000000.0, "period_end_date": None, "num_months": None},
-            "2023": {"value": 12497000000.0, "period_end_date": None, "num_months": None},
-            "2024": {"value": 14208000000.0, "period_end_date": None, "num_months": None},
+        "periods": {
+            "CY2022": {
+                "period_end_date": "2022-12-31",
+                "num_months": 12,
+                "line_item": {"name": "Revenue", "value": "11181000000.0", "sources": []},
+            },
+            "CY2023": {
+                "period_end_date": "2023-12-31",
+                "num_months": 12,
+                "line_item": {"name": "Revenue", "value": "12497000000.0", "sources": []},
+            },
+            "CY2024": {
+                "period_end_date": "2024-12-31",
+                "num_months": 12,
+                "line_item": {"name": "Revenue", "value": "14208000000.0", "sources": []},
+            },
         },
     }
 
@@ -39,20 +51,32 @@ class TestGetFinancialLineItemFromCompanyIds:
                 "SPGI": LineItemResp(
                     currency="USD",
                     periods={
-                        "2022": {
-                            "period_end_date": None,
-                            "num_months": None,
-                            "line_item": {"revenue": Decimal(11181000000)},
+                        "CY2022": {
+                            "period_end_date": "2022-12-31",
+                            "num_months": 12,
+                            "line_item": {
+                                "name": "Revenue",
+                                "value": Decimal(11181000000),
+                                "sources": [],
+                            },
                         },
-                        "2023": {
-                            "period_end_date": None,
-                            "num_months": None,
-                            "line_item": {"revenue": Decimal(12497000000)},
+                        "CY2023": {
+                            "period_end_date": "2023-12-31",
+                            "num_months": 12,
+                            "line_item": {
+                                "name": "Revenue",
+                                "value": Decimal(12497000000),
+                                "sources": [],
+                            },
                         },
-                        "2024": {
-                            "period_end_date": None,
-                            "num_months": None,
-                            "line_item": {"revenue": Decimal(14208000000)},
+                        "CY2024": {
+                            "period_end_date": "2024-12-31",
+                            "num_months": 12,
+                            "line_item": {
+                                "name": "Revenue",
+                                "value": Decimal(14208000000),
+                                "sources": [],
+                            },
                         },
                     },
                 )
@@ -86,10 +110,10 @@ class TestGetFinancialLineItemFromCompanyIds:
         line_item_resp = LineItemResp(
             currency="USD",
             periods={
-                "2024": {
-                    "period_end_date": None,
-                    "num_months": None,
-                    "line_item": {"revenue": Decimal(14208000000)},
+                "CY2024": {
+                    "period_end_date": "2024-12-31",
+                    "num_months": 12,
+                    "line_item": {"name": "Revenue", "value": Decimal(14208000000), "sources": []},
                 }
             },
         )
@@ -124,10 +148,10 @@ class TestGetFinancialLineItemFromCompanyIds:
         c_2_line_item_resp = LineItemResp(
             currency="USD",
             periods={
-                "2024": {
-                    "period_end_date": None,
-                    "num_months": None,
-                    "line_item": {"revenue": Decimal(14208000000)},
+                "CY2024": {
+                    "period_end_date": "2024-12-31",
+                    "num_months": 12,
+                    "line_item": {"name": "Revenue", "value": Decimal(14208000000), "sources": []},
                 }
             },
         )
@@ -137,7 +161,7 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/line_item/1/revenue/none/none/none/none/none/none/none/none",
-            json={"currency": "USD", "line_item": {}},
+            json={"currency": "USD", "periods": {}},
         )
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/line_item/2/revenue/none/none/none/none/none/none/none/none",

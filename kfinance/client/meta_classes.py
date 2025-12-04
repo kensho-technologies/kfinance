@@ -98,15 +98,12 @@ class CompanyFunctionsMetaClass:
         # Extract statements data from each period
         statements_data = {}
         for period_key, period_data in periods.items():
-            if isinstance(period_data, dict) and "statements" in period_data:
-                period_statements = {}
-                # Flatten the statements array structure
-                for statement in period_data["statements"]:
-                    if isinstance(statement, dict) and "line_items" in statement:
-                        for line_item in statement["line_items"]:
-                            if isinstance(line_item, dict) and "name" in line_item and "value" in line_item:
-                                period_statements[line_item["name"]] = line_item["value"]
-                statements_data[period_key] = period_statements
+            period_statements = {}
+            # Flatten the statements array structure
+            for statement in period_data["statements"]:
+                for line_item in statement["line_items"]:
+                    period_statements[line_item["name"]] = line_item["value"]
+            statements_data[period_key] = period_statements
 
         return pd.DataFrame(statements_data).apply(pd.to_numeric).replace(np.nan, None)
 

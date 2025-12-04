@@ -115,8 +115,8 @@ MOCK_COMPANY_DB = {
                             "line_item": {
                                 "name": "Revenue",
                                 "value": "125843000000.000000",
-                                "sources": []
-                            }
+                                "sources": [],
+                            },
                         },
                         "CY2020": {
                             "period_end_date": "2020-12-31",
@@ -124,8 +124,8 @@ MOCK_COMPANY_DB = {
                             "line_item": {
                                 "name": "Revenue",
                                 "value": "143015000000.000000",
-                                "sources": []
-                            }
+                                "sources": [],
+                            },
                         },
                         "CY2021": {
                             "period_end_date": "2021-12-31",
@@ -133,8 +133,8 @@ MOCK_COMPANY_DB = {
                             "line_item": {
                                 "name": "Revenue",
                                 "value": "168088000000.000000",
-                                "sources": []
-                            }
+                                "sources": [],
+                            },
                         },
                         "CY2022": {
                             "period_end_date": "2022-12-31",
@@ -142,8 +142,8 @@ MOCK_COMPANY_DB = {
                             "line_item": {
                                 "name": "Revenue",
                                 "value": "198270000000.000000",
-                                "sources": []
-                            }
+                                "sources": [],
+                            },
                         },
                         "CY2023": {
                             "period_end_date": "2023-12-31",
@@ -151,10 +151,10 @@ MOCK_COMPANY_DB = {
                             "line_item": {
                                 "name": "Revenue",
                                 "value": "211915000000.000000",
-                                "sources": []
-                            }
-                        }
-                    }
+                                "sources": [],
+                            },
+                        },
+                    },
                 }
             )
         },
@@ -172,14 +172,10 @@ MOCK_COMPANY_DB = {
                                     {
                                         "name": "Operating Income",
                                         "value": 49584000000.0,
-                                        "sources": []
+                                        "sources": [],
                                     },
-                                    {
-                                        "name": "Revenue",
-                                        "value": 105362000000.0,
-                                        "sources": []
-                                    }
-                                ]
+                                    {"name": "Revenue", "value": 105362000000.0, "sources": []},
+                                ],
                             },
                             {
                                 "name": "More Personal Computing",
@@ -187,14 +183,10 @@ MOCK_COMPANY_DB = {
                                     {
                                         "name": "Operating Income",
                                         "value": 19309000000.0,
-                                        "sources": []
+                                        "sources": [],
                                     },
-                                    {
-                                        "name": "Revenue",
-                                        "value": 62032000000.0,
-                                        "sources": []
-                                    }
-                                ]
+                                    {"name": "Revenue", "value": 62032000000.0, "sources": []},
+                                ],
                             },
                             {
                                 "name": "Productivity and Business Processes",
@@ -202,18 +194,14 @@ MOCK_COMPANY_DB = {
                                     {
                                         "name": "Operating Income",
                                         "value": 40540000000.0,
-                                        "sources": []
+                                        "sources": [],
                                     },
-                                    {
-                                        "name": "Revenue",
-                                        "value": 77728000000.0,
-                                        "sources": []
-                                    }
-                                ]
-                            }
-                        ]
+                                    {"name": "Revenue", "value": 77728000000.0, "sources": []},
+                                ],
+                            },
+                        ],
                     }
-                }
+                },
             }
         ),
         "advisors": {
@@ -281,21 +269,17 @@ INCOME_STATEMENT = StatementsResp.model_validate(
                     {
                         "name": "Income Statement",
                         "line_items": [
-                            {
-                                "name": "Revenues",
-                                "value": "125843000000.000000",
-                                "sources": []
-                            },
+                            {"name": "Revenues", "value": "125843000000.000000", "sources": []},
                             {
                                 "name": "Total Revenues",
                                 "value": "125843000000.000000",
-                                "sources": []
-                            }
-                        ]
+                                "sources": [],
+                            },
+                        ],
                     }
-                ]
+                ],
             }
-        }
+        },
     }
 )
 
@@ -635,8 +619,8 @@ class TestCompany(TestCase):
         statements_data = {}
         for period_key, period_data in periods_data.items():
             period_statements = {}
-            for statement in period_data.get("statements", []):
-                for line_item in statement.get("line_items", []):
+            for statement in period_data["statements"]:
+                for line_item in statement["line_items"]:
                     period_statements[line_item["name"]] = line_item["value"]
             statements_data[period_key] = period_statements
 
@@ -968,8 +952,8 @@ class TestTicker(TestCase):
         statements_data = {}
         for period_key, period_data in periods_data.items():
             period_statements = {}
-            for statement in period_data.get("statements", []):
-                for line_item in statement.get("line_items", []):
+            for statement in period_data["statements"]:
+                for line_item in statement["line_items"]:
                     period_statements[line_item["name"]] = line_item["value"]
             statements_data[period_key] = period_statements
 

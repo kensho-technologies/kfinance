@@ -86,9 +86,31 @@ def test_run_notebook(jupyter_kernel_name: str):
 
         balance_sheet_resp = {
             "currency": "USD",
-            "statements": {
-                "2022Q3": {"Cash And Equivalents": "1387000000.000000"},
-                "2022Q4": {"Cash And Equivalents": "1286000000.000000"}
+            "periods": {
+                "CY2022Q3": {
+                    "period_end_date": "2022-09-30",
+                    "num_months": 3,
+                    "statements": [
+                        {
+                            "name": "Balance Sheet",
+                            "line_items": [
+                                {"name": "Cash And Equivalents", "value": "1387000000.000000", "sources": []}
+                            ]
+                        }
+                    ]
+                },
+                "CY2022Q4": {
+                    "period_end_date": "2022-12-31",
+                    "num_months": 3,
+                    "statements": [
+                        {
+                            "name": "Balance Sheet",
+                            "line_items": [
+                                {"name": "Cash And Equivalents", "value": "1286000000.000000", "sources": []}
+                            ]
+                        }
+                    ]
+                }
             }
         }
 
@@ -115,7 +137,20 @@ def test_run_notebook(jupyter_kernel_name: str):
         # spgi.net_income(period_type=PeriodType.annual, start_year=2010, end_year=2019)
         mocker.get(
             url="https://kfinance.kensho.com/api/v1/line_item/21719/net_income/annual/2010/2019/none/none/none/none/none",
-            json={"currency": "USD", "line_item": {"2010": "828000000.000000"}}
+            json={
+                "currency": "USD",
+                "periods": {
+                    "CY2010": {
+                        "period_end_date": "2010-12-31",
+                        "num_months": 12,
+                        "line_item": {
+                            "name": "Net Income",
+                            "value": "828000000.000000",
+                            "sources": []
+                        }
+                    }
+                }
+            }
         )
 
         prices_resp = {

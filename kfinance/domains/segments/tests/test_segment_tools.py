@@ -14,19 +14,38 @@ from kfinance.domains.segments.segment_tools import (
 class TestGetSegmentsFromIdentifier:
     segments_response = {
         "currency": "USD",
-        "segments": {
-            "2020": {
-                "Commodity Insights": {
-                    "CAPEX": -7000000.0,
-                    "D&A": 17000000.0,
-                },
+        "periods": {
+            "CY2020": {
+                "period_end_date": "2020-12-31",
+                "num_months": 12,
+                "segments": [
+                    {
+                        "name": "Commodity Insights",
+                        "line_items": [
+                            {"name": "CAPEX", "value": "-7000000.0", "sources": []},
+                            {"name": "D&A", "value": "17000000.0", "sources": []},
+                        ],
+                    }
+                ],
             },
-            "2021": {
-                "Commodity Insights": {
-                    "CAPEX": -2000000.0,
-                    "D&A": 12000000.0,
-                },
-                "Unallocated Assets Held for Sale": {"Total Assets": 321000000.0},
+            "CY2021": {
+                "period_end_date": "2021-12-31",
+                "num_months": 12,
+                "segments": [
+                    {
+                        "name": "Commodity Insights",
+                        "line_items": [
+                            {"name": "CAPEX", "value": "-2000000.0", "sources": []},
+                            {"name": "D&A", "value": "12000000.0", "sources": []},
+                        ],
+                    },
+                    {
+                        "name": "Unallocated Assets Held for Sale",
+                        "line_items": [
+                            {"name": "Total Assets", "value": "321000000.0", "sources": []},
+                        ],
+                    },
+                ],
             },
         },
     }
@@ -74,20 +93,20 @@ class TestGetSegmentsFromIdentifier:
                     "C_1": {
                         "currency": "USD",
                         "periods": {
-                            "2021": {
-                                "period_end_date": None,
-                                "num_months": None,
-                                "segments": self.segments_response["segments"]["2021"],
+                            "CY2021": {
+                                "period_end_date": "2021-12-31",
+                                "num_months": 12,
+                                "segments": self.segments_response["periods"]["CY2021"]["segments"],
                             }
                         },
                     },
                     "C_2": {
                         "currency": "USD",
                         "periods": {
-                            "2021": {
-                                "period_end_date": None,
-                                "num_months": None,
-                                "segments": self.segments_response["segments"]["2021"],
+                            "CY2021": {
+                                "period_end_date": "2021-12-31",
+                                "num_months": 12,
+                                "segments": self.segments_response["periods"]["CY2021"]["segments"],
                             }
                         },
                     },
@@ -125,10 +144,10 @@ class TestGetSegmentsFromIdentifier:
                     "C_2": {
                         "currency": "USD",
                         "periods": {
-                            "2021": {
-                                "period_end_date": None,
-                                "num_months": None,
-                                "segments": self.segments_response["segments"]["2021"],
+                            "CY2021": {
+                                "period_end_date": "2021-12-31",
+                                "num_months": 12,
+                                "segments": self.segments_response["periods"]["CY2021"]["segments"],
                             }
                         },
                     },
@@ -138,7 +157,7 @@ class TestGetSegmentsFromIdentifier:
 
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/segments/1/business/none/none/none/none/none/none/none/none",
-            json={"currency": "USD", "segments": {}},
+            json={"currency": "USD", "periods": {}},
         )
         requests_mock.get(
             url=f"https://kfinance.kensho.com/api/v1/segments/2/business/none/none/none/none/none/none/none/none",
