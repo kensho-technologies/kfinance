@@ -201,32 +201,27 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
 
         tasks = [
             Task(
-                func=api_client.fetch,
-                args=(
-                    f"{api_client.url_base}line_item/{id_triple.company_id}/{line_item}/"
-                    f"{period_type if period_type else 'none'}/"
-                    f"{start_year if start_year is not None else 'none'}/"
-                    f"{end_year if end_year is not None else 'none'}/"
-                    f"{start_quarter if start_quarter is not None else 'none'}/"
-                    f"{end_quarter if end_quarter is not None else 'none'}/"
-                    f"{calendar_type if calendar_type else 'none'}/"
-                    f"{num_periods if num_periods is not None else 'none'}/"
-                    f"{num_periods_back if num_periods_back is not None else 'none'}",
+                func=api_client.fetch_line_item,
+                kwargs=dict(
+                    company_id=id_triple.company_id,
+                    line_item=line_item,
+                    period_type=period_type,
+                    start_year=start_year,
+                    end_year=end_year,
+                    start_quarter=start_quarter,
+                    end_quarter=end_quarter,
+                    calendar_type=calendar_type,
+                    num_periods=num_periods,
+                    num_periods_back=num_periods_back,
                 ),
                 result_key=identifier,
             )
             for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
         ]
 
-        # Get raw responses from the API
-        raw_responses: dict[str, dict] = process_tasks_in_thread_pool_executor(
+        line_item_responses: dict[str, LineItemResp] = process_tasks_in_thread_pool_executor(
             api_client=api_client, tasks=tasks
         )
-
-        # Convert raw responses to LineItemResp objects
-        line_item_responses: dict[str, LineItemResp] = {}
-        for identifier, raw_response in raw_responses.items():
-            line_item_responses[identifier] = LineItemResp.model_validate(raw_response)
 
         # If no date and multiple companies, only return the most recent value.
         # By default, we return 5 years of data, which can be too much when

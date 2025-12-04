@@ -1,7 +1,7 @@
 # Changelog
 
 ## v4.0.0
-- Update line items, statements, and segments models for fiscal lookup
+- Update line items, statements, and segments models for absolute and relative lookup
 
 ## v3.2.18
 - Add info on how to fetch transcripts to earnings call tools
