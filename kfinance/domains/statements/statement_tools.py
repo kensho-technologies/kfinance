@@ -32,7 +32,6 @@ class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers, NumPerio
     num_periods_back: NumPeriodsBack | None = Field(default=None)
 
 
-
 class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, StatementsResp]  # company_id -> response
 

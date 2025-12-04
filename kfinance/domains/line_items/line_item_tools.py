@@ -121,7 +121,6 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers, NumPeriod
         return values
 
 
-
 class GetFinancialLineItemFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, LineItemResp]  # company_id -> response
 

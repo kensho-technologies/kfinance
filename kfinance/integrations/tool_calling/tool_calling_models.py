@@ -2,7 +2,14 @@ import abc
 from typing import Annotated, Any, Callable, Dict, Literal, Type
 
 from langchain_core.tools import BaseTool
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_serializer, model_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    model_serializer,
+    model_validator,
+)
 
 from kfinance.client.kfinance import Client
 from kfinance.client.permission_models import Permission
@@ -114,13 +121,12 @@ class NumPeriodsValidationMixin(BaseModel):
     """Mixin that provides validation for num_periods and num_periods_back fields.
 
     Ensures that if num_periods is provided, num_periods_back must also be provided.
-    Classes using this mixin must have num_periods and num_periods_back fields.
     """
 
     @model_validator(mode="after")
     def validate_num_periods_requirement(self) -> "NumPeriodsValidationMixin":
         """Validate that if num_periods is provided, num_periods_back must also be provided."""
-        if hasattr(self, 'num_periods') and hasattr(self, 'num_periods_back'):
+        if hasattr(self, "num_periods") and hasattr(self, "num_periods_back"):
             if self.num_periods is not None and self.num_periods_back is None:
                 raise ValueError("num_periods_back is required when num_periods is provided")
         return self

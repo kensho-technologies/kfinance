@@ -32,7 +32,6 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers, NumPeriodsValidati
     num_periods_back: NumPeriodsBack | None = Field(default=None)
 
 
-
 class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, SegmentsResp]  # company_id -> response
 
