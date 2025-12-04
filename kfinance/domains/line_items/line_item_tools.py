@@ -16,6 +16,7 @@ from kfinance.domains.line_items.line_item_models import (
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
+    NumPeriodsValidationMixin,
     ToolArgsWithIdentifiers,
     ToolRespWithErrors,
     ValidQuarter,
@@ -91,7 +92,7 @@ def _smart_line_item_validator(v: str) -> str:
     return v
 
 
-class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
+class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers, NumPeriodsValidationMixin):
     # Note: mypy will not enforce this literal because of the type: ignore.
     # But pydantic still uses the literal to check for allowed values and only includes
     # allowed values in generated schemas.
@@ -118,6 +119,7 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
             # Use the helper function to validate and provide suggestions
             _smart_line_item_validator(line_item)
         return values
+
 
 
 class GetFinancialLineItemFromIdentifiersResp(ToolRespWithErrors):

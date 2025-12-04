@@ -55,6 +55,7 @@ def test_run_notebook(jupyter_kernel_name: str):
     # - mocks for all calls made by the client while executing the notebook
     startup_cell_code = dedent("""
         from datetime import datetime
+        from urllib.parse import quote
         from kfinance.client.kfinance import Client
         kfinance_client = Client(refresh_token="foo")
         api_client = kfinance_client.kfinance_api_client
@@ -116,13 +117,13 @@ def test_run_notebook(jupyter_kernel_name: str):
 
         # spgi.balance_sheet()
         mocker.get(
-            url="https://kfinance.kensho.com/api/v1/statements/21719/balance_sheet/none/none/none/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote('[21719]')}/balance_sheet/none/none/none/none/none/none",
             json=balance_sheet_resp
         )
 
         # spgi.balance_sheet(period_type=PeriodType.annual, start_year=2010, end_year=2019)
         mocker.get(
-            url="https://kfinance.kensho.com/api/v1/statements/21719/balance_sheet/annual/2010/2019/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote('[21719]')}/balance_sheet/annual/2010/2019/none/none/none",
             json=balance_sheet_resp
         )
 
@@ -136,7 +137,7 @@ def test_run_notebook(jupyter_kernel_name: str):
 
         # spgi.net_income(period_type=PeriodType.annual, start_year=2010, end_year=2019)
         mocker.get(
-            url="https://kfinance.kensho.com/api/v1/line_item/21719/net_income/annual/2010/2019/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/line_item/absolute/{quote('[21719]')}/net_income/annual/2010/2019/none/none/none",
             json={
                 "currency": "USD",
                 "periods": {
