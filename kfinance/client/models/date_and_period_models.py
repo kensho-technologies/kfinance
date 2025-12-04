@@ -1,7 +1,35 @@
 from datetime import date
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, BeforeValidator, Field
 from strenum import StrEnum
+
+
+def convert_str_to_int(v: str | int) -> int:
+    """Convert strings to integers if possible."""
+    if isinstance(v, str) and v.isdigit():
+        return int(v)
+    elif isinstance(v, int):
+        return v
+    raise ValueError("Received string that cannot be converted to int")
+
+
+# Constrained integer types for period counts
+NumPeriods = Annotated[
+    int,
+    BeforeValidator(convert_str_to_int),
+    Field(ge=1, le=99, description="The number of periods to retrieve data for (1-99)"),
+]
+
+NumPeriodsBack = Annotated[
+    int,
+    BeforeValidator(convert_str_to_int),
+    Field(
+        ge=0,
+        le=99,
+        description="The end period of the data range expressed as number of periods back relative to the present period (0-99)",
+    ),
+]
 
 
 class PeriodType(StrEnum):
@@ -20,6 +48,13 @@ class Periodicity(StrEnum):
     week = "week"
     month = "month"
     year = "year"
+
+
+class EndpointType(StrEnum):
+    """The type of API endpoint to use for financial data retrieval"""
+
+    absolute = "absolute"
+    relative = "relative"
 
 
 class YearAndQuarter(BaseModel):

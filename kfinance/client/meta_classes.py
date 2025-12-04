@@ -85,21 +85,27 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return pd.DataFrame()
 
-        return (
-            pd.DataFrame(
-                self.kfinance_api_client.fetch_statement(
-                    company_id=self.company_id,
-                    statement_type=statement_type,
-                    period_type=period_type,
-                    start_year=start_year,
-                    end_year=end_year,
-                    start_quarter=start_quarter,
-                    end_quarter=end_quarter,
-                ).model_dump(mode="json")["statements"]
-            )
-            .apply(pd.to_numeric)
-            .replace(np.nan, None)
-        )
+        periods = self.kfinance_api_client.fetch_statement(
+            company_id=self.company_id,
+            statement_type=statement_type,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        ).model_dump(mode="json")["periods"]
+
+        # Extract statements data from each period
+        statements_data = {}
+        for period_key, period_data in periods.items():
+            period_statements = {}
+            # Flatten the statements array structure
+            for statement in period_data["statements"]:
+                for line_item in statement["line_items"]:
+                    period_statements[line_item["name"]] = line_item["value"]
+            statements_data[period_key] = period_statements
+
+        return pd.DataFrame(statements_data).apply(pd.to_numeric).replace(np.nan, None)
 
     def income_statement(
         self,
@@ -221,8 +227,13 @@ class CompanyFunctionsMetaClass:
             start_quarter=start_quarter,
             end_quarter=end_quarter,
         )
+        # Extract line item values from each period
+        line_item_data = {}
+        for period_key, period_data in line_item_response.periods.items():
+            line_item_data[period_key] = period_data.line_item.value
+
         return (
-            pd.DataFrame({"line_item": line_item_response.line_item})
+            pd.DataFrame({"line_item": line_item_data})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)
@@ -359,7 +370,7 @@ class CompanyFunctionsMetaClass:
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
-        ).model_dump(mode="json")["segments"]
+        ).model_dump(mode="json")["periods"]
 
     def business_segments(
         self,

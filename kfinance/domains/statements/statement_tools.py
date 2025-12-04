@@ -4,18 +4,20 @@ from typing import Literal, Type
 from pydantic import BaseModel, Field
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
-from kfinance.client.models.date_and_period_models import PeriodType
+from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.permission_models import Permission
+from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.statements.statement_models import StatementsResp, StatementType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
+    NumPeriodsValidationMixin,
     ToolArgsWithIdentifiers,
     ToolRespWithErrors,
     ValidQuarter,
 )
 
 
-class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers):
+class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers, NumPeriodsValidationMixin):
     # no description because the description for enum fields comes from the enum docstring.
     statement: StatementType
     period_type: PeriodType | None = Field(default=None, description="The period type")
@@ -23,10 +25,15 @@ class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
     end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
+    calendar_type: CalendarType | None = Field(
+        default=None, description="Fiscal year or calendar year"
+    )
+    num_periods: NumPeriods | None = Field(default=None)
+    num_periods_back: NumPeriodsBack | None = Field(default=None)
 
 
 class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, StatementsResp]
+    results: dict[str, StatementsResp]  # company_id -> response
 
 
 class GetFinancialStatementFromIdentifiers(KfinanceTool):
@@ -56,15 +63,61 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         end_year: int | None = None,
         start_quarter: Literal[1, 2, 3, 4] | None = None,
         end_quarter: Literal[1, 2, 3, 4] | None = None,
+        calendar_type: CalendarType | None = None,
+        num_periods: int | None = None,
+        num_periods_back: int | None = None,
     ) -> GetFinancialStatementFromIdentifiersResp:
         """Sample response:
 
         {
             'results': {
                 'SPGI': {
-                    'statements': {
-                        '2020': {'Revenues': '7442000000.000000', 'Total Revenues': '7442000000.000000'},
-                        '2021': {'Revenues': '8243000000.000000', 'Total Revenues': '8243000000.000000'}
+                    'currency': 'USD',
+                    'periods': {
+                        'CY2020': {
+                            'period_end_date': '2020-12-31',
+                            'num_months': 12,
+                            'statements': [
+                                {
+                                    'name': 'Income Statement',
+                                    'line_items': [
+                                        {
+                                            'name': 'Revenues',
+                                            'value': 7442000000.0,
+                                            'sources': [
+                                                {
+                                                    'type': 'doc-viewer statement',
+                                                    'url': 'https://www.capitaliq.spglobal.com/...'
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            'name': 'Total Revenues',
+                                            'value': 7442000000.0
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        'CY2021': {
+                            'period_end_date': '2021-12-31',
+                            'num_months': 12,
+                            'statements': [
+                                {
+                                    'name': 'Income Statement',
+                                    'line_items': [
+                                        {
+                                            'name': 'Revenues',
+                                            'value': 8243000000.0
+                                        },
+                                        {
+                                            'name': 'Total Revenues',
+                                            'value': 8243000000.0
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
                     }
                 }
             },
@@ -85,6 +138,9 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
                     end_year=end_year,
                     start_quarter=start_quarter,
                     end_quarter=end_quarter,
+                    calendar_type=calendar_type,
+                    num_periods=num_periods,
+                    num_periods_back=num_periods_back,
                 ),
                 result_key=identifier,
             )
@@ -106,10 +162,10 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
             and len(statement_responses) > 1
         ):
             for statement_response in statement_responses.values():
-                if statement_response.statements:
-                    most_recent_year = max(statement_response.statements.keys())
-                    most_recent_year_data = statement_response.statements[most_recent_year]
-                    statement_response.statements = {most_recent_year: most_recent_year_data}
+                if statement_response.periods:
+                    most_recent_year = max(statement_response.periods.keys())
+                    most_recent_year_data = statement_response.periods[most_recent_year]
+                    statement_response.periods = {most_recent_year: most_recent_year_data}
 
         return GetFinancialStatementFromIdentifiersResp(
             results=statement_responses, errors=list(id_triple_resp.errors.values())

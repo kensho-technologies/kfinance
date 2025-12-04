@@ -10,7 +10,7 @@ import jwt
 import requests
 
 from kfinance.client.industry_models import IndustryClassification
-from kfinance.client.models.date_and_period_models import Periodicity, PeriodType
+from kfinance.client.models.date_and_period_models import EndpointType, Periodicity, PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
@@ -25,7 +25,7 @@ from kfinance.domains.companies.company_models import (
 )
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.domains.earnings.earning_models import EarningsCallResp
-from kfinance.domains.line_items.line_item_models import LineItemResponse
+from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerInfo,
     MergersResp,
@@ -359,15 +359,29 @@ class KFinanceApiClient:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
+        calendar_type: Optional[CalendarType] = None,
+        num_periods: Optional[int] = None,
+        num_periods_back: Optional[int] = None,
     ) -> SegmentsResp:
         """Get a specified segment type for a specified duration."""
+        if num_periods_back is not None and num_periods is None:
+            raise ValueError("num_periods_back requires num_periods to be provided")
+
+        endpoint_type = EndpointType.relative if num_periods is not None else EndpointType.absolute
+
         url = (
-            f"{self.url_base}segments/{company_id}/{segment_type}/"
+            f"{self.url_base}segments/{endpoint_type}/[{company_id}]/{segment_type}/"
             f"{period_type if period_type else 'none'}/"
             f"{start_year if start_year is not None else 'none'}/"
             f"{end_year if end_year is not None else 'none'}/"
             f"{start_quarter if start_quarter is not None else 'none'}/"
-            f"{end_quarter if end_quarter is not None else 'none'}"
+            f"{end_quarter if end_quarter is not None else 'none'}/"
+            f"{calendar_type if calendar_type else 'none'}"
+            + (
+                f"/{num_periods}/{num_periods_back if num_periods_back is not None else 'none'}"
+                if endpoint_type == EndpointType.relative
+                else ""
+            )
         )
         return SegmentsResp.model_validate(self.fetch(url))
 
@@ -408,16 +422,31 @@ class KFinanceApiClient:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
+        calendar_type: Optional[CalendarType] = None,
+        num_periods: Optional[int] = None,
+        num_periods_back: Optional[int] = None,
     ) -> StatementsResp:
         """Get a specified financial statement for a specified duration."""
+        if num_periods_back is not None and num_periods is None:
+            raise ValueError("num_periods_back requires num_periods to be provided")
+
+        endpoint_type = EndpointType.relative if num_periods is not None else EndpointType.absolute
+
         url = (
-            f"{self.url_base}statements/{company_id}/{statement_type}/"
+            f"{self.url_base}statements/{endpoint_type}/[{company_id}]/{statement_type}/"
             f"{period_type if period_type else 'none'}/"
             f"{start_year if start_year is not None else 'none'}/"
             f"{end_year if end_year is not None else 'none'}/"
             f"{start_quarter if start_quarter is not None else 'none'}/"
-            f"{end_quarter if end_quarter is not None else 'none'}"
+            f"{end_quarter if end_quarter is not None else 'none'}/"
+            f"{calendar_type if calendar_type else 'none'}"
+            + (
+                f"/{num_periods}/{num_periods_back if num_periods_back is not None else 'none'}"
+                if endpoint_type == EndpointType.relative
+                else ""
+            )
         )
+
         return StatementsResp.model_validate(self.fetch(url))
 
     def fetch_line_item(
@@ -429,17 +458,32 @@ class KFinanceApiClient:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
-    ) -> LineItemResponse:
+        calendar_type: Optional[CalendarType] = None,
+        num_periods: Optional[int] = None,
+        num_periods_back: Optional[int] = None,
+    ) -> LineItemResp:
         """Get a specified financial line item for a specified duration."""
+        if num_periods_back is not None and num_periods is None:
+            raise ValueError("num_periods_back requires num_periods to be provided")
+
+        endpoint_type = EndpointType.relative if num_periods is not None else EndpointType.absolute
+
         url = (
-            f"{self.url_base}line_item/{company_id}/{line_item}/"
+            f"{self.url_base}line_item/{endpoint_type}/[{company_id}]/{line_item}/"
             f"{period_type if period_type else 'none'}/"
             f"{start_year if start_year is not None else 'none'}/"
             f"{end_year if end_year is not None else 'none'}/"
             f"{start_quarter if start_quarter is not None else 'none'}/"
-            f"{end_quarter if end_quarter is not None else 'none'}"
+            f"{end_quarter if end_quarter is not None else 'none'}/"
+            f"{calendar_type if calendar_type else 'none'}"
+            + (
+                f"/{num_periods}/{num_periods_back if num_periods_back is not None else 'none'}"
+                if endpoint_type == EndpointType.relative
+                else ""
+            )
         )
-        return LineItemResponse.model_validate(self.fetch(url))
+
+        return LineItemResp.model_validate(self.fetch(url))
 
     def fetch_info(self, company_id: int) -> dict:
         """Get the company info."""

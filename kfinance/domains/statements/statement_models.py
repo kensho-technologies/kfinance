@@ -1,3 +1,5 @@
+from datetime import date
+from decimal import Decimal
 from typing import Any
 
 from pydantic import BaseModel
@@ -12,5 +14,23 @@ class StatementType(StrEnum):
     cashflow = "cashflow"
 
 
+class LineItem(BaseModel):
+    name: str
+    value: Decimal | None
+    sources: list[dict[str, Any]] | None = None
+
+
+class Statement(BaseModel):
+    name: str
+    line_items: list[LineItem]
+
+
+class StatementPeriodData(BaseModel):
+    period_end_date: date
+    num_months: int
+    statements: list[Statement]
+
+
 class StatementsResp(BaseModel):
-    statements: dict[str, Any]
+    currency: str | None
+    periods: dict[str, StatementPeriodData]  # period -> statement and period data

@@ -1,13 +1,33 @@
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from itertools import chain
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from pydantic import BaseModel
+from strenum import StrEnum
 
 
-class LineItemResponse(BaseModel):
-    line_item: dict[str, Decimal | None]
+class CalendarType(StrEnum):
+    FISCAL = "FISCAL"
+    CALENDAR = "CALENDAR"
+
+
+class LineItemData(BaseModel):
+    name: str
+    value: Decimal | None
+    sources: list[dict[str, Any]] | None = None
+
+
+class LineItemPeriodData(BaseModel):
+    period_end_date: date
+    num_months: int
+    line_item: LineItemData
+
+
+class LineItemResp(BaseModel):
+    currency: str | None
+    periods: dict[str, LineItemPeriodData]  # period -> line item and period data
 
 
 @dataclass

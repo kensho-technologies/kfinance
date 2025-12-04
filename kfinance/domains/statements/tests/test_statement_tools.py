@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
@@ -13,10 +15,35 @@ from kfinance.domains.statements.statement_tools import (
 
 class TestGetFinancialStatementFromIdentifiers:
     statement_resp = {
-        "statements": {
-            "2020": {"Revenues": "7442000000.000000", "Total Revenues": "7442000000.000000"},
-            "2021": {"Revenues": "8243000000.000000", "Total Revenues": "8243000000.000000"},
-        }
+        "currency": "USD",
+        "periods": {
+            "CY2020": {
+                "period_end_date": "2020-12-31",
+                "num_months": 12,
+                "statements": [
+                    {
+                        "name": "Income Statement",
+                        "line_items": [
+                            {"name": "Revenues", "value": "7442000000.000000", "sources": []},
+                            {"name": "Total Revenues", "value": "7442000000.000000", "sources": []},
+                        ],
+                    }
+                ],
+            },
+            "CY2021": {
+                "period_end_date": "2021-12-31",
+                "num_months": 12,
+                "statements": [
+                    {
+                        "name": "Income Statement",
+                        "line_items": [
+                            {"name": "Revenues", "value": "8243000000.000000", "sources": []},
+                            {"name": "Total Revenues", "value": "8243000000.000000", "sources": []},
+                        ],
+                    }
+                ],
+            },
+        },
     }
 
     def test_get_financial_statement_from_identifiers(
@@ -29,23 +56,58 @@ class TestGetFinancialStatementFromIdentifiers:
         """
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/{SPGI_COMPANY_ID}/income_statement/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote(f'[{SPGI_COMPANY_ID}]')}/income_statement/none/none/none/none/none/none",
             json=self.statement_resp,
         )
         expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
             {
                 "results": {
                     "SPGI": {
-                        "statements": {
-                            "2020": {
-                                "Revenues": "7442000000.000000",
-                                "Total Revenues": "7442000000.000000",
+                        "currency": "USD",
+                        "periods": {
+                            "CY2020": {
+                                "period_end_date": "2020-12-31",
+                                "num_months": 12,
+                                "statements": [
+                                    {
+                                        "name": "Income Statement",
+                                        "line_items": [
+                                            {
+                                                "name": "Revenues",
+                                                "value": "7442000000.000000",
+                                                "sources": [],
+                                            },
+                                            {
+                                                "name": "Total Revenues",
+                                                "value": "7442000000.000000",
+                                                "sources": [],
+                                            },
+                                        ],
+                                    }
+                                ],
                             },
-                            "2021": {
-                                "Revenues": "8243000000.000000",
-                                "Total Revenues": "8243000000.000000",
+                            "CY2021": {
+                                "period_end_date": "2021-12-31",
+                                "num_months": 12,
+                                "statements": [
+                                    {
+                                        "name": "Income Statement",
+                                        "line_items": [
+                                            {
+                                                "name": "Revenues",
+                                                "value": "8243000000.000000",
+                                                "sources": [],
+                                            },
+                                            {
+                                                "name": "Total Revenues",
+                                                "value": "8243000000.000000",
+                                                "sources": [],
+                                            },
+                                        ],
+                                    }
+                                ],
                             },
-                        }
+                        },
                     }
                 },
                 "errors": [
@@ -73,20 +135,56 @@ class TestGetFinancialStatementFromIdentifiers:
             {
                 "results": {
                     "C_1": {
-                        "statements": {
-                            "2021": {
-                                "Revenues": "8243000000.000000",
-                                "Total Revenues": "8243000000.000000",
+                        "currency": "USD",
+                        "periods": {
+                            "CY2021": {
+                                "period_end_date": "2021-12-31",
+                                "num_months": 12,
+                                "statements": [
+                                    {
+                                        "name": "Income Statement",
+                                        "line_items": [
+                                            {
+                                                "name": "Revenues",
+                                                "value": "8243000000.000000",
+                                                "sources": [],
+                                            },
+                                            {
+                                                "name": "Total Revenues",
+                                                "value": "8243000000.000000",
+                                                "sources": [],
+                                            },
+                                        ],
+                                    }
+                                ],
                             }
-                        }
+                        },
                     },
                     "C_2": {
-                        "statements": {
-                            "2021": {
-                                "Revenues": "8243000000.000000",
-                                "Total Revenues": "8243000000.000000",
+                        "currency": "USD",
+                        "periods": {
+                            "CY2021": {
+                                "period_end_date": "2021-12-31",
+                                "num_months": 12,
+                                "statements": [
+                                    {
+                                        "name": "Income Statement",
+                                        "line_items": [
+                                            {
+                                                "name": "Revenues",
+                                                "value": "8243000000.000000",
+                                                "sources": [],
+                                            },
+                                            {
+                                                "name": "Total Revenues",
+                                                "value": "8243000000.000000",
+                                                "sources": [],
+                                            },
+                                        ],
+                                    }
+                                ],
                             }
-                        }
+                        },
                     },
                 }
             }
@@ -94,7 +192,7 @@ class TestGetFinancialStatementFromIdentifiers:
 
         for company_id in company_ids:
             requests_mock.get(
-                url=f"https://kfinance.kensho.com/api/v1/statements/{company_id}/income_statement/none/none/none/none/none",
+                url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote(f'[{company_id}]')}/income_statement/none/none/none/none/none/none",
                 json=self.statement_resp,
             )
 
@@ -118,25 +216,43 @@ class TestGetFinancialStatementFromIdentifiers:
         expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
             {
                 "results": {
-                    "C_1": {"statements": {}},
+                    "C_1": {"currency": "USD", "periods": {}},
                     "C_2": {
-                        "statements": {
-                            "2021": {
-                                "Revenues": "8243000000.000000",
-                                "Total Revenues": "8243000000.000000",
+                        "currency": "USD",
+                        "periods": {
+                            "CY2021": {
+                                "period_end_date": "2021-12-31",
+                                "num_months": 12,
+                                "statements": [
+                                    {
+                                        "name": "Income Statement",
+                                        "line_items": [
+                                            {
+                                                "name": "Revenues",
+                                                "value": "8243000000.000000",
+                                                "sources": [],
+                                            },
+                                            {
+                                                "name": "Total Revenues",
+                                                "value": "8243000000.000000",
+                                                "sources": [],
+                                            },
+                                        ],
+                                    }
+                                ],
                             }
-                        }
+                        },
                     },
                 }
             }
         )
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/1/income_statement/none/none/none/none/none",
-            json={"statements": {}},
+            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote('[1]')}/income_statement/none/none/none/none/none/none",
+            json={"currency": "USD", "periods": {}},
         )
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/2/income_statement/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote('[2]')}/income_statement/none/none/none/none/none/none",
             json=self.statement_resp,
         )
 

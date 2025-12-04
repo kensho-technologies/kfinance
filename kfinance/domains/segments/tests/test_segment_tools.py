@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
@@ -13,20 +15,39 @@ from kfinance.domains.segments.segment_tools import (
 
 class TestGetSegmentsFromIdentifier:
     segments_response = {
-        "segments": {
-            "2020": {
-                "Commodity Insights": {
-                    "CAPEX": -7000000.0,
-                    "D&A": 17000000.0,
-                },
-                "Unallocated Assets Held for Sale": None,
+        "currency": "USD",
+        "periods": {
+            "CY2020": {
+                "period_end_date": "2020-12-31",
+                "num_months": 12,
+                "segments": [
+                    {
+                        "name": "Commodity Insights",
+                        "line_items": [
+                            {"name": "CAPEX", "value": "-7000000.0", "sources": []},
+                            {"name": "D&A", "value": "17000000.0", "sources": []},
+                        ],
+                    }
+                ],
             },
-            "2021": {
-                "Commodity Insights": {
-                    "CAPEX": -2000000.0,
-                    "D&A": 12000000.0,
-                },
-                "Unallocated Assets Held for Sale": {"Total Assets": 321000000.0},
+            "CY2021": {
+                "period_end_date": "2021-12-31",
+                "num_months": 12,
+                "segments": [
+                    {
+                        "name": "Commodity Insights",
+                        "line_items": [
+                            {"name": "CAPEX", "value": "-2000000.0", "sources": []},
+                            {"name": "D&A", "value": "12000000.0", "sources": []},
+                        ],
+                    },
+                    {
+                        "name": "Unallocated Assets Held for Sale",
+                        "line_items": [
+                            {"name": "Total Assets", "value": "321000000.0", "sources": []},
+                        ],
+                    },
+                ],
             },
         },
     }
@@ -39,7 +60,7 @@ class TestGetSegmentsFromIdentifier:
         """
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/segments/{SPGI_COMPANY_ID}/business/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/segments/absolute/{quote(f'[{SPGI_COMPANY_ID}]')}/business/none/none/none/none/none/none",
             # truncated from the original API response
             json=self.segments_response,
         )
@@ -71,15 +92,33 @@ class TestGetSegmentsFromIdentifier:
         expected_response = GetSegmentsFromIdentifiersResp.model_validate(
             {
                 "results": {
-                    "C_1": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
-                    "C_2": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
+                    "C_1": {
+                        "currency": "USD",
+                        "periods": {
+                            "CY2021": {
+                                "period_end_date": "2021-12-31",
+                                "num_months": 12,
+                                "segments": self.segments_response["periods"]["CY2021"]["segments"],
+                            }
+                        },
+                    },
+                    "C_2": {
+                        "currency": "USD",
+                        "periods": {
+                            "CY2021": {
+                                "period_end_date": "2021-12-31",
+                                "num_months": 12,
+                                "segments": self.segments_response["periods"]["CY2021"]["segments"],
+                            }
+                        },
+                    },
                 }
             }
         )
 
         for company_id in company_ids:
             requests_mock.get(
-                url=f"https://kfinance.kensho.com/api/v1/segments/{company_id}/business/none/none/none/none/none",
+                url=f"https://kfinance.kensho.com/api/v1/segments/absolute/{quote(f'[{company_id}]')}/business/none/none/none/none/none/none",
                 json=self.segments_response,
             )
 
@@ -103,18 +142,27 @@ class TestGetSegmentsFromIdentifier:
         expected_response = GetSegmentsFromIdentifiersResp.model_validate(
             {
                 "results": {
-                    "C_1": {"segments": {}},
-                    "C_2": {"segments": {"2021": self.segments_response["segments"]["2021"]}},
+                    "C_1": {"currency": "USD", "periods": {}},
+                    "C_2": {
+                        "currency": "USD",
+                        "periods": {
+                            "CY2021": {
+                                "period_end_date": "2021-12-31",
+                                "num_months": 12,
+                                "segments": self.segments_response["periods"]["CY2021"]["segments"],
+                            }
+                        },
+                    },
                 }
             }
         )
 
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/segments/1/business/none/none/none/none/none",
-            json={"segments": {}},
+            url=f"https://kfinance.kensho.com/api/v1/segments/absolute/{quote('[1]')}/business/none/none/none/none/none/none",
+            json={"currency": "USD", "periods": {}},
         )
         requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/segments/2/business/none/none/none/none/none",
+            url=f"https://kfinance.kensho.com/api/v1/segments/absolute/{quote('[2]')}/business/none/none/none/none/none/none",
             json=self.segments_response,
         )
 
