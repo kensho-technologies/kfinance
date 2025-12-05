@@ -18,11 +18,11 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 class GetPricesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     start_date: date | None = Field(
         description="The start date for historical price retrieval. Use null for latest values. For annual queries (e.g., 'prices in 2020'), use January 1st of the year.",
-        default=None
+        default=None,
     )
     end_date: date | None = Field(
         description="The end date for historical price retrieval. Use null for latest values. For annual queries (e.g., 'prices in 2020'), use December 31st of the year.",
-        default=None
+        default=None,
     )
     # no description because the description for enum fields comes from the enum docstring.
     periodicity: Periodicity = Field(default=Periodicity.day)

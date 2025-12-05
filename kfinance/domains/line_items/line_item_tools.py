@@ -97,11 +97,23 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
     line_item: Literal[tuple(LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore[valid-type]
         description="The type of financial line_item requested"
     )
-    period_type: PeriodType | None = Field(default=None, description="The period type (annual or quarterly)")
-    start_year: int | None = Field(default=None, description="The starting year for the data range. Use null for the most recent data.")
-    end_year: int | None = Field(default=None, description="The ending year for the data range. Use null for the most recent data.")
-    start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter (1-4). Only used when period_type is quarterly.")
-    end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter (1-4). Only used when period_type is quarterly.")
+    period_type: PeriodType | None = Field(
+        default=None, description="The period type (annual or quarterly)"
+    )
+    start_year: int | None = Field(
+        default=None,
+        description="The starting year for the data range. Use null for the most recent data.",
+    )
+    end_year: int | None = Field(
+        default=None,
+        description="The ending year for the data range. Use null for the most recent data.",
+    )
+    start_quarter: ValidQuarter | None = Field(
+        default=None, description="Starting quarter (1-4). Only used when period_type is quarterly."
+    )
+    end_quarter: ValidQuarter | None = Field(
+        default=None, description="Ending quarter (1-4). Only used when period_type is quarterly."
+    )
 
     @model_validator(mode="before")
     @classmethod

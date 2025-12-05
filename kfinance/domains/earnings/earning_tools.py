@@ -66,8 +66,8 @@ class GetEarningsFromIdentifiers(KfinanceTool):
         Query: "Get all earnings calls for Microsoft"
         Function: get_earnings_from_identifiers(identifiers=["Microsoft"])
 
-        Query: "Get earnings for AAPL and MSFT"
-        Function: get_earnings_from_identifiers(identifiers=["AAPL", "MSFT"])
+        Query: "Get earnings for CRM and ORCL"
+        Function: get_earnings_from_identifiers(identifiers=["CRM", "ORCL"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {
@@ -160,11 +160,11 @@ class GetNextEarningsFromIdentifiers(KfinanceTool):
         - To fetch the full transcript (once available), call get_transcript_from_key_dev_id with the key_dev_id
 
         Examples:
-        Query: "When is Apple's next earnings call?"
-        Function: get_next_earnings_from_identifiers(identifiers=["Apple"])
+        Query: "When is Waste Management's next earnings call?"
+        Function: get_next_earnings_from_identifiers(identifiers=["Waste Management"])
 
-        Query: "Get next earnings for TSLA and AMZN"
-        Function: get_next_earnings_from_identifiers(identifiers=["TSLA", "AMZN"])
+        Query: "Get next earnings for FDX and UPS"
+        Function: get_next_earnings_from_identifiers(identifiers=["FDX", "UPS"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {

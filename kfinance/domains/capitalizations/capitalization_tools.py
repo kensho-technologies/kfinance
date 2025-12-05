@@ -19,11 +19,11 @@ class GetCapitalizationFromIdentifiersArgs(ToolArgsWithIdentifiers):
     capitalization: Capitalization
     start_date: date | None = Field(
         description="The start date for historical capitalization retrieval. Use null for latest values. For annual data, use January 1st of the year.",
-        default=None
+        default=None,
     )
     end_date: date | None = Field(
         description="The end date for historical capitalization retrieval. Use null for latest values. For annual data, use December 31st of the year.",
-        default=None
+        default=None,
     )
 
 

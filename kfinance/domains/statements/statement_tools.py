@@ -18,11 +18,23 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
     statement: StatementType
-    period_type: PeriodType | None = Field(default=None, description="The period type (annual or quarterly)")
-    start_year: int | None = Field(default=None, description="The starting year for the data range. Use null for the most recent data.")
-    end_year: int | None = Field(default=None, description="The ending year for the data range. Use null for the most recent data.")
-    start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter (1-4). Only used when period_type is quarterly.")
-    end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter (1-4). Only used when period_type is quarterly.")
+    period_type: PeriodType | None = Field(
+        default=None, description="The period type (annual or quarterly)"
+    )
+    start_year: int | None = Field(
+        default=None,
+        description="The starting year for the data range. Use null for the most recent data.",
+    )
+    end_year: int | None = Field(
+        default=None,
+        description="The ending year for the data range. Use null for the most recent data.",
+    )
+    start_quarter: ValidQuarter | None = Field(
+        default=None, description="Starting quarter (1-4). Only used when period_type is quarterly."
+    )
+    end_quarter: ValidQuarter | None = Field(
+        default=None, description="Ending quarter (1-4). Only used when period_type is quarterly."
+    )
 
 
 class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
