@@ -18,11 +18,23 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
     statement: StatementType
-    period_type: PeriodType | None = Field(default=None, description="The period type")
-    start_year: int | None = Field(default=None, description="The starting year for the data range")
-    end_year: int | None = Field(default=None, description="The ending year for the data range")
-    start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
-    end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
+    period_type: PeriodType | None = Field(
+        default=None, description="The period type (annual or quarterly)"
+    )
+    start_year: int | None = Field(
+        default=None,
+        description="The starting year for the data range. Use null for the most recent data.",
+    )
+    end_year: int | None = Field(
+        default=None,
+        description="The ending year for the data range. Use null for the most recent data.",
+    )
+    start_quarter: ValidQuarter | None = Field(
+        default=None, description="Starting quarter (1-4). Only used when period_type is quarterly."
+    )
+    end_quarter: ValidQuarter | None = Field(
+        default=None, description="Ending quarter (1-4). Only used when period_type is quarterly."
+    )
 
 
 class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
@@ -32,14 +44,21 @@ class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
 class GetFinancialStatementFromIdentifiers(KfinanceTool):
     name: str = "get_financial_statement_from_identifiers"
     description: str = dedent("""
-        Get a financial statement associated with a group of identifiers.
+        Get a financial statement (balance_sheet, income_statement, or cashflow) for a group of identifiers.
 
-        - To fetch the most recent value for the statement, leave start_year, start_quarter, end_year, and end_quarter as None.
-        - The tool accepts arguments in calendar years, and all outputs will be presented in terms of calendar years. Please note that these calendar years may not align with the company's fiscal year.
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - To fetch the most recent statement, leave start_year, start_quarter, end_year, and end_quarter as null.
+        - The tool accepts arguments in calendar years, and all outputs will be in calendar years (may not align with fiscal year).
 
-        Example:
-        Query: "Fetch the balance sheets of BAC and GS for 2024"
-        Function: get_financial_statement_from_company_ids(identifiers=["BAC", "GS"], statement=StatementType.balance_sheet, start_year=2024, end_year=2024)
+        Examples:
+        Query: "Fetch the balance sheets of Bank of America and Goldman Sachs for 2024"
+        Function: get_financial_statement_from_identifiers(identifiers=["Bank of America", "Goldman Sachs"], statement="balance_sheet", period_type="annual", start_year=2024, end_year=2024)
+
+        Query: "Get income statements for NEE and DUK"
+        Function: get_financial_statement_from_identifiers(identifiers=["NEE", "DUK"], statement="income_statement")
+
+        Query: "Q2 2023 cashflow for XOM"
+        Function: get_financial_statement_from_identifiers(identifiers=["XOM"], statement="cashflow", period_type="quarterly", start_year=2023, end_year=2023, start_quarter=2, end_quarter=2)
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialStatementFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {

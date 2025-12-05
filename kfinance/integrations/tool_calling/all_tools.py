@@ -25,7 +25,10 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools impo
     GetMergerInfoFromTransactionId,
     GetMergersFromIdentifiers,
 )
-from kfinance.domains.prices.price_tools import GetPricesFromIdentifiers
+from kfinance.domains.prices.price_tools import (
+    GetHistoryMetadataFromIdentifiers,
+    GetPricesFromIdentifiers,
+)
 from kfinance.domains.segments.segment_tools import GetSegmentsFromIdentifiers
 from kfinance.domains.statements.statement_tools import GetFinancialStatementFromIdentifiers
 from kfinance.integrations.tool_calling.static_tools.get_latest import GetLatest
@@ -61,6 +64,7 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetFinancialLineItemFromIdentifiers,
     # Prices
     GetPricesFromIdentifiers,
+    GetHistoryMetadataFromIdentifiers,
     # Segments
     GetSegmentsFromIdentifiers,
     # Statements

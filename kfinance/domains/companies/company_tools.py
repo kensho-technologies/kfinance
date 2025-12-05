@@ -27,6 +27,13 @@ class GetInfoFromIdentifiers(KfinanceTool):
         Get the information associated with a list of identifiers. Info includes company name, status, type, simple industry, number of employees (if available), founding date, webpage, HQ address, HQ city, HQ zip code, HQ state, HQ country, HQ country iso code, and CIQ company_id.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+
+        Examples:
+        Query: "What's the company information for Northrop Grumman and Lockheed Martin?"
+        Function: get_info_from_identifiers(identifiers=["Northrop Grumman", "Lockheed Martin"])
+
+        Query: "Get company info for UBER and LYFT"
+        Function: get_info_from_identifiers(identifiers=["UBER", "LYFT"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = None
@@ -89,6 +96,13 @@ class GetCompanyOtherNamesFromIdentifiers(KfinanceTool):
         Given a list of identifiers, fetch the alternate, historical, and native names associated with each identifier. Alternate names are additional names a company might go by (for example, Hewlett-Packard Company also goes by the name HP). Historical names are previous names for the company if it has changed over time. Native names are primary non-Latin character native names for global companies, including languages such as Arabic, Russian, Greek, Japanese, etc. This also includes limited history on native name changes.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+
+        Examples:
+        Query: "What are the alternate names for Meta and Alphabet?"
+        Function: get_company_other_names_from_identifiers(identifiers=["Meta", "Alphabet"])
+
+        Query: "Get other names for NSRGY"
+        Function: get_company_other_names_from_identifiers(identifiers=["NSRGY"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
@@ -122,9 +136,16 @@ class GetCompanySummaryFromIdentifiersResp(ToolRespWithErrors):
 class GetCompanySummaryFromIdentifiers(KfinanceTool):
     name: str = "get_company_summary_from_identifiers"
     description: str = dedent("""
-        Get one paragraph summary/short descriptions of companies, including information about the company's primary business, products and services offered and their applications, business segment details, client/customer groups served, geographic markets served, distribution channels, strategic alliances/partnerships, founded/incorporated year, latest former name, and headquarters and additional offices."
+        Get one paragraph summary/short descriptions of companies, including information about the company's primary business, products and services offered and their applications, business segment details, client/customer groups served, geographic markets served, distribution channels, strategic alliances/partnerships, founded/incorporated year, latest former name, and headquarters and additional offices.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+
+        Examples:
+        Query: "Give me summaries of Tesla and General Motors"
+        Function: get_company_summary_from_identifiers(identifiers=["Tesla", "General Motors"])
+
+        Query: "What are the summaries for F and STLA?"
+        Function: get_company_summary_from_identifiers(identifiers=["F", "STLA"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
@@ -169,6 +190,13 @@ class GetCompanyDescriptionFromIdentifiers(KfinanceTool):
         Get detailed descriptions of companies, broken down into sections, which may include information about the company's Primary business, Segments (including Products and Services for each), Competition, Significant events, and History. Within the text, four spaces represent a new paragraph. Note that the description is divided into sections with headers, where each section has a new paragraph (four spaces) before and after the section header.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+
+        Examples:
+        Query: "Get detailed descriptions for Netflix and Disney"
+        Function: get_company_description_from_identifiers(identifiers=["Netflix", "Disney"])
+
+        Query: "What are the detailed company descriptions for KO and PEP?"
+        Function: get_company_description_from_identifiers(identifiers=["KO", "PEP"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}

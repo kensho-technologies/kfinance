@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing import Type
 
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
@@ -21,7 +22,19 @@ class GetCompetitorsFromIdentifiersResp(ToolRespWithErrors):
 
 class GetCompetitorsFromIdentifiers(KfinanceTool):
     name: str = "get_competitors_from_identifiers"
-    description: str = "Retrieves a list of company_id and company_name that are competitors for a list of companies, optionally filtered by the source of the competitor information."
+    description: str = dedent("""
+        Retrieves a list of company_id and company_name that are competitors for a list of companies, filtered by the source of the competitor information.
+
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - Available competitor sources: all, filing (from SEC filings), key_dev (from key developments), contact (from contact relationships), third_party (from third-party sources), self_identified (self-identified), named_by_competitor (from competitor's perspective)
+
+        Examples:
+        Query: "Who are Microsoft's competitors from SEC filings?"
+        Function: get_competitors_from_identifiers(identifiers=["Microsoft"], competitor_source="filing")
+
+        Query: "Get all competitors of AAPL and GOOGL"
+        Function: get_competitors_from_identifiers(identifiers=["AAPL", "GOOGL"], competitor_source="all")
+    """).strip()
     args_schema: Type[GetCompetitorsFromIdentifiersArgs] = GetCompetitorsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.CompetitorsPermission}
 

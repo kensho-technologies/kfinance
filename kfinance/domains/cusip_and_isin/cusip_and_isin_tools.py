@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing import Type
 
 from pydantic import BaseModel
@@ -19,7 +20,18 @@ class GetCusipOrIsinFromIdentifiersResp(ToolRespWithErrors):
 
 class GetCusipFromIdentifiers(KfinanceTool):
     name: str = "get_cusip_from_identifiers"
-    description: str = "Get the CUSIPs for a group of identifiers."
+    description: str = dedent("""
+        Get the CUSIPs for a group of identifiers.
+
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+
+        Examples:
+        Query: "What is the CUSIP for Humana?"
+        Function: get_cusip_from_identifiers(identifiers=["Humana"])
+
+        Query: "Get CUSIPs for ATO and DTE"
+        Function: get_cusip_from_identifiers(identifiers=["ATO", "DTE"])
+    """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.IDPermission}
 
@@ -56,7 +68,18 @@ class GetCusipFromIdentifiers(KfinanceTool):
 
 class GetIsinFromIdentifiers(KfinanceTool):
     name: str = "get_isin_from_identifiers"
-    description: str = "Get the ISINs for a group of identifiers."
+    description: str = dedent("""
+        Get the ISINs for a group of identifiers.
+
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+
+        Examples:
+        Query: "What is the ISIN for Autodesk?"
+        Function: get_isin_from_identifiers(identifiers=["Autodesk"])
+
+        Query: "Get ISINs for RCL and CCL"
+        Function: get_isin_from_identifiers(identifiers=["RCL", "CCL"])
+    """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.IDPermission}
 

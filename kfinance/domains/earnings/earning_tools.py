@@ -26,7 +26,15 @@ class GetTranscriptFromKeyDevIdResp(BaseModel):
 
 class GetTranscriptFromKeyDevId(KfinanceTool):
     name: str = "get_transcript_from_key_dev_id"
-    description: str = "Get the raw transcript text for an earnings call by key_dev_id."
+    description: str = dedent("""
+        Get the raw transcript text for an earnings call by key_dev_id.
+
+        The key_dev_id is obtained from earnings tools (get_earnings_from_identifiers, get_latest_earnings_from_identifiers, or get_next_earnings_from_identifiers).
+
+        Example:
+        Query: "Get the transcript for earnings call 12346"
+        Function: get_transcript_from_key_dev_id(key_dev_id=12346)
+    """).strip()
     args_schema: Type[BaseModel] = GetTranscriptFromKeyDevIdArgs
     accepted_permissions: set[Permission] | None = {Permission.TranscriptsPermission}
 
@@ -45,12 +53,21 @@ class GetNextOrLatestEarningsFromIdentifiersResp(ToolRespWithErrors):
 
 class GetEarningsFromIdentifiers(KfinanceTool):
     name: str = "get_earnings_from_identifiers"
-    description: str = dedent(f"""
-        Get all earnings for a list of identifiers.
+    description: str = dedent("""
+        Get all earnings calls for a list of identifiers.
 
-        Returns a list of dictionaries, with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier.
+        Returns a list of dictionaries with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier.
 
-        To fetch the full transcript for an earnings call, call the {GetTranscriptFromKeyDevId.model_fields["name"].default} tool with the key_dev_id of the earnings call.
+        - Use get_latest_earnings_from_identifiers to get only the most recent earnings
+        - Use get_next_earnings_from_identifiers to get only the next upcoming earnings
+        - To fetch the full transcript, call get_transcript_from_key_dev_id with the key_dev_id
+
+        Examples:
+        Query: "Get all earnings calls for Microsoft"
+        Function: get_earnings_from_identifiers(identifiers=["Microsoft"])
+
+        Query: "Get earnings for CRM and ORCL"
+        Function: get_earnings_from_identifiers(identifiers=["CRM", "ORCL"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {
@@ -82,12 +99,21 @@ class GetEarningsFromIdentifiers(KfinanceTool):
 
 class GetLatestEarningsFromIdentifiers(KfinanceTool):
     name: str = "get_latest_earnings_from_identifiers"
-    description: str = dedent(f"""
-        Get the latest earnings for a list of identifiers.
+    description: str = dedent("""
+        Get the latest (most recent) earnings call for a list of identifiers.
 
         Returns a dictionary with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier.
 
-        To fetch the corresponding full transcript, call the {GetTranscriptFromKeyDevId.model_fields["name"].default} tool with the key_dev_id of the earnings call.
+        - Use get_earnings_from_identifiers for all historical earnings
+        - Use get_next_earnings_from_identifiers for upcoming earnings
+        - To fetch the full transcript, call get_transcript_from_key_dev_id with the key_dev_id
+
+        Examples:
+        Query: "What was Microsoft's latest earnings call?"
+        Function: get_latest_earnings_from_identifiers(identifiers=["Microsoft"])
+
+        Query: "Get latest earnings for JPM and GS"
+        Function: get_latest_earnings_from_identifiers(identifiers=["JPM", "GS"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {
@@ -125,9 +151,20 @@ class GetLatestEarningsFromIdentifiers(KfinanceTool):
 class GetNextEarningsFromIdentifiers(KfinanceTool):
     name: str = "get_next_earnings_from_identifiers"
     description: str = dedent("""
-        Get the next earnings for a given identifier.
+        Get the next scheduled earnings call for a list of identifiers.
 
-        Returns a dictionary with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier."
+        Returns a dictionary with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier.
+
+        - Use get_latest_earnings_from_identifiers for the most recent completed earnings
+        - Use get_earnings_from_identifiers for all historical earnings
+        - To fetch the full transcript (once available), call get_transcript_from_key_dev_id with the key_dev_id
+
+        Examples:
+        Query: "When is Waste Management's next earnings call?"
+        Function: get_next_earnings_from_identifiers(identifiers=["Waste Management"])
+
+        Query: "Get next earnings for FDX and UPS"
+        Function: get_next_earnings_from_identifiers(identifiers=["FDX", "UPS"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {
