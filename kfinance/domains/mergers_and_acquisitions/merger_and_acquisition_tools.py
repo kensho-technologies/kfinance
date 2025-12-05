@@ -112,12 +112,13 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
         Function 1: get_mergers_from_identifiers(identifiers=["Ben & Jerry's"])
         # Function 1 returns all M&A's that involved Ben & Jerry's. Extract the <key_dev_id> from the response where Ben & Jerry's was the target.
         Function 2: get_merger_info_from_transaction_id(transaction_id=<key_dev_id>)
-        
+
         Query: "What was the transaction size of Vodafone's acquisition of Mannesmann?"
         Function 1: get_mergers_from_identifiers(identifiers=["Vodafone"])
         # Function 1 returns all M&A's that involved Vodafone. Extract the <key_dev_id> from the response where Vodafone was the buyer and Mannesmann was the target.
-        Function 2: get_merger_info_from_transaction_id(transaction_id=<key_dev_id>)                      
-        
+        Function 2: get_merger_info_from_transaction_id(transaction_id=<key_dev_id>)
+
+
     """).strip()
     args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIdArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
