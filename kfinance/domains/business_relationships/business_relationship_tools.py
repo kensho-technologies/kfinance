@@ -36,14 +36,14 @@ class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
         - Available relationship types: supplier, customer, distributor, franchisor, franchisee, landlord, tenant, licensor, licensee, creditor, borrower, lessor, lessee, strategic_alliance, investor_relations_firm, investor_relations_client, transfer_agent, transfer_agent_client, vendor, client_services
 
         Examples:
-        Query: "Who are the current and previous suppliers of Microsoft?"
-        Function: get_business_relationship_from_identifiers(identifiers=["Microsoft"], business_relationship="supplier")
+        Query: "Who are the current and previous suppliers of Intel?"
+        Function: get_business_relationship_from_identifiers(identifiers=["Intel"], business_relationship="supplier")
 
         Query: "What are the borrowers of SPGI and JPM?"
         Function: get_business_relationship_from_identifiers(identifiers=["SPGI", "JPM"], business_relationship="borrower")
 
-        Query: "Who are Apple's customers?"
-        Function: get_business_relationship_from_identifiers(identifiers=["Apple"], business_relationship="customer")
+        Query: "Who are Dell's customers?"
+        Function: get_business_relationship_from_identifiers(identifiers=["Dell"], business_relationship="customer")
     """).strip()
     args_schema: Type[BaseModel] = GetBusinessRelationshipFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.RelationshipPermission}

@@ -29,11 +29,11 @@ class GetInfoFromIdentifiers(KfinanceTool):
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
 
         Examples:
-        Query: "What's the company information for Microsoft and Apple?"
-        Function: get_info_from_identifiers(identifiers=["Microsoft", "Apple"])
+        Query: "What's the company information for Northrop Grumman and Lockheed Martin?"
+        Function: get_info_from_identifiers(identifiers=["Northrop Grumman", "Lockheed Martin"])
 
-        Query: "Get company info for AAPL and MSFT"
-        Function: get_info_from_identifiers(identifiers=["AAPL", "MSFT"])
+        Query: "Get company info for UBER and LYFT"
+        Function: get_info_from_identifiers(identifiers=["UBER", "LYFT"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = None
@@ -101,8 +101,8 @@ class GetCompanyOtherNamesFromIdentifiers(KfinanceTool):
         Query: "What are the alternate names for Meta and Alphabet?"
         Function: get_company_other_names_from_identifiers(identifiers=["Meta", "Alphabet"])
 
-        Query: "Get other names for META and GOOGL"
-        Function: get_company_other_names_from_identifiers(identifiers=["META", "GOOGL"])
+        Query: "Get other names for NSRGY"
+        Function: get_company_other_names_from_identifiers(identifiers=["NSRGY"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
@@ -141,11 +141,11 @@ class GetCompanySummaryFromIdentifiers(KfinanceTool):
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
 
         Examples:
-        Query: "Give me summaries of Tesla and Amazon"
-        Function: get_company_summary_from_identifiers(identifiers=["Tesla", "Amazon"])
+        Query: "Give me summaries of Tesla and General Motors"
+        Function: get_company_summary_from_identifiers(identifiers=["Tesla", "General Motors"])
 
-        Query: "What are the summaries for TSLA and AMZN?"
-        Function: get_company_summary_from_identifiers(identifiers=["TSLA", "AMZN"])
+        Query: "What are the summaries for F and STLA?"
+        Function: get_company_summary_from_identifiers(identifiers=["F", "STLA"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
@@ -195,8 +195,8 @@ class GetCompanyDescriptionFromIdentifiers(KfinanceTool):
         Query: "Get detailed descriptions for Netflix and Disney"
         Function: get_company_description_from_identifiers(identifiers=["Netflix", "Disney"])
 
-        Query: "What are the detailed company descriptions for NFLX and DIS?"
-        Function: get_company_description_from_identifiers(identifiers=["NFLX", "DIS"])
+        Query: "What are the detailed company descriptions for KO and PEP?"
+        Function: get_company_description_from_identifiers(identifiers=["KO", "PEP"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}

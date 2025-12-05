@@ -39,11 +39,11 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         - To fetch the most recent segment data, leave start_year, start_quarter, end_year, and end_quarter as None.
 
         Examples:
-        Query: "What are the business segments for Microsoft?"
-        Function: get_segments_from_identifiers(identifiers=["Microsoft"], segment_type="business")
+        Query: "What are the business segments for AT&T?"
+        Function: get_segments_from_identifiers(identifiers=["AT&T"], segment_type="business")
 
-        Query: "Get geographic segments for AAPL and TSLA"
-        Function: get_segments_from_identifiers(identifiers=["AAPL", "TSLA"], segment_type="geographic")
+        Query: "Get geographic segments for PFE and JNJ"
+        Function: get_segments_from_identifiers(identifiers=["PFE", "JNJ"], segment_type="geographic")
     """).strip()
     args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.SegmentsPermission}

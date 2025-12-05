@@ -18,10 +18,12 @@ class GetCapitalizationFromIdentifiersArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
     capitalization: Capitalization
     start_date: date | None = Field(
-        description="The start date for historical capitalization retrieval", default=None
+        description="The start date for historical capitalization retrieval. Use null for latest values. For annual data, use January 1st of the year.",
+        default=None
     )
     end_date: date | None = Field(
-        description="The end date for historical capitalization retrieval", default=None
+        description="The end date for historical capitalization retrieval. Use null for latest values. For annual data, use December 31st of the year.",
+        default=None
     )
 
 
@@ -36,11 +38,20 @@ class GetCapitalizationFromIdentifiers(KfinanceTool):
         Get the historical market cap, tev (Total Enterprise Value), or shares outstanding for a group of identifiers between inclusive start_date and inclusive end date.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - When requesting the most recent values, leave start_date and end_date empty.
+        - When requesting the most recent values, leave start_date and end_date null.
+        - For annual data (e.g., "market cap in 2020", "FY2021 values"), use the full year range: start_date as January 1st and end_date as December 31st.
+        - For "latest" or "current" values, always leave dates null to get the most recent data point.
+        - Only specify date ranges when the user explicitly requests historical data over a specific period.
 
-        Example:
-        Query: "What are the market caps of AAPL and WMT?"
-        Function: get_capitalization_from_identifiers(capitalization=Capitalization.market_cap, identifiers=["AAPL", "WMT"])
+        Examples:
+        Query: "What are the market caps of Visa and Mastercard?"
+        Function: get_capitalization_from_identifiers(capitalization="market_cap", identifiers=["Visa", "Mastercard"], start_date=null, end_date=null)
+
+        Query: "What was MDT's market cap in 2020?"
+        Function: get_capitalization_from_identifiers(capitalization="market_cap", identifiers=["MDT"], start_date="2020-01-01", end_date="2020-12-31")
+
+        Query: "Market cap trends for MSFT from Q1 2020 to Q3 2021"
+        Function: get_capitalization_from_identifiers(capitalization="market_cap", identifiers=["MSFT"], start_date="2020-01-01", end_date="2021-09-30")
     """).strip()
     args_schema: Type[BaseModel] = GetCapitalizationFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.PricingPermission}

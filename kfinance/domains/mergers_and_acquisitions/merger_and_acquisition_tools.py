@@ -109,10 +109,15 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
 
         Examples:
         Query: "When was the acquisition of Ben & Jerry's announced?"
-        Function: get_merger_info_from_transaction_id(transaction_id=12345)
-
+        Function 1: get_mergers_from_identifiers(identifiers=["Ben & Jerry's"])
+        # Function 1 returns all M&A's that involved Ben & Jerry's. Extract the <key_dev_id> from the response where Ben & Jerry's was the target.
+        Function 2: get_merger_info_from_transaction_id(transaction_id=<key_dev_id>)
+        
         Query: "What was the transaction size of Vodafone's acquisition of Mannesmann?"
-        Function: get_merger_info_from_transaction_id(transaction_id=67890)
+        Function 1: get_mergers_from_identifiers(identifiers=["Vodafone"])
+        # Function 1 returns all M&A's that involved Vodafone. Extract the <key_dev_id> from the response where Vodafone was the buyer and Mannesmann was the target.
+        Function 2: get_merger_info_from_transaction_id(transaction_id=<key_dev_id>)                      
+        
     """).strip()
     args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIdArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -138,7 +143,9 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
 
         Examples:
         Query: "Who advised S&P Global during their purchase of Kensho?"
-        Function: get_advisors_for_company_in_transaction(identifier="S&P Global", transaction_id=12345)
+        Function 1: get_mergers_from_identifiers(identifiers=["S&P Global"])
+        # Function 1 returns all M&A's that involved S&P Global. Extract the <key_dev_id> from the response where S&P Global was the buyer and Kensho was the target.
+        Function 2: get_advisors_for_company_in_transaction(identifier="S&P Global", transaction_id=<key_dev_id>)
 
         Query: "Which firms advised AAPL in transaction 67890?"
         Function: get_advisors_for_company_in_transaction(identifier="AAPL", transaction_id=67890)

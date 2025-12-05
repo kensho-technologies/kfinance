@@ -17,10 +17,12 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 
 class GetPricesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     start_date: date | None = Field(
-        description="The start date for historical price retrieval", default=None
+        description="The start date for historical price retrieval. Use null for latest values. For annual queries (e.g., 'prices in 2020'), use January 1st of the year.",
+        default=None
     )
     end_date: date | None = Field(
-        description="The end date for historical price retrieval", default=None
+        description="The end date for historical price retrieval. Use null for latest values. For annual queries (e.g., 'prices in 2020'), use December 31st of the year.",
+        default=None
     )
     # no description because the description for enum fields comes from the enum docstring.
     periodicity: Periodicity = Field(default=Periodicity.day)
@@ -40,15 +42,19 @@ class GetPricesFromIdentifiers(KfinanceTool):
         Get the historical open, high, low, and close prices, and volume of a group of identifiers between inclusive start_date and inclusive end date.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - When requesting the most recent values, leave start_date and end_date empty.
-        - If requesting prices for a long periods of time (e.g., multiple years), consider using a coarser periodicity (e.g., weekly or monthly) to reduce the amount of data returned.
+        - When requesting the most recent values, leave start_date and end_date null.
+        - For annual queries (e.g., "prices in 2020"), use the full year range from January 1st to December 31st.
+        - If requesting prices for long periods of time (e.g., multiple years), consider using a coarser periodicity (e.g., weekly or monthly) to reduce the amount of data returned.
 
         Examples:
         Query: "What are the prices of Facebook and Google?"
-        Function: get_prices_from_identifiers(identifiers=["Facebook", "Google"])
+        Function: get_prices_from_identifiers(identifiers=["Facebook", "Google"], start_date=null, end_date=null)
 
         Query: "Get prices for META and GOOGL"
-        Function: get_prices_from_identifiers(identifiers=["META", "GOOGL"])
+        Function: get_prices_from_identifiers(identifiers=["META", "GOOGL"], start_date=null, end_date=null)
+
+        Query: "How did Meta's stock perform in 2020?"
+        Function: get_prices_from_identifiers(identifiers=["Meta"], start_date="2020-01-01", end_date="2020-12-31", periodicity="day")
     """).strip()
     args_schema: Type[BaseModel] = GetPricesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.PricingPermission}
@@ -133,8 +139,8 @@ class GetHistoryMetadataFromIdentifiers(KfinanceTool):
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
 
         Examples:
-        Query: "What exchange does Apple trade on?"
-        Function: get_history_metadata_from_identifiers(identifiers=["Apple"])
+        Query: "What exchange does Starbucks trade on?"
+        Function: get_history_metadata_from_identifiers(identifiers=["Starbucks"])
 
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers

@@ -24,6 +24,13 @@ class GetCusipFromIdentifiers(KfinanceTool):
         Get the CUSIPs for a group of identifiers.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+
+        Examples:
+        Query: "What is the CUSIP for Humana?"
+        Function: get_cusip_from_identifiers(identifiers=["Humana"])
+
+        Query: "Get CUSIPs for ATO and DTE"
+        Function: get_cusip_from_identifiers(identifiers=["ATO", "DTE"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.IDPermission}
@@ -67,11 +74,11 @@ class GetIsinFromIdentifiers(KfinanceTool):
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
 
         Examples:
-        Query: "What is the ISIN for Microsoft?"
-        Function: get_isin_from_identifiers(identifiers=["Microsoft"])
+        Query: "What is the ISIN for Autodesk?"
+        Function: get_isin_from_identifiers(identifiers=["Autodesk"])
 
-        Query: "Get ISINs for AAPL and Amazon"
-        Function: get_isin_from_identifiers(identifiers=["AAPL", "Amazon"])
+        Query: "Get ISINs for RCL and CCL"
+        Function: get_isin_from_identifiers(identifiers=["RCL", "CCL"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.IDPermission}
