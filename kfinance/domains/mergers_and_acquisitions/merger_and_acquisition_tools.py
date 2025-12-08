@@ -97,7 +97,7 @@ class GetMergersFromIdentifiers(KfinanceTool):
 
 
 class GetMergerInfoFromTransactionIdArgs(BaseModel):
-    transaction_id: int | None = Field(description="The ID of the transaction.", default=None)
+    transaction_id: int | None = Field(description="The ID of the transaction.")
 
 
 class GetMergerInfoFromTransactionId(KfinanceTool):
@@ -130,7 +130,7 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
 
 
 class GetAdvisorsForCompanyInTransactionFromIdentifierArgs(ToolArgsWithIdentifier):
-    transaction_id: int | None = Field(description="The ID of the merger.", default=None)
+    transaction_id: int | None = Field(description="The ID of the merger.")
 
 
 class GetAdvisorsForCompanyInTransactionFromIdentifierResp(ToolRespWithErrors):
