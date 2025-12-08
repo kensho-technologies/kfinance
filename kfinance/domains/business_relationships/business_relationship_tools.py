@@ -33,8 +33,7 @@ class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - Results include both "current" (active) and "previous" (historical) relationships.
-        - Available relationship types: supplier, customer, distributor, franchisor, franchisee, landlord, tenant, licensor, licensee, creditor, borrower, lessor, lessee, strategic_alliance, investor_relations_firm, investor_relations_client, transfer_agent, transfer_agent_client, vendor, client_services
-
+                              
         Examples:
         Query: "Who are the current and previous suppliers of Intel?"
         Function: get_business_relationship_from_identifiers(identifiers=["Intel"], business_relationship="supplier")
