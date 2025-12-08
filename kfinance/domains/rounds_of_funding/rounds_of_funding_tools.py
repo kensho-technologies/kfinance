@@ -241,7 +241,6 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
             process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
         )
 
-        # Fetch detailed info for all rounds to calculate total capital raised
         all_transaction_ids = []
         identifier_to_transaction_ids = {}
 

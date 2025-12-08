@@ -752,7 +752,7 @@ class KFinanceApiClient:
         :type transaction_id: int
         :param advised_company_id: The company ID investing in the round of funding.
         :type advised_company_id: int
-        :return: An AdvisorsResp model containing the list of companies advising a company involved with a round of funding, along with their advisor type.
+        :return: An AdvisorsResp model containing the list of companies advising a company involved with a round of funding, along with their advisor type and fee information.
         :rtype: AdvisorsResp
         """
         url = f"{self.url_base}fundinground/info/{transaction_id}/advisors/investor/{advised_company_id}"

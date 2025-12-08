@@ -721,7 +721,7 @@ class ParticipantInRoF:
         :type kfinance_api_client: KFinanceApiClient
         :param transaction_id: The S&P Global CIP Transaction Id
         :type transaction_id: int
-        :param target: If the partipant is the raiser, return True. If the participant is an investor, return False.
+        :param target: If the partipant is the raiser, set to True. If the participant is an investor, set to False.
         :type target: bool
         :param company: The company object
         :type company: Company
