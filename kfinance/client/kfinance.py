@@ -1336,6 +1336,7 @@ class RoundOfFunding:
         transaction_id: int,
         funding_round_notes: str,
         closed_date: date | None,
+        funding_type: str | None,
     ) -> None:
         """RoundOfFunding initializer.
 
@@ -1347,6 +1348,7 @@ class RoundOfFunding:
         self.transaction_id = transaction_id
         self.funding_round_notes = funding_round_notes
         self.closed_date = closed_date
+        self.funding_type = funding_type
         self._round_of_funding_info: RoundOfFundingInfo | None = None
 
     @property

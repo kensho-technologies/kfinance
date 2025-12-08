@@ -127,7 +127,6 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
             else:
                 rounds.sort(key=lambda r: r.closed_date or date.max, reverse=False)
 
-            # Apply limit if specified
             if limit is not None:
                 rounds = rounds[:limit]
 
@@ -274,25 +273,23 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
             first_funding_date = min(dates) if dates else None
             most_recent_funding_date = max(dates) if dates else None
 
-            rounds_by_type = {}
+            rounds_by_type: dict[str, int] = {}
             for round_of_funding in rounds:
-                funding_type = round_of_funding.funding_round_type or "Unknown"
+                funding_type = round_of_funding.funding_type or "Unknown"
                 rounds_by_type[funding_type] = rounds_by_type.get(funding_type, 0) + 1
 
-            total_capital_raised = 0.0
+            total_capital_raised = None
             currency = None
             for transaction_id in company_transaction_ids:
                 if transaction_id in detailed_round_info:
                     round_detail = detailed_round_info[transaction_id]
-                    if round_detail.transaction.aggregate_amount_raised:
-                        total_capital_raised += float(round_detail.transaction.aggregate_amount_raised)
-                        # Use the currency from the first round that has an amount
-                        if currency is None and round_detail.transaction.currency_name:
-                            currency = round_detail.transaction.currency_name
+                    if (total_capital_raised is None or currency is None) and round_detail.transaction.aggregate_amount_raised:
+                        total_capital_raised = float(round_detail.transaction.aggregate_amount_raised)
+                        currency = round_detail.transaction.currency_name
 
             summaries[identifier] = FundingSummary(
                 company_id=identifier,
-                total_capital_raised=total_capital_raised if total_capital_raised > 0 else None,
+                total_capital_raised=total_capital_raised,
                 total_capital_raised_currency=currency,
                 total_rounds=total_rounds,
                 first_funding_date=first_funding_date,

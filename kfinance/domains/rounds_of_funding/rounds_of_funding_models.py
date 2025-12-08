@@ -1,12 +1,10 @@
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, computed_field, field_serializer
+from pydantic import BaseModel, computed_field, field_serializer
 from strenum import StrEnum
 
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX, CompanyIdAndName
-from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import AdvisorResp
-
 
 class RoundOfFunding(BaseModel):
     transaction_id: int
@@ -99,30 +97,6 @@ class RoundOfFundingInfo(BaseModel):
     transaction: RoundOfFundingInfoTransaction
     security: RoundOfFundingInfoSecurity
 
-    @computed_field
-    @property
-    def gross_amount_initially_announced(self) -> float | None:
-        """The initially announced gross amount for the funding round."""
-        return float(self.transaction.initial_gross_amount_offered) if self.transaction.initial_gross_amount_offered else None
-
-    @computed_field
-    @property
-    def gross_amount_final_raised(self) -> float | None:
-        """The final gross amount raised in the funding round."""
-        return float(self.transaction.aggregate_amount_raised) if self.transaction.aggregate_amount_raised else None
-
-    @computed_field
-    @property
-    def upsizing_amount(self) -> float | None:
-        """The amount by which the funding round was upsized."""
-        return float(self.transaction.upsized_amount) if self.transaction.upsized_amount else None
-
-    @computed_field
-    @property
-    def upsizing_percentage(self) -> float | None:
-        """The percentage by which the funding round was upsized."""
-        return float(self.transaction.upsized_amount_percent) if self.transaction.upsized_amount_percent else None
-
 
 class FundingSummary(BaseModel):
     company_id: str
@@ -138,8 +112,9 @@ class AdvisorResp(BaseModel):
     advisor_company_id: int
     advisor_company_name: str
     advisor_type_name: str | None
-    data_item_559_value: float | None = None  # Fee rate/percentage
-    data_item_561_value: float | None = None  # Fee amount
+    advisor_fee_amount: float | None = None
+    advisor_fee_currency: float | None = None
+    is_lead: bool | None = None
 
     @field_serializer("advisor_company_id")
     def serialize_with_prefix(self, company_id: int) -> str:
