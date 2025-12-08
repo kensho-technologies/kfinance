@@ -1,5 +1,8 @@
 # Changelog
 
+## v3.2.19
+- Updated tool descriptions too be more descriptive and include examples
+
 ## v3.2.18
 - Add info on how to fetch transcripts to earnings call tools
 

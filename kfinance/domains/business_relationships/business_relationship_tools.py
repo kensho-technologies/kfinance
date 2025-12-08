@@ -33,7 +33,7 @@ class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - Results include both "current" (active) and "previous" (historical) relationships.
-                              
+
         Examples:
         Query: "Who are the current and previous suppliers of Intel?"
         Function: get_business_relationship_from_identifiers(identifiers=["Intel"], business_relationship="supplier")
