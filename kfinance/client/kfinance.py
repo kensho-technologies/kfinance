@@ -1682,7 +1682,7 @@ class RoundsOfFunding(set):
 
         :param kfinance_api_client: The KFinanceApiClient used to fetch data.
         :type kfinance_api_client: KFinanceApiClient
-        :param rounds_of_funding: A iterable of transaction IDs, funding round notes, closed dates, and funding round types.
+        :param rounds_of_funding: A iterable of transaction IDs, funding round notes, closed dates, and funding types.
         :type rounds_of_funding: Iterable[dict]
         """
         self.kfinance_api_client = kfinance_api_client
@@ -2048,7 +2048,7 @@ class Client:
 
         :param company_id: CIQ company id
         :type company_id: int
-        :return: A RoundsOfFunding object that has the list of transaction ids, funding round notes and closed dates of the rounds of funding a company raised.
+        :return: A RoundsOfFunding object that has the list of transaction ids, funding round notes, closed dates, and funding types of the rounds of funding a company raised.
         :rtype: RoundsOfFunding
         """
         rounds_of_funding = self.kfinance_api_client.fetch_rounds_of_funding_for_company(

@@ -27,6 +27,7 @@ class InvestorInRoundOfFunding(BaseModel):
     company_name: str
     lead_investor: bool
     investment_value: Decimal | None = None
+    currency: str | None = None
 
     @field_serializer("company_id")
     def serialize_with_prefix(self, company_id: int) -> str:
@@ -52,7 +53,7 @@ class RoundOfFundingParticipants(BaseModel):
 class RoundOfFundingInfoTransaction(BaseModel):
     funding_type: str | None = None
     amount_offered: Decimal | None = None
-    currency_name: str | None = None
+    currency: str | None = None
     legal_fees: Decimal | None = None
     other_fees: Decimal | None = None
     initial_gross_amount_offered: Decimal | None = None

@@ -168,7 +168,7 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
                     },
                     "participants": {
                         "target": {"company_id": "C_12345", "company_name": "Kensho Technologies Inc."},
-                        "investors": [{"company_id": "C_67890", "company_name": "Impresa Management LLC", "lead_investor": True, "investment_value": 5000000.00}]
+                        "investors": [{"company_id": "C_67890", "company_name": "Impresa Management LLC", "lead_investor": True, "investment_value": 5000000.00, "currency": "USD"}]
                     },
                     "transaction": {
                         "funding_type": "Series A",
@@ -285,7 +285,7 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
                     round_detail = detailed_round_info[transaction_id]
                     if (total_capital_raised is None or currency is None) and round_detail.transaction.aggregate_amount_raised:
                         total_capital_raised = float(round_detail.transaction.aggregate_amount_raised)
-                        currency = round_detail.transaction.currency_name
+                        currency = round_detail.transaction.currency
 
             summaries[identifier] = FundingSummary(
                 company_id=identifier,
