@@ -426,7 +426,7 @@ class MockKFinanceApiClient:
 
     def fetch_statement(
         self,
-        company_id,
+        company_ids,
         statement_type,
         period_type,
         start_year,
@@ -439,7 +439,7 @@ class MockKFinanceApiClient:
 
     def fetch_line_item(
         self,
-        company_id,
+        company_ids,
         line_item,
         period_type,
         start_year,
@@ -451,7 +451,7 @@ class MockKFinanceApiClient:
         num_periods_back=None,
     ):
         """Get a statement"""
-        return MOCK_COMPANY_DB[company_id]["line_items"][line_item]
+        return MOCK_COMPANY_DB[company_ids[0]]["line_items"][line_item]
 
     def fetch_market_caps_tevs_and_shares_outstanding(
         self,
@@ -481,7 +481,7 @@ class MockKFinanceApiClient:
 
     def fetch_segments(
         self,
-        company_id,
+        company_ids,
         segment_type,
         period_type,
         start_year,
@@ -490,7 +490,7 @@ class MockKFinanceApiClient:
         end_quarter,
     ):
         """Get a segment"""
-        return MOCK_COMPANY_DB[company_id]["segments"]
+        return MOCK_COMPANY_DB[company_ids[0]]["segments"]
 
     def fetch_companies_from_business_relationship(
         self, company_id: int, relationship_type: BusinessRelationshipType

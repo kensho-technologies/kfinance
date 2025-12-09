@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import logging
 from queue import Queue
 from time import time
-from typing import Callable, Generator, Optional
+from typing import Callable, Generator, Optional, overload
 from uuid import uuid4
 
 import jwt
@@ -350,32 +350,60 @@ class KFinanceApiClient:
         )
         return Capitalizations.model_validate(self.fetch(url))
 
+    # absolute fetch_segments overload
+    @overload
     def fetch_segments(
         self,
-        company_id: int,
+        company_ids: list[int],
         segment_type: SegmentType,
-        period_type: Optional[PeriodType] = None,
-        start_year: Optional[int] = None,
-        end_year: Optional[int] = None,
-        start_quarter: Optional[int] = None,
-        end_quarter: Optional[int] = None,
-        calendar_type: Optional[CalendarType] = None,
-        num_periods: Optional[int] = None,
-        num_periods_back: Optional[int] = None,
+        *,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+    ) -> SegmentsResp:
+        pass
+
+    # relative fetch_segments overload
+    @overload
+    def fetch_segments(
+        self,
+        company_ids: list[int],
+        segment_type: SegmentType,
+        *,
+        num_periods_back: int,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+        num_periods: int | None = None,
+    ) -> SegmentsResp:
+        pass
+
+    def fetch_segments(
+        self,
+        company_ids: list[int],
+        segment_type: SegmentType,
+        *,
+        num_periods_back: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods: int | None = None,
     ) -> SegmentsResp:
         """Get a specified segment type for a specified duration."""
-        if num_periods_back is not None and num_periods is None:
-            raise ValueError("num_periods_back requires num_periods to be provided")
 
         url = f"{self.url_base}segments/"
 
-        # Convert enums to string values for JSON serialization
         period_type_val = period_type.value if period_type is not None else None
         calendar_type_val = calendar_type.value if calendar_type is not None else None
         segment_type_val = segment_type.value if segment_type is not None else None
 
         request_body: dict[str, str | int | list[int]] = {
-            "company_ids": [company_id],
+            "company_ids": company_ids,
             "segment_type": segment_type_val,
         }
 
@@ -426,31 +454,59 @@ class KFinanceApiClient:
         response.raise_for_status()
         return response.content
 
+    # absolute fetch_statement overload
+    @overload
     def fetch_statement(
         self,
-        company_id: int,
+        company_ids: list[int],
         statement_type: str,
-        period_type: Optional[PeriodType] = None,
-        start_year: Optional[int] = None,
-        end_year: Optional[int] = None,
-        start_quarter: Optional[int] = None,
-        end_quarter: Optional[int] = None,
-        calendar_type: Optional[CalendarType] = None,
-        num_periods: Optional[int] = None,
-        num_periods_back: Optional[int] = None,
+        *,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+    ) -> StatementsResp:
+        pass
+
+    # relative fetch_statement overload
+    @overload
+    def fetch_statement(
+        self,
+        company_ids: list[int],
+        statement_type: str,
+        *,
+        num_periods_back: int,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+        num_periods: int | None = None,
+    ) -> StatementsResp:
+        pass
+
+    def fetch_statement(
+        self,
+        company_ids: list[int],
+        statement_type: str,
+        *,
+        num_periods_back: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods: int | None = None,
     ) -> StatementsResp:
         """Get a specified financial statement for a specified duration."""
-        if num_periods_back is not None and num_periods is None:
-            raise ValueError("num_periods_back requires num_periods to be provided")
 
         url = f"{self.url_base}statements/"
 
-        # Convert enums to string values for JSON serialization
         period_type_val = period_type.value if period_type is not None else None
         calendar_type_val = calendar_type.value if calendar_type is not None else None
 
         request_body: dict[str, str | int | list[int]] = {
-            "company_ids": [company_id],
+            "company_ids": company_ids,
             "statement_type": statement_type,
         }
 
@@ -473,31 +529,61 @@ class KFinanceApiClient:
             self.fetch(url, method="POST", request_body=request_body)
         )
 
+    # absolute fetch_line_item overload
+    @overload
     def fetch_line_item(
         self,
-        company_id: int,
+        company_ids: list[int],
         line_item: str,
-        period_type: Optional[PeriodType] = None,
-        start_year: Optional[int] = None,
-        end_year: Optional[int] = None,
-        start_quarter: Optional[int] = None,
-        end_quarter: Optional[int] = None,
-        calendar_type: Optional[CalendarType] = None,
-        num_periods: Optional[int] = None,
-        num_periods_back: Optional[int] = None,
+        *,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+    ) -> LineItemResp:
+        """Get a specified financial line item for a specified absolute time range."""
+        pass
+
+    # relative fetch_line_item overload
+    @overload
+    def fetch_line_item(
+        self,
+        company_ids: list[int],
+        line_item: str,
+        *,
+        num_periods_back: int,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+        num_periods: int | None = None,
+    ) -> LineItemResp:
+        """Get a specified financial line item for a specified relative time range."""
+        pass
+
+    def fetch_line_item(
+        self,
+        company_ids: list[int],
+        line_item: str,
+        *,
+        num_periods_back: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods: int | None = None,
     ) -> LineItemResp:
         """Get a specified financial line item for a specified duration."""
-        if num_periods_back is not None and num_periods is None:
-            raise ValueError("num_periods_back requires num_periods to be provided")
 
         url = f"{self.url_base}line_item/"
 
-        # Convert enums to string values for JSON serialization
         period_type_val = period_type.value if period_type is not None else None
         calendar_type_val = calendar_type.value if calendar_type is not None else None
 
         request_body: dict[str, str | int | list[int]] = {
-            "company_ids": [company_id],
+            "company_ids": company_ids,
             "line_item": line_item,
         }
 

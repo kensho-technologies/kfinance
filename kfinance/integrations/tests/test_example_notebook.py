@@ -115,15 +115,9 @@ def test_run_notebook(jupyter_kernel_name: str):
             }
         }
 
-        # spgi.balance_sheet()
-        mocker.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote('[21719]')}/balance_sheet/none/none/none/none/none/none",
-            json=balance_sheet_resp
-        )
-
-        # spgi.balance_sheet(period_type=PeriodType.annual, start_year=2010, end_year=2019)
-        mocker.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote('[21719]')}/balance_sheet/annual/2010/2019/none/none/none",
+        # spgi.balance_sheet() and spgi.balance_sheet(period_type=PeriodType.annual, start_year=2010, end_year=2019)
+        mocker.post(
+            url="https://kfinance.kensho.com/api/v1/statements/",
             json=balance_sheet_resp
         )
 
@@ -136,8 +130,8 @@ def test_run_notebook(jupyter_kernel_name: str):
         )
 
         # spgi.net_income(period_type=PeriodType.annual, start_year=2010, end_year=2019)
-        mocker.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/absolute/{quote('[21719]')}/net_income/annual/2010/2019/none/none/none",
+        mocker.post(
+            url="https://kfinance.kensho.com/api/v1/line_item/",
             json={
                 "currency": "USD",
                 "periods": {

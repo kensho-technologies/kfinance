@@ -114,7 +114,7 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
             Task(
                 func=api_client.fetch_segments,
                 kwargs=dict(
-                    company_id=id_triple.company_id,
+                    company_ids=[id_triple.company_id],
                     segment_type=segment_type,
                     period_type=period_type,
                     start_year=start_year,

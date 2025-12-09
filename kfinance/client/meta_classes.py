@@ -86,7 +86,7 @@ class CompanyFunctionsMetaClass:
             return pd.DataFrame()
 
         periods = self.kfinance_api_client.fetch_statement(
-            company_id=self.company_id,
+            company_ids=[self.company_id],
             statement_type=statement_type,
             period_type=period_type,
             start_year=start_year,
@@ -219,7 +219,7 @@ class CompanyFunctionsMetaClass:
             return pd.DataFrame()
 
         line_item_response = self.kfinance_api_client.fetch_line_item(
-            company_id=self.company_id,
+            company_ids=[self.company_id],
             line_item=line_item,
             period_type=period_type,
             start_year=start_year,
@@ -363,7 +363,7 @@ class CompanyFunctionsMetaClass:
             return {}
 
         return self.kfinance_api_client.fetch_segments(
-            company_id=self.company_id,
+            company_ids=[self.company_id],
             segment_type=segment_type,
             period_type=period_type,
             start_year=start_year,

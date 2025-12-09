@@ -204,7 +204,7 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
             Task(
                 func=api_client.fetch_line_item,
                 kwargs=dict(
-                    company_id=id_triple.company_id,
+                    company_ids=[id_triple.company_id],
                     line_item=line_item,
                     period_type=period_type,
                     start_year=start_year,

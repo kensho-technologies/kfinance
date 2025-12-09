@@ -131,7 +131,7 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
             Task(
                 func=api_client.fetch_statement,
                 kwargs=dict(
-                    company_id=id_triple.company_id,
+                    company_ids=[id_triple.company_id],
                     statement_type=statement.value,
                     period_type=period_type,
                     start_year=start_year,

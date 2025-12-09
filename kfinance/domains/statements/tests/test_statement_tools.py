@@ -1,9 +1,6 @@
-from urllib.parse import quote
-
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
-from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.statements.statement_models import StatementType
 from kfinance.domains.statements.statement_tools import (
@@ -55,8 +52,8 @@ class TestGetFinancialStatementFromIdentifiers:
         THEN we get back the SPGI income statement and an error for the non-existent company.
         """
 
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote(f'[{SPGI_COMPANY_ID}]')}/income_statement/none/none/none/none/none/none",
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/statements/",
             json=self.statement_resp,
         )
         expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
@@ -190,11 +187,10 @@ class TestGetFinancialStatementFromIdentifiers:
             }
         )
 
-        for company_id in company_ids:
-            requests_mock.get(
-                url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote(f'[{company_id}]')}/income_statement/none/none/none/none/none/none",
-                json=self.statement_resp,
-            )
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/statements/",
+            json=self.statement_resp,
+        )
 
         tool = GetFinancialStatementFromIdentifiers(kfinance_client=mock_client)
         args = GetFinancialStatementFromIdentifiersArgs(
@@ -247,13 +243,18 @@ class TestGetFinancialStatementFromIdentifiers:
             }
         )
 
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote('[1]')}/income_statement/none/none/none/none/none/none",
-            json={"currency": "USD", "periods": {}},
-        )
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/statements/absolute/{quote('[2]')}/income_statement/none/none/none/none/none/none",
-            json=self.statement_resp,
+        # Mock responses for different company requests - response depends on request_body
+        def match_company_id(request, context):
+            if request.json().get("company_ids") == [1]:
+                return {"currency": "USD", "periods": {}}
+            elif request.json().get("company_ids") == [2]:
+                return self.statement_resp
+            else:
+                return {"currency": "USD", "periods": {}}
+
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/statements/",
+            json=match_company_id,
         )
 
         tool = GetFinancialStatementFromIdentifiers(kfinance_client=mock_client)

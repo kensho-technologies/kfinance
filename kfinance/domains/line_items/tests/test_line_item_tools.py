@@ -1,11 +1,9 @@
 from decimal import Decimal
-from urllib.parse import quote
 
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
-from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.line_items.line_item_models import LineItemResp, LineItemScore
 from kfinance.domains.line_items.line_item_tools import (
@@ -87,8 +85,8 @@ class TestGetFinancialLineItemFromCompanyIds:
             ],
         )
 
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/absolute/{quote(f'[{SPGI_COMPANY_ID}]')}/revenue/none/none/none/none/none/none",
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/line_item/",
             json=self.line_item_resp,
         )
 
@@ -122,11 +120,10 @@ class TestGetFinancialLineItemFromCompanyIds:
             results={"C_1": line_item_resp, "C_2": line_item_resp},
         )
 
-        for company_id in company_ids:
-            requests_mock.get(
-                url=f"https://kfinance.kensho.com/api/v1/line_item/absolute/{quote(f'[{company_id}]')}/revenue/none/none/none/none/none/none",
-                json=self.line_item_resp,
-            )
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/line_item/",
+            json=self.line_item_resp,
+        )
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
         args = GetFinancialLineItemFromIdentifiersArgs(
             identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
@@ -160,13 +157,18 @@ class TestGetFinancialLineItemFromCompanyIds:
             results={"C_1": c_1_line_item_resp, "C_2": c_2_line_item_resp},
         )
 
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/absolute/{quote('[1]')}/revenue/none/none/none/none/none/none",
-            json={"currency": "USD", "periods": {}},
-        )
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/absolute/{quote('[2]')}/revenue/none/none/none/none/none/none",
-            json=self.line_item_resp,
+        # Mock responses for different company requests - response depends on request_body
+        def match_company_id(request, context):
+            if request.json().get("company_ids") == [1]:
+                return {"currency": "USD", "periods": {}}
+            elif request.json().get("company_ids") == [2]:
+                return self.line_item_resp
+            else:
+                return {"currency": "USD", "periods": {}}
+
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/line_item/",
+            json=match_company_id,
         )
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
         args = GetFinancialLineItemFromIdentifiersArgs(

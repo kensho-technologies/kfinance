@@ -1,9 +1,6 @@
-from urllib.parse import quote
-
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
-from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.segments.segment_models import SegmentType
 from kfinance.domains.segments.segment_tools import (
@@ -59,8 +56,8 @@ class TestGetSegmentsFromIdentifier:
         THEN we get back the SPGI business segment and an error for the non-existent company.
         """
 
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/segments/absolute/{quote(f'[{SPGI_COMPANY_ID}]')}/business/none/none/none/none/none/none",
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/segments/",
             # truncated from the original API response
             json=self.segments_response,
         )
@@ -116,11 +113,10 @@ class TestGetSegmentsFromIdentifier:
             }
         )
 
-        for company_id in company_ids:
-            requests_mock.get(
-                url=f"https://kfinance.kensho.com/api/v1/segments/absolute/{quote(f'[{company_id}]')}/business/none/none/none/none/none/none",
-                json=self.segments_response,
-            )
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/segments/",
+            json=self.segments_response,
+        )
 
         tool = GetSegmentsFromIdentifiers(kfinance_client=mock_client)
         args = GetSegmentsFromIdentifiersArgs(
@@ -157,13 +153,18 @@ class TestGetSegmentsFromIdentifier:
             }
         )
 
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/segments/absolute/{quote('[1]')}/business/none/none/none/none/none/none",
-            json={"currency": "USD", "periods": {}},
-        )
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/segments/absolute/{quote('[2]')}/business/none/none/none/none/none/none",
-            json=self.segments_response,
+        # Mock responses for different company requests - response depends on request_body
+        def match_company_id(request, context):
+            if request.json().get("company_ids") == [1]:
+                return {"currency": "USD", "periods": {}}
+            elif request.json().get("company_ids") == [2]:
+                return self.segments_response
+            else:
+                return {"currency": "USD", "periods": {}}
+
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/segments/",
+            json=match_company_id,
         )
 
         tool = GetSegmentsFromIdentifiers(kfinance_client=mock_client)
