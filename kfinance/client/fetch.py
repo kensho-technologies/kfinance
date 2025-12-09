@@ -357,12 +357,12 @@ class KFinanceApiClient:
         company_ids: list[int],
         segment_type: SegmentType,
         *,
-        period_type: PeriodType | None = None,
-        calendar_type: CalendarType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
         start_quarter: int | None = None,
         end_quarter: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
     ) -> SegmentsResp:
         pass
 
@@ -374,9 +374,9 @@ class KFinanceApiClient:
         segment_type: SegmentType,
         *,
         num_periods_back: int,
+        num_periods: int | None = None,
         period_type: PeriodType | None = None,
         calendar_type: CalendarType | None = None,
-        num_periods: int | None = None,
     ) -> SegmentsResp:
         pass
 
@@ -385,14 +385,14 @@ class KFinanceApiClient:
         company_ids: list[int],
         segment_type: SegmentType,
         *,
-        num_periods_back: int | None = None,
-        period_type: PeriodType | None = None,
-        calendar_type: CalendarType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
         start_quarter: int | None = None,
         end_quarter: int | None = None,
+        num_periods_back: int | None = None,
         num_periods: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
     ) -> SegmentsResp:
         """Get a specified segment type for a specified duration."""
 
@@ -461,12 +461,12 @@ class KFinanceApiClient:
         company_ids: list[int],
         statement_type: str,
         *,
-        period_type: PeriodType | None = None,
-        calendar_type: CalendarType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
         start_quarter: int | None = None,
         end_quarter: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
     ) -> StatementsResp:
         pass
 
@@ -478,9 +478,9 @@ class KFinanceApiClient:
         statement_type: str,
         *,
         num_periods_back: int,
+        num_periods: int | None = None,
         period_type: PeriodType | None = None,
         calendar_type: CalendarType | None = None,
-        num_periods: int | None = None,
     ) -> StatementsResp:
         pass
 
@@ -489,14 +489,14 @@ class KFinanceApiClient:
         company_ids: list[int],
         statement_type: str,
         *,
-        num_periods_back: int | None = None,
-        period_type: PeriodType | None = None,
-        calendar_type: CalendarType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
         start_quarter: int | None = None,
         end_quarter: int | None = None,
+        num_periods_back: int | None = None,
         num_periods: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
     ) -> StatementsResp:
         """Get a specified financial statement for a specified duration."""
 
@@ -536,12 +536,12 @@ class KFinanceApiClient:
         company_ids: list[int],
         line_item: str,
         *,
-        period_type: PeriodType | None = None,
-        calendar_type: CalendarType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
         start_quarter: int | None = None,
         end_quarter: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
     ) -> LineItemResp:
         """Get a specified financial line item for a specified absolute time range."""
         pass
@@ -554,9 +554,9 @@ class KFinanceApiClient:
         line_item: str,
         *,
         num_periods_back: int,
+        num_periods: int | None = None,
         period_type: PeriodType | None = None,
         calendar_type: CalendarType | None = None,
-        num_periods: int | None = None,
     ) -> LineItemResp:
         """Get a specified financial line item for a specified relative time range."""
         pass
@@ -566,14 +566,14 @@ class KFinanceApiClient:
         company_ids: list[int],
         line_item: str,
         *,
-        num_periods_back: int | None = None,
-        period_type: PeriodType | None = None,
-        calendar_type: CalendarType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
         start_quarter: int | None = None,
         end_quarter: int | None = None,
+        num_periods_back: int | None = None,
         num_periods: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
     ) -> LineItemResp:
         """Get a specified financial line item for a specified duration."""
 
