@@ -1,7 +1,10 @@
 # Changelog
 
+## v3.2.20
+- Relax fastmcp version constraint
+
 ## v3.2.19
-- Updated tool descriptions too be more descriptive and include examples
+- Updated tool descriptions to be more descriptive and include examples
 
 ## v3.2.18
 - Add info on how to fetch transcripts to earnings call tools
