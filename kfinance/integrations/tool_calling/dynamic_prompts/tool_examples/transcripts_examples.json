@@ -1,0 +1,61 @@
+{
+  "description": "Examples for transcript access tools",
+  "tools": [
+    {
+      "tool_name": "get_transcript_from_key_dev_id",
+      "examples": [
+        {
+          "query": "get the earnings call transcript for key dev id 12345",
+          "tool_name": "get_transcript_from_key_dev_id",
+          "parameters": {
+            "key_dev_id": 12345
+          },
+          "context": "use get_transcript_from_key_dev_id to get raw transcript text for earnings calls using the key development id.",
+          "permissions_required": [
+            "TranscriptsPermission"
+          ],
+          "disambiguation_note": "requires the specific key_dev_id from earnings tools - cannot work with company identifiers.",
+          "tags": [
+            "earnings_transcript",
+            "key_dev_id",
+            "transcript_text"
+          ]
+        },
+        {
+          "query": "show me the transcript for earnings call 67890",
+          "tool_name": "get_transcript_from_key_dev_id",
+          "parameters": {
+            "key_dev_id": 67890
+          },
+          "context": "get the full text content of earnings call transcripts.",
+          "permissions_required": [
+            "TranscriptsPermission"
+          ],
+          "disambiguation_note": "the key_dev_id must be obtained from earnings tools first - it's not the same as company id.",
+          "tags": [
+            "transcript_content",
+            "earnings_call",
+            "full_text"
+          ]
+        },
+        {
+          "query": "retrieve transcript text for key development 54321",
+          "tool_name": "get_transcript_from_key_dev_id",
+          "parameters": {
+            "key_dev_id": 54321
+          },
+          "context": "access detailed transcript content for analysis and research.",
+          "permissions_required": [
+            "TranscriptsPermission"
+          ],
+          "disambiguation_note": "this is a two-step process: first get key_dev_id from earnings tools, then get transcript.",
+          "tags": [
+            "transcript_retrieval",
+            "detailed_content",
+            "research_access"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "description": "Examples for all company information tools",
+  "tools": [
+    {
+      "tool_name": "get_info_from_identifiers",
+      "examples": [
+        {
+          "query": "get basic information about <company_a>",
+          "tool_name": "get_info_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ]
+          },
+          "context": "use get_info_from_identifiers for basic company details like name, status, industry, employees, founding date, and headquarters.",
+          "permissions_required": [
+            "CompanyIntelligencePermission"
+          ],
+          "disambiguation_note": "this tool provides core company facts - use it for questions about company basics, not detailed descriptions.",
+          "tags": [
+            "company_info",
+            "basic_info",
+            "headquarters",
+            "industry"
+          ]
+        },
+        {
+          "query": "what are the basic details for <company_b>, <company_c>, and <company_d>?",
+          "tool_name": "get_info_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "MSFT",
+              "GOOGL",
+              "AMZN"
+            ]
+          },
+          "context": "batch multiple companies to get their basic information efficiently.",
+          "permissions_required": [
+            "CompanyIntelligencePermission"
+          ],
+          "disambiguation_note": "always batch multiple companies in one call rather than making separate requests.",
+          "tags": [
+            "company_info",
+            "multiple_companies",
+            "batching",
+            "basic_info"
+          ]
+        },
+        {
+          "query": "where is <company_f> headquartered and when was it founded?",
+          "tool_name": "get_info_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "TSLA"
+            ]
+          },
+          "context": "this tool provides headquarters location and founding date information.",
+          "permissions_required": [
+            "CompanyIntelligencePermission"
+          ],
+          "disambiguation_note": "use get_info_from_identifiers for headquarters and founding date questions, not get_company_description.",
+          "tags": [
+            "headquarters",
+            "founding_date",
+            "location",
+            "company_info"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_company_summary_from_identifiers",
+      "examples": [
+        {
+          "query": "give me a summary of what <company_g> does",
+          "tool_name": "get_company_summary_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "NFLX"
+            ]
+          },
+          "context": "use get_company_summary_from_identifiers for one-paragraph business summaries including products, services, and markets.",
+          "permissions_required": [
+            "CompanyIntelligencePermission"
+          ],
+          "disambiguation_note": "use summary for concise business overviews, description for detailed multi-section information.",
+          "tags": [
+            "summary",
+            "business_overview",
+            "products",
+            "services"
+          ]
+        },
+        {
+          "query": "what do <company_h> and <company_bank_of_america> do?",
+          "tool_name": "get_company_summary_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "JPM",
+              "BAC"
+            ]
+          },
+          "context": "get concise business summaries for multiple companies in one call.",
+          "permissions_required": [
+            "CompanyIntelligencePermission"
+          ],
+          "disambiguation_note": "summary provides a single paragraph overview, while description provides detailed sections.",
+          "tags": [
+            "summary",
+            "banking",
+            "multiple_companies",
+            "business_model"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_company_description_from_identifiers",
+      "examples": [
+        {
+          "query": "give me a detailed description of <company_a>'s business segments and competition",
+          "tool_name": "get_company_description_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AAPL"
+            ]
+          },
+          "context": "use get_company_description_from_identifiers for detailed, multi-section descriptions including segments, competition, and history.",
+          "permissions_required": [
+            "CompanyIntelligencePermission"
+          ],
+          "disambiguation_note": "description provides detailed sections (segments, competition, history), summary provides one paragraph.",
+          "tags": [
+            "description",
+            "detailed",
+            "segments",
+            "competition",
+            "history"
+          ]
+        },
+        {
+          "query": "what are <company_d>'s main business segments and competitive landscape?",
+          "tool_name": "get_company_description_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "AMZN"
+            ]
+          },
+          "context": "description includes detailed segment breakdowns and competitive analysis.",
+          "permissions_required": [
+            "CompanyIntelligencePermission"
+          ],
+          "disambiguation_note": "use description for detailed segment and competition analysis, not summary.",
+          "tags": [
+            "segments",
+            "competition",
+            "detailed_analysis",
+            "business_units"
+          ]
+        }
+      ]
+    },
+    {
+      "tool_name": "get_company_other_names_from_identifiers",
+      "examples": [
+        {
+          "query": "what other names does <company_c> go by?",
+          "tool_name": "get_company_other_names_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "GOOGL"
+            ]
+          },
+          "context": "use get_company_other_names_from_identifiers for alternate names, historical names, and native language names.",
+          "permissions_required": [
+            "CompanyIntelligencePermission"
+          ],
+          "disambiguation_note": "this tool is specifically for name variations, not basic company information.",
+          "tags": [
+            "alternate_names",
+            "historical_names",
+            "name_variations"
+          ]
+        },
+        {
+          "query": "what was <company_e> called before and what other names does it use?",
+          "tool_name": "get_company_other_names_from_identifiers",
+          "parameters": {
+            "identifiers": [
+              "META"
+            ]
+          },
+          "context": "get historical names (previous company names) and alternate names (current variations).",
+          "permissions_required": [
+            "CompanyIntelligencePermission"
+          ],
+          "disambiguation_note": "use this for name history questions, not current business information.",
+          "tags": [
+            "historical_names",
+            "name_changes",
+            "alternate_names",
+            "rebranding"
+          ]
+        }
+      ]
+    }
+  ]
+}
