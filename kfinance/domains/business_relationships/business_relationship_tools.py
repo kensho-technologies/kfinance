@@ -29,11 +29,20 @@ class GetBusinessRelationshipFromIdentifiersResp(BaseModel):
 class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
     name: str = "get_business_relationship_from_identifiers"
     description: str = dedent("""
-        Get the current and previous company IDs that are relationship_type for a list of identifiers.
+        Get the current and previous companies that have a specified business relationship with each of the provided identifiers.
 
-        Example:
-        Query: "What are the previous borrowers of SPGI and JPM?"
-        Function: get_business_relationship_from_identifiers(identifiers=["SPGI", "JPM"], business_relationship=BusinessRelationshipType.borrower)
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - Results include both "current" (active) and "previous" (historical) relationships.
+
+        Examples:
+        Query: "Who are the current and previous suppliers of Intel?"
+        Function: get_business_relationship_from_identifiers(identifiers=["Intel"], business_relationship="supplier")
+
+        Query: "What are the borrowers of SPGI and JPM?"
+        Function: get_business_relationship_from_identifiers(identifiers=["SPGI", "JPM"], business_relationship="borrower")
+
+        Query: "Who are Dell's customers?"
+        Function: get_business_relationship_from_identifiers(identifiers=["Dell"], business_relationship="customer")
     """).strip()
     args_schema: Type[BaseModel] = GetBusinessRelationshipFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.RelationshipPermission}
