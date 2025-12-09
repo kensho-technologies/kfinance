@@ -1,9 +1,9 @@
 from datetime import date
-from decimal import Decimal
-from typing import Any
 
 from pydantic import BaseModel
 from strenum import StrEnum
+
+from kfinance.domains.line_items.line_item_models import LineItem
 
 
 class SegmentType(StrEnum):
@@ -11,12 +11,6 @@ class SegmentType(StrEnum):
 
     business = "business"
     geographic = "geographic"
-
-
-class LineItem(BaseModel):
-    name: str
-    value: Decimal | None
-    sources: list[dict[str, Any]] | None = None
 
 
 class Segment(BaseModel):

@@ -10,7 +10,7 @@ import jwt
 import requests
 
 from kfinance.client.industry_models import IndustryClassification
-from kfinance.client.models.date_and_period_models import EndpointType, Periodicity, PeriodType
+from kfinance.client.models.date_and_period_models import Periodicity, PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
@@ -367,23 +367,36 @@ class KFinanceApiClient:
         if num_periods_back is not None and num_periods is None:
             raise ValueError("num_periods_back requires num_periods to be provided")
 
-        endpoint_type = EndpointType.relative if num_periods is not None else EndpointType.absolute
+        url = f"{self.url_base}segments/"
 
-        url = (
-            f"{self.url_base}segments/{endpoint_type}/[{company_id}]/{segment_type}/"
-            f"{period_type if period_type else 'none'}/"
-            f"{start_year if start_year is not None else 'none'}/"
-            f"{end_year if end_year is not None else 'none'}/"
-            f"{start_quarter if start_quarter is not None else 'none'}/"
-            f"{end_quarter if end_quarter is not None else 'none'}/"
-            f"{calendar_type if calendar_type else 'none'}"
-            + (
-                f"/{num_periods}/{num_periods_back if num_periods_back is not None else 'none'}"
-                if endpoint_type == EndpointType.relative
-                else ""
-            )
+        # Convert enums to string values for JSON serialization
+        period_type_val = period_type.value if period_type is not None else None
+        calendar_type_val = calendar_type.value if calendar_type is not None else None
+        segment_type_val = segment_type.value if segment_type is not None else None
+
+        request_body: dict[str, str | int | list[int]] = {
+            "company_ids": [company_id],
+            "segment_type": segment_type_val,
+        }
+
+        fields = [
+            ("period_type", period_type_val),
+            ("start_year", start_year),
+            ("end_year", end_year),
+            ("start_quarter", start_quarter),
+            ("end_quarter", end_quarter),
+            ("calendar_type", calendar_type_val),
+            ("num_periods", num_periods),
+            ("num_periods_back", num_periods_back),
+        ]
+
+        for key, value in fields:
+            if value is not None:
+                request_body[key] = value
+
+        return SegmentsResp.model_validate(
+            self.fetch(url, method="POST", request_body=request_body)
         )
-        return SegmentsResp.model_validate(self.fetch(url))
 
     def fetch_price_chart(
         self,
@@ -430,24 +443,35 @@ class KFinanceApiClient:
         if num_periods_back is not None and num_periods is None:
             raise ValueError("num_periods_back requires num_periods to be provided")
 
-        endpoint_type = EndpointType.relative if num_periods is not None else EndpointType.absolute
+        url = f"{self.url_base}statements/"
 
-        url = (
-            f"{self.url_base}statements/{endpoint_type}/[{company_id}]/{statement_type}/"
-            f"{period_type if period_type else 'none'}/"
-            f"{start_year if start_year is not None else 'none'}/"
-            f"{end_year if end_year is not None else 'none'}/"
-            f"{start_quarter if start_quarter is not None else 'none'}/"
-            f"{end_quarter if end_quarter is not None else 'none'}/"
-            f"{calendar_type if calendar_type else 'none'}"
-            + (
-                f"/{num_periods}/{num_periods_back if num_periods_back is not None else 'none'}"
-                if endpoint_type == EndpointType.relative
-                else ""
-            )
+        # Convert enums to string values for JSON serialization
+        period_type_val = period_type.value if period_type is not None else None
+        calendar_type_val = calendar_type.value if calendar_type is not None else None
+
+        request_body: dict[str, str | int | list[int]] = {
+            "company_ids": [company_id],
+            "statement_type": statement_type,
+        }
+
+        fields = [
+            ("period_type", period_type_val),
+            ("start_year", start_year),
+            ("end_year", end_year),
+            ("start_quarter", start_quarter),
+            ("end_quarter", end_quarter),
+            ("calendar_type", calendar_type_val),
+            ("num_periods", num_periods),
+            ("num_periods_back", num_periods_back),
+        ]
+
+        for key, value in fields:
+            if value is not None:
+                request_body[key] = value
+
+        return StatementsResp.model_validate(
+            self.fetch(url, method="POST", request_body=request_body)
         )
-
-        return StatementsResp.model_validate(self.fetch(url))
 
     def fetch_line_item(
         self,
@@ -466,24 +490,35 @@ class KFinanceApiClient:
         if num_periods_back is not None and num_periods is None:
             raise ValueError("num_periods_back requires num_periods to be provided")
 
-        endpoint_type = EndpointType.relative if num_periods is not None else EndpointType.absolute
+        url = f"{self.url_base}line_item/"
 
-        url = (
-            f"{self.url_base}line_item/{endpoint_type}/[{company_id}]/{line_item}/"
-            f"{period_type if period_type else 'none'}/"
-            f"{start_year if start_year is not None else 'none'}/"
-            f"{end_year if end_year is not None else 'none'}/"
-            f"{start_quarter if start_quarter is not None else 'none'}/"
-            f"{end_quarter if end_quarter is not None else 'none'}/"
-            f"{calendar_type if calendar_type else 'none'}"
-            + (
-                f"/{num_periods}/{num_periods_back if num_periods_back is not None else 'none'}"
-                if endpoint_type == EndpointType.relative
-                else ""
-            )
+        # Convert enums to string values for JSON serialization
+        period_type_val = period_type.value if period_type is not None else None
+        calendar_type_val = calendar_type.value if calendar_type is not None else None
+
+        request_body: dict[str, str | int | list[int]] = {
+            "company_ids": [company_id],
+            "line_item": line_item,
+        }
+
+        fields = [
+            ("period_type", period_type_val),
+            ("start_year", start_year),
+            ("end_year", end_year),
+            ("start_quarter", start_quarter),
+            ("end_quarter", end_quarter),
+            ("calendar_type", calendar_type_val),
+            ("num_periods", num_periods),
+            ("num_periods_back", num_periods_back),
+        ]
+
+        for key, value in fields:
+            if value is not None:
+                request_body[key] = value
+
+        return LineItemResp.model_validate(
+            self.fetch(url, method="POST", request_body=request_body)
         )
-
-        return LineItemResp.model_validate(self.fetch(url))
 
     def fetch_info(self, company_id: int) -> dict:
         """Get the company info."""

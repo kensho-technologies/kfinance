@@ -2,27 +2,30 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from itertools import chain
-from typing import Any, TypedDict
+from typing import TypeAlias, TypedDict
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from strenum import StrEnum
 
 
+Source: TypeAlias = dict[str, str]
+
+
 class CalendarType(StrEnum):
-    FISCAL = "FISCAL"
-    CALENDAR = "CALENDAR"
+    fisacl = "fiscal"
+    calendar = "calendar"
 
 
-class LineItemData(BaseModel):
+class LineItem(BaseModel):
     name: str
     value: Decimal | None
-    sources: list[dict[str, Any]] | None = None
+    sources: list[Source] = Field(default_factory=list)
 
 
 class LineItemPeriodData(BaseModel):
     period_end_date: date
     num_months: int
-    line_item: LineItemData
+    line_item: LineItem
 
 
 class LineItemResp(BaseModel):
