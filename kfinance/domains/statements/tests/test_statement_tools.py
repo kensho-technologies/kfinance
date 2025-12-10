@@ -52,9 +52,28 @@ class TestGetFinancialStatementFromIdentifiers:
         THEN we get back the SPGI income statement and an error for the non-existent company.
         """
 
+        # Mock the unified_fetch_id_triples response
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/ids",
+            json={
+                "identifiers_to_id_triples": {
+                    "SPGI": {"company_id": 21719, "security_id": 2629107, "trading_item_id": 2629108}
+                },
+                "errors": {
+                    "NON-EXISTENT": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                }
+            },
+        )
+
+        # Mock the fetch_statement response
         requests_mock.post(
             url="https://kfinance.kensho.com/api/v1/statements/",
-            json=self.statement_resp,
+            json={
+                "results": {
+                    "21719": self.statement_resp
+                },
+                "errors": {}
+            },
         )
         expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
             {
@@ -115,7 +134,7 @@ class TestGetFinancialStatementFromIdentifiers:
 
         tool = GetFinancialStatementFromIdentifiers(kfinance_client=mock_client)
         args = GetFinancialStatementFromIdentifiersArgs(
-            identifiers=["SPGI", "non-existent"], statement=StatementType.income_statement
+            identifiers=["SPGI", "NON-EXISTENT"], statement=StatementType.income_statement
         )
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
@@ -187,9 +206,28 @@ class TestGetFinancialStatementFromIdentifiers:
             }
         )
 
+        # Mock the unified_fetch_id_triples response
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/ids",
+            json={
+                "identifiers_to_id_triples": {
+                    "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
+                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202}
+                },
+                "errors": {}
+            },
+        )
+
+        # Mock the fetch_statement response
         requests_mock.post(
             url="https://kfinance.kensho.com/api/v1/statements/",
-            json=self.statement_resp,
+            json={
+                "results": {
+                    "1": self.statement_resp,
+                    "2": self.statement_resp
+                },
+                "errors": {}
+            },
         )
 
         tool = GetFinancialStatementFromIdentifiers(kfinance_client=mock_client)
@@ -243,18 +281,28 @@ class TestGetFinancialStatementFromIdentifiers:
             }
         )
 
-        # Mock responses for different company requests - response depends on request_body
-        def match_company_id(request, context):
-            if request.json().get("company_ids") == [1]:
-                return {"currency": "USD", "periods": {}}
-            elif request.json().get("company_ids") == [2]:
-                return self.statement_resp
-            else:
-                return {"currency": "USD", "periods": {}}
+        # Mock the unified_fetch_id_triples response
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/ids",
+            json={
+                "identifiers_to_id_triples": {
+                    "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
+                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202}
+                },
+                "errors": {}
+            },
+        )
 
+        # Mock the fetch_statement response with different data for different companies
         requests_mock.post(
             url="https://kfinance.kensho.com/api/v1/statements/",
-            json=match_company_id,
+            json={
+                "results": {
+                    "1": {"currency": "USD", "periods": {}},
+                    "2": self.statement_resp
+                },
+                "errors": {}
+            },
         )
 
         tool = GetFinancialStatementFromIdentifiers(kfinance_client=mock_client)

@@ -118,7 +118,12 @@ def test_run_notebook(jupyter_kernel_name: str):
         # spgi.balance_sheet() and spgi.balance_sheet(period_type=PeriodType.annual, start_year=2010, end_year=2019)
         mocker.post(
             url="https://kfinance.kensho.com/api/v1/statements/",
-            json=balance_sheet_resp
+            json={
+                "results": {
+                    "21719": balance_sheet_resp
+                },
+                "errors": {}
+            }
         )
 
         # kfinance_client.ticker("JPM").balance_sheet()
@@ -133,18 +138,23 @@ def test_run_notebook(jupyter_kernel_name: str):
         mocker.post(
             url="https://kfinance.kensho.com/api/v1/line_item/",
             json={
-                "currency": "USD",
-                "periods": {
-                    "CY2010": {
-                        "period_end_date": "2010-12-31",
-                        "num_months": 12,
-                        "line_item": {
-                            "name": "Net Income",
-                            "value": "828000000.000000",
-                            "sources": []
+                "results": {
+                    "21719": {
+                        "currency": "USD",
+                        "periods": {
+                            "CY2010": {
+                                "period_end_date": "2010-12-31",
+                                "num_months": 12,
+                                "line_item": {
+                                    "name": "Net Income",
+                                    "value": "828000000.000000",
+                                    "sources": []
+                                }
+                            }
                         }
                     }
-                }
+                },
+                "errors": {}
             }
         )
 

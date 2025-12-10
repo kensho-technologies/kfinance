@@ -85,7 +85,7 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return pd.DataFrame()
 
-        periods = self.kfinance_api_client.fetch_statement(
+        statement_response = self.kfinance_api_client.fetch_statement(
             company_ids=[self.company_id],
             statement_type=statement_type,
             period_type=period_type,
@@ -93,7 +93,10 @@ class CompanyFunctionsMetaClass:
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
-        ).model_dump(mode="json")["periods"]
+        )
+        # Get the first (and only) result
+        statement_resp = list(statement_response.results.values())[0]
+        periods = statement_resp.model_dump(mode="json")["periods"]
 
         # Extract statements data from each period
         statements_data = {}
@@ -218,7 +221,7 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return pd.DataFrame()
 
-        line_item_response = self.kfinance_api_client.fetch_line_item(
+        response = self.kfinance_api_client.fetch_line_item(
             company_ids=[self.company_id],
             line_item=line_item,
             period_type=period_type,
@@ -227,6 +230,8 @@ class CompanyFunctionsMetaClass:
             start_quarter=start_quarter,
             end_quarter=end_quarter,
         )
+        # Get the first (and only) result
+        line_item_response = list(response.results.values())[0]
         # Extract line item values from each period
         line_item_data = {}
         for period_key, period_data in line_item_response.periods.items():
@@ -362,7 +367,7 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return {}
 
-        return self.kfinance_api_client.fetch_segments(
+        segments_response = self.kfinance_api_client.fetch_segments(
             company_ids=[self.company_id],
             segment_type=segment_type,
             period_type=period_type,
@@ -370,7 +375,10 @@ class CompanyFunctionsMetaClass:
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
-        ).model_dump(mode="json")["periods"]
+        )
+        # Get the first (and only) result
+        segments_resp = list(segments_response.results.values())[0]
+        return segments_resp.model_dump(mode="json")["periods"]
 
     def business_segments(
         self,

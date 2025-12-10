@@ -85,14 +85,33 @@ class TestGetFinancialLineItemFromCompanyIds:
             ],
         )
 
+        # Mock the unified_fetch_id_triples response
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/ids",
+            json={
+                "identifiers_to_id_triples": {
+                    "SPGI": {"company_id": 21719, "security_id": 2629107, "trading_item_id": 2629108}
+                },
+                "errors": {
+                    "NON-EXISTENT": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                }
+            },
+        )
+
+        # Mock the fetch_line_item response
         requests_mock.post(
             url="https://kfinance.kensho.com/api/v1/line_item/",
-            json=self.line_item_resp,
+            json={
+                "results": {
+                    "21719": self.line_item_resp
+                },
+                "errors": {}
+            },
         )
 
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
         args = GetFinancialLineItemFromIdentifiersArgs(
-            identifiers=["SPGI", "non-existent"], line_item="revenue"
+            identifiers=["SPGI", "NON-EXISTENT"], line_item="revenue"
         )
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
@@ -120,10 +139,30 @@ class TestGetFinancialLineItemFromCompanyIds:
             results={"C_1": line_item_resp, "C_2": line_item_resp},
         )
 
+        # Mock the unified_fetch_id_triples response
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/ids",
+            json={
+                "identifiers_to_id_triples": {
+                    "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
+                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202}
+                },
+                "errors": {}
+            },
+        )
+
+        # Mock the fetch_line_item response
         requests_mock.post(
             url="https://kfinance.kensho.com/api/v1/line_item/",
-            json=self.line_item_resp,
+            json={
+                "results": {
+                    "1": self.line_item_resp,
+                    "2": self.line_item_resp
+                },
+                "errors": {}
+            },
         )
+
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
         args = GetFinancialLineItemFromIdentifiersArgs(
             identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
@@ -157,19 +196,30 @@ class TestGetFinancialLineItemFromCompanyIds:
             results={"C_1": c_1_line_item_resp, "C_2": c_2_line_item_resp},
         )
 
-        # Mock responses for different company requests - response depends on request_body
-        def match_company_id(request, context):
-            if request.json().get("company_ids") == [1]:
-                return {"currency": "USD", "periods": {}}
-            elif request.json().get("company_ids") == [2]:
-                return self.line_item_resp
-            else:
-                return {"currency": "USD", "periods": {}}
+        # Mock the unified_fetch_id_triples response
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/ids",
+            json={
+                "identifiers_to_id_triples": {
+                    "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
+                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202}
+                },
+                "errors": {}
+            },
+        )
 
+        # Mock the fetch_line_item response with different data for different companies
         requests_mock.post(
             url="https://kfinance.kensho.com/api/v1/line_item/",
-            json=match_company_id,
+            json={
+                "results": {
+                    "1": {"currency": "USD", "periods": {}},
+                    "2": self.line_item_resp
+                },
+                "errors": {}
+            },
         )
+
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
         args = GetFinancialLineItemFromIdentifiersArgs(
             identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],

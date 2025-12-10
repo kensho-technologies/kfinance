@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import logging
 from queue import Queue
 from time import time
-from typing import Callable, Generator, Optional, overload
+from typing import Callable, Generator, Optional
 from uuid import uuid4
 
 import jwt
@@ -11,6 +11,7 @@ import requests
 
 from kfinance.client.industry_models import IndustryClassification
 from kfinance.client.models.date_and_period_models import Periodicity, PeriodType
+from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
@@ -308,6 +309,7 @@ class KFinanceApiClient:
         resp = self.fetch(url=url, method="POST", request_body=dict(identifiers=identifiers))
         return UnifiedIdTripleResponse.model_validate(resp)
 
+
     def fetch_trading_items(self, security_id: int) -> dict:
         """Get the list of trading items of a security."""
         url = f"{self.url_base}trading_items/{security_id}"
@@ -350,36 +352,6 @@ class KFinanceApiClient:
         )
         return Capitalizations.model_validate(self.fetch(url))
 
-    # absolute fetch_segments overload
-    @overload
-    def fetch_segments(
-        self,
-        company_ids: list[int],
-        segment_type: SegmentType,
-        *,
-        start_year: int | None = None,
-        end_year: int | None = None,
-        start_quarter: int | None = None,
-        end_quarter: int | None = None,
-        period_type: PeriodType | None = None,
-        calendar_type: CalendarType | None = None,
-    ) -> SegmentsResp:
-        pass
-
-    # relative fetch_segments overload
-    @overload
-    def fetch_segments(
-        self,
-        company_ids: list[int],
-        segment_type: SegmentType,
-        *,
-        num_periods_back: int,
-        num_periods: int | None = None,
-        period_type: PeriodType | None = None,
-        calendar_type: CalendarType | None = None,
-    ) -> SegmentsResp:
-        pass
-
     def fetch_segments(
         self,
         company_ids: list[int],
@@ -393,7 +365,7 @@ class KFinanceApiClient:
         num_periods: int | None = None,
         period_type: PeriodType | None = None,
         calendar_type: CalendarType | None = None,
-    ) -> SegmentsResp:
+    ) -> PostResponse[SegmentsResp]:
         """Get a specified segment type for a specified duration."""
 
         url = f"{self.url_base}segments/"
@@ -402,8 +374,8 @@ class KFinanceApiClient:
         calendar_type_val = calendar_type.value if calendar_type is not None else None
         segment_type_val = segment_type.value if segment_type is not None else None
 
-        request_body: dict[str, str | int | list[int]] = {
-            "company_ids": company_ids,
+        request_body: dict[str, str | int | list[str]] = {
+            "identifiers": [str(company_id) for company_id in company_ids],
             "segment_type": segment_type_val,
         }
 
@@ -422,9 +394,8 @@ class KFinanceApiClient:
             if value is not None:
                 request_body[key] = value
 
-        return SegmentsResp.model_validate(
-            self.fetch(url, method="POST", request_body=request_body)
-        )
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+        return PostResponse[SegmentsResp].model_validate(response_data)
 
     def fetch_price_chart(
         self,
@@ -454,36 +425,6 @@ class KFinanceApiClient:
         response.raise_for_status()
         return response.content
 
-    # absolute fetch_statement overload
-    @overload
-    def fetch_statement(
-        self,
-        company_ids: list[int],
-        statement_type: str,
-        *,
-        start_year: int | None = None,
-        end_year: int | None = None,
-        start_quarter: int | None = None,
-        end_quarter: int | None = None,
-        period_type: PeriodType | None = None,
-        calendar_type: CalendarType | None = None,
-    ) -> StatementsResp:
-        pass
-
-    # relative fetch_statement overload
-    @overload
-    def fetch_statement(
-        self,
-        company_ids: list[int],
-        statement_type: str,
-        *,
-        num_periods_back: int,
-        num_periods: int | None = None,
-        period_type: PeriodType | None = None,
-        calendar_type: CalendarType | None = None,
-    ) -> StatementsResp:
-        pass
-
     def fetch_statement(
         self,
         company_ids: list[int],
@@ -497,7 +438,7 @@ class KFinanceApiClient:
         num_periods: int | None = None,
         period_type: PeriodType | None = None,
         calendar_type: CalendarType | None = None,
-    ) -> StatementsResp:
+    ) -> PostResponse[StatementsResp]:
         """Get a specified financial statement for a specified duration."""
 
         url = f"{self.url_base}statements/"
@@ -505,8 +446,8 @@ class KFinanceApiClient:
         period_type_val = period_type.value if period_type is not None else None
         calendar_type_val = calendar_type.value if calendar_type is not None else None
 
-        request_body: dict[str, str | int | list[int]] = {
-            "company_ids": company_ids,
+        request_body: dict[str, str | int | list[str]] = {
+            "identifiers": [str(company_id) for company_id in company_ids],
             "statement_type": statement_type,
         }
 
@@ -525,41 +466,8 @@ class KFinanceApiClient:
             if value is not None:
                 request_body[key] = value
 
-        return StatementsResp.model_validate(
-            self.fetch(url, method="POST", request_body=request_body)
-        )
-
-    # absolute fetch_line_item overload
-    @overload
-    def fetch_line_item(
-        self,
-        company_ids: list[int],
-        line_item: str,
-        *,
-        start_year: int | None = None,
-        end_year: int | None = None,
-        start_quarter: int | None = None,
-        end_quarter: int | None = None,
-        period_type: PeriodType | None = None,
-        calendar_type: CalendarType | None = None,
-    ) -> LineItemResp:
-        """Get a specified financial line item for a specified absolute time range."""
-        pass
-
-    # relative fetch_line_item overload
-    @overload
-    def fetch_line_item(
-        self,
-        company_ids: list[int],
-        line_item: str,
-        *,
-        num_periods_back: int,
-        num_periods: int | None = None,
-        period_type: PeriodType | None = None,
-        calendar_type: CalendarType | None = None,
-    ) -> LineItemResp:
-        """Get a specified financial line item for a specified relative time range."""
-        pass
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+        return PostResponse[StatementsResp].model_validate(response_data)
 
     def fetch_line_item(
         self,
@@ -574,7 +482,7 @@ class KFinanceApiClient:
         num_periods: int | None = None,
         period_type: PeriodType | None = None,
         calendar_type: CalendarType | None = None,
-    ) -> LineItemResp:
+    ) -> PostResponse[LineItemResp]:
         """Get a specified financial line item for a specified duration."""
 
         url = f"{self.url_base}line_item/"
@@ -582,8 +490,8 @@ class KFinanceApiClient:
         period_type_val = period_type.value if period_type is not None else None
         calendar_type_val = calendar_type.value if calendar_type is not None else None
 
-        request_body: dict[str, str | int | list[int]] = {
-            "company_ids": company_ids,
+        request_body: dict[str, str | int | list[str]] = {
+            "identifiers": [str(company_id) for company_id in company_ids],
             "line_item": line_item,
         }
 
@@ -602,9 +510,8 @@ class KFinanceApiClient:
             if value is not None:
                 request_body[key] = value
 
-        return LineItemResp.model_validate(
-            self.fetch(url, method="POST", request_body=request_body)
-        )
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+        return PostResponse[LineItemResp].model_validate(response_data)
 
     def fetch_info(self, company_id: int) -> dict:
         """Get the company info."""

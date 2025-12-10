@@ -3,7 +3,6 @@ from typing import Literal, Type
 
 from pydantic import BaseModel, Field
 
-from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import CalendarType
@@ -33,7 +32,7 @@ class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers, NumPerio
 
 
 class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, StatementsResp]  # company_id -> response
+    results: dict[str, StatementsResp]  # identifier -> response
 
 
 class GetFinancialStatementFromIdentifiers(KfinanceTool):
@@ -125,31 +124,41 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         }
         """
         api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
 
-        tasks = [
-            Task(
-                func=api_client.fetch_statement,
-                kwargs=dict(
-                    company_ids=[id_triple.company_id],
-                    statement_type=statement.value,
-                    period_type=period_type,
-                    start_year=start_year,
-                    end_year=end_year,
-                    start_quarter=start_quarter,
-                    end_quarter=end_quarter,
-                    calendar_type=calendar_type,
-                    num_periods=num_periods,
-                    num_periods_back=num_periods_back,
-                ),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
+        # First resolve identifiers to company IDs
+        ids_response = api_client.unified_fetch_id_triples(identifiers)
 
-        statement_responses: dict[str, StatementsResp] = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
+        # Create mapping from identifier to company_id and company_id to identifier
+        identifier_to_company_id = {
+            identifier: id_triple.company_id
+            for identifier, id_triple in ids_response.identifiers_to_id_triples.items()
+        }
+        company_id_to_identifier = {
+            id_triple.company_id: identifier
+            for identifier, id_triple in ids_response.identifiers_to_id_triples.items()
+        }
+        company_ids = list(identifier_to_company_id.values())
+
+        # Call the simplified fetch_statement API with company IDs
+        response = api_client.fetch_statement(
+            company_ids=company_ids,
+            statement_type=statement.value,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            calendar_type=calendar_type,
+            num_periods=num_periods,
+            num_periods_back=num_periods_back,
         )
+
+        # Map results back to identifiers
+        mapped_results = {}
+        for company_id_str, statement_resp in response.results.items():
+            company_id = int(company_id_str)
+            original_identifier = company_id_to_identifier[company_id]
+            mapped_results[original_identifier] = statement_resp
 
         # If no date and multiple companies, only return the most recent value.
         # By default, we return 5 years of data, which can be too much when
@@ -159,14 +168,15 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
             and end_year is None
             and start_quarter is None
             and end_quarter is None
-            and len(statement_responses) > 1
+            and len(mapped_results) > 1
         ):
-            for statement_response in statement_responses.values():
+            for statement_response in mapped_results.values():
                 if statement_response.periods:
                     most_recent_year = max(statement_response.periods.keys())
                     most_recent_year_data = statement_response.periods[most_recent_year]
                     statement_response.periods = {most_recent_year: most_recent_year_data}
 
-        return GetFinancialStatementFromIdentifiersResp(
-            results=statement_responses, errors=list(id_triple_resp.errors.values())
-        )
+        # Combine errors from both ID resolution and data fetching
+        all_errors = list(ids_response.errors.values()) + list(response.errors.values())
+
+        return GetFinancialStatementFromIdentifiersResp(results=mapped_results, errors=all_errors)

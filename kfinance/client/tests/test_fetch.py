@@ -98,17 +98,23 @@ class TestFetchItem(TestCase):
         statement_type = "BS"
         expected_url = f"{self.kfinance_api_client.url_base}statements/"
         expected_request_body = {
-            "company_ids": [company_id],
+            "identifiers": [str(company_id)],
             "statement_type": statement_type,
         }
-        # Validation error is ok, we only care that the function was called with the correct parameters
-        with pytest.raises(ValidationError):
-            self.kfinance_api_client.fetch_statement(
-                company_ids=[company_id], statement_type=statement_type
-            )
+        # Mock the response to have the expected PostResponse structure
+        self.kfinance_api_client.fetch.return_value = {
+            "results": {},
+            "errors": {}
+        }
+        result = self.kfinance_api_client.fetch_statement(
+            company_ids=[company_id], statement_type=statement_type
+        )
         self.kfinance_api_client.fetch.assert_called_with(
             expected_url, method="POST", request_body=expected_request_body
         )
+        # Verify the result is a PostResponse
+        assert "results" in result.model_dump()
+        # errors field is excluded when empty
 
         period_type = PeriodType.quarterly
         start_year = 2024
@@ -116,7 +122,7 @@ class TestFetchItem(TestCase):
         start_quarter = 1
         end_quarter = 4
         expected_request_body = {
-            "company_ids": [company_id],
+            "identifiers": [str(company_id)],
             "statement_type": statement_type,
             "period_type": period_type.value,
             "start_year": start_year,
@@ -124,35 +130,47 @@ class TestFetchItem(TestCase):
             "start_quarter": start_quarter,
             "end_quarter": end_quarter,
         }
-        # Validation error is ok, we only care that the function was called with the correct parameters
-        with pytest.raises(ValidationError):
-            self.kfinance_api_client.fetch_statement(
-                company_ids=[company_id],
-                statement_type=statement_type,
-                period_type=period_type,
-                start_year=start_year,
-                end_year=end_year,
-                start_quarter=start_quarter,
-                end_quarter=end_quarter,
-            )
+        # Mock the response to have the expected PostResponse structure
+        self.kfinance_api_client.fetch.return_value = {
+            "results": {},
+            "errors": {}
+        }
+        result = self.kfinance_api_client.fetch_statement(
+            company_ids=[company_id],
+            statement_type=statement_type,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )
         self.kfinance_api_client.fetch.assert_called_with(
             expected_url, method="POST", request_body=expected_request_body
         )
+        # Verify the result is a PostResponse
+        assert "results" in result.model_dump()
+        # errors field is excluded when empty
 
     def test_fetch_line_item(self) -> None:
         company_id = 21719
         line_item = "cash"
         expected_url = f"{self.kfinance_api_client.url_base}line_item/"
         expected_request_body = {
-            "company_ids": [company_id],
+            "identifiers": [str(company_id)],
             "line_item": line_item,
         }
-        # Validation error is ok, we only care that the function was called with the correct parameters
-        with pytest.raises(ValidationError):
-            self.kfinance_api_client.fetch_line_item(company_ids=[company_id], line_item=line_item)
+        # Mock the response to have the expected PostResponse structure
+        self.kfinance_api_client.fetch.return_value = {
+            "results": {},
+            "errors": {}
+        }
+        result = self.kfinance_api_client.fetch_line_item(company_ids=[company_id], line_item=line_item)
         self.kfinance_api_client.fetch.assert_called_with(
             expected_url, method="POST", request_body=expected_request_body
         )
+        # Verify the result is a PostResponse
+        assert "results" in result.model_dump()
+        # errors field is excluded when empty
 
         period_type = PeriodType.quarterly
         start_year = 2024
@@ -160,7 +178,7 @@ class TestFetchItem(TestCase):
         start_quarter = 1
         end_quarter = 4
         expected_request_body = {
-            "company_ids": [company_id],
+            "identifiers": [str(company_id)],
             "line_item": line_item,
             "period_type": period_type.value,
             "start_year": start_year,
@@ -169,20 +187,26 @@ class TestFetchItem(TestCase):
             "end_quarter": end_quarter,
         }
 
-        # Validation error is ok, we only care that the function was called with the correct parameters
-        with pytest.raises(ValidationError):
-            self.kfinance_api_client.fetch_line_item(
-                company_ids=[company_id],
-                line_item=line_item,
-                period_type=period_type,
-                start_year=start_year,
-                end_year=end_year,
-                start_quarter=start_quarter,
-                end_quarter=end_quarter,
-            )
+        # Mock the response to have the expected PostResponse structure
+        self.kfinance_api_client.fetch.return_value = {
+            "results": {},
+            "errors": {}
+        }
+        result = self.kfinance_api_client.fetch_line_item(
+            company_ids=[company_id],
+            line_item=line_item,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )
         self.kfinance_api_client.fetch.assert_called_with(
             expected_url, method="POST", request_body=expected_request_body
         )
+        # Verify the result is a PostResponse
+        assert "results" in result.model_dump()
+        # errors field is excluded when empty
 
     def test_fetch_info(self) -> None:
         company_id = 21719
@@ -313,16 +337,23 @@ class TestFetchItem(TestCase):
         segment_type = SegmentType.business
         expected_url = f"{self.kfinance_api_client.url_base}segments/"
         expected_request_body = {
-            "company_ids": [company_id],
+            "identifiers": [str(company_id)],
             "segment_type": segment_type.value,
         }
-        with pytest.raises(ValidationError):
-            self.kfinance_api_client.fetch_segments(
-                company_ids=[company_id], segment_type=segment_type
-            )
+        # Mock the response to have the expected PostResponse structure
+        self.kfinance_api_client.fetch.return_value = {
+            "results": {},
+            "errors": {}
+        }
+        result = self.kfinance_api_client.fetch_segments(
+            company_ids=[company_id], segment_type=segment_type
+        )
         self.kfinance_api_client.fetch.assert_called_with(
             expected_url, method="POST", request_body=expected_request_body
         )
+        # Verify the result is a PostResponse
+        assert "results" in result.model_dump()
+        # errors field is excluded when empty
 
         period_type = PeriodType.quarterly
         start_year = 2023
@@ -330,7 +361,7 @@ class TestFetchItem(TestCase):
         start_quarter = 1
         end_quarter = 4
         expected_request_body = {
-            "company_ids": [company_id],
+            "identifiers": [str(company_id)],
             "segment_type": segment_type.value,
             "period_type": period_type.value,
             "start_year": start_year,
@@ -338,19 +369,26 @@ class TestFetchItem(TestCase):
             "start_quarter": start_quarter,
             "end_quarter": end_quarter,
         }
-        with pytest.raises(ValidationError):
-            self.kfinance_api_client.fetch_segments(
-                company_ids=[company_id],
-                segment_type=segment_type,
-                period_type=period_type,
-                start_year=start_year,
-                end_year=end_year,
-                start_quarter=start_quarter,
-                end_quarter=end_quarter,
-            )
+        # Mock the response to have the expected PostResponse structure
+        self.kfinance_api_client.fetch.return_value = {
+            "results": {},
+            "errors": {}
+        }
+        result = self.kfinance_api_client.fetch_segments(
+            company_ids=[company_id],
+            segment_type=segment_type,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )
         self.kfinance_api_client.fetch.assert_called_with(
             expected_url, method="POST", request_body=expected_request_body
         )
+        # Verify the result is a PostResponse
+        assert "results" in result.model_dump()
+        # errors field is excluded when empty
 
     def test_fetch_mergers_for_company(self) -> None:
         company_id = 21719
