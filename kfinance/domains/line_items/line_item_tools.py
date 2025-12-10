@@ -224,18 +224,14 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         # First resolve identifiers to company IDs
         ids_response = api_client.unified_fetch_id_triples(identifiers)
 
-        # Create mapping from identifier to company_id and company_id to identifier
-        identifier_to_company_id = {
-            identifier: id_triple.company_id
-            for identifier, id_triple in ids_response.identifiers_to_id_triples.items()
-        }
         company_id_to_identifier = {
             id_triple.company_id: identifier
             for identifier, id_triple in ids_response.identifiers_to_id_triples.items()
         }
-        company_ids = list(identifier_to_company_id.values())
+        company_ids = [
+            id_triple.company_id for id_triple in ids_response.identifiers_to_id_triples.values()
+        ]
 
-        # Call the simplified fetch_line_item API with company IDs
         response = api_client.fetch_line_item(
             company_ids=company_ids,
             line_item=line_item,
@@ -249,12 +245,11 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
             num_periods_back=num_periods_back,
         )
 
-        # Map results back to identifiers
-        mapped_results = {}
+        identifier_to_results = {}
         for company_id_str, line_item_resp in response.results.items():
             company_id = int(company_id_str)
             original_identifier = company_id_to_identifier[company_id]
-            mapped_results[original_identifier] = line_item_resp
+            identifier_to_results[original_identifier] = line_item_resp
 
         # If no date and multiple companies, only return the most recent value.
         # By default, we return 5 years of data, which can be too much when
@@ -264,15 +259,16 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
             and end_year is None
             and start_quarter is None
             and end_quarter is None
-            and len(mapped_results) > 1
+            and len(identifier_to_results) > 1
         ):
-            for line_item_response in mapped_results.values():
+            for line_item_response in identifier_to_results.values():
                 if line_item_response.periods:
                     most_recent_year = max(line_item_response.periods.keys())
                     most_recent_year_data = line_item_response.periods[most_recent_year]
                     line_item_response.periods = {most_recent_year: most_recent_year_data}
 
-        # Combine errors from both ID resolution and data fetching
         all_errors = list(ids_response.errors.values()) + list(response.errors.values())
 
-        return GetFinancialLineItemFromIdentifiersResp(results=mapped_results, errors=all_errors)
+        return GetFinancialLineItemFromIdentifiersResp(
+            results=identifier_to_results, errors=all_errors
+        )
