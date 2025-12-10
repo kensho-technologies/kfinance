@@ -8,7 +8,6 @@ from pydantic import (
     ConfigDict,
     Field,
     model_serializer,
-    model_validator,
 )
 
 from kfinance.client.kfinance import Client
@@ -115,21 +114,6 @@ class ToolArgsWithIdentifiers(BaseModel):
     identifiers: list[str] = Field(
         description="The identifiers, which can be a list of ticker symbols, ISINs, or CUSIPs, or company_ids"
     )
-
-
-class NumPeriodsValidationMixin(BaseModel):
-    """Mixin that provides validation for num_periods and num_periods_back fields.
-
-    Ensures that if num_periods is provided, num_periods_back must also be provided.
-    """
-
-    @model_validator(mode="after")
-    def validate_num_periods_requirement(self) -> "NumPeriodsValidationMixin":
-        """Validate that if num_periods is provided, num_periods_back must also be provided."""
-        if hasattr(self, "num_periods") and hasattr(self, "num_periods_back"):
-            if self.num_periods is not None and self.num_periods_back is None:
-                raise ValueError("num_periods_back is required when num_periods is provided")
-        return self
 
 
 def convert_str_to_int(v: Any) -> Any:

@@ -379,14 +379,14 @@ class KFinanceApiClient:
         }
 
         fields = [
-            ("period_type", period_type_val),
             ("start_year", start_year),
             ("end_year", end_year),
             ("start_quarter", start_quarter),
             ("end_quarter", end_quarter),
-            ("calendar_type", calendar_type_val),
-            ("num_periods", num_periods),
             ("num_periods_back", num_periods_back),
+            ("num_periods", num_periods),
+            ("period_type", period_type_val),
+            ("calendar_type", calendar_type_val),
         ]
 
         for key, value in fields:
@@ -451,14 +451,14 @@ class KFinanceApiClient:
         }
 
         fields = [
-            ("period_type", period_type_val),
             ("start_year", start_year),
             ("end_year", end_year),
             ("start_quarter", start_quarter),
             ("end_quarter", end_quarter),
-            ("calendar_type", calendar_type_val),
-            ("num_periods", num_periods),
             ("num_periods_back", num_periods_back),
+            ("num_periods", num_periods),
+            ("period_type", period_type_val),
+            ("calendar_type", calendar_type_val),
         ]
 
         for key, value in fields:
@@ -495,14 +495,14 @@ class KFinanceApiClient:
         }
 
         fields = [
-            ("period_type", period_type_val),
             ("start_year", start_year),
             ("end_year", end_year),
             ("start_quarter", start_quarter),
             ("end_quarter", end_quarter),
-            ("calendar_type", calendar_type_val),
-            ("num_periods", num_periods),
             ("num_periods_back", num_periods_back),
+            ("num_periods", num_periods),
+            ("period_type", period_type_val),
+            ("calendar_type", calendar_type_val),
         ]
 
         for key, value in fields:

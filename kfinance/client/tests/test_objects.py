@@ -641,7 +641,6 @@ class TestCompany(TestCase):
         """test revenue"""
         line_item_response: LineItemResp = MOCK_COMPANY_DB[msft_company_id]["line_items"]["revenue"]
 
-        # Extract line item values from each period
         line_item_data = {}
         for period_key, period_data in line_item_response.periods.items():
             line_item_data[period_key] = period_data.line_item.value
@@ -983,7 +982,6 @@ class TestTicker(TestCase):
         """test revenue"""
         line_item_response: LineItemResp = MOCK_COMPANY_DB[msft_company_id]["line_items"]["revenue"]
 
-        # Extract line item values from each period
         line_item_data = {}
         for period_key, period_data in line_item_response.periods.items():
             line_item_data[period_key] = period_data.line_item.value

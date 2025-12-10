@@ -106,7 +106,6 @@ class CompanyFunctionsMetaClass:
         statements_data = {}
         for period_key, period_data in periods.items():
             period_statements = {}
-            # Flatten the statements array structure
             for statement in period_data["statements"]:
                 for line_item in statement["line_items"]:
                     period_statements[line_item["name"]] = line_item["value"]
@@ -240,7 +239,7 @@ class CompanyFunctionsMetaClass:
 
         # Get the first (and only) result
         line_item_response = list(response.results.values())[0]
-        # Extract line item values from each period
+
         line_item_data = {}
         for period_key, period_data in line_item_response.periods.items():
             line_item_data[period_key] = period_data.line_item.value

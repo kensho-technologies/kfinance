@@ -9,14 +9,13 @@ from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
-    NumPeriodsValidationMixin,
     ToolArgsWithIdentifiers,
     ToolRespWithErrors,
     ValidQuarter,
 )
 
 
-class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers, NumPeriodsValidationMixin):
+class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
     segment_type: SegmentType
     period_type: PeriodType | None = Field(default=None, description="The period type")
