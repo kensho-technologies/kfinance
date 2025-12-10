@@ -374,7 +374,7 @@ class KFinanceApiClient:
         segment_type_val = segment_type.value if segment_type is not None else None
 
         request_body: dict[str, str | int | list[str]] = {
-            "identifiers": [str(company_id) for company_id in company_ids],
+            "company_ids": company_ids,
             "segment_type": segment_type_val,
         }
 
@@ -446,7 +446,7 @@ class KFinanceApiClient:
         calendar_type_val = calendar_type.value if calendar_type is not None else None
 
         request_body: dict[str, str | int | list[str]] = {
-            "identifiers": [str(company_id) for company_id in company_ids],
+            "company_ids": company_ids,
             "statement_type": statement_type,
         }
 
@@ -490,7 +490,7 @@ class KFinanceApiClient:
         calendar_type_val = calendar_type.value if calendar_type is not None else None
 
         request_body: dict[str, str | int | list[str]] = {
-            "identifiers": [str(company_id) for company_id in company_ids],
+            "company_ids": company_ids,
             "line_item": line_item,
         }
 
