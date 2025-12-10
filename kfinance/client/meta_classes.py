@@ -94,6 +94,10 @@ class CompanyFunctionsMetaClass:
             start_quarter=start_quarter,
             end_quarter=end_quarter,
         )
+
+        if not statement_response.results:
+            return pd.DataFrame()
+
         # Get the first (and only) result
         statement_resp = list(statement_response.results.values())[0]
         periods = statement_resp.model_dump(mode="json")["periods"]
@@ -230,6 +234,10 @@ class CompanyFunctionsMetaClass:
             start_quarter=start_quarter,
             end_quarter=end_quarter,
         )
+
+        if not response.results:
+            return pd.DataFrame()
+
         # Get the first (and only) result
         line_item_response = list(response.results.values())[0]
         # Extract line item values from each period
@@ -376,6 +384,10 @@ class CompanyFunctionsMetaClass:
             start_quarter=start_quarter,
             end_quarter=end_quarter,
         )
+
+        if not segments_response.results:
+            return {}
+
         # Get the first (and only) result
         segments_resp = list(segments_response.results.values())[0]
         return segments_resp.model_dump(mode="json")["periods"]

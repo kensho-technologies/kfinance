@@ -98,7 +98,7 @@ class TestFetchItem(TestCase):
         statement_type = "BS"
         expected_url = f"{self.kfinance_api_client.url_base}statements/"
         expected_request_body = {
-            "identifiers": [str(company_id)],
+            "company_ids": [company_id],
             "statement_type": statement_type,
         }
         # Mock the response to have the expected PostResponse structure
@@ -119,7 +119,7 @@ class TestFetchItem(TestCase):
         start_quarter = 1
         end_quarter = 4
         expected_request_body = {
-            "identifiers": [str(company_id)],
+            "company_ids": [company_id],
             "statement_type": statement_type,
             "period_type": period_type.value,
             "start_year": start_year,
@@ -150,7 +150,7 @@ class TestFetchItem(TestCase):
         line_item = "cash"
         expected_url = f"{self.kfinance_api_client.url_base}line_item/"
         expected_request_body = {
-            "identifiers": [str(company_id)],
+            "company_ids": [company_id],
             "line_item": line_item,
         }
         # Mock the response to have the expected PostResponse structure
@@ -171,7 +171,7 @@ class TestFetchItem(TestCase):
         start_quarter = 1
         end_quarter = 4
         expected_request_body = {
-            "identifiers": [str(company_id)],
+            "company_ids": [company_id],
             "line_item": line_item,
             "period_type": period_type.value,
             "start_year": start_year,
@@ -327,7 +327,7 @@ class TestFetchItem(TestCase):
         segment_type = SegmentType.business
         expected_url = f"{self.kfinance_api_client.url_base}segments/"
         expected_request_body = {
-            "identifiers": [str(company_id)],
+            "company_ids": [company_id],
             "segment_type": segment_type.value,
         }
         # Mock the response to have the expected PostResponse structure
@@ -348,7 +348,7 @@ class TestFetchItem(TestCase):
         start_quarter = 1
         end_quarter = 4
         expected_request_body = {
-            "identifiers": [str(company_id)],
+            "company_ids": [company_id],
             "segment_type": segment_type.value,
             "period_type": period_type.value,
             "start_year": start_year,
