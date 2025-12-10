@@ -85,21 +85,33 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return pd.DataFrame()
 
-        return (
-            pd.DataFrame(
-                self.kfinance_api_client.fetch_statement(
-                    company_id=self.company_id,
-                    statement_type=statement_type,
-                    period_type=period_type,
-                    start_year=start_year,
-                    end_year=end_year,
-                    start_quarter=start_quarter,
-                    end_quarter=end_quarter,
-                ).model_dump(mode="json")["statements"]
-            )
-            .apply(pd.to_numeric)
-            .replace(np.nan, None)
+        statement_response = self.kfinance_api_client.fetch_statement(
+            company_ids=[self.company_id],
+            statement_type=statement_type,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
         )
+
+        if not statement_response.results:
+            return pd.DataFrame()
+
+        # Get the first (and only) result
+        statement_resp = list(statement_response.results.values())[0]
+        periods = statement_resp.model_dump(mode="json")["periods"]
+
+        # Extract statements data from each period
+        statements_data = {}
+        for period_key, period_data in periods.items():
+            period_statements = {}
+            for statement in period_data["statements"]:
+                for line_item in statement["line_items"]:
+                    period_statements[line_item["name"]] = line_item["value"]
+            statements_data[period_key] = period_statements
+
+        return pd.DataFrame(statements_data).apply(pd.to_numeric).replace(np.nan, None)
 
     def income_statement(
         self,
@@ -212,8 +224,8 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return pd.DataFrame()
 
-        line_item_response = self.kfinance_api_client.fetch_line_item(
-            company_id=self.company_id,
+        response = self.kfinance_api_client.fetch_line_item(
+            company_ids=[self.company_id],
             line_item=line_item,
             period_type=period_type,
             start_year=start_year,
@@ -221,8 +233,19 @@ class CompanyFunctionsMetaClass:
             start_quarter=start_quarter,
             end_quarter=end_quarter,
         )
+
+        if not response.results:
+            return pd.DataFrame()
+
+        # Get the first (and only) result
+        line_item_response = list(response.results.values())[0]
+
+        line_item_data = {}
+        for period_key, period_data in line_item_response.periods.items():
+            line_item_data[period_key] = period_data.line_item.value
+
         return (
-            pd.DataFrame({"line_item": line_item_response.line_item})
+            pd.DataFrame({"line_item": line_item_data})
             .transpose()
             .apply(pd.to_numeric)
             .replace(np.nan, None)
@@ -351,15 +374,22 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return {}
 
-        return self.kfinance_api_client.fetch_segments(
-            company_id=self.company_id,
+        segments_response = self.kfinance_api_client.fetch_segments(
+            company_ids=[self.company_id],
             segment_type=segment_type,
             period_type=period_type,
             start_year=start_year,
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
-        ).model_dump(mode="json")["segments"]
+        )
+
+        if not segments_response.results:
+            return {}
+
+        # Get the first (and only) result
+        segments_resp = list(segments_response.results.values())[0]
+        return segments_resp.model_dump(mode="json")["periods"]
 
     def business_segments(
         self,

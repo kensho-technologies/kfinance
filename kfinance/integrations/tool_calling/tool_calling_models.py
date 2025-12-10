@@ -2,7 +2,13 @@ import abc
 from typing import Annotated, Any, Callable, Dict, Literal, Type
 
 from langchain_core.tools import BaseTool
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_serializer
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    model_serializer,
+)
 
 from kfinance.client.kfinance import Client
 from kfinance.client.permission_models import Permission

@@ -1,7 +1,9 @@
-from typing import Any
+from datetime import date
 
 from pydantic import BaseModel
 from strenum import StrEnum
+
+from kfinance.domains.line_items.line_item_models import LineItem
 
 
 class StatementType(StrEnum):
@@ -12,5 +14,17 @@ class StatementType(StrEnum):
     cashflow = "cashflow"
 
 
+class Statement(BaseModel):
+    name: str
+    line_items: list[LineItem]
+
+
+class StatementPeriodData(BaseModel):
+    period_end_date: date
+    num_months: int
+    statements: list[Statement]
+
+
 class StatementsResp(BaseModel):
-    statements: dict[str, Any]
+    currency: str | None
+    periods: dict[str, StatementPeriodData]  # period -> statement and period data

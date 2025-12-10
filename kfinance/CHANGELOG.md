@@ -1,5 +1,8 @@
 # Changelog
 
+## v4.0.0
+- Update line items, statements, and segments models for fiscal period lookup
+
 ## v3.2.20
 - Relax fastmcp version constraint
 
