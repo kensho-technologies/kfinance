@@ -309,7 +309,6 @@ class KFinanceApiClient:
         resp = self.fetch(url=url, method="POST", request_body=dict(identifiers=identifiers))
         return UnifiedIdTripleResponse.model_validate(resp)
 
-
     def fetch_trading_items(self, security_id: int) -> dict:
         """Get the list of trading items of a security."""
         url = f"{self.url_base}trading_items/{security_id}"

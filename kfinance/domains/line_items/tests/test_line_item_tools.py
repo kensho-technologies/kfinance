@@ -90,23 +90,22 @@ class TestGetFinancialLineItemFromCompanyIds:
             url="https://kfinance.kensho.com/api/v1/ids",
             json={
                 "identifiers_to_id_triples": {
-                    "SPGI": {"company_id": 21719, "security_id": 2629107, "trading_item_id": 2629108}
+                    "SPGI": {
+                        "company_id": 21719,
+                        "security_id": 2629107,
+                        "trading_item_id": 2629108,
+                    }
                 },
                 "errors": {
                     "NON-EXISTENT": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                }
+                },
             },
         )
 
         # Mock the fetch_line_item response
         requests_mock.post(
             url="https://kfinance.kensho.com/api/v1/line_item/",
-            json={
-                "results": {
-                    "21719": self.line_item_resp
-                },
-                "errors": {}
-            },
+            json={"results": {"21719": self.line_item_resp}, "errors": {}},
         )
 
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
@@ -145,22 +144,16 @@ class TestGetFinancialLineItemFromCompanyIds:
             json={
                 "identifiers_to_id_triples": {
                     "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
-                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202}
+                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202},
                 },
-                "errors": {}
+                "errors": {},
             },
         )
 
         # Mock the fetch_line_item response
         requests_mock.post(
             url="https://kfinance.kensho.com/api/v1/line_item/",
-            json={
-                "results": {
-                    "1": self.line_item_resp,
-                    "2": self.line_item_resp
-                },
-                "errors": {}
-            },
+            json={"results": {"1": self.line_item_resp, "2": self.line_item_resp}, "errors": {}},
         )
 
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
@@ -202,9 +195,9 @@ class TestGetFinancialLineItemFromCompanyIds:
             json={
                 "identifiers_to_id_triples": {
                     "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
-                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202}
+                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202},
                 },
-                "errors": {}
+                "errors": {},
             },
         )
 
@@ -212,11 +205,8 @@ class TestGetFinancialLineItemFromCompanyIds:
         requests_mock.post(
             url="https://kfinance.kensho.com/api/v1/line_item/",
             json={
-                "results": {
-                    "1": {"currency": "USD", "periods": {}},
-                    "2": self.line_item_resp
-                },
-                "errors": {}
+                "results": {"1": {"currency": "USD", "periods": {}}, "2": self.line_item_resp},
+                "errors": {},
             },
         )
 

@@ -102,10 +102,7 @@ class TestFetchItem(TestCase):
             "statement_type": statement_type,
         }
         # Mock the response to have the expected PostResponse structure
-        self.kfinance_api_client.fetch.return_value = {
-            "results": {},
-            "errors": {}
-        }
+        self.kfinance_api_client.fetch.return_value = {"results": {}, "errors": {}}
         result = self.kfinance_api_client.fetch_statement(
             company_ids=[company_id], statement_type=statement_type
         )
@@ -131,10 +128,7 @@ class TestFetchItem(TestCase):
             "end_quarter": end_quarter,
         }
         # Mock the response to have the expected PostResponse structure
-        self.kfinance_api_client.fetch.return_value = {
-            "results": {},
-            "errors": {}
-        }
+        self.kfinance_api_client.fetch.return_value = {"results": {}, "errors": {}}
         result = self.kfinance_api_client.fetch_statement(
             company_ids=[company_id],
             statement_type=statement_type,
@@ -160,11 +154,10 @@ class TestFetchItem(TestCase):
             "line_item": line_item,
         }
         # Mock the response to have the expected PostResponse structure
-        self.kfinance_api_client.fetch.return_value = {
-            "results": {},
-            "errors": {}
-        }
-        result = self.kfinance_api_client.fetch_line_item(company_ids=[company_id], line_item=line_item)
+        self.kfinance_api_client.fetch.return_value = {"results": {}, "errors": {}}
+        result = self.kfinance_api_client.fetch_line_item(
+            company_ids=[company_id], line_item=line_item
+        )
         self.kfinance_api_client.fetch.assert_called_with(
             expected_url, method="POST", request_body=expected_request_body
         )
@@ -188,10 +181,7 @@ class TestFetchItem(TestCase):
         }
 
         # Mock the response to have the expected PostResponse structure
-        self.kfinance_api_client.fetch.return_value = {
-            "results": {},
-            "errors": {}
-        }
+        self.kfinance_api_client.fetch.return_value = {"results": {}, "errors": {}}
         result = self.kfinance_api_client.fetch_line_item(
             company_ids=[company_id],
             line_item=line_item,
@@ -341,10 +331,7 @@ class TestFetchItem(TestCase):
             "segment_type": segment_type.value,
         }
         # Mock the response to have the expected PostResponse structure
-        self.kfinance_api_client.fetch.return_value = {
-            "results": {},
-            "errors": {}
-        }
+        self.kfinance_api_client.fetch.return_value = {"results": {}, "errors": {}}
         result = self.kfinance_api_client.fetch_segments(
             company_ids=[company_id], segment_type=segment_type
         )
@@ -370,10 +357,7 @@ class TestFetchItem(TestCase):
             "end_quarter": end_quarter,
         }
         # Mock the response to have the expected PostResponse structure
-        self.kfinance_api_client.fetch.return_value = {
-            "results": {},
-            "errors": {}
-        }
+        self.kfinance_api_client.fetch.return_value = {"results": {}, "errors": {}}
         result = self.kfinance_api_client.fetch_segments(
             company_ids=[company_id],
             segment_type=segment_type,

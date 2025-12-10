@@ -3,6 +3,12 @@
 ## v4.0.0
 - Update line items, statements, and segments models for fiscal period lookup
 
+## v3.2.20
+- Relax fastmcp version constraint
+
+## v3.2.19
+- Updated tool descriptions to be more descriptive and include examples
+
 ## v3.2.18
 - Add info on how to fetch transcripts to earnings call tools
 

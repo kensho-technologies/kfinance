@@ -98,16 +98,33 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers, NumPeriod
     line_item: Literal[tuple(LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore[valid-type]
         description="The type of financial line_item requested"
     )
-    period_type: PeriodType | None = Field(default=None, description="The period type")
-    start_year: int | None = Field(default=None, description="The starting year for the data range")
-    end_year: int | None = Field(default=None, description="The ending year for the data range")
-    start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
-    end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
+    period_type: PeriodType | None = Field(
+        default=None, description="The period type (annual or quarterly)"
+    )
+    start_year: int | None = Field(
+        default=None,
+        description="The starting year for the data range. Use null for the most recent data.",
+    )
+    end_year: int | None = Field(
+        default=None,
+        description="The ending year for the data range. Use null for the most recent data.",
+    )
+    start_quarter: ValidQuarter | None = Field(
+        default=None, description="Starting quarter (1-4). Only used when period_type is quarterly."
+    )
+    end_quarter: ValidQuarter | None = Field(
+        default=None, description="Ending quarter (1-4). Only used when period_type is quarterly."
+    )
     calendar_type: CalendarType | None = Field(
         default=None, description="Fiscal year or calendar year"
     )
-    num_periods: NumPeriods | None = Field(default=None)
-    num_periods_back: NumPeriodsBack | None = Field(default=None)
+    num_periods: NumPeriods | None = Field(
+        default=None, description="The number of periods to retrieve data for (1-99)"
+    )
+    num_periods_back: NumPeriodsBack | None = Field(
+        default=None,
+        description="The end period of the data range expressed as number of periods back relative to the present period (0-99)",
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -130,13 +147,20 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         Get the financial line item associated with a list of identifiers.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - To fetch the most recent value for the line item, leave start_year, start_quarter, end_year, and end_quarter as None.
-        - The tool accepts arguments in calendar years, and all outputs will be presented in terms of calendar years. Please note that these calendar years may not align with the company's fiscal year.
-        - All aliases for a line item return identical data (e.g., "revenue", "normal_revenue", and "regular_revenue" all return the same financial data).
+        - To fetch the most recent value, leave start_year, start_quarter, end_year, and end_quarter as null.
+        - The tool accepts arguments in calendar years, and all outputs will be in calendar years (may not align with fiscal year).
+        - All aliases for a line item return identical data (e.g., 'revenue', 'normal_revenue', and 'regular_revenue' return the same data).
+        - Line item names are case-insensitive and use underscores (e.g., 'total_revenue' not 'Total Revenue').
 
-        Example:
+        Examples:
         Query: "What are the revenues of Lowe's and Home Depot?"
-        Function: get_financial_line_item_from_identifiers(line_item="revenue", company_ids=["LW", "HD"])
+        Function: get_financial_line_item_from_identifiers(line_item="revenue", identifiers=["Lowe's", "Home Depot"])
+
+        Query: "Get MSFT and AAPL revenue"
+        Function: get_financial_line_item_from_identifiers(line_item="revenue", identifiers=["MSFT", "AAPL"])
+
+        Query: "General Eletrics's ebt excluding unusual items for 2023"
+        Function: get_financial_line_item_from_identifiers(line_item="ebt_excluding_unusual_items", identifiers=["General Eletric"], period_type="annual", start_year=2023, end_year=2023)
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialLineItemFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {

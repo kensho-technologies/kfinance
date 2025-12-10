@@ -61,23 +61,22 @@ class TestGetSegmentsFromIdentifier:
             url="https://kfinance.kensho.com/api/v1/ids",
             json={
                 "identifiers_to_id_triples": {
-                    "SPGI": {"company_id": 21719, "security_id": 2629107, "trading_item_id": 2629108}
+                    "SPGI": {
+                        "company_id": 21719,
+                        "security_id": 2629107,
+                        "trading_item_id": 2629108,
+                    }
                 },
                 "errors": {
                     "NON-EXISTENT": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                }
+                },
             },
         )
 
         # Mock the fetch_segments response
         requests_mock.post(
             url="https://kfinance.kensho.com/api/v1/segments/",
-            json={
-                "results": {
-                    "21719": self.segments_response
-                },
-                "errors": {}
-            },
+            json={"results": {"21719": self.segments_response}, "errors": {}},
         )
 
         expected_response = GetSegmentsFromIdentifiersResp.model_validate(
@@ -137,9 +136,9 @@ class TestGetSegmentsFromIdentifier:
             json={
                 "identifiers_to_id_triples": {
                     "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
-                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202}
+                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202},
                 },
-                "errors": {}
+                "errors": {},
             },
         )
 
@@ -147,11 +146,8 @@ class TestGetSegmentsFromIdentifier:
         requests_mock.post(
             url="https://kfinance.kensho.com/api/v1/segments/",
             json={
-                "results": {
-                    "1": self.segments_response,
-                    "2": self.segments_response
-                },
-                "errors": {}
+                "results": {"1": self.segments_response, "2": self.segments_response},
+                "errors": {},
             },
         )
 
@@ -196,9 +192,9 @@ class TestGetSegmentsFromIdentifier:
             json={
                 "identifiers_to_id_triples": {
                     "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
-                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202}
+                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202},
                 },
-                "errors": {}
+                "errors": {},
             },
         )
 
@@ -206,11 +202,8 @@ class TestGetSegmentsFromIdentifier:
         requests_mock.post(
             url="https://kfinance.kensho.com/api/v1/segments/",
             json={
-                "results": {
-                    "1": {"currency": "USD", "periods": {}},
-                    "2": self.segments_response
-                },
-                "errors": {}
+                "results": {"1": {"currency": "USD", "periods": {}}, "2": self.segments_response},
+                "errors": {},
             },
         )
 

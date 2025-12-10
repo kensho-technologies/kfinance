@@ -27,8 +27,13 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers, NumPeriodsValidati
     calendar_type: CalendarType | None = Field(
         default=None, description="Fiscal year or calendar year"
     )
-    num_periods: NumPeriods | None = Field(default=None)
-    num_periods_back: NumPeriodsBack | None = Field(default=None)
+    num_periods: NumPeriods | None = Field(
+        default=None, description="The number of periods to retrieve data for (1-99)"
+    )
+    num_periods_back: NumPeriodsBack | None = Field(
+        default=None,
+        description="The end period of the data range expressed as number of periods back relative to the present period (0-99)",
+    )
 
 
 class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
@@ -38,9 +43,18 @@ class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
 class GetSegmentsFromIdentifiers(KfinanceTool):
     name: str = "get_segments_from_identifiers"
     description: str = dedent("""
-        Get the templated segments associated with a list of identifiers.
+        Get the templated business or geographic segments associated with a list of identifiers.
 
-        - The tool accepts arguments in calendar years, and all outputs will be presented in terms of calendar years. Please note that these calendar years may not align with the company's fiscal year.
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - The tool accepts arguments in calendar years, and all outputs will be in calendar years (may not align with fiscal year).
+        - To fetch the most recent segment data, leave start_year, start_quarter, end_year, and end_quarter as None.
+
+        Examples:
+        Query: "What are the business segments for AT&T?"
+        Function: get_segments_from_identifiers(identifiers=["AT&T"], segment_type="business")
+
+        Query: "Get geographic segments for PFE and JNJ"
+        Function: get_segments_from_identifiers(identifiers=["PFE", "JNJ"], segment_type="geographic")
     """).strip()
     args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.SegmentsPermission}

@@ -20,6 +20,7 @@ from kfinance.client.kfinance import (
     TradingItem,
     Transcript,
 )
+from kfinance.client.models.response_models import PostResponse
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
     RelationshipResponse,
@@ -28,7 +29,6 @@ from kfinance.domains.capitalizations.capitalization_models import Capitalizatio
 from kfinance.domains.companies.company_models import CompanyIdAndName, IdentificationTriple
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.line_items.line_item_models import LineItemResp
-from kfinance.client.models.response_models import PostResponse
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerInfo,
     MergersResp,
@@ -437,8 +437,7 @@ class MockKFinanceApiClient:
     ):
         """Get a statement"""
         return PostResponse[StatementsResp](
-            results={str(company_ids[0]): INCOME_STATEMENT},
-            errors={}
+            results={str(company_ids[0]): INCOME_STATEMENT}, errors={}
         )
 
     def fetch_line_item(
@@ -456,10 +455,7 @@ class MockKFinanceApiClient:
     ):
         """Get a statement"""
         line_item_resp = MOCK_COMPANY_DB[company_ids[0]]["line_items"][line_item]
-        return PostResponse[LineItemResp](
-            results={str(company_ids[0]): line_item_resp},
-            errors={}
-        )
+        return PostResponse[LineItemResp](results={str(company_ids[0]): line_item_resp}, errors={})
 
     def fetch_market_caps_tevs_and_shares_outstanding(
         self,
@@ -499,8 +495,7 @@ class MockKFinanceApiClient:
     ):
         """Get a segment"""
         return PostResponse[SegmentsResp](
-            results={str(company_ids[0]): MOCK_COMPANY_DB[company_ids[0]]["segments"]},
-            errors={}
+            results={str(company_ids[0]): MOCK_COMPANY_DB[company_ids[0]]["segments"]}, errors={}
         )
 
     def fetch_companies_from_business_relationship(
