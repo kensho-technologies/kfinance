@@ -12,7 +12,7 @@ Source: TypeAlias = dict[str, str]
 
 
 class CalendarType(StrEnum):
-    fisacl = "fiscal"
+    fiscal = "fiscal"
     calendar = "calendar"
 
 
