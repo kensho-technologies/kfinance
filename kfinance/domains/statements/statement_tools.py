@@ -57,8 +57,9 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         Get a financial statement (balance_sheet, income_statement, or cashflow) for a group of identifiers.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - To fetch the most recent statement, leave start_year, start_quarter, end_year, and end_quarter as null.
-        - The tool accepts arguments in calendar years, and all outputs will be in calendar years (may not align with fiscal year).
+        - To fetch the most recent statement, leave start_year, start_quarter, end_year, end_quarter, num_periods, and num_periods_back as null.
+        - The tool accepts an optional calendar_type argument, which can either be 'calendar' or 'fiscal'. If 'calendar' is chosen, then start_year and end_year will filter on calendar year, and the output returned will be in calendar years. If 'fiscal' is chosen (which is the default), then start_year and end_year will filter on fiscal year, and the output returned will be in fiscal years.
+        - To filter by time, use one of (start_year, end_year, start_quarter, end_quarter) or (num_periods, num_periods_back), but not both.
 
         Examples:
         Query: "Fetch the balance sheets of Bank of America and Goldman Sachs for 2024"
@@ -69,6 +70,12 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
 
         Query: "Q2 2023 cashflow for XOM"
         Function: get_financial_statement_from_identifiers(identifiers=["XOM"], statement="cashflow", period_type="quarterly", start_year=2023, end_year=2023, start_quarter=2, end_quarter=2)
+
+        Query: "What is the balance sheet for The New York Times for the past 7 years except for the most recent 2 years?"
+        Function: get_financial_statement_from_identifiers(statement_type="balance_sheet", num_periods=7, num_periods_back=2, identifiers=["NYT"])
+
+        Query: "What are the annual income statement for the calendar years between 2013 and 2016 for Alibaba and Wayfair?"
+        Function: get_financial_statement_from_identifiers(statement_type="income_statement", period_type="annual", calendar_type="calendar", start_year=2013, end_year=2016, identifiers=["BABA", "W"])
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialStatementFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {

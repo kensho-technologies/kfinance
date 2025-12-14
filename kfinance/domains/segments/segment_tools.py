@@ -45,8 +45,9 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         Get the templated business or geographic segments associated with a list of identifiers.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - The tool accepts arguments in calendar years, and all outputs will be in calendar years (may not align with fiscal year).
-        - To fetch the most recent segment data, leave start_year, start_quarter, end_year, and end_quarter as None.
+        - The tool accepts an optional calendar_type argument, which can either be 'calendar' or 'fiscal'. If 'calendar' is chosen, then start_year and end_year will filter on calendar year, and the output returned will be in calendar years. If 'fiscal' is chosen (which is the default), then start_year and end_year will filter on fiscal year, and the output returned will be in fiscal years.
+        - To fetch the most recent segment data, leave start_year, start_quarter, end_year, end_quarter, num_periods, and num_periods_back as None.
+        - To filter by time, use one of (start_year, end_year, start_quarter, end_quarter) or (num_periods, num_periods_back), but not both.
 
         Examples:
         Query: "What are the business segments for AT&T?"
@@ -54,6 +55,9 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
 
         Query: "Get geographic segments for PFE and JNJ"
         Function: get_segments_from_identifiers(identifiers=["PFE", "JNJ"], segment_type="geographic")
+
+        Query: "What are the ltm business segments for S&P for the last three calendar quarters but one?"
+        Function: get_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=3, num_periods_back=1, identifiers=["SPGI"])
     """).strip()
     args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.SegmentsPermission}

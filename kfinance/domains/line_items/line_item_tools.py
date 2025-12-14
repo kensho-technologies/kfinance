@@ -146,10 +146,11 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         Get the financial line item associated with a list of identifiers.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - To fetch the most recent value, leave start_year, start_quarter, end_year, and end_quarter as null.
-        - The tool accepts arguments in calendar years, and all outputs will be in calendar years (may not align with fiscal year).
+        - To fetch the most recent value, leave start_year, start_quarter, end_year, end_quarter, num_periods, and num_periods_back as null.
+        - The tool accepts an optional calendar_type argument, which can either be 'calendar' or 'fiscal'. If 'calendar' is chosen, then start_year and end_year will filter on calendar year, and the output returned will be in calendar years. If 'fiscal' is chosen (which is the default), then start_year and end_year will filter on fiscal year, and the output returned will be in fiscal years.
         - All aliases for a line item return identical data (e.g., 'revenue', 'normal_revenue', and 'regular_revenue' return the same data).
         - Line item names are case-insensitive and use underscores (e.g., 'total_revenue' not 'Total Revenue').
+        - To filter by time, use one of (start_year, end_year, start_quarter, end_quarter) or (num_periods, num_periods_back), but not both.
 
         Examples:
         Query: "What are the revenues of Lowe's and Home Depot?"
@@ -160,6 +161,12 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
 
         Query: "General Eletrics's ebt excluding unusual items for 2023"
         Function: get_financial_line_item_from_identifiers(line_item="ebt_excluding_unusual_items", identifiers=["General Eletric"], period_type="annual", start_year=2023, end_year=2023)
+
+        Query: "What is the most recent three quarters' but one ppe for Exxon and Hasbro?"
+        Function: get_financial_line_item_from_identifiers(line_item="ppe", period_type="quarterly", num_periods=3, num_periods_back=1, identifiers=["Exxon", "Hasbro"])
+
+        Query: "What are the ytd operating income values for Hilton for the calendar year 2022?"
+        Function: get_financial_line_item_from_identifiers(line_item="operating_income", period_type="ytd", calendar_type="calendar", start_year=2022, end_year=2022, identifiers=["Hilton"])
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialLineItemFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {
