@@ -118,14 +118,12 @@ class RoundOfFundingInfo(BaseModel):
             target_advisors: List of advisors for the target company
             investor_advisors: Dict mapping investor company_id to their advisors list
         """
-        # Create target with advisors
         target_with_advisors = CompanyIdAndNameWithAdvisors(
             company_id=self.participants.target.company_id,
             company_name=self.participants.target.company_name,
             advisors=target_advisors or [],
         )
 
-        # Create investors with advisors
         investors_with_advisors = []
         for investor in self.participants.investors:
             investor_advisor_list = []

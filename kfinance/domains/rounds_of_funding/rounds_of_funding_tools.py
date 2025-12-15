@@ -254,7 +254,6 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
                     func=api_client.fetch_advisors_for_company_raising_round_of_funding,
                     kwargs=dict(
                         transaction_id=transaction_id,
-                        advised_company_id=round_of_info.participants.target.company_id,
                     ),
                     result_key=target_key.to_string(),
                 )
@@ -270,7 +269,8 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
                     Task(
                         func=api_client.fetch_advisors_for_company_investing_in_round_of_funding,
                         kwargs=dict(
-                            transaction_id=transaction_id, advised_company_id=investor.company_id
+                            transaction_id=transaction_id,
+                            advised_company_id=investor_key.company_id,
                         ),
                         result_key=investor_key.to_string(),
                     )
