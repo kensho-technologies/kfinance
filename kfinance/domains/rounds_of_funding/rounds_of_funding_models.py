@@ -47,13 +47,6 @@ class RoundsOfFundingRole(StrEnum):
     company_investing_in_round_of_funding = "company_investing_in_round_of_funding"
 
 
-class AdvisedCompanyRole(StrEnum):
-    """The role of the company being advised in a funding round"""
-
-    target = "target"
-    investor = "investor"
-
-
 class RoundOfFundingParticipants(BaseModel):
     target: CompanyIdAndName
     investors: list[InvestorInRoundOfFunding]
@@ -109,8 +102,8 @@ class RoundOfFundingInfo(BaseModel):
 
     def with_advisors(
         self,
-        target_advisors: list["AdvisorResp"] | None = None,
-        investor_advisors: dict[int, list["AdvisorResp"]] | None = None,
+        target_advisors: list["AdvisorResp"] = Field(default_factory=list),
+        investor_advisors: dict[int, list["AdvisorResp"]] = Field(default_factory=dict),
     ) -> "RoundOfFundingInfoWithAdvisors":
         """Create a new RoundOfFundingInfoWithAdvisors by merging advisor data into this object.
 
@@ -121,14 +114,12 @@ class RoundOfFundingInfo(BaseModel):
         target_with_advisors = CompanyIdAndNameWithAdvisors(
             company_id=self.participants.target.company_id,
             company_name=self.participants.target.company_name,
-            advisors=target_advisors or [],
+            advisors=target_advisors,
         )
 
         investors_with_advisors = []
         for investor in self.participants.investors:
-            investor_advisor_list = []
-            if investor_advisors and investor.company_id in investor_advisors:
-                investor_advisor_list = investor_advisors[investor.company_id]
+            investor_advisor_list = investor_advisors.get(investor.company_id, [])
 
             investor_with_advisors = InvestorInRoundOfFundingWithAdvisors(
                 company_id=investor.company_id,
@@ -186,12 +177,16 @@ class AdvisorTaskKey(BaseModel):
     """Key model for organizing advisor fetch tasks"""
 
     transaction_id: int
-    role: AdvisedCompanyRole
+    role: RoundsOfFundingRole
     company_id: int
 
     def to_string(self) -> str:
         """Convert to string key for use in dictionaries"""
-        return f"{self.role.value}_{self.transaction_id}_{self.company_id}"
+        # Map the role to shorter strings for key generation
+        role_short = (
+            "target" if self.role == RoundsOfFundingRole.company_raising_funds else "investor"
+        )
+        return f"{role_short}_{self.transaction_id}_{self.company_id}"
 
     @classmethod
     def from_string(cls, key: str) -> "AdvisorTaskKey":
@@ -200,9 +195,15 @@ class AdvisorTaskKey(BaseModel):
         if len(parts) != 3:
             raise ValueError(f"Invalid key format: {key}")
         role_str, transaction_id, company_id = parts
+        # Map short strings back to enum values
+        role = (
+            RoundsOfFundingRole.company_raising_funds
+            if role_str == "target"
+            else RoundsOfFundingRole.company_investing_in_round_of_funding
+        )
         return cls(
             transaction_id=int(transaction_id),
-            role=AdvisedCompanyRole(role_str),
+            role=role,
             company_id=int(company_id),
         )
 

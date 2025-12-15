@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.permission_models import Permission
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
-    AdvisedCompanyRole,
     AdvisorsResp,
     AdvisorTaskKey,
     FundingSummary,
@@ -246,7 +245,7 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
         for transaction_id, round_of_info in round_of_info_responses.items():
             target_key = AdvisorTaskKey(
                 transaction_id=transaction_id,
-                role=AdvisedCompanyRole.target,
+                role=RoundsOfFundingRole.company_raising_funds,
                 company_id=round_of_info.participants.target.company_id,
             )
             advisor_tasks.append(
@@ -262,7 +261,7 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
             for investor in round_of_info.participants.investors:
                 investor_key = AdvisorTaskKey(
                     transaction_id=transaction_id,
-                    role=AdvisedCompanyRole.investor,
+                    role=RoundsOfFundingRole.company_investing_in_round_of_funding,
                     company_id=investor.company_id,
                 )
                 advisor_tasks.append(
@@ -285,7 +284,7 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
         for transaction_id, round_of_info in round_of_info_responses.items():
             target_key = AdvisorTaskKey(
                 transaction_id=transaction_id,
-                role=AdvisedCompanyRole.target,
+                role=RoundsOfFundingRole.company_raising_funds,
                 company_id=round_of_info.participants.target.company_id,
             )
             target_advisors = advisor_responses.get(
@@ -296,7 +295,7 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
             for investor in round_of_info.participants.investors:
                 investor_key = AdvisorTaskKey(
                     transaction_id=transaction_id,
-                    role=AdvisedCompanyRole.investor,
+                    role=RoundsOfFundingRole.company_investing_in_round_of_funding,
                     company_id=investor.company_id,
                 )
                 if investor_key.to_string() in advisor_responses:
