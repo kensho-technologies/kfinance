@@ -7,8 +7,12 @@ from pydantic import BaseModel, Field
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.permission_models import Permission
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
+    AdvisedCompanyRole,
+    AdvisorsResp,
+    AdvisorTaskKey,
     FundingSummary,
     RoundOfFundingInfo,
+    RoundOfFundingInfoWithAdvisors,
     RoundsOfFundingResp,
     RoundsOfFundingRole,
 )
@@ -151,7 +155,7 @@ class GetRoundsOfFundingInfoFromTransactionIdsArgs(BaseModel):
 
 
 class GetRoundsOfFundingInfoFromTransactionIdsResp(ToolRespWithErrors):
-    results: dict[int, RoundOfFundingInfo]
+    results: dict[int, RoundOfFundingInfoWithAdvisors]
 
 
 class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
@@ -173,8 +177,39 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
                         "closed_date": "2013-12-31"
                     },
                     "participants": {
-                        "target": {"company_id": "C_12345", "company_name": "Kensho Technologies Inc."},
-                        "investors": [{"company_id": "C_67890", "company_name": "Impresa Management LLC", "lead_investor": True, "investment_value": 5000000.00, "currency": "USD"}]
+                        "target": {
+                            "company_id": "C_12345",
+                            "company_name": "Kensho Technologies Inc.",
+                            "advisors": [
+                                {
+                                    "advisor_company_id": 286743412,
+                                    "advisor_company_name": "PJT Partners Inc.",
+                                    "advisor_type_name": "Financial Adviser",
+                                    "advisor_fee_amount": "2500000.0000",
+                                    "advisor_fee_currency": "USD",
+                                    "is_lead": true
+                                },
+                            ],
+                        },
+                        "investors": [
+                            {
+                                "company_id": "C_67890",
+                                "company_name": "Impresa Management LLC",
+                                "lead_investor": True,
+                                "investment_value": 5000000.00,
+                                "currency": "USD",
+                                "advisors": [
+                                    {
+                                        "advisor_company_id": 22439,
+                                        "advisor_company_name": "DLA Piper LLP (US)",
+                                        "advisor_type_name": "Legal Counsel",
+                                        "advisor_fee_amount": "3750000.0000",
+                                        "advisor_fee_currency": "USD",
+                                        "is_lead": true
+                                    },
+                                ]
+                            }
+                        ]
                     },
                     "transaction": {
                         "funding_type": "Series A",
@@ -194,7 +229,7 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
         """
         api_client = self.kfinance_client.kfinance_api_client
 
-        tasks = [
+        round_of_info_tasks = [
             Task(
                 func=api_client.fetch_round_of_funding_info,
                 kwargs=dict(transaction_id=transaction_id),
@@ -202,13 +237,80 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
             )
             for transaction_id in transaction_ids
         ]
-
-        round_info_responses: dict[int, RoundOfFundingInfo] = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
+        round_of_info_responses: dict[int, RoundOfFundingInfo] = (
+            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=round_of_info_tasks)
         )
 
+        advisor_tasks = []
+
+        for transaction_id, round_of_info in round_of_info_responses.items():
+            target_key = AdvisorTaskKey(
+                transaction_id=transaction_id,
+                role=AdvisedCompanyRole.target,
+                company_id=round_of_info.participants.target.company_id,
+            )
+            advisor_tasks.append(
+                Task(
+                    func=api_client.fetch_advisors_for_company_raising_round_of_funding,
+                    kwargs=dict(
+                        transaction_id=transaction_id,
+                        advised_company_id=round_of_info.participants.target.company_id,
+                    ),
+                    result_key=target_key.to_string(),
+                )
+            )
+
+            for investor in round_of_info.participants.investors:
+                investor_key = AdvisorTaskKey(
+                    transaction_id=transaction_id,
+                    role=AdvisedCompanyRole.investor,
+                    company_id=investor.company_id,
+                )
+                advisor_tasks.append(
+                    Task(
+                        func=api_client.fetch_advisors_for_company_investing_in_round_of_funding,
+                        kwargs=dict(
+                            transaction_id=transaction_id, advised_company_id=investor.company_id
+                        ),
+                        result_key=investor_key.to_string(),
+                    )
+                )
+
+        advisor_responses = process_tasks_in_thread_pool_executor(
+            api_client=api_client, tasks=advisor_tasks
+        )
+
+        # Merge advisor data into round of funding info
+        round_info_with_advisors = {}
+        for transaction_id, round_of_info in round_of_info_responses.items():
+            target_key = AdvisorTaskKey(
+                transaction_id=transaction_id,
+                role=AdvisedCompanyRole.target,
+                company_id=round_of_info.participants.target.company_id,
+            )
+            target_advisors = advisor_responses.get(
+                target_key.to_string(), AdvisorsResp(advisors=[])
+            ).advisors
+
+            investor_advisors = {}
+            for investor in round_of_info.participants.investors:
+                investor_key = AdvisorTaskKey(
+                    transaction_id=transaction_id,
+                    role=AdvisedCompanyRole.investor,
+                    company_id=investor.company_id,
+                )
+                if investor_key.to_string() in advisor_responses:
+                    investor_advisors[investor.company_id] = advisor_responses[
+                        investor_key.to_string()
+                    ].advisors
+
+            # Create round info with advisors
+            round_info_with_advisors[transaction_id] = round_of_info.with_advisors(
+                target_advisors=target_advisors, investor_advisors=investor_advisors
+            )
+
         return GetRoundsOfFundingInfoFromTransactionIdsResp(
-            results=round_info_responses,
+            results=round_info_with_advisors,
             errors=[],  # Individual API failures would be captured in process_tasks_in_thread_pool_executor
         )
 

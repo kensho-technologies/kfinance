@@ -47,6 +47,13 @@ class RoundsOfFundingRole(StrEnum):
     company_investing_in_round_of_funding = "company_investing_in_round_of_funding"
 
 
+class AdvisedCompanyRole(StrEnum):
+    """The role of the company being advised in a funding round"""
+
+    target = "target"
+    investor = "investor"
+
+
 class RoundOfFundingParticipants(BaseModel):
     target: CompanyIdAndName
     investors: list[InvestorInRoundOfFunding]
@@ -100,6 +107,50 @@ class RoundOfFundingInfo(BaseModel):
     transaction: RoundOfFundingInfoTransaction
     security: RoundOfFundingInfoSecurity
 
+    def with_advisors(
+        self,
+        target_advisors: list["AdvisorResp"] | None = None,
+        investor_advisors: dict[int, list["AdvisorResp"]] | None = None,
+    ) -> "RoundOfFundingInfoWithAdvisors":
+        """Create a new RoundOfFundingInfoWithAdvisors by merging advisor data into this object.
+
+        Args:
+            target_advisors: List of advisors for the target company
+            investor_advisors: Dict mapping investor company_id to their advisors list
+        """
+        # Create target with advisors
+        target_with_advisors = CompanyIdAndNameWithAdvisors(
+            company_id=self.participants.target.company_id,
+            company_name=self.participants.target.company_name,
+            advisors=target_advisors or [],
+        )
+
+        # Create investors with advisors
+        investors_with_advisors = []
+        for investor in self.participants.investors:
+            investor_advisor_list = []
+            if investor_advisors and investor.company_id in investor_advisors:
+                investor_advisor_list = investor_advisors[investor.company_id]
+
+            investor_with_advisors = InvestorInRoundOfFundingWithAdvisors(
+                company_id=investor.company_id,
+                company_name=investor.company_name,
+                lead_investor=investor.lead_investor,
+                investment_value=investor.investment_value,
+                currency=investor.currency,
+                advisors=investor_advisor_list,
+            )
+            investors_with_advisors.append(investor_with_advisors)
+
+        return RoundOfFundingInfoWithAdvisors(
+            timeline=self.timeline,
+            participants=RoundOfFundingParticipantsWithAdvisors(
+                target=target_with_advisors, investors=investors_with_advisors
+            ),
+            transaction=self.transaction,
+            security=self.security,
+        )
+
 
 class FundingSummary(BaseModel):
     company_id: str
@@ -131,3 +182,52 @@ class AdvisorResp(BaseModel):
 
 class AdvisorsResp(BaseModel):
     advisors: list[AdvisorResp]
+
+
+class AdvisorTaskKey(BaseModel):
+    """Key model for organizing advisor fetch tasks"""
+
+    transaction_id: int
+    role: AdvisedCompanyRole
+    company_id: int
+
+    def to_string(self) -> str:
+        """Convert to string key for use in dictionaries"""
+        return f"{self.role.value}_{self.transaction_id}_{self.company_id}"
+
+    @classmethod
+    def from_string(cls, key: str) -> "AdvisorTaskKey":
+        """Parse string key back to AdvisorTaskKey"""
+        parts = key.split("_", 2)
+        if len(parts) != 3:
+            raise ValueError(f"Invalid key format: {key}")
+        role_str, transaction_id, company_id = parts
+        return cls(
+            transaction_id=int(transaction_id),
+            role=AdvisedCompanyRole(role_str),
+            company_id=int(company_id),
+        )
+
+
+class CompanyIdAndNameWithAdvisors(CompanyIdAndName):
+    """A company with advisors information for funding rounds"""
+
+    advisors: list[AdvisorResp] = Field(default_factory=list)
+
+
+class InvestorInRoundOfFundingWithAdvisors(InvestorInRoundOfFunding):
+    """An investor in a funding round with advisors information"""
+
+    advisors: list[AdvisorResp] = Field(default_factory=list)
+
+
+class RoundOfFundingParticipantsWithAdvisors(BaseModel):
+    target: CompanyIdAndNameWithAdvisors
+    investors: list[InvestorInRoundOfFundingWithAdvisors]
+
+
+class RoundOfFundingInfoWithAdvisors(BaseModel):
+    timeline: RoundOfFundingInfoTimeline
+    participants: RoundOfFundingParticipantsWithAdvisors
+    transaction: RoundOfFundingInfoTransaction
+    security: RoundOfFundingInfoSecurity
