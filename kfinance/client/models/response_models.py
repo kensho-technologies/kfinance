@@ -1,6 +1,6 @@
-from typing import Any, Callable, Dict, Generic, TypeAlias, TypeVar
+from typing import TypeAlias, TypeVar
 
-from pydantic import BaseModel, Field, model_serializer
+from pydantic import BaseModel
 
 
 T = TypeVar("T", bound=BaseModel)

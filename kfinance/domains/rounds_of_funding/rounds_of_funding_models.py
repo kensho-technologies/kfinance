@@ -1,11 +1,12 @@
 from datetime import date
 from decimal import Decimal
 
-from kfinance.client.models.response_models import Source
 from pydantic import BaseModel, Field, field_serializer
 from strenum import StrEnum
 
+from kfinance.client.models.response_models import Source
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX, CompanyIdAndName
+
 
 class RoundOfFunding(BaseModel):
     transaction_id: int
@@ -130,4 +131,3 @@ class AdvisorResp(BaseModel):
 
 class AdvisorsResp(BaseModel):
     advisors: list[AdvisorResp]
-

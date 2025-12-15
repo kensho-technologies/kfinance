@@ -724,7 +724,6 @@ class KFinanceApiClient:
         url = f"{self.url_base}fundinground/info/{transaction_id}"
         return RoundOfFundingInfo.model_validate(self.fetch(url))
 
-
     def fetch_advisors_for_company_raising_round_of_funding(
         self,
         transaction_id: int,

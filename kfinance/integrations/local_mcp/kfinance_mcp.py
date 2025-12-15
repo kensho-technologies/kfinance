@@ -19,4 +19,4 @@ class KfinanceMcp(FastMCP):
         call_tool(validate_input=False) turns off the mcp sdk validation.
         """
         super()._setup_handlers()
-        self._mcp_server.call_tool(validate_input=False)(self._mcp_call_tool)
+        self._mcp_server.call_tool(validate_input=False)(self._call_tool_mcp)

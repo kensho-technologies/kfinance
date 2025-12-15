@@ -18,24 +18,24 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolRespWithErrors,
 )
 
+
 class GetRoundsofFundingFromIdentifiersArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
     role: RoundsOfFundingRole
     start_date: date | None = Field(
         default=None,
-        description="Filter rounds to those closed on or after this date (YYYY-MM-DD format)"
+        description="Filter rounds to those closed on or after this date (YYYY-MM-DD format)",
     )
     end_date: date | None = Field(
         default=None,
-        description="Filter rounds to those closed on or before this date (YYYY-MM-DD format)"
+        description="Filter rounds to those closed on or before this date (YYYY-MM-DD format)",
     )
     limit: int | None = Field(
-        default=None,
-        description="Limit to N most recent funding rounds (based on closed_date)"
+        default=None, description="Limit to N most recent funding rounds (based on closed_date)"
     )
     sort_order: Literal["asc", "desc"] = Field(
         default="desc",
-        description="Sort order for funding rounds by closed_date. 'desc' shows most recent first, 'asc' shows oldest first"
+        description="Sort order for funding rounds by closed_date. 'desc' shows most recent first, 'asc' shows oldest first",
     )
 
 
@@ -52,7 +52,13 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
     def _run(
-        self, identifiers: list[str], role: RoundsOfFundingRole, start_date: date | None = None, end_date: date | None = None, limit: int | None = None, sort_order: Literal["asc", "desc"] = "desc"
+        self,
+        identifiers: list[str],
+        role: RoundsOfFundingRole,
+        start_date: date | None = None,
+        end_date: date | None = None,
+        limit: int | None = None,
+        sort_order: Literal["asc", "desc"] = "desc",
     ) -> GetRoundsOfFundingFromIdentifiersResp:
         """Sample Response:
 
@@ -112,7 +118,9 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
 
                     filtered_rounds.append(round_of_funding)
 
-                filtered_responses[identifier] = RoundsOfFundingResp(rounds_of_funding=filtered_rounds)
+                filtered_responses[identifier] = RoundsOfFundingResp(
+                    rounds_of_funding=filtered_rounds
+                )
 
             rounds_of_funding_responses = filtered_responses
 
@@ -136,11 +144,9 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
         )
 
 
-
 class GetRoundsOfFundingInfoFromTransactionIdsArgs(BaseModel):
     transaction_ids: list[int] = Field(
-        description="List of transaction IDs for rounds of funding.",
-        min_length=1
+        description="List of transaction IDs for rounds of funding.", min_length=1
     )
 
 
@@ -158,6 +164,7 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
 
     def _run(self, transaction_ids: list[int]) -> GetRoundsOfFundingInfoFromTransactionIdsResp:
         """Sample Response:
+
         {
             'results': {
                 334220: {
@@ -196,13 +203,13 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
             for transaction_id in transaction_ids
         ]
 
-        round_info_responses: dict[int, RoundOfFundingInfo] = (
-            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
+        round_info_responses: dict[int, RoundOfFundingInfo] = process_tasks_in_thread_pool_executor(
+            api_client=api_client, tasks=tasks
         )
 
         return GetRoundsOfFundingInfoFromTransactionIdsResp(
             results=round_info_responses,
-            errors=[]  # Individual API failures would be captured in process_tasks_in_thread_pool_executor
+            errors=[],  # Individual API failures would be captured in process_tasks_in_thread_pool_executor
         )
 
 
@@ -257,8 +264,8 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
             for transaction_id in all_transaction_ids
         ]
 
-        detailed_round_info: dict[int, RoundOfFundingInfo] = (
-            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=detail_tasks)
+        detailed_round_info: dict[int, RoundOfFundingInfo] = process_tasks_in_thread_pool_executor(
+            api_client=api_client, tasks=detail_tasks
         )
 
         summaries = {}
@@ -281,8 +288,12 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
             for transaction_id in company_transaction_ids:
                 if transaction_id in detailed_round_info:
                     round_detail = detailed_round_info[transaction_id]
-                    if (total_capital_raised is None or currency is None) and round_detail.transaction.aggregate_amount_raised:
-                        total_capital_raised = float(round_detail.transaction.aggregate_amount_raised)
+                    if (
+                        total_capital_raised is None or currency is None
+                    ) and round_detail.transaction.aggregate_amount_raised:
+                        total_capital_raised = float(
+                            round_detail.transaction.aggregate_amount_raised
+                        )
                         currency = round_detail.transaction.currency
 
             summaries[identifier] = FundingSummary(
@@ -293,12 +304,13 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
                 first_funding_date=first_funding_date,
                 most_recent_funding_date=most_recent_funding_date,
                 rounds_by_type=rounds_by_type,
-                sources=[{
-                    "notes": "total_rounds, first_funding_date, most_recent_funding_date, and rounds_by_type are derived from underlying rounds of funding data that might be non-comprehensive."
-                }]
+                sources=[
+                    {
+                        "notes": "total_rounds, first_funding_date, most_recent_funding_date, and rounds_by_type are derived from underlying rounds of funding data that might be non-comprehensive."
+                    }
+                ],
             )
 
         return GetFundingSummaryFromIdentifiersResp(
-            results=summaries,
-            errors=list(id_triple_resp.errors.values())
+            results=summaries, errors=list(id_triple_resp.errors.values())
         )

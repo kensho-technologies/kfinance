@@ -2,6 +2,17 @@
 
 # v3.3.0
 - Add Rounds of Funding tools
+## v3.2.20
+- Relax fastmcp version constraint
+
+## v3.2.19
+- Updated tool descriptions to be more descriptive and include examples
+
+## v3.2.18
+- Add info on how to fetch transcripts to earnings call tools
+
+## v3.2.17
+- Shorten `get_advisors_for_company_in_transaction_from_identifier` tool name.
 
 ## v3.2.16
 - Allow None and "NaN" for DecimalWithValue
@@ -9,31 +20,31 @@
 ## v3.2.15
 - Add smart line item validation with intelligent suggestions and descriptions to reduce token consumption by 75%
 
-# 3.2.14
+## 3.2.14
 - Fix Capitalizations validator to handle nulls
 
-# 3.2.13
+## 3.2.13
 - Fix Prices validator to handle null OHLC price data
 
-# 3.2.12
+## 3.2.12
 - Remove multiples line item support
 
-# 3.2.11
+## 3.2.11
 - Add Handling of status code 400 for Capitalizations, Modify EV/TEV ratio to target quarterly or LTM
 
-# 3.2.10
+## 3.2.10
 - Add CIQ company_id to GetInfoFromIdentifiersResp
 
-# v3.2.9
+## v3.2.9
 - Update tool descriptions for line items, segments, and statements to mention that all period-based inputs and outputs refer only to the calendar year.
 
-# v3.2.8
+## v3.2.8
 - Add support for None to LineItemResponse & empty behavior for line items, segments, and statements
 
-# v3.2.7
+## v3.2.7
 - Fix validator for UnifiedIdTripleResponse
 
-# v3.2.6
+## v3.2.6
 - Return pydantic models from KfinanceTool._run
 
 ## v3.2.5
