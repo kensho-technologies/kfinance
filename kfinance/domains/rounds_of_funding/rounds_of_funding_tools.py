@@ -181,7 +181,7 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
                             "company_name": "Kensho Technologies Inc.",
                             "advisors": [
                                 {
-                                    "advisor_company_id": 286743412,
+                                    "advisor_company_id": "C_286743412",
                                     "advisor_company_name": "PJT Partners Inc.",
                                     "advisor_type_name": "Financial Adviser",
                                     "advisor_fee_amount": "2500000.0000",
@@ -199,7 +199,7 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
                                 "currency": "USD",
                                 "advisors": [
                                     {
-                                        "advisor_company_id": 22439,
+                                        "advisor_company_id": "C_22439",
                                         "advisor_company_name": "DLA Piper LLP (US)",
                                         "advisor_type_name": "Legal Counsel",
                                         "advisor_fee_amount": "3750000.0000",
