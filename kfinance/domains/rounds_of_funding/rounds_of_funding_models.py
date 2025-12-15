@@ -1,7 +1,8 @@
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, computed_field, field_serializer
+from kfinance.client.models.response_models import Source
+from pydantic import BaseModel, Field, field_serializer
 from strenum import StrEnum
 
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX, CompanyIdAndName
@@ -107,7 +108,7 @@ class FundingSummary(BaseModel):
     first_funding_date: date | None
     most_recent_funding_date: date | None
     rounds_by_type: dict[str, int]  # {"Series A": 1, "Series B": 1, ...}
-    sources: dict[str, str]
+    sources: list[Source] = Field(default_factory=list)
 
 
 class AdvisorResp(BaseModel):

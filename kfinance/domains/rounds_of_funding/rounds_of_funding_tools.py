@@ -293,9 +293,9 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
                 first_funding_date=first_funding_date,
                 most_recent_funding_date=most_recent_funding_date,
                 rounds_by_type=rounds_by_type,
-                sources={
-                    "notes": "total_rounds, first_funding_date, most_recent_funding_date, and rounds_by_type are derived from underlying rounds of funding data that might be incomplete."
-                }
+                sources=[{
+                    "notes": "total_rounds, first_funding_date, most_recent_funding_date, and rounds_by_type are derived from underlying rounds of funding data that might be non-comprehensive."
+                }]
             )
 
         return GetFundingSummaryFromIdentifiersResp(
