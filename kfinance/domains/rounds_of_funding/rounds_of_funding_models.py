@@ -30,14 +30,9 @@ class InvestorInRoundOfFunding(BaseModel):
     lead_investor: bool
     investment_value: Decimal | None = None
     currency: str | None = None
-
-    @field_serializer("company_id")
-    def serialize_with_prefix(self, company_id: int) -> str:
-        """Serialize the investor company_id with a prefix ("C_<company_id>").
-
-        Including the prefix allows us to distinguish tickers and company_ids.
-        """
-        return f"{COMPANY_ID_PREFIX}{company_id}"
+    ownership_percentage_pre: Decimal | None = None
+    ownership_percentage_post: Decimal | None = None
+    board_seat_granted: bool | None = None
 
 
 class RoundsOfFundingRole(StrEnum):
@@ -112,8 +107,7 @@ class RoundOfFundingInfo(BaseModel):
             investor_advisors: Dict mapping investor company_id to their advisors list
         """
         target_with_advisors = CompanyIdAndNameWithAdvisors(
-            company_id=self.participants.target.company_id,
-            company_name=self.participants.target.company_name,
+            **self.participants.target.model_dump(),
             advisors=target_advisors,
         )
 
@@ -122,11 +116,7 @@ class RoundOfFundingInfo(BaseModel):
             investor_advisor_list = investor_advisors.get(investor.company_id, [])
 
             investor_with_advisors = InvestorInRoundOfFundingWithAdvisors(
-                company_id=investor.company_id,
-                company_name=investor.company_name,
-                lead_investor=investor.lead_investor,
-                investment_value=investor.investment_value,
-                currency=investor.currency,
+                **investor.model_dump(),
                 advisors=investor_advisor_list,
             )
             investors_with_advisors.append(investor_with_advisors)
@@ -157,7 +147,7 @@ class AdvisorResp(BaseModel):
     advisor_company_name: str
     advisor_type_name: str | None
     advisor_fee_amount: float | None = None
-    advisor_fee_currency: float | None = None
+    advisor_fee_currency: str | None = None
     is_lead: bool | None = None
 
     @field_serializer("advisor_company_id")
@@ -213,11 +203,27 @@ class CompanyIdAndNameWithAdvisors(CompanyIdAndName):
 
     advisors: list[AdvisorResp] = Field(default_factory=list)
 
+    @field_serializer("company_id")
+    def serialize_with_prefix(self, company_id: int) -> str:
+        """Serialize the company_id with a prefix ("C_<company_id>").
+
+        Including the prefix allows us to distinguish tickers and company_ids.
+        """
+        return f"{COMPANY_ID_PREFIX}{company_id}"
+
 
 class InvestorInRoundOfFundingWithAdvisors(InvestorInRoundOfFunding):
     """An investor in a funding round with advisors information"""
 
     advisors: list[AdvisorResp] = Field(default_factory=list)
+
+    @field_serializer("company_id")
+    def serialize_with_prefix(self, company_id: int) -> str:
+        """Serialize the investor company_id with a prefix ("C_<company_id>").
+
+        Including the prefix allows us to distinguish tickers and company_ids.
+        """
+        return f"{COMPANY_ID_PREFIX}{company_id}"
 
 
 class RoundOfFundingParticipantsWithAdvisors(BaseModel):

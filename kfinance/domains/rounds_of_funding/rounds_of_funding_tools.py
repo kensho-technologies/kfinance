@@ -197,6 +197,9 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
                                 "lead_investor": True,
                                 "investment_value": 5000000.00,
                                 "currency": "USD",
+                                "ownership_percentage_pre": 0.0000
+                                "ownership_percentage_post": 25.0000
+                                "board_seat_granted": True,
                                 "advisors": [
                                     {
                                         "advisor_company_id": "C_22439",
