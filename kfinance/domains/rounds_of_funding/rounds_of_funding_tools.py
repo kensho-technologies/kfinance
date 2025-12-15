@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.permission_models import Permission
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
-    AdvisorsResp,
     AdvisorTaskKey,
     FundingSummary,
     RoundOfFundingInfo,
@@ -283,16 +282,15 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
         )
 
         # Merge advisor data into round of funding info
-        round_info_with_advisors = {}
+        round_of_info_with_advisors = {}
         for transaction_id, round_of_info in round_of_info_responses.items():
             target_key = AdvisorTaskKey(
                 transaction_id=transaction_id,
                 role=RoundsOfFundingRole.company_raising_funds,
                 company_id=round_of_info.participants.target.company_id,
             )
-            target_advisors = advisor_responses.get(
-                target_key.to_string(), AdvisorsResp(advisors=[])
-            ).advisors
+            target_advisors_resp = advisor_responses.get(target_key.to_string())
+            target_advisors = target_advisors_resp.advisors if target_advisors_resp else []
 
             investor_advisors = {}
             for investor in round_of_info.participants.investors:
@@ -301,18 +299,18 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
                     role=RoundsOfFundingRole.company_investing_in_round_of_funding,
                     company_id=investor.company_id,
                 )
-                if investor_key.to_string() in advisor_responses:
-                    investor_advisors[investor.company_id] = advisor_responses[
-                        investor_key.to_string()
-                    ].advisors
+                advisor_resp = advisor_responses.get(investor_key.to_string())
+                investor_advisors[investor.company_id] = (
+                    advisor_resp.advisors if advisor_resp else []
+                )
 
             # Create round info with advisors
-            round_info_with_advisors[transaction_id] = round_of_info.with_advisors(
+            round_of_info_with_advisors[transaction_id] = round_of_info.with_advisors(
                 target_advisors=target_advisors, investor_advisors=investor_advisors
             )
 
         return GetRoundsOfFundingInfoFromTransactionIdsResp(
-            results=round_info_with_advisors,
+            results=round_of_info_with_advisors,
             errors=[],  # Individual API failures would be captured in process_tasks_in_thread_pool_executor
         )
 

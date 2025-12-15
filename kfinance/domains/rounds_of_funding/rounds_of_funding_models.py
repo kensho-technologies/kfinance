@@ -97,8 +97,8 @@ class RoundOfFundingInfo(BaseModel):
 
     def with_advisors(
         self,
-        target_advisors: list["AdvisorResp"] = Field(default_factory=list),
-        investor_advisors: dict[int, list["AdvisorResp"]] = Field(default_factory=dict),
+        target_advisors: list["AdvisorResp"],
+        investor_advisors: dict[int, list["AdvisorResp"]],
     ) -> "RoundOfFundingInfoWithAdvisors":
         """Create a new RoundOfFundingInfoWithAdvisors by merging advisor data into this object.
 
