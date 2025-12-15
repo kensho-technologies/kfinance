@@ -2,13 +2,12 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from itertools import chain
-from typing import TypeAlias, TypedDict
+from typing import TypedDict
 
 from pydantic import BaseModel, Field
 from strenum import StrEnum
 
-
-Source: TypeAlias = dict[str, str]
+from kfinance.client.models.response_models import Source
 
 
 class CalendarType(StrEnum):
