@@ -18,7 +18,6 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolRespWithErrors,
 )
 
-
 class GetRoundsofFundingFromIdentifiersArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
     role: RoundsOfFundingRole
@@ -294,6 +293,9 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
                 first_funding_date=first_funding_date,
                 most_recent_funding_date=most_recent_funding_date,
                 rounds_by_type=rounds_by_type,
+                sources={
+                    "notes": "total_rounds, first_funding_date, most_recent_funding_date, and rounds_by_type are derived from underlying rounds of funding data that might be incomplete."
+                }
             )
 
         return GetFundingSummaryFromIdentifiersResp(

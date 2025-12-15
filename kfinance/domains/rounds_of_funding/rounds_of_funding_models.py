@@ -107,6 +107,7 @@ class FundingSummary(BaseModel):
     first_funding_date: date | None
     most_recent_funding_date: date | None
     rounds_by_type: dict[str, int]  # {"Series A": 1, "Series B": 1, ...}
+    sources: dict[str, str]
 
 
 class AdvisorResp(BaseModel):
