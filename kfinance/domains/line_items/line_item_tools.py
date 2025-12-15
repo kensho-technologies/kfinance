@@ -150,7 +150,7 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         - The tool accepts an optional calendar_type argument, which can either be 'calendar' or 'fiscal'. If 'calendar' is chosen, then start_year and end_year will filter on calendar year, and the output returned will be in calendar years. If 'fiscal' is chosen (which is the default), then start_year and end_year will filter on fiscal year, and the output returned will be in fiscal years.
         - All aliases for a line item return identical data (e.g., 'revenue', 'normal_revenue', and 'regular_revenue' return the same data).
         - Line item names are case-insensitive and use underscores (e.g., 'total_revenue' not 'Total Revenue').
-        - To filter by time, use one of (start_year, end_year, start_quarter, end_quarter) or (num_periods, num_periods_back), but not both.
+        - To filter by time, use either absolute (start_year, end_year, start_quarter, end_quarter) for specific dates like "in 2023" or "Q2 2021", OR relative (num_periods, num_periods_back) for phrases like "last 3 quarters" or "past five years"—but not both.
 
         Examples:
         Query: "What are the revenues of Lowe's and Home Depot?"

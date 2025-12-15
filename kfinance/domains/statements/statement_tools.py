@@ -59,7 +59,7 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - To fetch the most recent statement, leave start_year, start_quarter, end_year, end_quarter, num_periods, and num_periods_back as null.
         - The tool accepts an optional calendar_type argument, which can either be 'calendar' or 'fiscal'. If 'calendar' is chosen, then start_year and end_year will filter on calendar year, and the output returned will be in calendar years. If 'fiscal' is chosen (which is the default), then start_year and end_year will filter on fiscal year, and the output returned will be in fiscal years.
-        - To filter by time, use one of (start_year, end_year, start_quarter, end_quarter) or (num_periods, num_periods_back), but not both.
+        - To filter by time, use either absolute (start_year, end_year, start_quarter, end_quarter) for specific dates like "in 2023" or "Q2 2021", OR relative (num_periods, num_periods_back) for phrases like "last 3 quarters" or "past five years"—but not both.
 
         Examples:
         Query: "Fetch the balance sheets of Bank of America and Goldman Sachs for 2024"
