@@ -33,7 +33,7 @@ class GetRoundsofFundingFromIdentifiersArgs(ToolArgsWithIdentifiers):
         description="Filter rounds to those closed on or before this date (YYYY-MM-DD format)",
     )
     limit: int | None = Field(
-        default=None, description="Limit to N most recent funding rounds (based on closed_date)"
+        default=None, description="Limit to top N funding rounds by sort order"
     )
     sort_order: Literal["asc", "desc"] = Field(
         default="desc",
@@ -48,7 +48,8 @@ class GetRoundsOfFundingFromIdentifiersResp(ToolRespWithErrors):
 class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
     name: str = "get_rounds_of_funding_from_identifiers"
     description: str = dedent(f"""
-        "Retrieves rounds of funding for each specified company identifier that is either of `role` {RoundsOfFundingRole.company_raising_funds} or {RoundsOfFundingRole.company_investing_in_round_of_funding}. Provides the transaction_id, funding_round_notes, funding_type, and transaction closed_date (finalization). Supports temporal filtering by start_date and end_date (inclusive), sorting by closed_date (desc=most recent first, asc=oldest first), and limiting to N most recent rounds. Use this tool to answer questions like 'What was the completion date of the funding of Nasdaq Private Market, LLC by Citigroup Inc.', 'What was the latest funding round for ElevenLabs?', 'What were Microsoft's 3 most recent investments?', 'What funding rounds did Microsoft participate in during 2023?', or 'Which Series A rounds did Sequoia Capital invest in between 2020 and 2022?'"
+        "Retrieves rounds of funding for each specified company identifier that is either of `role` {RoundsOfFundingRole.company_raising_funds} or {RoundsOfFundingRole.company_investing_in_round_of_funding}.
+        Provides the transaction_id, funding_round_notes, funding_type, and transaction closed_date (finalization). Supports temporal filtering by start_date and end_date (inclusive), sorting by closed_date (desc=most recent first, asc=oldest first), and limiting to top N funding rounds by sort oder. Use this tool to answer questions like 'What was the completion date of the funding of Nasdaq Private Market, LLC by Citigroup Inc.', 'What was the latest funding round for ElevenLabs?', 'What were Microsoft's 3 most recent investments?', 'What funding rounds did Microsoft participate in during 2023?', or 'Which Series A rounds did Sequoia Capital invest in between 2020 and 2022?'"
     """).strip()
     args_schema: Type[BaseModel] = GetRoundsofFundingFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -159,7 +160,8 @@ class GetRoundsOfFundingInfoFromTransactionIdsResp(ToolRespWithErrors):
 class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
     name: str = "get_rounds_of_funding_info_from_transaction_ids"
     description: str = dedent("""
-        "Provides comprehensive information for multiple rounds of funding at once, including for each round of funding its timeline (announced date, closed date), participants' company_name and company_id (target and investors), participants' advisors (including advisor company_id, company_name, type, fee, and bool is_lead), funding_type, amount_offered, fees, amounts etc. Use this tool to answer questions like 'How much did Harvey raise in their Series D?', 'Who were Google's angel investors?', 'What was the total amount raised across all of Anysphere's funding rounds?', 'What is the liquidation price reported in each funding round for Anysphere?', 'What is the announcement date of the funding of Veza Technologies, Inc by JPMorgan Chase & Co?'. Always call this for announcement or transaction value related questions."
+        "Provides comprehensive information for multiple rounds of funding at once, including for each round of funding its timeline (announced date, closed date), participants' company_name and company_id (target and investors), participants' advisors (including advisor company_id, company_name, type, fee, and bool is_lead), funding_type, amount_offered, fees, amounts etc.
+        Use this tool to answer questions like 'How much did Harvey raise in their Series D?', 'Who were Google's angel investors?', 'What was the total amount raised across all of Anysphere's funding rounds?', 'What is the liquidation price reported in each funding round for Anysphere?', 'What is the announcement date of the funding of Veza Technologies, Inc by JPMorgan Chase & Co?'. Always call this for announcement or transaction value related questions."
     """).strip()
     args_schema: Type[BaseModel] = GetRoundsOfFundingInfoFromTransactionIdsArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}

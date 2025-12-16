@@ -11,23 +11,18 @@ from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX, Company
 class RoundOfFunding(BaseModel):
     transaction_id: int
     funding_round_notes: str | None
-    closed_date: date | None
-    funding_type: str | None = None
+    closed_date: date | None = None
+    funding_type: str | None
 
 
 class RoundsOfFundingResp(BaseModel):
     rounds_of_funding: list[RoundOfFunding]
 
 
-class RoundOfFundingTimelineElement(BaseModel):
-    status: str
-    date: date
-
-
 class InvestorInRoundOfFunding(BaseModel):
     company_id: int
     company_name: str
-    lead_investor: bool
+    lead_investor: bool | None = None
     investment_value: Decimal | None = None
     currency: str | None = None
     ownership_percentage_pre: Decimal | None = None
@@ -85,8 +80,8 @@ class RoundOfFundingInfoSecurity(BaseModel):
 
 
 class RoundOfFundingInfoTimeline(BaseModel):
-    announced_date: date | None
-    closed_date: date | None
+    announced_date: date | None = None
+    closed_date: date | None = None
 
 
 class RoundOfFundingInfo(BaseModel):
