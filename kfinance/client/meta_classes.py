@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from kfinance.client.fetch import KFinanceApiClient
-from kfinance.client.models.date_and_period_models import PeriodType
+from kfinance.client.models.date_and_period_models import EstimatePeriodType, EstimateType, PeriodType
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
 )
@@ -493,6 +493,76 @@ class CompanyFunctionsMetaClass:
                 )
                 for company in competitors_data.competitors
             ],
+        )
+
+    def _estimate(
+        self,
+        estimate_type: EstimateType,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+    ):
+        try:
+            self.validate_inputs(
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+            )
+        except ValueError:
+            return pd.DataFrame()
+
+        estimate_response = self.kfinance_api_client.fetch_estimates(
+            estimate_type=estimate_type,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )
+
+        if not estimate_response.results:
+            return {}
+
+        estimate_resp = list(estimate_response.results.values())[0]
+        return estimate_resp.model_dump(mode="json")["periods"]
+
+    def estimate(
+        self,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+    ) -> dict:
+
+        return self._estimate(
+            estimate_type=EstimateType.estimate,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            period_type=period_type,
+        )
+
+    def guidance(
+            self,
+            start_year: int | None = None,
+            end_year: int | None = None,
+            start_quarter: int | None = None,
+            end_quarter: int | None = None,
+            period_type: EstimatePeriodType | None = None,
+    ) -> dict:
+
+        return self._estimate(
+            estimate_type=EstimateType.guidance,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            period_type=period_type,
         )
 
 

@@ -10,7 +10,7 @@ import jwt
 import requests
 
 from kfinance.client.industry_models import IndustryClassification
-from kfinance.client.models.date_and_period_models import Periodicity, PeriodType
+from kfinance.client.models.date_and_period_models import EstimatePeriodType, EstimateType, Periodicity, PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
@@ -676,3 +676,33 @@ class KFinanceApiClient:
         """
         url = f"{self.url_base}merger/info/{transaction_id}/advisors/{advised_company_id}"
         return self.fetch(url)
+
+    def fetch_estimates(
+        self,
+        company_id: int,
+        estimate_type: EstimateType,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_forward: int | None = None,
+        num_periods_backward: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+    ) -> PostResponse[EstimatesResp]:
+
+        url = f"{self.url_base}estimates/"
+
+        payload = {
+            "estimate_type": estimate_type.value,
+            "company_id": company_id,
+            "start_year": start_year,
+            "end_year": end_year,
+            "start_quarter": start_quarter,
+            "end_quarter": end_quarter,
+            "num_periods_forward": num_periods_forward,
+            "num_periods_backward": num_periods_backward,
+            "period_type": period_type.value if period_type is not None else None,
+        }
+
+        response_data = self.fetch(url, method="POST", request_body=payload)
+        return PostResponse[EstimatesResp].model_validate(response_data)

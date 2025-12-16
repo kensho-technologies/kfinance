@@ -7,7 +7,7 @@ from requests_mock import Mocker
 
 from kfinance.client.fetch import KFinanceApiClient
 from kfinance.client.kfinance import Client
-from kfinance.client.models.date_and_period_models import Periodicity, PeriodType
+from kfinance.client.models.date_and_period_models import EstimateType, Periodicity, PeriodType
 from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
@@ -324,6 +324,26 @@ class TestFetchItem(TestCase):
             transaction_id=transaction_id, advised_company_id=advised_company_id
         )
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
+
+    def test_fetch_estimate(self) -> None:
+        company_id = 21719
+        estimate_type = "estimate"
+        expected_url = f"{self.kfinance_api_client.url_base}estimates/"
+        expected_request_body = {
+            "company_id": company_id,
+            "estimate_type": estimate_type,
+        }
+        # Mock the response to have the expected PostResponse structure
+        self.kfinance_api_client.fetch.return_value = {"results": {}, "errors": {}}
+        result = self.kfinance_api_client.fetch_estimates(
+            company_id=company_id, estimate_type=EstimateType(estimate_type)
+        )
+        self.kfinance_api_client.fetch.assert_called_with(
+            expected_url, method="POST", request_body=expected_request_body
+        )
+        # Verify the result is a PostResponse
+        assert "results" in result.model_dump()
+        # errors field is excluded when empty
 
 
 class TestMarketCap:
