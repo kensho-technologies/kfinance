@@ -163,7 +163,7 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         Function: get_financial_line_item_from_identifiers(line_item="ebt_excluding_unusual_items", identifiers=["General Electric"], period_type="annual", start_year=2023, end_year=2023)
 
         Query: "What is the most recent three quarters' but one ppe for Exxon and Hasbro?"
-        Function: get_financial_line_item_from_identifiers(line_item="ppe", period_type="quarterly", num_periods=3, num_periods_back=1, identifiers=["Exxon", "Hasbro"])
+        Function: get_financial_line_item_from_identifiers(line_item="ppe", period_type="quarterly", num_periods=2, num_periods_back=1, identifiers=["Exxon", "Hasbro"])
 
         Query: "What are the ytd operating income values for Hilton for the calendar year 2022?"
         Function: get_financial_line_item_from_identifiers(line_item="operating_income", period_type="ytd", calendar_type="calendar", start_year=2022, end_year=2022, identifiers=["Hilton"])

@@ -57,7 +57,7 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         Function: get_segments_from_identifiers(identifiers=["Pfizer", "JNJ"], segment_type="geographic")
 
         Query: "What are the ltm business segments for SPGI for the last three calendar quarters but one?"
-        Function: get_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=3, num_periods_back=1, identifiers=["SPGI"])
+        Function: get_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=2, num_periods_back=1, identifiers=["SPGI"])
     """).strip()
     args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.SegmentsPermission}
