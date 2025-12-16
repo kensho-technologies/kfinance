@@ -159,8 +159,8 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         Query: "Get MSFT and AAPL revenue"
         Function: get_financial_line_item_from_identifiers(line_item="revenue", identifiers=["MSFT", "AAPL"])
 
-        Query: "General Eletrics's ebt excluding unusual items for 2023"
-        Function: get_financial_line_item_from_identifiers(line_item="ebt_excluding_unusual_items", identifiers=["General Eletric"], period_type="annual", start_year=2023, end_year=2023)
+        Query: "General Electric's ebt excluding unusual items for 2023"
+        Function: get_financial_line_item_from_identifiers(line_item="ebt_excluding_unusual_items", identifiers=["General Electric"], period_type="annual", start_year=2023, end_year=2023)
 
         Query: "What is the most recent three quarters' but one ppe for Exxon and Hasbro?"
         Function: get_financial_line_item_from_identifiers(line_item="ppe", period_type="quarterly", num_periods=3, num_periods_back=1, identifiers=["Exxon", "Hasbro"])

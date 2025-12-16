@@ -53,10 +53,10 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         Query: "What are the business segments for AT&T?"
         Function: get_segments_from_identifiers(identifiers=["AT&T"], segment_type="business")
 
-        Query: "Get geographic segments for PFE and JNJ"
-        Function: get_segments_from_identifiers(identifiers=["PFE", "JNJ"], segment_type="geographic")
+        Query: "Get geographic segments for Pfizer and JNJ"
+        Function: get_segments_from_identifiers(identifiers=["Pfizer", "JNJ"], segment_type="geographic")
 
-        Query: "What are the ltm business segments for S&P for the last three calendar quarters but one?"
+        Query: "What are the ltm business segments for SPGI for the last three calendar quarters but one?"
         Function: get_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=3, num_periods_back=1, identifiers=["SPGI"])
     """).strip()
     args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersArgs

@@ -72,9 +72,9 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         Function: get_financial_statement_from_identifiers(identifiers=["XOM"], statement="cashflow", period_type="quarterly", start_year=2023, end_year=2023, start_quarter=2, end_quarter=2)
 
         Query: "What is the balance sheet for The New York Times for the past 7 years except for the most recent 2 years?"
-        Function: get_financial_statement_from_identifiers(statement_type="balance_sheet", num_periods=7, num_periods_back=2, identifiers=["NYT"])
+        Function: get_financial_statement_from_identifiers(statement_type="balance_sheet", num_periods=5, num_periods_back=2, identifiers=["NYT"])
 
-        Query: "What are the annual income statement for the calendar years between 2013 and 2016 for Alibaba and Wayfair?"
+        Query: "What are the annual income statement for the calendar years between 2013 and 2016 for BABA and W?"
         Function: get_financial_statement_from_identifiers(statement_type="income_statement", period_type="annual", calendar_type="calendar", start_year=2013, end_year=2016, identifiers=["BABA", "W"])
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialStatementFromIdentifiersArgs
