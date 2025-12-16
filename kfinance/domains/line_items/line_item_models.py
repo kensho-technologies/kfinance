@@ -1,13 +1,35 @@
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from itertools import chain
 from typing import TypedDict
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from strenum import StrEnum
+
+from kfinance.client.models.response_models import Source
 
 
-class LineItemResponse(BaseModel):
-    line_item: dict[str, Decimal | None]
+class CalendarType(StrEnum):
+    fiscal = "fiscal"
+    calendar = "calendar"
+
+
+class LineItem(BaseModel):
+    name: str
+    value: Decimal | None
+    sources: list[Source] = Field(default_factory=list)
+
+
+class LineItemPeriodData(BaseModel):
+    period_end_date: date
+    num_months: int
+    line_item: LineItem
+
+
+class LineItemResp(BaseModel):
+    currency: str | None
+    periods: dict[str, LineItemPeriodData]  # period -> line item and period data
 
 
 @dataclass

@@ -55,6 +55,7 @@ def test_run_notebook(jupyter_kernel_name: str):
     # - mocks for all calls made by the client while executing the notebook
     startup_cell_code = dedent("""
         from datetime import datetime
+        from urllib.parse import quote
         from kfinance.client.kfinance import Client
         kfinance_client = Client(refresh_token="foo")
         api_client = kfinance_client.kfinance_api_client
@@ -85,22 +86,44 @@ def test_run_notebook(jupyter_kernel_name: str):
         )
 
         balance_sheet_resp = {
-            "statements": {
-                "2022Q3": {"Cash And Equivalents": "1387000000.000000"},
-                "2022Q4": {"Cash And Equivalents": "1286000000.000000"}
+            "currency": "USD",
+            "periods": {
+                "CY2022Q3": {
+                    "period_end_date": "2022-09-30",
+                    "num_months": 3,
+                    "statements": [
+                        {
+                            "name": "Balance Sheet",
+                            "line_items": [
+                                {"name": "Cash And Equivalents", "value": "1387000000.000000", "sources": []}
+                            ]
+                        }
+                    ]
+                },
+                "CY2022Q4": {
+                    "period_end_date": "2022-12-31",
+                    "num_months": 3,
+                    "statements": [
+                        {
+                            "name": "Balance Sheet",
+                            "line_items": [
+                                {"name": "Cash And Equivalents", "value": "1286000000.000000", "sources": []}
+                            ]
+                        }
+                    ]
+                }
             }
         }
 
-        # spgi.balance_sheet()
-        mocker.get(
-            url="https://kfinance.kensho.com/api/v1/statements/21719/balance_sheet/none/none/none/none/none",
-            json=balance_sheet_resp
-        )
-
-        # spgi.balance_sheet(period_type=PeriodType.annual, start_year=2010, end_year=2019)
-        mocker.get(
-            url="https://kfinance.kensho.com/api/v1/statements/21719/balance_sheet/annual/2010/2019/none/none",
-            json=balance_sheet_resp
+        # spgi.balance_sheet() and spgi.balance_sheet(period_type=PeriodType.annual, start_year=2010, end_year=2019)
+        mocker.post(
+            url="https://kfinance.kensho.com/api/v1/statements/",
+            json={
+                "results": {
+                    "21719": balance_sheet_resp
+                },
+                "errors": {}
+            }
         )
 
         # kfinance_client.ticker("JPM").balance_sheet()
@@ -112,9 +135,27 @@ def test_run_notebook(jupyter_kernel_name: str):
         )
 
         # spgi.net_income(period_type=PeriodType.annual, start_year=2010, end_year=2019)
-        mocker.get(
-            url="https://kfinance.kensho.com/api/v1/line_item/21719/net_income/annual/2010/2019/none/none",
-            json={"line_item": {"2010": "828000000.000000"}}
+        mocker.post(
+            url="https://kfinance.kensho.com/api/v1/line_item/",
+            json={
+                "results": {
+                    "21719": {
+                        "currency": "USD",
+                        "periods": {
+                            "CY2010": {
+                                "period_end_date": "2010-12-31",
+                                "num_months": 12,
+                                "line_item": {
+                                    "name": "Net Income",
+                                    "value": "828000000.000000",
+                                    "sources": []
+                                }
+                            }
+                        }
+                    }
+                },
+                "errors": {}
+            }
         )
 
         prices_resp = {

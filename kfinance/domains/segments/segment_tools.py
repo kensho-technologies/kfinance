@@ -3,9 +3,9 @@ from typing import Literal, Type
 
 from pydantic import BaseModel, Field
 
-from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
-from kfinance.client.models.date_and_period_models import PeriodType
+from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.permission_models import Permission
+from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -23,10 +23,20 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
     end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
+    calendar_type: CalendarType | None = Field(
+        default=None, description="Fiscal year or calendar year"
+    )
+    num_periods: NumPeriods | None = Field(
+        default=None, description="The number of periods to retrieve data for (1-99)"
+    )
+    num_periods_back: NumPeriodsBack | None = Field(
+        default=None,
+        description="The end period of the data range expressed as number of periods back relative to the present period (0-99)",
+    )
 
 
 class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, SegmentsResp]
+    results: dict[str, SegmentsResp]  # identifier -> response
 
 
 class GetSegmentsFromIdentifiers(KfinanceTool):
@@ -35,8 +45,9 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         Get the templated business or geographic segments associated with a list of identifiers.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - The tool accepts arguments in calendar years, and all outputs will be in calendar years (may not align with fiscal year).
-        - To fetch the most recent segment data, leave start_year, start_quarter, end_year, and end_quarter as None.
+        - The tool accepts an optional calendar_type argument, which can either be 'calendar' or 'fiscal'. If 'calendar' is chosen, then start_year and end_year will filter on calendar year, and the output returned will be in calendar years. If 'fiscal' is chosen (which is the default), then start_year and end_year will filter on fiscal year, and the output returned will be in fiscal years.
+        - To fetch the most recent segment data, leave start_year, start_quarter, end_year, end_quarter, num_periods, and num_periods_back as None.
+        - To filter by time, use either absolute (start_year, end_year, start_quarter, end_quarter) for specific dates like "in 2023" or "Q2 2021", OR relative (num_periods, num_periods_back) for phrases like "last 3 quarters" or "past five years"—but not both.
 
         Examples:
         Query: "What are the business segments for AT&T?"
@@ -44,6 +55,9 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
 
         Query: "Get geographic segments for PFE and JNJ"
         Function: get_segments_from_identifiers(identifiers=["PFE", "JNJ"], segment_type="geographic")
+
+        Query: "What are the ltm business segments for S&P for the last three calendar quarters but one?"
+        Function: get_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=3, num_periods_back=1, identifiers=["SPGI"])
     """).strip()
     args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.SegmentsPermission}
@@ -57,49 +71,90 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         end_year: int | None = None,
         start_quarter: Literal[1, 2, 3, 4] | None = None,
         end_quarter: Literal[1, 2, 3, 4] | None = None,
+        calendar_type: CalendarType | None = None,
+        num_periods: int | None = None,
+        num_periods_back: int | None = None,
     ) -> GetSegmentsFromIdentifiersResp:
-        """Sample Response:
+        """Sample response:
 
         {
             'results': {
                 'SPGI': {
-                    'segments': {
-                        '2021': {
-                            'Commodity Insights': {'CAPEX': -2000000.0, 'D&A': 12000000.0},
-                            'Unallocated Assets Held for Sale': {'Total Assets': 321000000.0}
+                    'currency': 'USD',
+                    'periods': {
+                        'CY2021': {
+                            'period_end_date': '2021-12-31',
+                            'num_months': 12,
+                            'segments': [
+                                {
+                                    'name': 'Commodity Insights',
+                                    'line_items': [
+                                        {
+                                            'name': 'CAPEX',
+                                            'value': -2000000.0,
+                                            'sources': [
+                                                {
+                                                    'type': 'doc-viewer segment',
+                                                    'url': 'https://www.capitaliq.spglobal.com/...'
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            'name': 'D&A',
+                                            'value': 12000000.0
+                                        }
+                                    ]
+                                },
+                                {
+                                    'name': 'Unallocated Assets Held for Sale',
+                                    'line_items': [
+                                        {
+                                            'name': 'Total Assets',
+                                            'value': 321000000.0
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     }
                 }
             },
             'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
         }
-
-
         """
 
         api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
 
-        tasks = [
-            Task(
-                func=api_client.fetch_segments,
-                kwargs=dict(
-                    company_id=id_triple.company_id,
-                    segment_type=segment_type,
-                    period_type=period_type,
-                    start_year=start_year,
-                    end_year=end_year,
-                    start_quarter=start_quarter,
-                    end_quarter=end_quarter,
-                ),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+        # First resolve identifiers to company IDs
+        ids_response = api_client.unified_fetch_id_triples(identifiers)
+
+        company_id_to_identifier = {
+            id_triple.company_id: identifier
+            for identifier, id_triple in ids_response.identifiers_to_id_triples.items()
+        }
+        company_ids = [
+            id_triple.company_id for id_triple in ids_response.identifiers_to_id_triples.values()
         ]
 
-        segments_responses: dict[str, SegmentsResp] = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
+        # Call the simplified fetch_segments API with company IDs
+        response = api_client.fetch_segments(
+            company_ids=company_ids,
+            segment_type=segment_type,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            calendar_type=calendar_type,
+            num_periods=num_periods,
+            num_periods_back=num_periods_back,
         )
+
+        identifier_to_results = {}
+        for company_id_str, segments_resp in response.results.items():
+            company_id = int(company_id_str)
+            original_identifier = company_id_to_identifier[company_id]
+            identifier_to_results[original_identifier] = segments_resp
 
         # If no date and multiple companies, only return the most recent value.
         # By default, we return 5 years of data, which can be too much when
@@ -109,14 +164,14 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
             and end_year is None
             and start_quarter is None
             and end_quarter is None
-            and len(segments_responses) > 1
+            and len(identifier_to_results) > 1
         ):
-            for segments_response in segments_responses.values():
-                if segments_response.segments:
-                    most_recent_year = max(segments_response.segments.keys())
-                    most_recent_year_data = segments_response.segments[most_recent_year]
-                    segments_response.segments = {most_recent_year: most_recent_year_data}
+            for segments_response in identifier_to_results.values():
+                if segments_response.periods:
+                    most_recent_year = max(segments_response.periods.keys())
+                    most_recent_year_data = segments_response.periods[most_recent_year]
+                    segments_response.periods = {most_recent_year: most_recent_year_data}
 
-        return GetSegmentsFromIdentifiersResp(
-            results=segments_responses, errors=list(id_triple_resp.errors.values())
-        )
+        all_errors = list(ids_response.errors.values()) + list(response.errors.values())
+
+        return GetSegmentsFromIdentifiersResp(results=identifier_to_results, errors=all_errors)
