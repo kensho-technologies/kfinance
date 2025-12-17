@@ -125,6 +125,20 @@ class UnifiedIdTripleResponse(BaseModel):
             )
             self.identifiers_to_id_triples.pop(identifier)
 
+    def get_identifier_from_company_id(self, company_id: int) -> str:
+        """Return the (originally passed) identifier from a company id."""
+        if not hasattr(self, "_company_id_to_identifier"):
+            self._company_id_to_identifier = {
+                id_triple.company_id: identifier
+                for identifier, id_triple in self.identifiers_to_id_triples.items()
+            }
+        return self._company_id_to_identifier[company_id]
+
+    @property
+    def company_ids(self) -> list[int]:
+        """Returns a list of all company ids in the response."""
+        return [id_triple.company_id for id_triple in self.identifiers_to_id_triples.values()]
+
 
 class CompanyDescriptions(BaseModel):
     """A company summary and description"""
