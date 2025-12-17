@@ -4,9 +4,8 @@ from langchain_core.utils.function_calling import convert_to_openai_tool
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
-from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
-from kfinance.domains.line_items.line_item_models import LineItemResponse, LineItemScore
+from kfinance.domains.line_items.line_item_models import LineItemResp, LineItemScore
 from kfinance.domains.line_items.line_item_tools import (
     GetFinancialLineItemFromIdentifiers,
     GetFinancialLineItemFromIdentifiersArgs,
@@ -17,11 +16,24 @@ from kfinance.domains.line_items.line_item_tools import (
 
 class TestGetFinancialLineItemFromCompanyIds:
     line_item_resp = {
-        "line_item": {
-            "2022": "11181000000.000000",
-            "2023": "12497000000.000000",
-            "2024": "14208000000.000000",
-        }
+        "currency": "USD",
+        "periods": {
+            "CY2022": {
+                "period_end_date": "2022-12-31",
+                "num_months": 12,
+                "line_item": {"name": "Revenue", "value": "11181000000.0", "sources": []},
+            },
+            "CY2023": {
+                "period_end_date": "2023-12-31",
+                "num_months": 12,
+                "line_item": {"name": "Revenue", "value": "12497000000.0", "sources": []},
+            },
+            "CY2024": {
+                "period_end_date": "2024-12-31",
+                "num_months": 12,
+                "line_item": {"name": "Revenue", "value": "14208000000.0", "sources": []},
+            },
+        },
     }
 
     def test_get_financial_line_item_from_identifiers(
@@ -35,12 +47,37 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={
-                "SPGI": LineItemResponse(
-                    line_item={
-                        "2022": Decimal(11181000000),
-                        "2023": Decimal(12497000000),
-                        "2024": Decimal(14208000000),
-                    }
+                "SPGI": LineItemResp(
+                    currency="USD",
+                    periods={
+                        "CY2022": {
+                            "period_end_date": "2022-12-31",
+                            "num_months": 12,
+                            "line_item": {
+                                "name": "Revenue",
+                                "value": Decimal(11181000000),
+                                "sources": [],
+                            },
+                        },
+                        "CY2023": {
+                            "period_end_date": "2023-12-31",
+                            "num_months": 12,
+                            "line_item": {
+                                "name": "Revenue",
+                                "value": Decimal(12497000000),
+                                "sources": [],
+                            },
+                        },
+                        "CY2024": {
+                            "period_end_date": "2024-12-31",
+                            "num_months": 12,
+                            "line_item": {
+                                "name": "Revenue",
+                                "value": Decimal(14208000000),
+                                "sources": [],
+                            },
+                        },
+                    },
                 )
             },
             errors=[
@@ -48,14 +85,32 @@ class TestGetFinancialLineItemFromCompanyIds:
             ],
         )
 
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/{SPGI_COMPANY_ID}/revenue/none/none/none/none/none",
-            json=self.line_item_resp,
+        # Mock the unified_fetch_id_triples response
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/ids",
+            json={
+                "identifiers_to_id_triples": {
+                    "SPGI": {
+                        "company_id": 21719,
+                        "security_id": 2629107,
+                        "trading_item_id": 2629108,
+                    }
+                },
+                "errors": {
+                    "NON-EXISTENT": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                },
+            },
+        )
+
+        # Mock the fetch_line_item response
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/line_item/",
+            json={"results": {"21719": self.line_item_resp}, "errors": {}},
         )
 
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
         args = GetFinancialLineItemFromIdentifiersArgs(
-            identifiers=["SPGI", "non-existent"], line_item="revenue"
+            identifiers=["SPGI", "NON-EXISTENT"], line_item="revenue"
         )
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
@@ -69,16 +124,38 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         company_ids = [1, 2]
 
-        line_item_resp = LineItemResponse(line_item={"2024": Decimal(14208000000)})
+        line_item_resp = LineItemResp(
+            currency="USD",
+            periods={
+                "CY2024": {
+                    "period_end_date": "2024-12-31",
+                    "num_months": 12,
+                    "line_item": {"name": "Revenue", "value": Decimal(14208000000), "sources": []},
+                }
+            },
+        )
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={"C_1": line_item_resp, "C_2": line_item_resp},
         )
 
-        for company_id in company_ids:
-            requests_mock.get(
-                url=f"https://kfinance.kensho.com/api/v1/line_item/{company_id}/revenue/none/none/none/none/none",
-                json=self.line_item_resp,
-            )
+        # Mock the unified_fetch_id_triples response
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/ids",
+            json={
+                "identifiers_to_id_triples": {
+                    "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
+                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202},
+                },
+                "errors": {},
+            },
+        )
+
+        # Mock the fetch_line_item response
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/line_item/",
+            json={"results": {"1": self.line_item_resp, "2": self.line_item_resp}, "errors": {}},
+        )
+
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
         args = GetFinancialLineItemFromIdentifiersArgs(
             identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
@@ -97,20 +174,42 @@ class TestGetFinancialLineItemFromCompanyIds:
 
         company_ids = [1, 2]
 
-        c_1_line_item_resp = LineItemResponse(line_item={})
-        c_2_line_item_resp = LineItemResponse(line_item={"2024": Decimal(14208000000)})
+        c_1_line_item_resp = LineItemResp(currency="USD", periods={})
+        c_2_line_item_resp = LineItemResp(
+            currency="USD",
+            periods={
+                "CY2024": {
+                    "period_end_date": "2024-12-31",
+                    "num_months": 12,
+                    "line_item": {"name": "Revenue", "value": Decimal(14208000000), "sources": []},
+                }
+            },
+        )
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={"C_1": c_1_line_item_resp, "C_2": c_2_line_item_resp},
         )
 
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/1/revenue/none/none/none/none/none",
-            json={"line_item": {}},
+        # Mock the unified_fetch_id_triples response
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/ids",
+            json={
+                "identifiers_to_id_triples": {
+                    "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
+                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202},
+                },
+                "errors": {},
+            },
         )
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/line_item/2/revenue/none/none/none/none/none",
-            json=self.line_item_resp,
+
+        # Mock the fetch_line_item response with different data for different companies
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/line_item/",
+            json={
+                "results": {"1": {"currency": "USD", "periods": {}}, "2": self.line_item_resp},
+                "errors": {},
+            },
         )
+
         tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
         args = GetFinancialLineItemFromIdentifiersArgs(
             identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],

@@ -11,6 +11,7 @@ import requests
 
 from kfinance.client.industry_models import IndustryClassification
 from kfinance.client.models.date_and_period_models import Periodicity, PeriodType
+from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
@@ -25,7 +26,7 @@ from kfinance.domains.companies.company_models import (
 )
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.domains.earnings.earning_models import EarningsCallResp
-from kfinance.domains.line_items.line_item_models import LineItemResponse
+from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerInfo,
     MergersResp,
@@ -357,24 +358,48 @@ class KFinanceApiClient:
 
     def fetch_segments(
         self,
-        company_id: int,
+        company_ids: list[int],
         segment_type: SegmentType,
-        period_type: Optional[PeriodType] = None,
-        start_year: Optional[int] = None,
-        end_year: Optional[int] = None,
-        start_quarter: Optional[int] = None,
-        end_quarter: Optional[int] = None,
-    ) -> SegmentsResp:
+        *,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_back: int | None = None,
+        num_periods: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+    ) -> PostResponse[SegmentsResp]:
         """Get a specified segment type for a specified duration."""
-        url = (
-            f"{self.url_base}segments/{company_id}/{segment_type}/"
-            f"{period_type if period_type else 'none'}/"
-            f"{start_year if start_year is not None else 'none'}/"
-            f"{end_year if end_year is not None else 'none'}/"
-            f"{start_quarter if start_quarter is not None else 'none'}/"
-            f"{end_quarter if end_quarter is not None else 'none'}"
-        )
-        return SegmentsResp.model_validate(self.fetch(url))
+
+        url = f"{self.url_base}segments/"
+
+        period_type_val = period_type.value if period_type is not None else None
+        calendar_type_val = calendar_type.value if calendar_type is not None else None
+        segment_type_val = segment_type.value if segment_type is not None else None
+
+        request_body: dict[str, str | int | list[int]] = {
+            "company_ids": company_ids,
+            "segment_type": segment_type_val,
+        }
+
+        fields = [
+            ("start_year", start_year),
+            ("end_year", end_year),
+            ("start_quarter", start_quarter),
+            ("end_quarter", end_quarter),
+            ("num_periods_back", num_periods_back),
+            ("num_periods", num_periods),
+            ("period_type", period_type_val),
+            ("calendar_type", calendar_type_val),
+        ]
+
+        for key, value in fields:
+            if value is not None:
+                request_body[key] = value
+
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+        return PostResponse[SegmentsResp].model_validate(response_data)
 
     def fetch_price_chart(
         self,
@@ -406,45 +431,91 @@ class KFinanceApiClient:
 
     def fetch_statement(
         self,
-        company_id: int,
+        company_ids: list[int],
         statement_type: str,
-        period_type: Optional[PeriodType] = None,
-        start_year: Optional[int] = None,
-        end_year: Optional[int] = None,
-        start_quarter: Optional[int] = None,
-        end_quarter: Optional[int] = None,
-    ) -> StatementsResp:
+        *,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_back: int | None = None,
+        num_periods: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+    ) -> PostResponse[StatementsResp]:
         """Get a specified financial statement for a specified duration."""
-        url = (
-            f"{self.url_base}statements/{company_id}/{statement_type}/"
-            f"{period_type if period_type else 'none'}/"
-            f"{start_year if start_year is not None else 'none'}/"
-            f"{end_year if end_year is not None else 'none'}/"
-            f"{start_quarter if start_quarter is not None else 'none'}/"
-            f"{end_quarter if end_quarter is not None else 'none'}"
-        )
-        return StatementsResp.model_validate(self.fetch(url))
+
+        url = f"{self.url_base}statements/"
+
+        period_type_val = period_type.value if period_type is not None else None
+        calendar_type_val = calendar_type.value if calendar_type is not None else None
+
+        request_body: dict[str, str | int | list[int]] = {
+            "company_ids": company_ids,
+            "statement_type": statement_type,
+        }
+
+        fields = [
+            ("start_year", start_year),
+            ("end_year", end_year),
+            ("start_quarter", start_quarter),
+            ("end_quarter", end_quarter),
+            ("num_periods_back", num_periods_back),
+            ("num_periods", num_periods),
+            ("period_type", period_type_val),
+            ("calendar_type", calendar_type_val),
+        ]
+
+        for key, value in fields:
+            if value is not None:
+                request_body[key] = value
+
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+        return PostResponse[StatementsResp].model_validate(response_data)
 
     def fetch_line_item(
         self,
-        company_id: int,
+        company_ids: list[int],
         line_item: str,
-        period_type: Optional[PeriodType] = None,
-        start_year: Optional[int] = None,
-        end_year: Optional[int] = None,
-        start_quarter: Optional[int] = None,
-        end_quarter: Optional[int] = None,
-    ) -> LineItemResponse:
+        *,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_back: int | None = None,
+        num_periods: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+    ) -> PostResponse[LineItemResp]:
         """Get a specified financial line item for a specified duration."""
-        url = (
-            f"{self.url_base}line_item/{company_id}/{line_item}/"
-            f"{period_type if period_type else 'none'}/"
-            f"{start_year if start_year is not None else 'none'}/"
-            f"{end_year if end_year is not None else 'none'}/"
-            f"{start_quarter if start_quarter is not None else 'none'}/"
-            f"{end_quarter if end_quarter is not None else 'none'}"
-        )
-        return LineItemResponse.model_validate(self.fetch(url))
+
+        url = f"{self.url_base}line_item/"
+
+        period_type_val = period_type.value if period_type is not None else None
+        calendar_type_val = calendar_type.value if calendar_type is not None else None
+
+        request_body: dict[str, str | int | list[int]] = {
+            "company_ids": company_ids,
+            "line_item": line_item,
+        }
+
+        fields = [
+            ("start_year", start_year),
+            ("end_year", end_year),
+            ("start_quarter", start_quarter),
+            ("end_quarter", end_quarter),
+            ("num_periods_back", num_periods_back),
+            ("num_periods", num_periods),
+            ("period_type", period_type_val),
+            ("calendar_type", calendar_type_val),
+        ]
+
+        for key, value in fields:
+            if value is not None:
+                request_body[key] = value
+
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+        return PostResponse[LineItemResp].model_validate(response_data)
 
     def fetch_info(self, company_id: int) -> dict:
         """Get the company info."""
