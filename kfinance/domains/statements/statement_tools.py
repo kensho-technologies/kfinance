@@ -158,17 +158,9 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         # First resolve identifiers to company IDs
         ids_response = api_client.unified_fetch_id_triples(identifiers)
 
-        company_id_to_identifier = {
-            id_triple.company_id: identifier
-            for identifier, id_triple in ids_response.identifiers_to_id_triples.items()
-        }
-        company_ids = [
-            id_triple.company_id for id_triple in ids_response.identifiers_to_id_triples.values()
-        ]
-
         # Call the simplified fetch_statement API with company IDs
         response = api_client.fetch_statement(
-            company_ids=company_ids,
+            company_ids=ids_response.company_ids,
             statement_type=statement.value,
             period_type=period_type,
             start_year=start_year,
@@ -182,8 +174,7 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
 
         identifier_to_results = {}
         for company_id_str, statement_resp in response.results.items():
-            company_id = int(company_id_str)
-            original_identifier = company_id_to_identifier[company_id]
+            original_identifier = ids_response.get_identifier_from_company_id(int(company_id_str))
             identifier_to_results[original_identifier] = statement_resp
 
         # If no date and multiple companies, only return the most recent value.
@@ -194,13 +185,12 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
             and end_year is None
             and start_quarter is None
             and end_quarter is None
+            and num_periods is None
+            and num_periods_back is None
             and len(identifier_to_results) > 1
         ):
-            for statement_response in identifier_to_results.values():
-                if statement_response.periods:
-                    most_recent_year = max(statement_response.periods.keys())
-                    most_recent_year_data = statement_response.periods[most_recent_year]
-                    statement_response.periods = {most_recent_year: most_recent_year_data}
+            for result in identifier_to_results.values():
+                result.remove_all_periods_other_than_the_most_recent_one()
 
         all_errors = list(ids_response.errors.values()) + list(response.errors.values())
 
