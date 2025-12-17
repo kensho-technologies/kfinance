@@ -1,11 +1,11 @@
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, Field
 from strenum import StrEnum
 
 from kfinance.client.models.response_models import Source
-from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX, CompanyIdAndName
+from kfinance.domains.companies.company_models import CompanyId, CompanyIdAndName
 
 
 class RoundOfFunding(BaseModel):
@@ -20,7 +20,7 @@ class RoundsOfFundingResp(BaseModel):
 
 
 class InvestorInRoundOfFunding(BaseModel):
-    company_id: int
+    company_id: CompanyId
     company_name: str
     lead_investor: bool | None = None
     investment_value: Decimal | None = None
@@ -111,7 +111,7 @@ class RoundOfFundingInfo(BaseModel):
             investor_advisor_list = investor_advisors.get(investor.company_id, [])
 
             investor_with_advisors = InvestorInRoundOfFundingWithAdvisors(
-                **investor.model_dump(),
+                **investor.__dict__,
                 advisors=investor_advisor_list,
             )
             investors_with_advisors.append(investor_with_advisors)
@@ -138,20 +138,12 @@ class FundingSummary(BaseModel):
 
 
 class AdvisorResp(BaseModel):
-    advisor_company_id: int
+    advisor_company_id: CompanyId
     advisor_company_name: str
     advisor_type_name: str | None
     advisor_fee_amount: float | None = None
     advisor_fee_currency: str | None = None
     is_lead: bool | None = None
-
-    @field_serializer("advisor_company_id")
-    def serialize_with_prefix(self, company_id: int) -> str:
-        """Serialize the advisor_company_id with a prefix ("C_<company_id>").
-
-        Including the prefix allows us to distinguish tickers and company_ids.
-        """
-        return f"{COMPANY_ID_PREFIX}{company_id}"
 
 
 class AdvisorsResp(BaseModel):
@@ -198,27 +190,11 @@ class CompanyIdAndNameWithAdvisors(CompanyIdAndName):
 
     advisors: list[AdvisorResp] = Field(default_factory=list)
 
-    @field_serializer("company_id")
-    def serialize_with_prefix(self, company_id: int) -> str:
-        """Serialize the company_id with a prefix ("C_<company_id>").
-
-        Including the prefix allows us to distinguish tickers and company_ids.
-        """
-        return f"{COMPANY_ID_PREFIX}{company_id}"
-
 
 class InvestorInRoundOfFundingWithAdvisors(InvestorInRoundOfFunding):
     """An investor in a funding round with advisors information"""
 
     advisors: list[AdvisorResp] = Field(default_factory=list)
-
-    @field_serializer("company_id")
-    def serialize_with_prefix(self, company_id: int) -> str:
-        """Serialize the investor company_id with a prefix ("C_<company_id>").
-
-        Including the prefix allows us to distinguish tickers and company_ids.
-        """
-        return f"{COMPANY_ID_PREFIX}{company_id}"
 
 
 class RoundOfFundingParticipantsWithAdvisors(BaseModel):

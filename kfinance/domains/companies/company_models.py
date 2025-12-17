@@ -1,6 +1,6 @@
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PlainSerializer, model_validator
 
 
 COMPANY_ID_PREFIX = "C_"
@@ -11,10 +11,13 @@ def prefix_company_id(company_id: int) -> str:
     return f"{COMPANY_ID_PREFIX}{company_id}"
 
 
+CompanyId = Annotated[int, PlainSerializer(prefix_company_id)]
+
+
 class CompanyIdAndName(BaseModel):
     """A company_id and name"""
 
-    company_id: int
+    company_id: CompanyId
     company_name: str
 
 
