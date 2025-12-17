@@ -21,8 +21,9 @@ class RoundsOfFundingResp(BaseModel):
 
 class InvestorInRoundOfFunding(BaseModel):
     """An investor in a round of funding.
-    
-    Used in the results of fetch calls and merged with advisor data within the GetRoundsOfFundingInfoFromTransactionIds tool."""
+
+    Used in the results of fetch calls and merged with advisor data within the GetRoundsOfFundingInfoFromTransactionIds tool.
+    """
 
     company_id: CompanyId
     company_name: str
@@ -43,17 +44,21 @@ class RoundsOfFundingRole(StrEnum):
 
 class RoundOfFundingParticipants(BaseModel):
     """Round of funding participants.
-    
-    Used in the results of fetch calls and merged with advisor data within the GetRoundsOfFundingInfoFromTransactionIds tool."""
+
+    Used in the results of fetch calls and merged with advisor data within the GetRoundsOfFundingInfoFromTransactionIds tool.
+    """
+
     target: CompanyIdAndName
     investors: list[InvestorInRoundOfFunding]
 
 
 class RoundOfFundingInfoTransaction(BaseModel):
     """Transaction associated with a round of funding.
-    
-    The transaction describes the financial terms, valuation metrics, and rights structure 
-    established during the round of funding agreement."""
+
+    The transaction describes the financial terms, valuation metrics, and rights structure
+    established during the round of funding agreement.
+    """
+
     funding_type: str | None = None
     amount_offered: Decimal | None = None
     currency: str | None = None
@@ -82,8 +87,10 @@ class RoundOfFundingInfoTransaction(BaseModel):
 
 class RoundOfFundingInfoSecurity(BaseModel):
     """Security associated with a round of funding.
-    
-    The security is the asset that the investor(s) received and describes what the investor(s) owns after the deal closed."""
+
+    The security is the asset that the investor(s) received and describes what the investor(s) owns after the deal closed.
+    """
+
     dividend_per_share: Decimal | None = None
     annualized_dividend_rate: Decimal | None = None
     seniority_level: str | None = None
@@ -100,8 +107,10 @@ class RoundOfFundingInfoTimeline(BaseModel):
 
 class RoundOfFundingInfo(BaseModel):
     """Round of funding info.
-    
-    Used in the result of fetch calls and merged with advisor data within the GetRoundsOfFundingInfoFromTransactionIds tool."""
+
+    Used in the result of fetch calls and merged with advisor data within the GetRoundsOfFundingInfoFromTransactionIds tool.
+    """
+
     timeline: RoundOfFundingInfoTimeline
     participants: RoundOfFundingParticipants
     transaction: RoundOfFundingInfoTransaction
@@ -145,8 +154,9 @@ class RoundOfFundingInfo(BaseModel):
 
 class FundingSummary(BaseModel):
     """Funding summary included derived fields.
-    
-    total_rounds, first_funding_date, most_recent_funding_date, and rounds_by_type are derived from underlying rounds of funding data that might be non-comprehensive."""
+
+    total_rounds, first_funding_date, most_recent_funding_date, and rounds_by_type are derived from underlying rounds of funding data that might be non-comprehensive.
+    """
 
     company_id: str
     total_capital_raised: float | None
@@ -160,8 +170,10 @@ class FundingSummary(BaseModel):
 
 class AdvisorResp(BaseModel):
     """Advisor for a participant (either target or investor) in a round of funding.
-    
-    Used in tool response."""
+
+    Used in tool response.
+    """
+
     advisor_company_id: CompanyId
     advisor_company_name: str
     advisor_type_name: str | None
@@ -172,8 +184,10 @@ class AdvisorResp(BaseModel):
 
 class AdvisorsResp(BaseModel):
     """List of advisors for a participant (either target or investor) in a round of funding.
-    
-    Used in tool response."""
+
+    Used in tool response.
+    """
+
     advisors: list[AdvisorResp]
 
 
@@ -214,15 +228,16 @@ class AdvisorTaskKey(BaseModel):
 
 class CompanyIdAndNameWithAdvisors(CompanyIdAndName):
     """A company with advisors information for rounds of funding.
-    
-    Used in tool response."""
+
+    Used in tool response.
+    """
 
     advisors: list[AdvisorResp] = Field(default_factory=list)
 
 
 class InvestorInRoundOfFundingWithAdvisors(InvestorInRoundOfFunding):
     """An investor in a round of funding with advisors information.
-    
+
     Used in tool response.
     """
 
@@ -231,16 +246,20 @@ class InvestorInRoundOfFundingWithAdvisors(InvestorInRoundOfFunding):
 
 class RoundOfFundingParticipantsWithAdvisors(BaseModel):
     """Round of funding participants with advisors.
-    
-    Used in tool response."""
+
+    Used in tool response.
+    """
+
     target: CompanyIdAndNameWithAdvisors
     investors: list[InvestorInRoundOfFundingWithAdvisors]
 
 
 class RoundOfFundingInfoWithAdvisors(BaseModel):
     """Round of funding info including advisors for participants.
-    
-    Used in tool response."""
+
+    Used in tool response.
+    """
+
     timeline: RoundOfFundingInfoTimeline
     participants: RoundOfFundingParticipantsWithAdvisors
     transaction: RoundOfFundingInfoTransaction
