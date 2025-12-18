@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import date
 from decimal import Decimal
 
@@ -128,7 +129,7 @@ class RoundOfFundingInfo(BaseModel):
             investor_advisors: Dict mapping investor company_id to their advisors list
         """
         target_with_advisors = CompanyIdAndNameWithAdvisors(
-            **self.participants.target.model_dump(),
+            **self.participants.target.__dict__,
             advisors=target_advisors,
         )
 
@@ -143,12 +144,12 @@ class RoundOfFundingInfo(BaseModel):
             investors_with_advisors.append(investor_with_advisors)
 
         return RoundOfFundingInfoWithAdvisors(
-            timeline=self.timeline,
+            timeline=deepcopy(self.timeline),
             participants=RoundOfFundingParticipantsWithAdvisors(
                 target=target_with_advisors, investors=investors_with_advisors
             ),
-            transaction=self.transaction,
-            security=self.security,
+            transaction=deepcopy(self.transaction),
+            security=deepcopy(self.security),
         )
 
 
