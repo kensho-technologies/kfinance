@@ -90,7 +90,23 @@ class GetEstimatesFromIdentifiers(KfinanceTool):
             if response.errors:
                 all_errors.append(response.errors)
 
-        # maybe truncate the results if there's too much?
+        # If no date and multiple companies, only return the most recent value.
+        # By default, we return 5 years of data, which can be too much when
+        # returning data for many companies.
+        if (
+            start_year is None
+            and end_year is None
+            and start_quarter is None
+            and end_quarter is None
+            and num_periods_forward is None
+            and num_periods_backward is None
+            and len(identifier_to_results) > 1
+        ):
+            for line_item_response in identifier_to_results.values():
+                if line_item_response.periods:
+                    most_recent_year = max(line_item_response.periods.keys())
+                    most_recent_year_data = line_item_response.periods[most_recent_year]
+                    line_item_response.periods = {most_recent_year: most_recent_year_data}
 
         return GetEstimatesFromIdentifiersResp(
             results=identifier_to_results, errors=all_errors
