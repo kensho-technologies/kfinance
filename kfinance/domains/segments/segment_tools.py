@@ -45,15 +45,17 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         Get the templated business or geographic segments associated with a list of identifiers.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - The tool accepts an optional calendar_type argument, which can either be 'calendar' or 'fiscal'. If 'calendar' is chosen, then start_year and end_year will filter on calendar year, and the output returned will be in calendar years. If 'fiscal' is chosen (which is the default), then start_year and end_year will filter on fiscal year, and the output returned will be in fiscal years.
-        - To fetch the most recent segment data, leave start_year, start_quarter, end_year, end_quarter, num_periods, and num_periods_back as None.
-        - To filter by time, use either absolute (start_year, end_year, start_quarter, end_quarter) for specific dates like "in 2023" or "Q2 2021", OR relative (num_periods, num_periods_back) for phrases like "last 3 quarters" or "past five years"—but not both.
+        - To fetch the most recent segment data, leave all time parameters as null.
+        - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods, num_periods_back)—but not both.
+        - Set calendar_type based on how the query references the time period—use "fiscal" for fiscal year references and "calendar" for calendar year references.
+        - When calendar_type=None, it defaults to 'fiscal'.
+        - Exception: with multiple identifiers and absolute time, calendar_type=None defaults to 'calendar' for cross-company comparability; calendar_type='fiscal' returns fiscal data but should not be compared across companies since fiscal years have different end dates.
 
         Examples:
         Query: "What are the business segments for AT&T?"
         Function: get_segments_from_identifiers(identifiers=["AT&T"], segment_type="business")
 
-        Query: "Get geographic segments for Pfizer and JNJ"
+        Query: "Get most recent geographic segments for Pfizer and JNJ"
         Function: get_segments_from_identifiers(identifiers=["Pfizer", "JNJ"], segment_type="geographic")
 
         Query: "What are the ltm business segments for SPGI for the last three calendar quarters but one?"
