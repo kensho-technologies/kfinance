@@ -147,7 +147,7 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - To fetch the most recent value, leave all time parameters as null.
-        - Line item names are case-insensitive, use underscores, and support common aliases (e.g., 'revenue' and 'total_revenue' return the same data).
+        - Line item names are case-insensitive, use underscores, and support common aliases (e.g., 'revenue' and 'normal_revenue' return the same data).
         - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods, num_periods_back)—but not both.
         - Set calendar_type based on how the query references the time period—use "fiscal" for fiscal year references and "calendar" for calendar year references.
         - When calendar_type=None, it defaults to 'fiscal'.
