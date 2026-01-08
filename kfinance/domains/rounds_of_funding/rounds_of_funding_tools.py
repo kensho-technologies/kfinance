@@ -48,73 +48,23 @@ class GetRoundsOfFundingFromIdentifiersResp(ToolRespWithErrors):
 class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
     name: str = "get_rounds_of_funding_from_identifiers"
     description: str = dedent(f"""
-        Retrieves funding round OVERVIEWS: transaction_ids, types, dates, basic notes. This is STEP 1 of a MANDATORY two-step process for most funding round questions.
+        Returns funding round overviews: transaction_ids, types, dates, basic notes. Use for funding/capital raising questions (NOT M&A).
 
-        ⚠️ DOMAIN IDENTIFICATION - USE THIS TOOL WHEN:
-        The question is about FUNDING ROUNDS / CAPITAL RAISING / FINANCING activities:
-        • Keywords: "funding", "capital", "raise", "raised", "investment", "financing", "round", "Series A/B/C", "seed", "venture"
-        • Phrases: "pre-deal context", "need for capital", "use of proceeds", "operating situation" (in context of fundraising)
-        • Questions about: Valuations, pricing, investor participation, funding amounts, fundraising history
+        ⚠️ TWO-STEP REQUIREMENT: Most questions need BOTH tools:
+        1. Call THIS → get transaction_ids
+        2. Call get_rounds_of_funding_info_from_transaction_ids with those IDs
+        3. Answer using data from BOTH
 
-        ❌ DO NOT use this tool for M&A deals, mergers, acquisitions, or exits (use merger tools instead)
-        ❌ DO NOT use this tool for general company information unrelated to fundraising (use company info tools instead)
+        STEP 2 MANDATORY for: pricing trends (up/down-rounds), exact valuations, security details (preferred shares, classes, participation caps), advisors, board seats, liquidation terms, use of proceeds, pre-deal context, investor contribution amounts, transaction specifics (upsizing, textual notes), fees.
 
-        WHAT THIS RETURNS: Basic round summaries (transaction_ids, funding_type, closed_date, brief notes in funding_round_notes)
-        WHAT THIS DOESN'T RETURN: Detailed terms, advisors, board seats, fees, governance rights, liquidation preferences, participation terms, anti-dilution terms, use of proceeds, detailed investor information, exact pricing/valuation data, security features, pre-deal financial context
+        ⚠️ Don't rely on funding_round_notes alone—it's unstructured/incomplete. Always call STEP 2 for detailed questions.
 
-        ⚠️ CRITICAL TWO-STEP WORKFLOW:
-        Most questions about funding rounds REQUIRE both calls:
-        STEP 1: Call THIS function → get transaction_ids
-        STEP 2: IMMEDIATELY call get_rounds_of_funding_info_from_transaction_ids with those transaction_ids
-        STEP 3: Formulate answer using data from BOTH calls
+        ROLE PARAMETER:
+        • '{RoundsOfFundingRole.company_raising_funds}': Company receiving funds (e.g., "What rounds did Stripe raise?")
+        • '{RoundsOfFundingRole.company_investing_in_round_of_funding}': Investor's perspective (e.g., "Which companies did Sequoia invest in?")
 
-        ⚠️⚠️ DO NOT SKIP STEP 2 - DO NOT answer after STEP 1 alone if the question asks about ANY of these (STEP 2 is MANDATORY):
-        • Pricing/valuation trends - "up-rounds", "down-rounds", "price direction", "share price", "valuation trend", "price per share"
-        • Exact valuations - "pre-money valuation", "post-money valuation" (exact numbers, not approximations from notes)
-        • Security details - "preferred shares", "convertible", "securities issued", "classes of stock", "series", "share features", "participation", "seniority"
-        • Advisors/counsel - "Who advised?", "Which firm represented?", "What counsel?", "legal advisor", "financial advisor"
-        • Board seats or governance - "Did X get board seat?", "board representation", "governance rights"
-        • Liquidation terms - "liquidation preference", "liquidation price", "multiple", "participating preferred", "cap"
-        • Security terms - "anti-dilution", "redemption rights", "dividends", "reorganization clauses"
-        • Fees - "advisory fees", "legal fees", "underwriting fees"
-        • Use of proceeds - "how will they use", "what will funds be used for", "pre-deal context", "need for capital"
-        • Investor contributions - "how much did [investor] contribute", "investor ownership", "investment amount", "lead investor details"
-        • Transaction specifics - "upsizing", "offering changes", "tranches", "textual notes", "non-standard terms"
-
-        ⚠️ CRITICAL: The funding_round_notes field in STEP 1 may contain SOME information but it is UNSTRUCTURED and INCOMPLETE. Even if funding_round_notes mentions pricing or terms, you MUST still call STEP 2 to get structured, complete data. DO NOT rely on funding_round_notes alone for questions requiring specific details.
-
-        ROLE PARAMETER USAGE:
-        • role='{RoundsOfFundingRole.company_raising_funds}': When asking about a COMPANY that received funding
-          Examples: "What rounds did Stripe raise?", "When did Databricks close Series C?", "Show me OpenAI's funding history"
-          → Use the TARGET COMPANY's identifier
-
-        • role='{RoundsOfFundingRole.company_investing_in_round_of_funding}': When asking from the INVESTOR's perspective
-          Examples: "Which companies did Sequoia invest in?", "What rounds did Benchmark participate in?", "Which firms did Apple invest in?"
-          → Use the INVESTOR's identifier
-
-        ⚠️ CRITICAL IDENTIFIER SELECTION FOR INVESTOR CONTRIBUTION QUESTIONS:
-        When the question asks "How much did [INVESTOR] contribute/invest in [COMPANY]'s round?":
-        • The PRIMARY entity is the INVESTOR (the subject performing the action)
-        • Use the INVESTOR's identifier, NOT the company's identifier
-        • Use role='{RoundsOfFundingRole.company_investing_in_round_of_funding}'
-        • Examples:
-          - "How much did Blackbird VC contribute to Morse Micro's Series C?" → identifier=Blackbird VC, role=company_investing_in_round_of_funding
-          - "What did Sequoia invest in Stripe's Series B?" → identifier=Sequoia, role=company_investing_in_round_of_funding
-          - "How much did Y Combinator put into Airbnb?" → identifier=Y Combinator, role=company_investing_in_round_of_funding
-
-        ENTITY SELECTION PATTERN:
-        • "What legal counsel did [INVESTOR] use in their investment in [COMPANY]?" → Use INVESTOR's identifier with role='{RoundsOfFundingRole.company_investing_in_round_of_funding}'
-        • "What legal counsel did [COMPANY] use when [INVESTOR] invested?" → Use COMPANY's identifier with role='{RoundsOfFundingRole.company_raising_funds}'
-        • "X's investment in Y" → X is the identifier (X is the investor)
-        • "X contributed to Y's round" → X is the identifier (X is the investor)
-        • "When X invested in Y" → X is the identifier (X is the investor)
-
-        TEMPORAL FILTERING (for "recent" rounds):
-        • If question mentions "recent": Use limit parameter to get top N (default N=5) with sort_order="desc"
-        • If question specifies timeframe: Use start_date/end_date parameters
-        • Examples: "recent investments by X" → limit=5, sort_order="desc"; "investments in last 2 years" → start_date=<2 years ago>
-
-        Supports temporal filtering (start_date, end_date), sorting by date (asc/desc), and limiting (top N).
+        ⚠️ INVESTOR QUESTIONS: "How much did [INVESTOR] contribute to [COMPANY]'s round?" → Use INVESTOR's identifier with role=company_investing_in_round_of_funding
+        Example: "How much did Blackbird VC contribute to Morse Micro's Series C?" → identifier=Blackbird VC, role=company_investing_in_round_of_funding
     """).strip()
     args_schema: Type[BaseModel] = GetRoundsofFundingFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -225,70 +175,20 @@ class GetRoundsOfFundingInfoFromTransactionIdsResp(ToolRespWithErrors):
 class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
     name: str = "get_rounds_of_funding_info_from_transaction_ids"
     description: str = dedent("""
-        Retrieves DETAILED transaction information. This is STEP 2 of the MANDATORY two-step workflow for most funding round questions.
+        Returns DETAILED transaction data. STEP 2 of the two-step workflow—call after get_rounds_of_funding_from_identifiers.
 
-        ⚠️ CRITICAL: This function MUST be called after get_rounds_of_funding_from_identifiers when questions require specific details (see list below).
+        Pass transaction_ids from STEP 1. Default: pass ALL IDs (efficient), then filter results. Only pass specific IDs if question names exact rounds (e.g., "Series A").
 
-        WORKFLOW:
-        STEP 1: Call get_rounds_of_funding_from_identifiers → receive transaction_ids
-        STEP 2: Call THIS function → get detailed transaction data
-        STEP 3: Synthesize answer from BOTH responses
+        Provides: advisors (legal, financial), board seats, governance rights, liquidation preferences/multiples, security terms (anti-dilution, participation caps, redemption), exact valuations (pre/post-money), use of proceeds, investor contribution amounts, transaction specifics (upsizing, textual notes), fees.
 
-        PASSING TRANSACTION IDs - THREE SCENARIOS:
+        MANDATORY for questions about: pricing trends (up/down-rounds), security details (preferred shares, classes), advisors, board seats, liquidation terms, exact valuations, use of proceeds, pre-deal context, investor contributions, transaction details (upsizing, notes), fees.
 
-        1. DEFAULT (Most Common): Pass ALL transaction_ids from STEP 1
-           • Questions about "all rounds", "each round", "across rounds", or asking about details without specifying which round
-           • Example: "What is the liquidation preference across all of Company X's funding rounds?"
-           • ✓ DO: Pass ALL transaction_ids, then analyze/filter results AFTER receiving the data
-           • ✗ DON'T: Pre-filter transaction_ids before this call
-
-        2. FILTERED (When Question Specifies Criteria): Pass ALL first, then can filter if question explicitly specifies
-           • Questions like "any round with upsizing", "rounds that included board seats"
-           • Can pass all transaction_ids and filter results, OR filter based on basic data before calling
-           • Example: "Did any round include board seats?" → Pass all, check board_seat_granted in results
-
-        3. SPECIFIC (When Question Names Exact Rounds): Pass only specified transaction_ids
-           • Questions explicitly naming rounds: "Series A", "the 2020 round", "most recent round"
-           • Example: "What was the liquidation preference in Company X's Series C?" → Pass only Series C transaction_id
-
-        RULE OF THUMB: When in doubt, pass ALL transaction_ids. The API is efficient and filtering results is safer than pre-filtering inputs.
-
-        UNIQUE DETAILS (ONLY available in this call, NOT in get_rounds_of_funding_from_identifiers):
-        • ✓ Advisor information: Legal counsel, financial advisors, underwriters (names, firms, fees, lead status)
-        • ✓ Board seats: board_seat_granted flag for each investor
-        • ✓ Governance rights: Voting rights, ownership thresholds, control provisions
-        • ✓ Liquidation preferences: liquidation_preference type (Senior/Pari-Passu), liquidation_preference_multiple
-        • ✓ Security terms: Anti-dilution methods, participation rights, caps, redemption terms, cumulative dividends
-        • ✓ Valuation details: Exact pre_money_valuation, post_money_valuation (not approximations from notes)
-        • ✓ Use of proceeds: Detailed use_of_proceeds descriptions
-        • ✓ Transaction specifics: Upsizing (upsized_amount, offering_size_change), tranches, amendments
-        • ✓ Investor details: Individual investor investment amounts, ownership percentages, lead investor status
-        • ✓ Fee breakdowns: Legal fees, underwriting fees, other fees (separate amounts)
-
-        WHEN THIS TOOL IS MANDATORY (cannot answer from STEP 1 alone):
-        • Questions about PRICING/VALUATION TRENDS: "up-round", "down-round", "price direction", "valuation trend", "flat round", "share price trend", "price per share"
-        • Questions about SECURITY DETAILS: "preferred shares", "securities issued", "classes", "convertible", "participation", "cap", "seniority", "share features"
-        • Questions about ADVISORS: "advisor", "counsel", "legal", "underwriter", "financial advisor", "which firm", "who represented"
-        • Questions about GOVERNANCE: "board seat", "board representation", "governance", "voting rights"
-        • Questions about LIQUIDATION TERMS: "liquidation preference", "liquidation price", "multiple", "participating preferred"
-        • Questions about SECURITY TERMS: "anti-dilution", "redemption", "dividend", "reorganization"
-        • Questions about EXACT VALUATIONS: "pre-money valuation", "post-money valuation" (exact numbers)
-        • Questions about USE OF PROCEEDS: "use of proceeds", "how will", "what will funds", "pre-deal", "need for capital", "operating situation", "financial context"
-        • Questions about INVESTOR DETAILS: "how much did [investor] contribute", "investor ownership", "investment amount", "lead investor"
-        • Questions about TRANSACTION DETAILS: "upsizing", "upsize", "offering change", "textual notes", "non-standard terms", "strategic motivations"
-        • Questions about FEES: advisory fees, legal fees, underwriting fees
-
-        Examples:
-        ✓ MANDATORY STEP 2:
-          - "What is the funding price direction trend for RunBuggy—up-rounds or down-rounds?" (needs pricing from all rounds)
-          - "Did Sky Safe issue participating preferred shares with a cap in Series C?" (needs security terms)
-          - "What classes of securities were issued by BOXABL?" (needs security details)
-          - "Are there textual notes indicating non-standard terms across Waymo's rounds?" (needs detailed transaction notes)
-          - "Did Kensho outline pre-deal operating situations?" (needs use_of_proceeds field)
-          - "How much did Neuralink raise in Series B?" (needs exact transaction.amount_offered)
-          - "What was the post-money valuation for EliseAI's Series E?" (needs exact transaction.post_money_valuation)
-          - "How much did Blackbird VC contribute to Morse Micro's Series C?" (needs investor.investment_value)
-        ✗ OPTIONAL STEP 2: "When did Stripe close Series E?" (date in overview), "How many rounds did Databricks raise?" (count in overview)
+        Examples requiring this:
+        • "What is the funding price trend for X—up or down-rounds?"
+        • "Did X issue participating preferred shares with a cap?"
+        • "How much did [investor] contribute to [company]'s Series C?"
+        • "What was the post-money valuation for X's Series E?"
+        • "Did X outline pre-deal operating context?"
     """).strip()
     args_schema: Type[BaseModel] = GetRoundsOfFundingInfoFromTransactionIdsArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -455,56 +355,21 @@ class GetFundingSummaryFromIdentifiersResp(ToolRespWithErrors):
 class GetFundingSummaryFromIdentifiers(KfinanceTool):
     name: str = "get_funding_summary_from_identifiers"
     description: str = dedent("""
-        Get AGGREGATED funding statistics for specified company identifiers. Returns high-level summaries only: total capital raised, total rounds count, first and most recent funding dates, and breakdown of rounds by type.
+        Returns aggregate funding statistics: total_capital_raised, total_rounds count, first/most recent funding dates, rounds_by_type breakdown. No individual round details.
 
-        WHAT THIS RETURNS: Aggregate statistics ONLY (total_capital_raised sum, total_rounds count, date ranges, rounds_by_type breakdown)
-        WHAT THIS DOESN'T RETURN: Individual round details, transaction info, terms, advisors, investors, specific round amounts, round-by-round data
+        ⚠️ Use for SIMPLE aggregates only (single summary numbers). For "CUMULATIVE" or "ACROSS ALL ROUNDS" questions, use get_rounds_of_funding_from_identifiers instead—those need individual rounds for verification/filtering.
 
-        ⚠️ CRITICAL LIMITATION: This tool provides ONLY aggregate statistics. It does NOT return individual round data needed for verification, analysis, or questions requiring round-by-round information.
+        Use THIS for:
+        • "How much TOTAL capital has X raised?" (if you don't need to verify individual rounds)
+        • "How many rounds did X complete?"
+        • "When was X's first/most recent funding?"
 
-        TOOL SELECTION DECISION TREE:
+        DON'T use for:
+        • "What is the cumulative amount raised by X across all disclosed rounds?" → Use get_rounds_of_funding_from_identifiers
+        • "Show me X's funding history" → Use get_rounds_of_funding_from_identifiers
+        • Any specific round questions → Use get_rounds_of_funding_from_identifiers
 
-        1. Question asks for SIMPLE AGGREGATES (and ONLY aggregates)? → Use THIS tool
-           • "How much TOTAL capital has X raised?" (single aggregate number)
-           • "How many rounds did X complete?" (single count)
-           • "When was X's first/most recent funding?" (date range only)
-           • "What types of rounds has X raised?" (type breakdown only)
-
-        2. Question asks about "CUMULATIVE", "ACROSS ALL ROUNDS", or needs VERIFICATION? → Use get_rounds_of_funding_from_identifiers (NOT this tool)
-           • ❌ "What is the CUMULATIVE amount raised by X across all disclosed rounds?" → Use get_rounds_of_funding_from_identifiers
-           • ❌ "How much capital has X raised ACROSS all rounds?" → Use get_rounds_of_funding_from_identifiers
-           • WHY: Even though these sound like aggregates, they require seeing individual rounds to:
-             - Verify which rounds are included in the sum
-             - Check data completeness
-             - Handle currency conversions across rounds
-             - Filter rounds by criteria (e.g., "disclosed rounds", "equity rounds")
-           • THIS tool only returns a pre-calculated sum that may be incomplete or null
-
-        3. Question asks about SPECIFIC rounds or ANY round details? → Use get_rounds_of_funding_from_identifiers
-           • "What was X's Series A amount?"
-           • "Show me X's funding history" (needs individual rounds)
-           • "When did X raise their last round?" (needs specific round info)
-           • "Which rounds did X raise?"
-           • "List X's funding rounds"
-           • ANY question that needs round-by-round information
-
-        4. Question asks about DETAILED terms, advisors, or governance? → Use get_rounds_of_funding_from_identifiers + get_rounds_of_funding_info_from_transaction_ids
-           • See those tools' descriptions for when the two-step process is mandatory
-
-        FALLBACK BEHAVIOR:
-        ⚠️⚠️ If this tool returns 0 rounds, null total_capital_raised, or incomplete data, you MUST follow up with get_rounds_of_funding_from_identifiers to verify whether funding data actually exists. The summary is often incomplete while individual round data is available.
-
-        Common scenario: Summary shows 0 rounds but actual rounds exist in the detailed endpoint.
-        → Solution: ALWAYS try get_rounds_of_funding_from_identifiers as a fallback when summary is empty/incomplete.
-
-        Examples:
-        ✓ Use THIS tool: "How much total capital has Instacart raised?" (IF you only need the aggregate and don't need to verify/analyze individual rounds)
-        ✗ DON'T use this:
-          - "What is the cumulative amount of capital raised by Ramp across all disclosed rounds?" → Use get_rounds_of_funding_from_identifiers
-          - "How much has X raised across all rounds?" → Use get_rounds_of_funding_from_identifiers
-          - "What was Stripe's Series A amount?" (specific round)
-          - "Which rounds included board seats?" (needs details)
-          - "Show me X's funding rounds" (needs individual round list)
+        ⚠️ If returns 0 rounds or null data, MUST follow up with get_rounds_of_funding_from_identifiers (summary often incomplete).
     """).strip()
     args_schema: Type[BaseModel] = GetFundingSummaryFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
