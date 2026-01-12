@@ -3,7 +3,7 @@ from datetime import date
 from pydantic import BaseModel
 from strenum import StrEnum
 
-from kfinance.domains.line_items.line_item_models import LineItem
+from kfinance.domains.line_items.line_item_models import BasePeriodsResp, LineItem
 
 
 class SegmentType(StrEnum):
@@ -24,6 +24,6 @@ class SegmentPeriodData(BaseModel):
     segments: list[Segment]
 
 
-class SegmentsResp(BaseModel):
+class SegmentsResp(BasePeriodsResp):
     currency: str | None
     periods: dict[str, SegmentPeriodData]  # period -> segment and period data
