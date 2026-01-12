@@ -48,8 +48,23 @@ class GetRoundsOfFundingFromIdentifiersResp(ToolRespWithErrors):
 class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
     name: str = "get_rounds_of_funding_from_identifiers"
     description: str = dedent(f"""
-        "Retrieves rounds of funding for each specified company identifier that is either of `role` {RoundsOfFundingRole.company_raising_funds} or {RoundsOfFundingRole.company_investing_in_round_of_funding}.
-        Provides the transaction_id, funding_round_notes, funding_type, and transaction closed_date (finalization). Supports temporal filtering by start_date and end_date (inclusive), sorting by closed_date (desc=most recent first, asc=oldest first), and limiting to top N funding rounds by sort oder. Use this tool to answer questions like 'What was the completion date of the funding of Nasdaq Private Market, LLC by Citigroup Inc.', 'What was the latest funding round for ElevenLabs?', 'What were Microsoft's 3 most recent investments?', 'What funding rounds did Microsoft participate in during 2023?', or 'Which Series A rounds did Sequoia Capital invest in between 2020 and 2022?'"
+        Returns funding round overviews: transaction_ids, types, dates, basic notes. Use for funding/capital raising questions (NOT M&A).
+
+        ⚠️ TWO-STEP REQUIREMENT: Most questions need BOTH tools:
+        1. Call THIS → get transaction_ids
+        2. Call get_rounds_of_funding_info_from_transaction_ids with those IDs
+        3. Answer using data from BOTH
+
+        STEP 2 MANDATORY for: pricing trends (up/down-rounds), exact valuations, security details (preferred shares, classes, participation caps), advisors, board seats, liquidation terms, use of proceeds, pre-deal context, investor contribution amounts, transaction specifics (upsizing, textual notes), fees.
+
+        ⚠️ Don't rely on funding_round_notes alone—it's unstructured/incomplete. Always call STEP 2 for detailed questions.
+
+        ROLE PARAMETER:
+        • '{RoundsOfFundingRole.company_raising_funds}': Company receiving funds (e.g., "What rounds did Stripe raise?")
+        • '{RoundsOfFundingRole.company_investing_in_round_of_funding}': Investor's perspective (e.g., "Which companies did Sequoia invest in?")
+
+        ⚠️ INVESTOR QUESTIONS: "How much did [INVESTOR] contribute to [COMPANY]'s round?" → Use INVESTOR's identifier with role=company_investing_in_round_of_funding
+        Example: "How much did Blackbird VC contribute to Morse Micro's Series C?" → identifier=Blackbird VC, role=company_investing_in_round_of_funding
     """).strip()
     args_schema: Type[BaseModel] = GetRoundsofFundingFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -160,8 +175,20 @@ class GetRoundsOfFundingInfoFromTransactionIdsResp(ToolRespWithErrors):
 class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
     name: str = "get_rounds_of_funding_info_from_transaction_ids"
     description: str = dedent("""
-        "Provides comprehensive information for multiple rounds of funding at once, including for each round of funding its timeline (announced date, closed date), participants' company_name and company_id (target and investors), participants' advisors (including advisor company_id, company_name, type, fee, and bool is_lead), funding_type, amount_offered, fees, amounts etc.
-        Use this tool to answer questions like 'How much did Harvey raise in their Series D?', 'Who were Google's angel investors?', 'What was the total amount raised across all of Anysphere's funding rounds?', 'What is the liquidation price reported in each funding round for Anysphere?', 'What is the announcement date of the funding of Veza Technologies, Inc by JPMorgan Chase & Co?'. Always call this for announcement or transaction value related questions."
+        Returns DETAILED transaction data. STEP 2 of the two-step workflow—call after get_rounds_of_funding_from_identifiers.
+
+        Pass transaction_ids from STEP 1. Default: pass ALL IDs (efficient), then filter results. Only pass specific IDs if question names exact rounds (e.g., "Series A").
+
+        Provides: advisors (legal, financial), board seats, governance rights, liquidation preferences/multiples, security terms (anti-dilution, participation caps, redemption), exact valuations (pre/post-money), use of proceeds, investor contribution amounts, transaction specifics (upsizing, textual notes), fees.
+
+        MANDATORY for questions about: pricing trends (up/down-rounds), security details (preferred shares, classes), advisors, board seats, liquidation terms, exact valuations, use of proceeds, pre-deal context, investor contributions, transaction details (upsizing, notes), fees.
+
+        Examples requiring this:
+        • "What is the funding price trend for X—up or down-rounds?"
+        • "Did X issue participating preferred shares with a cap?"
+        • "How much did [investor] contribute to [company]'s Series C?"
+        • "What was the post-money valuation for X's Series E?"
+        • "Did X outline pre-deal operating context?"
     """).strip()
     args_schema: Type[BaseModel] = GetRoundsOfFundingInfoFromTransactionIdsArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -328,7 +355,21 @@ class GetFundingSummaryFromIdentifiersResp(ToolRespWithErrors):
 class GetFundingSummaryFromIdentifiers(KfinanceTool):
     name: str = "get_funding_summary_from_identifiers"
     description: str = dedent("""
-        "Get aggregated funding statistics for specified company identifiers without fetching individual rounds. Returns total capital raised, total rounds count, first and most recent funding dates, and breakdown of rounds by type. Ideal for cumulative questions that require summary statistics. Use this tool to answer questions like 'How much total capital did Anysphere raise across all its funding rounds to date?', 'What is the total capital raised by Ramp across all disclosed rounds?', or 'How many funding rounds has Neuralink completed?'"
+        Returns aggregate funding statistics: total_capital_raised, total_rounds count, first/most recent funding dates, rounds_by_type breakdown. No individual round details.
+
+        ⚠️ Use for SIMPLE aggregates only (single summary numbers). For "CUMULATIVE" or "ACROSS ALL ROUNDS" questions, use get_rounds_of_funding_from_identifiers instead—those need individual rounds for verification/filtering.
+
+        Use THIS for:
+        • "How much TOTAL capital has X raised?" (if you don't need to verify individual rounds)
+        • "How many rounds did X complete?"
+        • "When was X's first/most recent funding?"
+
+        DON'T use for:
+        • "What is the cumulative amount raised by X across all disclosed rounds?" → Use get_rounds_of_funding_from_identifiers
+        • "Show me X's funding history" → Use get_rounds_of_funding_from_identifiers
+        • Any specific round questions → Use get_rounds_of_funding_from_identifiers
+
+        ⚠️ If returns 0 rounds or null data, MUST follow up with get_rounds_of_funding_from_identifiers (summary often incomplete).
     """).strip()
     args_schema: Type[BaseModel] = GetFundingSummaryFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
