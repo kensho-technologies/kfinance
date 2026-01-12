@@ -668,7 +668,7 @@ class ParticipantInMerger:
     def __init__(
         self, kfinance_api_client: KFinanceApiClient, transaction_id: int, company: Company
     ):
-        """Initialize the AdvisedCompany object
+        """Initialize the ParticipantInMerger object
 
         :param kfinance_api_client: The KFinanceApiClient used to fetch data
         :type kfinance_api_client: KFinanceApiClient
@@ -715,7 +715,7 @@ class ParticipantInRoF:
         company: Company,
         target: bool,
     ):
-        """Initialize the AdvisedCompany object
+        """Initialize the ParticipantInRoF object
 
         :param kfinance_api_client: The KFinanceApiClient used to fetch data
         :type kfinance_api_client: KFinanceApiClient
@@ -772,7 +772,7 @@ class Advisor:
         advisor_type_name: str | None,
         company: Company,
     ):
-        """Initialize the AdvisorCompany object
+        """Initialize the Advisor object
 
         :param company: The company that advised
         :type company: Company
