@@ -14,7 +14,6 @@ import webbrowser
 import google.ai.generativelanguage_v1beta.types as gapic
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_google_genai._function_utils import convert_to_genai_function_declarations
-import pandas as pd
 from PIL.Image import Image, open as image_open
 
 from kfinance.client.batch_request_handling import add_methods_of_singular_class_to_iterable_class
@@ -47,6 +46,10 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models imp
     MergerTimelineElement,
 )
 from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
+from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
+    RoundOfFundingInfo,
+    RoundOfFundingInfoTimeline,
+)
 
 
 if TYPE_CHECKING:
@@ -181,13 +184,6 @@ class TradingItem:
         :return: An image showing the price chart of the trading item
         :rtype: Image
         """
-
-        if start_date and end_date:
-            if (
-                datetime.strptime(start_date, "%Y-%m-%d").date()
-                > datetime.strptime(end_date, "%Y-%m-%d").date()
-            ):
-                return pd.DataFrame()
 
         content = self.kfinance_api_client.fetch_price_chart(
             trading_item_id=self.trading_item_id,
@@ -331,6 +327,7 @@ class Company(CompanyFunctionsMetaClass):
         self._all_earnings: list[Earnings] | None = None
         self._mergers_for_company: dict[str, MergersAndAcquisitions] | None = None
         self._company_name = company_name
+        self._rounds_of_funding: RoundsOfFunding | None = None
 
         self._securities: Securities | None = None
         self._primary_security: Security | None = None
@@ -647,6 +644,23 @@ class Company(CompanyFunctionsMetaClass):
             self._mergers_for_company = output
         return self._mergers_for_company
 
+    @property
+    def rounds_of_funding(self) -> RoundsOfFunding:
+        """Get the rounds of funding raised by this company.
+
+        :return: the list of rounds of funding raised by this company.
+        :rtype: dict[str, RoundsOfFunding]
+        """
+        if self._rounds_of_funding is None:
+            rounds_of_funding = self.kfinance_api_client.fetch_rounds_of_funding_for_company(
+                company_id=self.company_id
+            ).model_dump(mode="json")
+
+            self._rounds_of_funding = RoundsOfFunding(
+                self.kfinance_api_client, rounds_of_funding["rounds_of_funding"]
+            )
+        return self._rounds_of_funding
+
 
 class ParticipantInMerger:
     """A Company that has been involved in a transaction is a company that may have been advised."""
@@ -654,7 +668,7 @@ class ParticipantInMerger:
     def __init__(
         self, kfinance_api_client: KFinanceApiClient, transaction_id: int, company: Company
     ):
-        """Initialize the AdvisedCompany object
+        """Initialize the ParticipantInMerger object
 
         :param kfinance_api_client: The KFinanceApiClient used to fetch data
         :type kfinance_api_client: KFinanceApiClient
@@ -691,6 +705,65 @@ class ParticipantInMerger:
         ]
 
 
+class ParticipantInRoF:
+    """A Company that has been involved in a round of funding is a company that may have been advised."""
+
+    def __init__(
+        self,
+        kfinance_api_client: KFinanceApiClient,
+        transaction_id: int,
+        company: Company,
+        target: bool,
+    ):
+        """Initialize the ParticipantInRoF object
+
+        :param kfinance_api_client: The KFinanceApiClient used to fetch data
+        :type kfinance_api_client: KFinanceApiClient
+        :param transaction_id: The S&P Global CIP Transaction Id
+        :type transaction_id: int
+        :param target: If the partipant is the raiser, set to True. If the participant is an investor, set to False.
+        :type target: bool
+        :param company: The company object
+        :type company: Company
+        """
+        self.kfinance_api_client = kfinance_api_client
+        self.transaction_id = transaction_id
+        self._company = company
+        self.target = target
+
+    @property
+    def company(self) -> Company:
+        """Get the specific Company object."""
+        return self._company
+
+    @property
+    def advisors(self) -> list[Advisor] | None:
+        """Get the companies that advised this company during the current transaction."""
+        if self.target is True:
+            advisors_resp = (
+                self.kfinance_api_client.fetch_advisors_for_company_raising_round_of_funding(
+                    transaction_id=self.transaction_id,
+                )
+            )
+        else:
+            advisors_resp = (
+                self.kfinance_api_client.fetch_advisors_for_company_investing_in_round_of_funding(
+                    transaction_id=self.transaction_id, advised_company_id=self._company.company_id
+                )
+            )
+        return [
+            Advisor(
+                advisor_type_name=advisor.advisor_type_name,
+                company=Company(
+                    kfinance_api_client=self.kfinance_api_client,
+                    company_id=advisor.advisor_company_id,
+                    company_name=advisor.advisor_company_name,
+                ),
+            )
+            for advisor in advisors_resp.advisors
+        ]
+
+
 class Advisor:
     """A company that advised another company during a transaction."""
 
@@ -699,7 +772,7 @@ class Advisor:
         advisor_type_name: str | None,
         company: Company,
     ):
-        """Initialize the AdvisorCompany object
+        """Initialize the Advisor object
 
         :param company: The company that advised
         :type company: Company
@@ -1254,6 +1327,77 @@ class BusinessRelationships(NamedTuple):
         return f"{type(self).__module__}.{type(self).__qualname__} of {str(dictionary)}"
 
 
+class RoundOfFunding:
+    """An object that represents a round of funding of a company"""
+
+    def __init__(
+        self,
+        kfinance_api_client: KFinanceApiClient,
+        transaction_id: int,
+        funding_round_notes: str,
+        closed_date: date | None,
+        funding_type: str | None,
+    ) -> None:
+        """RoundOfFunding initializer.
+
+        :param kfinance_api_client: The KFinanceApiClient used to retrieve data.
+        :type kfinance_api_client: KFinanceApiClient
+
+        """
+        self.kfinance_api_client = kfinance_api_client
+        self.transaction_id = transaction_id
+        self.funding_round_notes = funding_round_notes
+        self.closed_date = closed_date
+        self.funding_type = funding_type
+        self._round_of_funding_info: RoundOfFundingInfo | None = None
+
+    @property
+    def round_of_funding_info(self) -> RoundOfFundingInfo:
+        """Property for the combined information in the round of funding."""
+        if not self._round_of_funding_info:
+            self._round_of_funding_info = self.kfinance_api_client.fetch_round_of_funding_info(
+                self.transaction_id
+            )
+        return self._round_of_funding_info
+
+    @property
+    def get_timeline(self) -> RoundOfFundingInfoTimeline:
+        """The timeline of the round of funding includes every new status, with the announced and closed dates of each status change."""
+        return self.round_of_funding_info.timeline
+
+    @property
+    def get_participants(self) -> dict:
+        """A round of funding's participants are organized into the target and the investors.
+
+        Each category is a single Company or a list of Companies.
+        """
+        return {
+            "target": ParticipantInRoF(
+                kfinance_api_client=self.kfinance_api_client,
+                transaction_id=self.transaction_id,
+                target=True,
+                company=Company(
+                    kfinance_api_client=self.kfinance_api_client,
+                    company_id=self.round_of_funding_info.participants.target.company_id,
+                    company_name=self.round_of_funding_info.participants.target.company_name,
+                ),
+            ),
+            "investors": [
+                ParticipantInRoF(
+                    kfinance_api_client=self.kfinance_api_client,
+                    transaction_id=self.transaction_id,
+                    target=False,
+                    company=Company(
+                        kfinance_api_client=self.kfinance_api_client,
+                        company_id=company.company_id,
+                        company_name=company.company_name,
+                    ),
+                )
+                for company in self.round_of_funding_info.participants.investors
+            ],
+        }
+
+
 class MergerOrAcquisition:
     """An object that represents a merger or an acquisition of a company."""
 
@@ -1526,6 +1670,31 @@ class MergersAndAcquisitions(set):
                 closed_date=id_and_title["closed_date"],
             )
             for id_and_title in ids_and_titles
+        )
+
+
+@add_methods_of_singular_class_to_iterable_class(RoundOfFunding)
+class RoundsOfFunding(set):
+    def __init__(
+        self, kfinance_api_client: KFinanceApiClient, rounds_of_funding: Iterable[dict]
+    ) -> None:
+        """RoundsOfFunding initializer.
+
+        :param kfinance_api_client: The KFinanceApiClient used to fetch data.
+        :type kfinance_api_client: KFinanceApiClient
+        :param rounds_of_funding: A iterable of transaction IDs, funding round notes, closed dates, and funding types.
+        :type rounds_of_funding: Iterable[dict]
+        """
+        self.kfinance_api_client = kfinance_api_client
+        super().__init__(
+            RoundOfFunding(
+                kfinance_api_client=kfinance_api_client,
+                transaction_id=round_of_funding["transaction_id"],
+                funding_round_notes=round_of_funding["funding_round_notes"],
+                closed_date=round_of_funding["closed_date"],
+                funding_type=round_of_funding.get("funding_type"),
+            )
+            for round_of_funding in rounds_of_funding
         )
 
 
@@ -1859,7 +2028,7 @@ class Client:
     def mergers_and_acquisitions(self, company_id: int) -> dict[str, MergersAndAcquisitions]:
         """Generate 3 named lists of MergersAndAcquisitions objects from company_id.
 
-        :param company_id: S&P Global company ID
+        :param company_id: CIQ company id
         :type company_id: int
         :return: A dictionary of three keys ('target', 'buyer', and 'seller'), each of whose values is a MergersAndAcquisitions.
         :rtype: dict[str, MergersAndAcquisitions]
@@ -1873,6 +2042,19 @@ class Client:
                 self.kfinance_api_client, mergers_for_company[literal]
             )
         return output
+
+    def rounds_of_funding(self, company_id: int) -> RoundsOfFunding:
+        """Returns a RoundsOfFunding objects raised for company_id.
+
+        :param company_id: CIQ company id
+        :type company_id: int
+        :return: A RoundsOfFunding object that has the list of transaction ids, funding round notes, closed dates, and funding types of the rounds of funding a company raised.
+        :rtype: RoundsOfFunding
+        """
+        rounds_of_funding = self.kfinance_api_client.fetch_rounds_of_funding_for_company(
+            company_id=company_id
+        ).model_dump(mode="json")
+        return RoundsOfFunding(self.kfinance_api_client, rounds_of_funding["rounds_of_funding"])
 
     @staticmethod
     def get_latest(use_local_timezone: bool = True) -> LatestPeriods:

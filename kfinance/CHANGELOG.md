@@ -1,5 +1,8 @@
 # Changelog
 
+# v4.1.0
+- Add Rounds of Funding tools
+
 ## v4.0.0
 - Update line items, statements, and segments models for fiscal period lookup
 
