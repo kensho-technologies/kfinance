@@ -1,5 +1,8 @@
 # Changelog
 
+## v.4.1.1
+- Update line item, statement, and segment tool descriptions for fiscal period lookup
+
 ## v4.0.0
 - Update line items, statements, and segments models for fiscal period lookup
 
