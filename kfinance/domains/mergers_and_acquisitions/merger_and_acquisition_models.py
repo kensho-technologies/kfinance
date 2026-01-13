@@ -1,9 +1,9 @@
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel
 
-from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX, CompanyIdAndName
+from kfinance.domains.companies.company_models import CompanyId, CompanyIdAndName
 
 
 class MergerSummary(BaseModel):
@@ -19,17 +19,9 @@ class MergersResp(BaseModel):
 
 
 class AdvisorResp(BaseModel):
-    advisor_company_id: int
+    advisor_company_id: CompanyId
     advisor_company_name: str
     advisor_type_name: str | None
-
-    @field_serializer("advisor_company_id")
-    def serialize_with_prefix(self, company_id: int) -> str:
-        """Serialize the advisor_company_id with a prefix ("C_<company_id>").
-
-        Including the prefix allows us to distinguish tickers and company_ids.
-        """
-        return f"{COMPANY_ID_PREFIX}{company_id}"
 
 
 class MergerTimelineElement(BaseModel):
