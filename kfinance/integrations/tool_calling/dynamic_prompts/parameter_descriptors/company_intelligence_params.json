@@ -1,0 +1,89 @@
+{
+  "description": "Parameter descriptors for company information tools",
+  "tools": [
+    {
+      "tool_name": "get_info_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_info_from_identifiers",
+          "description": "List of company identifiers for basic company information including name, status, industry, employees, and headquarters.",
+          "examples": {
+            "['AAPL']": "",
+            "['MSFT', 'GOOGL', 'AMZN']": "",
+            "['TSLA']": ""
+          },
+          "common_mistakes": [
+            "Making separate calls for each company instead of batching",
+            "Using this tool for detailed business descriptions (use get_company_description instead)",
+            "Using this for financial data (use financial statement tools instead)"
+          ],
+          "related_parameters": []
+        }
+      ]
+    },
+    {
+      "tool_name": "get_company_summary_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_company_summary_from_identifiers",
+          "description": "List of company identifiers for one-paragraph business summaries including primary business, products, services, and markets.",
+          "examples": {
+            "['NFLX']": "",
+            "['JPM', 'BAC']": "",
+            "['F']": ""
+          },
+          "common_mistakes": [
+            "Using this for detailed multi-section descriptions (use get_company_description instead)",
+            "Using this for basic company facts like headquarters (use get_info_from_identifiers instead)",
+            "Expecting detailed segment breakdowns (summary provides overview only)"
+          ],
+          "related_parameters": []
+        }
+      ]
+    },
+    {
+      "tool_name": "get_company_description_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_company_description_from_identifiers",
+          "description": "List of company identifiers for detailed, multi-section descriptions including segments, competition, history, and significant events.",
+          "examples": {
+            "['AAPL']": "",
+            "['AMZN']": "",
+            "['MSFT', 'GOOGL']": ""
+          },
+          "common_mistakes": [
+            "Using this for simple business overviews (use get_company_summary instead)",
+            "Using this for basic company facts (use get_info_from_identifiers instead)",
+            "Expecting financial data (use financial statement tools instead)"
+          ],
+          "related_parameters": []
+        }
+      ]
+    },
+    {
+      "tool_name": "get_company_other_names_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_company_other_names_from_identifiers",
+          "description": "List of company identifiers for alternate names, historical names, and native language names.",
+          "examples": {
+            "['GOOGL']": "",
+            "['META']": "",
+            "['TM', '005930.KS']": ""
+          },
+          "common_mistakes": [
+            "Using this for business information (use other company tools instead)",
+            "Using this for current company name (use get_info_from_identifiers instead)",
+            "Expecting detailed company descriptions (this is only for name variations)"
+          ],
+          "related_parameters": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "description": "Parameter descriptors for company segment queries with segment type and time period disambiguation",
+  "tools": [
+    {
+      "tool_name": "get_segments_from_identifiers",
+      "parameters": [
+        {
+          "parameter_name": "identifiers",
+          "tool_name": "get_segments_from_identifiers",
+          "description": "List of company identifiers for segment information. Always batch multiple identifiers when possible.",
+          "examples": {
+            "['AAPL']": "",
+            "['KO']": "",
+            "['AMZN']": "",
+            "['AAPL', 'MSFT', 'GOOGL']": ""
+          },
+          "common_mistakes": [
+            "Making separate API calls for each company instead of batching",
+            "Using incorrect ticker symbols",
+            "Not using array format for single identifiers",
+            "Expecting this to work for companies without segment reporting"
+          ],
+          "related_parameters": ["segment_type", "period_type", "start_year", "end_year"]
+        },
+        {
+          "parameter_name": "segment_type",
+          "tool_name": "get_segments_from_identifiers",
+          "description": "The type of segment breakdown to retrieve. Must match available segment types in the system.",
+          "examples": {
+            "business": "Business unit or division segments (e.g., iPhone, Mac, Services for Apple)",
+            "geographic": "Geographic or regional segments (e.g., Americas, Europe, Asia-Pacific)",
+            "product": "Product line segments (e.g., different product categories or brands)",
+            "service": "Service-based segments (e.g., cloud services, consulting, support)",
+            "revenue": "Revenue-based segment breakdown (e.g., subscription vs one-time revenue)",
+            "operating": "Operating segment divisions (e.g., reportable operating segments per GAAP)"
+          },
+          "common_mistakes": [
+            "Using 'geographical' instead of 'geographic'",
+            "Using 'business_segment' instead of 'business'",
+            "Using 'product_segment' instead of 'product'",
+            "Using 'regional' instead of 'geographic'",
+            "Not specifying segment_type (this parameter is required)",
+            "Using segment types not available for the specific company"
+          ],
+          "related_parameters": ["identifiers", "period_type"]
+        },
+        {
+          "parameter_name": "period_type",
+          "tool_name": "get_segments_from_identifiers",
+          "description": "Specifies whether to retrieve annual or quarterly segment data. Required when requesting quarterly data.",
+          "examples": {
+            "annual": "",
+            "quarterly": ""
+          },
+          "common_mistakes": [
+            "Forgetting to set period_type to 'quarterly' when requesting quarterly data",
+            "Using 'quarter' instead of 'quarterly'",
+            "Using 'yearly' instead of 'annual'",
+            "Not specifying period_type when using quarter parameters"
+          ],
+          "related_parameters": ["start_quarter", "end_quarter", "start_year", "end_year"]
+        },
+        {
+          "parameter_name": "start_year",
+          "tool_name": "get_segments_from_identifiers",
+          "description": "Starting year for the segment data range. Use calendar years. Required whenever the question references a specific year or range.",
+          "examples": {
+            "2020": "",
+            "2022": "",
+            "2023": ""
+          },
+          "common_mistakes": [
+            "Using fiscal years instead of calendar years",
+            "Using string format instead of integer",
+            "Not specifying when requesting historical ranges",
+            "Setting start_year without end_year for ranges",
+            "Leaving start_year null when the user asks for a single explicit year"
+          ],
+          "related_parameters": ["end_year", "period_type", "start_quarter"]
+        },
+        {
+          "parameter_name": "end_year",
+          "tool_name": "get_segments_from_identifiers",
+          "description": "Ending year for the segment data range. Use calendar years. Must be >= start_year.",
+          "examples": {
+            "2023": "",
+            "2024": ""
+          },
+          "common_mistakes": [
+            "Using fiscal years instead of calendar years",
+            "Setting end_year before start_year",
+            "Using string format instead of integer",
+            "Not specifying end_year when start_year is provided",
+            "Leaving end_year null when the user asks for an ending year"
+          ],
+          "related_parameters": ["start_year", "period_type", "end_quarter"]
+        },
+        {
+          "parameter_name": "start_quarter",
+          "tool_name": "get_segments_from_identifiers",
+          "description": "Starting quarter (1-4) when requesting quarterly segment data. Only used with period_type='quarterly' and required whenever the question references a specific start quarter.",
+          "examples": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": ""
+          },
+          "common_mistakes": [
+            "Using quarter numbers outside 1-4 range",
+            "Forgetting to set period_type to 'quarterly'",
+            "Using string values like 'Q1' instead of integer 1",
+            "Using 0-based indexing (0-3) instead of 1-based (1-4)",
+            "Leaving start_quarter empty when the query mentions a specific quarter"
+          ],
+          "related_parameters": ["end_quarter", "period_type", "start_year"]
+        },
+        {
+          "parameter_name": "end_quarter",
+          "tool_name": "get_segments_from_identifiers",
+          "description": "Ending quarter (1-4) when requesting quarterly segment data. Only used with period_type='quarterly'.",
+          "examples": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": ""
+          },
+          "common_mistakes": [
+            "Using quarter numbers outside 1-4 range",
+            "Setting end_quarter before start_quarter in same year",
+            "Using string values like 'Q4' instead of integer 4",
+            "Not specifying end_quarter when start_quarter is provided",
+            "Leaving end_quarter null when the question references an ending quarter"
+          ],
+          "related_parameters": ["start_quarter", "period_type", "end_year"]
+        }
+      ]
+    }
+  ]
+}
