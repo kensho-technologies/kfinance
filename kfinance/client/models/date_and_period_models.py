@@ -47,7 +47,7 @@ class EstimatePeriodType(StrEnum):
 
 
 class EstimateType(StrEnum):
-    estimate = "estimate"
+    consensus = "consensus"
     guidance = "guidance"
 
 

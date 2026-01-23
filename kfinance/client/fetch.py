@@ -219,7 +219,7 @@ class KFinanceApiClient:
         self._user_permissions = set()
         for permission_str in user_permission_dict["permissions"]:
             try:
-                self._user_permissions.add(Permission[permission_str])
+                self._user_permissions.add(Permission(permission_str))
             except KeyError:
                 logger.warning(
                     "You have access to functions using %s. However, functions using "
@@ -832,7 +832,7 @@ class KFinanceApiClient:
     def fetch_estimates(
         self,
         company_id: int,
-        estimate_type: EstimateType,
+        estimate_type: EstimateType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
         start_quarter: int | None = None,
@@ -845,7 +845,7 @@ class KFinanceApiClient:
         url = f"{self.url_base}estimates/"
 
         payload = {
-            "estimate_type": estimate_type.value,
+            "estimate_type": estimate_type.value if estimate_type is not None else None,
             "company_id": company_id,
             "start_year": start_year,
             "end_year": end_year,

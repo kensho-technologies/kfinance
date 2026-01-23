@@ -108,7 +108,32 @@ MOCK_COMPANY_DB = {
         ),
         "estimates": EstimatesResp.model_validate(
             {
-                "meow meow meow meow meow": {}
+                "estimate_type": "consensus",
+                "currency": "USD",
+                "period_type": "quarterly",
+                "periods": {
+                    "FY2025Q4": {
+                        "period_end_date": "2025-12-31",
+                        "estimates": [
+                            {
+                                "name": "Revenue Consensus High",
+                                "value": "3955000000.000000"
+                            },
+                            {
+                                "name": "Revenue Consensus Low",
+                                "value": "3806400000.000000"
+                            },
+                            {
+                                "name": "Revenue Consensus Mean",
+                                "value": "3881725460.000000"
+                            },
+                            {
+                                "name": "Revenue Consensus Median",
+                                "value": "3883000000.000000"
+                            }
+                        ]
+                    }
+                }
             }
         ),
         "line_items": {

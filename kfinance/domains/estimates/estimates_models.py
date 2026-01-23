@@ -4,6 +4,7 @@ from typing import TypeAlias
 
 from pydantic import BaseModel, Field
 
+from kfinance.client.models.date_and_period_models import EstimateType, EstimatePeriodType
 
 Source: TypeAlias = dict[str, str]
 
@@ -11,15 +12,15 @@ Source: TypeAlias = dict[str, str]
 class LineItem(BaseModel):
     name: str
     value: Decimal | None
-    sources: list[Source] = Field(default_factory=list)
 
 
 class EstimatesPeriodData(BaseModel):
     period_end_date: date
-    num_months: int
     estimates: LineItem
 
 
 class EstimatesResp(BaseModel):
+    estimate_type: EstimateType
     currency: str | None
+    period_type: EstimatePeriodType
     periods: dict[str, EstimatesPeriodData]

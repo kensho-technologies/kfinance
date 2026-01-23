@@ -559,7 +559,7 @@ class CompanyFunctionsMetaClass:
         estimate_resp = list(estimate_response.results.values())[0]
         return estimate_resp.model_dump(mode="json")["periods"]
 
-    def estimate(
+    def consensus_estimate(
         self,
         start_year: int | None = None,
         end_year: int | None = None,
@@ -569,7 +569,7 @@ class CompanyFunctionsMetaClass:
     ) -> dict:
 
         return self._estimate(
-            estimate_type=EstimateType.estimate,
+            estimate_type=EstimateType.consensus,
             start_year=start_year,
             end_year=end_year,
             start_quarter=start_quarter,
@@ -577,7 +577,7 @@ class CompanyFunctionsMetaClass:
             period_type=period_type,
         )
 
-    def guidance(
+    def guidance_estimate(
             self,
             start_year: int | None = None,
             end_year: int | None = None,

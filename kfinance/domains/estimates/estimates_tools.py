@@ -19,7 +19,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 class GetEstimatesFromIdentifierArgs(ToolArgsWithIdentifiers):
-    estimate_type: EstimateType
+    estimate_type: EstimateType | None = Field(default=None, description="Consensus or guidance estimates")
     period_type: EstimatePeriodType | None = Field(default=None, description="The period type")
     start_year: int | None = Field(default=None, description="The starting year for the data range")
     end_year: int | None = Field(default=None, description="The ending year for the data range")
@@ -40,7 +40,7 @@ class GetEstimatesFromIdentifiersResp(ToolRespWithErrors):
 class GetEstimatesFromIdentifiers(KfinanceTool):
     name: str = "get_estimates_from_identifiers"
     description: str = dedent("""
-        meow meow meow meow meow
+        Get the estimates associated with a list of identifiers.
     """).strip()
     args_schema: Type[BaseModel] = GetEstimatesFromIdentifierArgs
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
@@ -59,7 +59,34 @@ class GetEstimatesFromIdentifiers(KfinanceTool):
     ) -> GetEstimatesFromIdentifiersResp:
         """Sample response:
 
-         meow meow meow meow meow
+            "SPGI": {
+                "estimate_type": "consensus",
+                "currency": "USD",
+                "period_type": "quarterly",
+                "periods": {
+                    "FY2025Q4": {
+                        "period_end_date": "2025-12-31",
+                        "estimates": [
+                            {
+                                "name": "Revenue Consensus High",
+                                "value": "3955000000.000000",
+                            },
+                            {
+                                "name": "Revenue Consensus Low",
+                                "value": "3806400000.000000",
+                            },
+                            {
+                                "name": "Revenue Consensus Mean",
+                                "value": "3881725460.000000",
+                            },
+                            {
+                                "name": "Revenue Consensus Median",
+                                "value": "3883000000.000000",
+                            },
+                        ],
+                    }
+                },
+            }
         """
 
         api_client = self.kfinance_client.kfinance_api_client
