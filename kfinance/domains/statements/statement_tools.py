@@ -57,9 +57,11 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         Get a financial statement (balance_sheet, income_statement, or cashflow) for a group of identifiers.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - To fetch the most recent statement, leave start_year, start_quarter, end_year, end_quarter, num_periods, and num_periods_back as null.
-        - The tool accepts an optional calendar_type argument, which can either be 'calendar' or 'fiscal'. If 'calendar' is chosen, then start_year and end_year will filter on calendar year, and the output returned will be in calendar years. If 'fiscal' is chosen (which is the default), then start_year and end_year will filter on fiscal year, and the output returned will be in fiscal years.
-        - To filter by time, use either absolute (start_year, end_year, start_quarter, end_quarter) for specific dates like "in 2023" or "Q2 2021", OR relative (num_periods, num_periods_back) for phrases like "last 3 quarters" or "past five years"—but not both.
+        - To fetch the most recent statement, leave all time parameters as null.
+        - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods, num_periods_back)—but not both.
+        - Set calendar_type based on how the query references the time period—use "fiscal" for fiscal year references and "calendar" for calendar year references.
+        - When calendar_type=None, it defaults to 'fiscal'.
+        - Exception: with multiple identifiers and absolute time, calendar_type=None defaults to 'calendar' for cross-company comparability; calendar_type='fiscal' returns fiscal data but should not be compared across companies since fiscal years have different end dates.
 
         Examples:
         Query: "Fetch the balance sheets of Bank of America and Goldman Sachs for 2024"
@@ -72,10 +74,10 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         Function: get_financial_statement_from_identifiers(identifiers=["XOM"], statement="cashflow", period_type="quarterly", start_year=2023, end_year=2023, start_quarter=2, end_quarter=2)
 
         Query: "What is the balance sheet for The New York Times for the past 7 years except for the most recent 2 years?"
-        Function: get_financial_statement_from_identifiers(statement_type="balance_sheet", num_periods=7, num_periods_back=2, identifiers=["NYT"])
+        Function: get_financial_statement_from_identifiers(statement="balance_sheet", num_periods=5, num_periods_back=2, identifiers=["NYT"])
 
-        Query: "What are the annual income statement for the calendar years between 2013 and 2016 for Alibaba and Wayfair?"
-        Function: get_financial_statement_from_identifiers(statement_type="income_statement", period_type="annual", calendar_type="calendar", start_year=2013, end_year=2016, identifiers=["BABA", "W"])
+        Query: "What are the annual income statement for the calendar years between 2013 and 2016 for BABA and W?"
+        Function: get_financial_statement_from_identifiers(statement="income_statement", period_type="annual", calendar_type="calendar", start_year=2013, end_year=2016, identifiers=["BABA", "W"])
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialStatementFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {
@@ -158,17 +160,9 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         # First resolve identifiers to company IDs
         ids_response = api_client.unified_fetch_id_triples(identifiers)
 
-        company_id_to_identifier = {
-            id_triple.company_id: identifier
-            for identifier, id_triple in ids_response.identifiers_to_id_triples.items()
-        }
-        company_ids = [
-            id_triple.company_id for id_triple in ids_response.identifiers_to_id_triples.values()
-        ]
-
         # Call the simplified fetch_statement API with company IDs
         response = api_client.fetch_statement(
-            company_ids=company_ids,
+            company_ids=ids_response.company_ids,
             statement_type=statement.value,
             period_type=period_type,
             start_year=start_year,
@@ -182,8 +176,7 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
 
         identifier_to_results = {}
         for company_id_str, statement_resp in response.results.items():
-            company_id = int(company_id_str)
-            original_identifier = company_id_to_identifier[company_id]
+            original_identifier = ids_response.get_identifier_from_company_id(int(company_id_str))
             identifier_to_results[original_identifier] = statement_resp
 
         # If no date and multiple companies, only return the most recent value.
@@ -194,13 +187,12 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
             and end_year is None
             and start_quarter is None
             and end_quarter is None
+            and num_periods is None
+            and num_periods_back is None
             and len(identifier_to_results) > 1
         ):
-            for statement_response in identifier_to_results.values():
-                if statement_response.periods:
-                    most_recent_year = max(statement_response.periods.keys())
-                    most_recent_year_data = statement_response.periods[most_recent_year]
-                    statement_response.periods = {most_recent_year: most_recent_year_data}
+            for result in identifier_to_results.values():
+                result.remove_all_periods_other_than_the_most_recent_one()
 
         all_errors = list(ids_response.errors.values()) + list(response.errors.values())
 

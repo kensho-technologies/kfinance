@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from itertools import chain
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from pydantic import BaseModel, Field
 from strenum import StrEnum
@@ -27,7 +27,24 @@ class LineItemPeriodData(BaseModel):
     line_item: LineItem
 
 
-class LineItemResp(BaseModel):
+class BasePeriodsResp(BaseModel):
+    """Base model for responses with a periods -> data mapping.
+
+    Adds a convenience function to remove all periods other than the
+    most recent one.
+    """
+
+    periods: dict[str, Any]  # override in subclasses
+
+    def remove_all_periods_other_than_the_most_recent_one(self) -> None:
+        """Remove all period data other than the most recent one."""
+        if self.periods:
+            most_recent_period = max(self.periods.keys())
+            most_recent_period_data = self.periods[most_recent_period]
+            self.periods = {most_recent_period: most_recent_period_data}
+
+
+class LineItemResp(BasePeriodsResp):
     currency: str | None
     periods: dict[str, LineItemPeriodData]  # period -> line item and period data
 

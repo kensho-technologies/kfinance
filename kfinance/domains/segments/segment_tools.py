@@ -45,19 +45,21 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         Get the templated business or geographic segments associated with a list of identifiers.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - The tool accepts an optional calendar_type argument, which can either be 'calendar' or 'fiscal'. If 'calendar' is chosen, then start_year and end_year will filter on calendar year, and the output returned will be in calendar years. If 'fiscal' is chosen (which is the default), then start_year and end_year will filter on fiscal year, and the output returned will be in fiscal years.
-        - To fetch the most recent segment data, leave start_year, start_quarter, end_year, end_quarter, num_periods, and num_periods_back as None.
-        - To filter by time, use either absolute (start_year, end_year, start_quarter, end_quarter) for specific dates like "in 2023" or "Q2 2021", OR relative (num_periods, num_periods_back) for phrases like "last 3 quarters" or "past five years"—but not both.
+        - To fetch the most recent segment data, leave all time parameters as null.
+        - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods, num_periods_back)—but not both.
+        - Set calendar_type based on how the query references the time period—use "fiscal" for fiscal year references and "calendar" for calendar year references.
+        - When calendar_type=None, it defaults to 'fiscal'.
+        - Exception: with multiple identifiers and absolute time, calendar_type=None defaults to 'calendar' for cross-company comparability; calendar_type='fiscal' returns fiscal data but should not be compared across companies since fiscal years have different end dates.
 
         Examples:
         Query: "What are the business segments for AT&T?"
         Function: get_segments_from_identifiers(identifiers=["AT&T"], segment_type="business")
 
-        Query: "Get geographic segments for PFE and JNJ"
-        Function: get_segments_from_identifiers(identifiers=["PFE", "JNJ"], segment_type="geographic")
+        Query: "Get most recent geographic segments for Pfizer and JNJ"
+        Function: get_segments_from_identifiers(identifiers=["Pfizer", "JNJ"], segment_type="geographic")
 
-        Query: "What are the ltm business segments for S&P for the last three calendar quarters but one?"
-        Function: get_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=3, num_periods_back=1, identifiers=["SPGI"])
+        Query: "What are the ltm business segments for SPGI for the last three calendar quarters but one?"
+        Function: get_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=2, num_periods_back=1, identifiers=["SPGI"])
     """).strip()
     args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.SegmentsPermission}
@@ -128,17 +130,9 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         # First resolve identifiers to company IDs
         ids_response = api_client.unified_fetch_id_triples(identifiers)
 
-        company_id_to_identifier = {
-            id_triple.company_id: identifier
-            for identifier, id_triple in ids_response.identifiers_to_id_triples.items()
-        }
-        company_ids = [
-            id_triple.company_id for id_triple in ids_response.identifiers_to_id_triples.values()
-        ]
-
         # Call the simplified fetch_segments API with company IDs
         response = api_client.fetch_segments(
-            company_ids=company_ids,
+            company_ids=ids_response.company_ids,
             segment_type=segment_type,
             period_type=period_type,
             start_year=start_year,
@@ -153,7 +147,7 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         identifier_to_results = {}
         for company_id_str, segments_resp in response.results.items():
             company_id = int(company_id_str)
-            original_identifier = company_id_to_identifier[company_id]
+            original_identifier = ids_response.get_identifier_from_company_id(company_id)
             identifier_to_results[original_identifier] = segments_resp
 
         # If no date and multiple companies, only return the most recent value.
@@ -164,13 +158,12 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
             and end_year is None
             and start_quarter is None
             and end_quarter is None
+            and num_periods is None
+            and num_periods_back is None
             and len(identifier_to_results) > 1
         ):
             for segments_response in identifier_to_results.values():
-                if segments_response.periods:
-                    most_recent_year = max(segments_response.periods.keys())
-                    most_recent_year_data = segments_response.periods[most_recent_year]
-                    segments_response.periods = {most_recent_year: most_recent_year_data}
+                segments_response.remove_all_periods_other_than_the_most_recent_one()
 
         all_errors = list(ids_response.errors.values()) + list(response.errors.values())
 
