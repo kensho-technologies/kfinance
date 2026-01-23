@@ -10,11 +10,11 @@ NumPeriodsForward = Annotated[
     Field(ge=0, le=99, description="The number of periods in the future to retrieve estimate data."),
 ]
 
-
 NumPeriodsBackward = Annotated[
     int,
     Field(ge=0, le=99, description="The number of periods in the past to retrieve estimate data.",),
 ]
+
 # Constrained integer types for period counts
 NumPeriods = Annotated[
     int,
@@ -43,7 +43,7 @@ class PeriodType(StrEnum):
 class EstimatePeriodType(StrEnum):
     annual = "annual"
     quarterly = "quarterly"
-    fiscal_half = "fiscal_half"
+    semi_annual = "semi_annual"
 
 
 class EstimateType(StrEnum):

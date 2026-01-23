@@ -219,7 +219,7 @@ class KFinanceApiClient:
         self._user_permissions = set()
         for permission_str in user_permission_dict["permissions"]:
             try:
-                self._user_permissions.add(Permission(permission_str))
+                self._user_permissions.add(Permission[permission_str])
             except KeyError:
                 logger.warning(
                     "You have access to functions using %s. However, functions using "
