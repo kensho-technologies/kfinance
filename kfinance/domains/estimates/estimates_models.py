@@ -16,7 +16,7 @@ class LineItem(BaseModel):
 
 class EstimatesPeriodData(BaseModel):
     period_end_date: date
-    estimates: LineItem
+    estimates: list[LineItem]
 
 
 class EstimatesResp(BaseModel):

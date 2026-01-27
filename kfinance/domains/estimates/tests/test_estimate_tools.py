@@ -3,15 +3,71 @@ from requests_mock import Mocker
 from kfinance.client.kfinance import Client
 from kfinance.client.models.date_and_period_models import EstimateType
 from kfinance.domains.estimates.estimates_tools import (
-    GetEstimatesFromIdentifierArgs,
-    GetEstimatesFromIdentifiers,
+    GetEstimatesFromIdentifiersArgs,
+    GetConsensusEstimatesFromIdentifiers,
     GetEstimatesFromIdentifiersResp
 )
 
 
 class TestGetEstimateFromIdentifier:
     estimates_response = {
-        "meow meow meow meow meow": {}
+      "estimate_type": "consensus",
+      "currency": "USD",
+      "period_type": "quarterly",
+      "periods": {
+        "FY2025Q4": {
+          "period_end_date": "2025-12-31",
+          "estimates": [
+            {
+              "name": "Book Value / Share - # of Estimates",
+              "value": "2.000000"
+            },
+            {
+              "name": "Book Value / Share Consensus High",
+              "value": "109.600000"
+            },
+          ]
+        },
+        "FY2026Q1": {
+          "period_end_date": "2026-03-31",
+          "estimates": [
+            {
+              "name": "Book Value / Share - # of Estimates",
+              "value": "2.000000"
+            },
+            {
+              "name": "Book Value / Share Consensus High",
+              "value": "110.680000"
+            },
+          ]
+        },
+        "FY2026Q2": {
+          "period_end_date": "2026-06-30",
+          "estimates": [
+            {
+              "name": "Book Value / Share - # of Estimates",
+              "value": "1.000000"
+            },
+            {
+              "name": "Book Value / Share Consensus High",
+              "value": "105.020000"
+            },
+          ]
+        },
+        "FY2026Q3": {
+          "period_end_date": "2026-09-30",
+          "estimates": [
+            {
+              "name": "Book Value / Share - # of Estimates",
+              "value": "2.000000"
+            },
+            {
+              "name": "Book Value / Share Consensus High",
+              "value": "113.130000"
+            },
+          ]
+        }
+      }
     }
 
     def test_get_estimate_from_identifier(self, mock_client: Client, requests_mock: Mocker):
@@ -45,9 +101,7 @@ class TestGetEstimateFromIdentifier:
             }
         )
 
-        tool = GetEstimatesFromIdentifiers(kfinance_client=mock_client)
-        args = GetEstimatesFromIdentifierArgs(
-            identifiers=["SPGI", "NON-EXISTENT"], estimate_type=EstimateType.estimate
-        )
+        tool = GetConsensusEstimatesFromIdentifiers(kfinance_client=mock_client)
+        args = GetEstimatesFromIdentifiersArgs(identifiers=["SPGI", "NON-EXISTENT"])
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response

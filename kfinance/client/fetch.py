@@ -219,7 +219,7 @@ class KFinanceApiClient:
         self._user_permissions = set()
         for permission_str in user_permission_dict["permissions"]:
             try:
-                self._user_permissions.add(Permission(permission_str))
+                self._user_permissions.add(Permission[permission_str])
             except KeyError:
                 logger.warning(
                     "You have access to functions using %s. However, functions using "
@@ -832,7 +832,7 @@ class KFinanceApiClient:
     def fetch_estimates(
         self,
         company_id: int,
-        estimate_type: EstimateType | None = None,
+        estimate_type: EstimateType,
         start_year: int | None = None,
         end_year: int | None = None,
         start_quarter: int | None = None,
@@ -841,20 +841,31 @@ class KFinanceApiClient:
         num_periods_backward: int | None = None,
         period_type: EstimatePeriodType | None = None,
     ) -> PostResponse[EstimatesResp]:
+        """Get estimates or guidance for a specified duration."""
 
         url = f"{self.url_base}estimates/"
 
-        payload = {
-            "estimate_type": estimate_type.value if estimate_type is not None else None,
+        period_type_val = period_type.value if period_type is not None else None
+
+        request_body: dict[str, str | int | list[int]] = {
+            "estimate_type": estimate_type.value,
             "company_id": company_id,
-            "start_year": start_year,
-            "end_year": end_year,
-            "start_quarter": start_quarter,
-            "end_quarter": end_quarter,
-            "num_periods_forward": num_periods_forward,
-            "num_periods_backward": num_periods_backward,
-            "period_type": period_type.value if period_type is not None else None,
         }
 
-        response_data = self.fetch(url, method="POST", request_body=payload)
+        fields = [
+            ("fiscal_start_year", start_year),
+            ("fiscal_end_year", end_year),
+            ("fiscal_start_quarter", start_quarter),
+            ("fiscal_end_quarter", end_quarter),
+            ("num_periods_forward", num_periods_forward),
+            ("num_periods_backward", num_periods_backward),
+            ("period_type", period_type_val),
+        ]
+
+        for key, value in fields:
+            if value is not None:
+                request_body[key] = value
+
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+
         return PostResponse[EstimatesResp].model_validate(response_data)

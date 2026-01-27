@@ -16,3 +16,6 @@ class Permission(StrEnum):
     PrivateCompanyFinancialsPermission = "PrivateCompanyFinancialsPermission"
     CompanyIntelligencePermission = "CompanyIntelligencePermission"
     EstimatesPermission = "EstimatesPermission"
+    # These permissions are not used by the client, but some users may have these permissions
+    OnlyStaffPermission = "OnlyStaffPermission"
+    PrivateCompanyFinancialsPermissionExcludeRedistribution = "PrivateCompanyFinancialsPermissionExcludeRedistribution"

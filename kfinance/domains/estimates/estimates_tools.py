@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from textwrap import dedent
 from typing import Literal, Type
 
@@ -18,37 +19,45 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ValidQuarter,
 )
 
-class GetEstimatesFromIdentifierArgs(ToolArgsWithIdentifiers):
-    estimate_type: EstimateType | None = Field(default=None, description="Consensus or guidance estimates")
-    period_type: EstimatePeriodType | None = Field(default=None, description="The period type")
-    start_year: int | None = Field(default=None, description="The starting year for the data range")
-    end_year: int | None = Field(default=None, description="The ending year for the data range")
-    start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
-    end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter")
+class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
+    period_type: EstimatePeriodType | None = Field(default=None, description="The period type (annual, semi-annual, or quarterly")
+    start_year: int | None = Field(default=None, description="The starting year for the data range. Use null for the most recent data.")
+    end_year: int | None = Field(default=None, description="The ending year for the data range. Use null for the most recent data.")
+    start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter (1-4). Used when period_type is semi-annual or quarterly.")
+    end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter (1-4). Used when period_type is semi-annual or quarterly.")
     num_periods_forward: NumPeriodsForward | None = Field(
-        default=None, description="The number of periods in the future to retrieve estimate data."
+        default=None, description="The number of periods forward from today (1-99)."
     )
     num_periods_backward: NumPeriodsBackward | None = Field(
-        default=None, description="The number of periods in the past to retrieve estimate data.",
+        default=None, description="The number of periods to look back from today (1-99).",
     )
 
 
 class GetEstimatesFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, EstimatesResp]  # identifier -> response
 
+class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
 
-class GetEstimatesFromIdentifiers(KfinanceTool):
-    name: str = "get_estimates_from_identifiers"
-    description: str = dedent("""
-        Get the estimates associated with a list of identifiers.
-    """).strip()
-    args_schema: Type[BaseModel] = GetEstimatesFromIdentifierArgs
+    @property
+    @abstractmethod
+    def description(self) -> str:
+        pass
+
+    args_schema: Type[BaseModel] = GetEstimatesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
+
+    @property
+    @abstractmethod
+    def estimate_type(self) -> EstimateType:
+        pass
 
     def _run(
         self,
         identifiers: list[str],
-        estimate_type: EstimateType,
         period_type: EstimatePeriodType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
@@ -98,12 +107,12 @@ class GetEstimatesFromIdentifiers(KfinanceTool):
         company_ids = [
             id_triple.company_id for id_triple in ids_response.identifiers_to_id_triples.values()
         ]
-        identifier_to_results = {}
+        identifiers_to_results = {}
         all_errors = []
         for company_id in company_ids:
             response = api_client.fetch_estimates(
                 company_id=company_id,
-                estimate_type=estimate_type,
+                estimate_type=self.estimate_type,
                 period_type=period_type,
                 start_year=start_year,
                 end_year=end_year,
@@ -113,7 +122,7 @@ class GetEstimatesFromIdentifiers(KfinanceTool):
                 num_periods_backward=num_periods_backward,
             )
             original_identifier = company_id_to_identifier[company_id]
-            identifier_to_results[original_identifier] = response.results
+            identifiers_to_results[original_identifier] = response.results
             if response.errors:
                 all_errors.append(response.errors)
 
@@ -127,14 +136,52 @@ class GetEstimatesFromIdentifiers(KfinanceTool):
             and end_quarter is None
             and num_periods_forward is None
             and num_periods_backward is None
-            and len(identifier_to_results) > 1
+            and len(identifiers_to_results) > 1
         ):
-            for line_item_response in identifier_to_results.values():
+            for line_item_response in identifiers_to_results.values():
                 if line_item_response.periods:
                     most_recent_year = max(line_item_response.periods.keys())
                     most_recent_year_data = line_item_response.periods[most_recent_year]
                     line_item_response.periods = {most_recent_year: most_recent_year_data}
 
         return GetEstimatesFromIdentifiersResp(
-            results=identifier_to_results, errors=all_errors
+            results=identifiers_to_results, errors=all_errors
         )
+
+
+class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
+
+    @property
+    def name(self) -> str:
+        return "get_consensus_estimates_from_identifiers"
+
+    @property
+    def description(self) -> str:
+        return dedent("""
+            Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given company id. Returns statistical aggregates including high, low, mean, median, and number of estimates. When periods have ended, actual reported values are also returned.
+
+            meow meow meow meow meow
+        """).strip()
+
+    @property
+    def estimate_type(self) -> EstimateType:
+        return EstimateType.consensus
+
+
+class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
+
+    @property
+    def name(self) -> str:
+        return "get_guidance_from_identifiers"
+
+    @property
+    def description(self) -> str:
+        return dedent("""
+            Get company-issued financial guidance for a given company id. Returns the most recent guidance provided by the company for future periods, or the final guidance issued before results were reported for past periods.
+
+            meow meow meow meow meow
+        """).strip()
+
+    @property
+    def estimate_type(self) -> EstimateType:
+        return EstimateType.guidance

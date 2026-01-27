@@ -545,6 +545,7 @@ class CompanyFunctionsMetaClass:
             return pd.DataFrame()
 
         estimate_response = self.kfinance_api_client.fetch_estimates(
+            company_id=self.company_id,
             estimate_type=estimate_type,
             period_type=period_type,
             start_year=start_year,
@@ -559,7 +560,7 @@ class CompanyFunctionsMetaClass:
         estimate_resp = list(estimate_response.results.values())[0]
         return estimate_resp.model_dump(mode="json")["periods"]
 
-    def consensus_estimate(
+    def consensus_estimates(
         self,
         start_year: int | None = None,
         end_year: int | None = None,
@@ -577,7 +578,7 @@ class CompanyFunctionsMetaClass:
             period_type=period_type,
         )
 
-    def guidance_estimate(
+    def guidance(
             self,
             start_year: int | None = None,
             end_year: int | None = None,
