@@ -8,7 +8,11 @@ import numpy as np
 import pandas as pd
 
 from kfinance.client.fetch import KFinanceApiClient
-from kfinance.client.models.date_and_period_models import EstimatePeriodType, EstimateType, PeriodType
+from kfinance.client.models.date_and_period_models import (
+    EstimatePeriodType,
+    EstimateType,
+    PeriodType,
+)
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
 )
@@ -567,7 +571,8 @@ class CompanyFunctionsMetaClass:
         start_quarter: int | None = None,
         end_quarter: int | None = None,
         period_type: EstimatePeriodType | None = None,
-    ) -> dict:
+    ) -> pd.DataFrame:
+        """Get consensus estimates for the time range and period type."""
 
         return self._estimate(
             estimate_type=EstimateType.consensus,
@@ -579,13 +584,14 @@ class CompanyFunctionsMetaClass:
         )
 
     def guidance(
-            self,
-            start_year: int | None = None,
-            end_year: int | None = None,
-            start_quarter: int | None = None,
-            end_quarter: int | None = None,
-            period_type: EstimatePeriodType | None = None,
-    ) -> dict:
+        self,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+    ) -> pd.DataFrame:
+        """Get guidance for the time range and period type."""
 
         return self._estimate(
             estimate_type=EstimateType.guidance,

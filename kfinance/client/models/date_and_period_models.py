@@ -7,12 +7,18 @@ from strenum import StrEnum
 
 NumPeriodsForward = Annotated[
     int,
-    Field(ge=0, le=99, description="The number of periods in the future to retrieve estimate data."),
+    Field(
+        ge=0, le=99, description="The number of periods in the future to retrieve estimate data."
+    ),
 ]
 
 NumPeriodsBackward = Annotated[
     int,
-    Field(ge=0, le=99, description="The number of periods in the past to retrieve estimate data.",),
+    Field(
+        ge=0,
+        le=99,
+        description="The number of periods in the past to retrieve estimate data.",
+    ),
 ]
 
 # Constrained integer types for period counts

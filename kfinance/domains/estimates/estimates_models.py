@@ -2,9 +2,10 @@ from datetime import date
 from decimal import Decimal
 from typing import TypeAlias
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from kfinance.client.models.date_and_period_models import EstimateType, EstimatePeriodType
+from kfinance.client.models.date_and_period_models import EstimatePeriodType, EstimateType
+
 
 Source: TypeAlias = dict[str, str]
 

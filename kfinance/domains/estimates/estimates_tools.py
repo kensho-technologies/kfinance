@@ -5,8 +5,8 @@ from typing import Literal, Type
 from pydantic import BaseModel, Field
 
 from kfinance.client.models.date_and_period_models import (
-    EstimateType,
     EstimatePeriodType,
+    EstimateType,
     NumPeriodsBackward,
     NumPeriodsForward,
 )
@@ -19,17 +19,33 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ValidQuarter,
 )
 
+
 class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
-    period_type: EstimatePeriodType | None = Field(default=None, description="The period type (annual, semi-annual, or quarterly")
-    start_year: int | None = Field(default=None, description="The starting year for the data range. Use null for the most recent data.")
-    end_year: int | None = Field(default=None, description="The ending year for the data range. Use null for the most recent data.")
-    start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter (1-4). Used when period_type is semi-annual or quarterly.")
-    end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter (1-4). Used when period_type is semi-annual or quarterly.")
+    period_type: EstimatePeriodType | None = Field(
+        default=None, description="The period type (annual, semi-annual, or quarterly"
+    )
+    start_year: int | None = Field(
+        default=None,
+        description="The starting year for the data range. Use null for the most recent data.",
+    )
+    end_year: int | None = Field(
+        default=None,
+        description="The ending year for the data range. Use null for the most recent data.",
+    )
+    start_quarter: ValidQuarter | None = Field(
+        default=None,
+        description="Starting quarter (1-4). Used when period_type is semi-annual or quarterly.",
+    )
+    end_quarter: ValidQuarter | None = Field(
+        default=None,
+        description="Ending quarter (1-4). Used when period_type is semi-annual or quarterly.",
+    )
     num_periods_forward: NumPeriodsForward | None = Field(
         default=None, description="The number of periods forward from today (1-99)."
     )
     num_periods_backward: NumPeriodsBackward | None = Field(
-        default=None, description="The number of periods to look back from today (1-99).",
+        default=None,
+        description="The number of periods to look back from today (1-99).",
     )
 
 
@@ -38,13 +54,13 @@ class GetEstimatesFromIdentifiersResp(ToolRespWithErrors):
 
 
 class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
-
     args_schema: Type[BaseModel] = GetEstimatesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
 
     @property
     @abstractmethod
     def estimate_type(self) -> EstimateType:
+        """The estimate type property."""
         pass
 
     def _run(
@@ -60,34 +76,34 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
     ) -> GetEstimatesFromIdentifiersResp:
         """Sample response:
 
-            "SPGI": {
-                "estimate_type": "consensus",
-                "currency": "USD",
-                "period_type": "quarterly",
-                "periods": {
-                    "FY2025Q4": {
-                        "period_end_date": "2025-12-31",
-                        "estimates": [
-                            {
-                                "name": "Revenue Consensus High",
-                                "value": "3955000000.000000",
-                            },
-                            {
-                                "name": "Revenue Consensus Low",
-                                "value": "3806400000.000000",
-                            },
-                            {
-                                "name": "Revenue Consensus Mean",
-                                "value": "3881725460.000000",
-                            },
-                            {
-                                "name": "Revenue Consensus Median",
-                                "value": "3883000000.000000",
-                            },
-                        ],
-                    }
-                },
-            }
+        "SPGI": {
+            "estimate_type": "consensus",
+            "currency": "USD",
+            "period_type": "quarterly",
+            "periods": {
+                "FY2025Q4": {
+                    "period_end_date": "2025-12-31",
+                    "estimates": [
+                        {
+                            "name": "Revenue Consensus High",
+                            "value": "3955000000.000000",
+                        },
+                        {
+                            "name": "Revenue Consensus Low",
+                            "value": "3806400000.000000",
+                        },
+                        {
+                            "name": "Revenue Consensus Mean",
+                            "value": "3881725460.000000",
+                        },
+                        {
+                            "name": "Revenue Consensus Median",
+                            "value": "3883000000.000000",
+                        },
+                    ],
+                }
+            },
+        }
         """
 
         api_client = self.kfinance_client.kfinance_api_client
@@ -136,13 +152,10 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
                     most_recent_year_data = line_item_response.periods[most_recent_year]
                     line_item_response.periods = {most_recent_year: most_recent_year_data}
 
-        return GetEstimatesFromIdentifiersResp(
-            results=identifiers_to_results, errors=all_errors
-        )
+        return GetEstimatesFromIdentifiersResp(results=identifiers_to_results, errors=all_errors)
 
 
 class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
-
     name: str = "get_consensus_estimates_from_identifiers"
     description: str = dedent("""
         Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given company id. Returns statistical aggregates including high, low, mean, median, and number of estimates. When periods have ended, actual reported values are also returned.
@@ -150,11 +163,11 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
 
     @property
     def estimate_type(self) -> EstimateType:
+        """The estimate type is consensus."""
         return EstimateType.consensus
 
 
 class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
-
     name: str = "get_guidance_from_identifiers"
     description: str = dedent("""
         Get company-issued financial guidance for a given company id. Returns the most recent guidance provided by the company for future periods, or the final guidance issued before results were reported for past periods.
@@ -162,4 +175,5 @@ class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
 
     @property
     def estimate_type(self) -> EstimateType:
+        """The estimate type is guidance."""
         return EstimateType.guidance

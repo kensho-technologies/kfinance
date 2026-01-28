@@ -115,25 +115,13 @@ MOCK_COMPANY_DB = {
                     "FY2025Q4": {
                         "period_end_date": "2025-12-31",
                         "estimates": [
-                            {
-                                "name": "Revenue Consensus High",
-                                "value": "3955000000.000000"
-                            },
-                            {
-                                "name": "Revenue Consensus Low",
-                                "value": "3806400000.000000"
-                            },
-                            {
-                                "name": "Revenue Consensus Mean",
-                                "value": "3881725460.000000"
-                            },
-                            {
-                                "name": "Revenue Consensus Median",
-                                "value": "3883000000.000000"
-                            }
-                        ]
+                            {"name": "Revenue Consensus High", "value": "3955000000.000000"},
+                            {"name": "Revenue Consensus Low", "value": "3806400000.000000"},
+                            {"name": "Revenue Consensus Mean", "value": "3881725460.000000"},
+                            {"name": "Revenue Consensus Median", "value": "3883000000.000000"},
+                        ],
                     }
-                }
+                },
             }
         ),
         "line_items": {
@@ -691,9 +679,7 @@ class TestCompany(TestCase):
             estimates_data[period_key] = period_data.estimate.value
 
         expected_estimate = (
-            pd.DataFrame({"estimate": estimates_data})
-            .apply(pd.to_numeric)
-            .replace(np.nan, None)
+            pd.DataFrame({"estimate": estimates_data}).apply(pd.to_numeric).replace(np.nan, None)
         )
         estimate = self.msft_company.company.estimate()
         pd.testing.assert_frame_equal(expected_estimate, estimate)

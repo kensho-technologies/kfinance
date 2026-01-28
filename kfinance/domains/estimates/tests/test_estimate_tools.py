@@ -1,73 +1,48 @@
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
-from kfinance.client.models.date_and_period_models import EstimateType
 from kfinance.domains.estimates.estimates_tools import (
-    GetEstimatesFromIdentifiersArgs,
     GetConsensusEstimatesFromIdentifiers,
-    GetEstimatesFromIdentifiersResp
+    GetEstimatesFromIdentifiersArgs,
+    GetEstimatesFromIdentifiersResp,
 )
 
 
 class TestGetEstimateFromIdentifier:
     estimates_response = {
-      "estimate_type": "consensus",
-      "currency": "USD",
-      "period_type": "quarterly",
-      "periods": {
-        "FY2025Q4": {
-          "period_end_date": "2025-12-31",
-          "estimates": [
-            {
-              "name": "Book Value / Share - # of Estimates",
-              "value": "2.000000"
+        "estimate_type": "consensus",
+        "currency": "USD",
+        "period_type": "quarterly",
+        "periods": {
+            "FY2025Q4": {
+                "period_end_date": "2025-12-31",
+                "estimates": [
+                    {"name": "Book Value / Share - # of Estimates", "value": "2.000000"},
+                    {"name": "Book Value / Share Consensus High", "value": "109.600000"},
+                ],
             },
-            {
-              "name": "Book Value / Share Consensus High",
-              "value": "109.600000"
+            "FY2026Q1": {
+                "period_end_date": "2026-03-31",
+                "estimates": [
+                    {"name": "Book Value / Share - # of Estimates", "value": "2.000000"},
+                    {"name": "Book Value / Share Consensus High", "value": "110.680000"},
+                ],
             },
-          ]
+            "FY2026Q2": {
+                "period_end_date": "2026-06-30",
+                "estimates": [
+                    {"name": "Book Value / Share - # of Estimates", "value": "1.000000"},
+                    {"name": "Book Value / Share Consensus High", "value": "105.020000"},
+                ],
+            },
+            "FY2026Q3": {
+                "period_end_date": "2026-09-30",
+                "estimates": [
+                    {"name": "Book Value / Share - # of Estimates", "value": "2.000000"},
+                    {"name": "Book Value / Share Consensus High", "value": "113.130000"},
+                ],
+            },
         },
-        "FY2026Q1": {
-          "period_end_date": "2026-03-31",
-          "estimates": [
-            {
-              "name": "Book Value / Share - # of Estimates",
-              "value": "2.000000"
-            },
-            {
-              "name": "Book Value / Share Consensus High",
-              "value": "110.680000"
-            },
-          ]
-        },
-        "FY2026Q2": {
-          "period_end_date": "2026-06-30",
-          "estimates": [
-            {
-              "name": "Book Value / Share - # of Estimates",
-              "value": "1.000000"
-            },
-            {
-              "name": "Book Value / Share Consensus High",
-              "value": "105.020000"
-            },
-          ]
-        },
-        "FY2026Q3": {
-          "period_end_date": "2026-09-30",
-          "estimates": [
-            {
-              "name": "Book Value / Share - # of Estimates",
-              "value": "2.000000"
-            },
-            {
-              "name": "Book Value / Share Consensus High",
-              "value": "113.130000"
-            },
-          ]
-        }
-      }
     }
 
     def test_get_estimate_from_identifier(self, mock_client: Client, requests_mock: Mocker):
