@@ -157,10 +157,9 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
 
     @property
     def description(self) -> str:
+        # TODO I need instructions and examples.
         return dedent("""
             Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given company id. Returns statistical aggregates including high, low, mean, median, and number of estimates. When periods have ended, actual reported values are also returned.
-
-            meow meow meow meow meow
         """).strip()
 
     @property
@@ -176,10 +175,9 @@ class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
 
     @property
     def description(self) -> str:
+        # TODO I need instructions and examples.
         return dedent("""
             Get company-issued financial guidance for a given company id. Returns the most recent guidance provided by the company for future periods, or the final guidance issued before results were reported for past periods.
-
-            meow meow meow meow meow
         """).strip()
 
     @property
