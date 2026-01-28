@@ -533,7 +533,7 @@ class CompanyFunctionsMetaClass:
         start_quarter: int | None = None,
         end_quarter: int | None = None,
         period_type: EstimatePeriodType | None = None,
-    ):
+    ) -> pd.DataFrame:
         try:
             self.validate_inputs(
                 start_year=start_year,

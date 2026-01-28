@@ -36,16 +36,8 @@ class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
 class GetEstimatesFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, EstimatesResp]  # identifier -> response
 
-class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        pass
 
-    @property
-    @abstractmethod
-    def description(self) -> str:
-        pass
+class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
 
     args_schema: Type[BaseModel] = GetEstimatesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
@@ -151,16 +143,10 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
 
 class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
 
-    @property
-    def name(self) -> str:
-        return "get_consensus_estimates_from_identifiers"
-
-    @property
-    def description(self) -> str:
-        # TODO I need instructions and examples.
-        return dedent("""
-            Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given company id. Returns statistical aggregates including high, low, mean, median, and number of estimates. When periods have ended, actual reported values are also returned.
-        """).strip()
+    name: str = "get_consensus_estimates_from_identifiers"
+    description: str = dedent("""
+        Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given company id. Returns statistical aggregates including high, low, mean, median, and number of estimates. When periods have ended, actual reported values are also returned.
+    """).strip()
 
     @property
     def estimate_type(self) -> EstimateType:
@@ -169,16 +155,10 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
 
 class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
 
-    @property
-    def name(self) -> str:
-        return "get_guidance_from_identifiers"
-
-    @property
-    def description(self) -> str:
-        # TODO I need instructions and examples.
-        return dedent("""
-            Get company-issued financial guidance for a given company id. Returns the most recent guidance provided by the company for future periods, or the final guidance issued before results were reported for past periods.
-        """).strip()
+    name: str = "get_guidance_from_identifiers"
+    description: str = dedent("""
+        Get company-issued financial guidance for a given company id. Returns the most recent guidance provided by the company for future periods, or the final guidance issued before results were reported for past periods.
+    """).strip()
 
     @property
     def estimate_type(self) -> EstimateType:
