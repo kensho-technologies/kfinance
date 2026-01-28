@@ -114,9 +114,9 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
                 num_periods_backward=num_periods_backward,
             )
             original_identifier = company_id_to_identifier[company_id]
-            identifiers_to_results[original_identifier] = response.results[company_id]
-            if response.errors:
-                all_errors.append(response.errors)
+            identifiers_to_results[original_identifier] = response.results[str(company_id)]
+            if response.errors and "errors" in response.errors:
+                all_errors.append(response.errors["errors"])
 
         # If no date and multiple companies, only return the most recent value.
         # By default, we return 5 years of data, which can be too much when
