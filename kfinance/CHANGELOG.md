@@ -3,6 +3,9 @@
 ## v.4.1.1
 - Update line item, statement, and segment tool descriptions for fiscal period lookup
 
+# v4.1.1
+- Add line item example with multiple line items
+
 # v4.1.0
 - Add Rounds of Funding tools
 
