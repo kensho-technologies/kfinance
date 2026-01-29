@@ -573,7 +573,6 @@ class CompanyFunctionsMetaClass:
 
         return pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
 
-
     def consensus_estimates(
         self,
         start_year: int | None = None,

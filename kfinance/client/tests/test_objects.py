@@ -679,9 +679,7 @@ class TestCompany(TestCase):
                 period_estimates[estimate.name] = estimate.value
             estimates_data[period_key] = period_estimates
 
-        expected_estimate = (
-            pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
-        )
+        expected_estimate = pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
         estimate = self.msft_company.company.consensus_estimates()
         pd.testing.assert_frame_equal(expected_estimate, estimate)
 
