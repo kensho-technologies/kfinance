@@ -404,29 +404,26 @@ def build_funding_summaries_from_rof_responses(
             funding_type = round_of_funding.funding_type or "Unknown"
             rounds_by_type[funding_type] = rounds_by_type.get(funding_type, 0) + 1
 
-        # Sort transactions by closed_date descending to get most recent aggregate_amount_raised
-        # (aggregate_amount_raised is cumulative, so the most recent round has the total)
-        sorted_transaction_ids = sorted(
-            [
-                transaction_id
-                for transaction_id in company_transaction_ids
-                if transaction_id in detailed_round_info_responses
-            ],
-            key=lambda transaction_id: detailed_round_info_responses[
-                transaction_id
-            ].timeline.closed_date
-            or date.min,
-            reverse=True,
-        )
-
         total_capital_raised = None
         currency = None
-        for transaction_id in sorted_transaction_ids:
-            round_detail = detailed_round_info_responses[transaction_id]
-            if round_detail.transaction.aggregate_amount_raised:
-                total_capital_raised = float(round_detail.transaction.aggregate_amount_raised)
-                currency = round_detail.transaction.currency
-                break
+        round_info_responses_with_aggregate_amount_raised = [
+            detailed_round_info_responses[transaction_id]
+            for transaction_id in company_transaction_ids
+            if transaction_id in detailed_round_info_responses
+            and detailed_round_info_responses[transaction_id].transaction.aggregate_amount_raised
+            is not None
+        ]
+        # Sort transactions by closed_date descending to get most recent aggregate_amount_raised
+        # (aggregate_amount_raised is cumulative, so the most recent round has the total)
+        if round_info_responses_with_aggregate_amount_raised:
+            if round_info_responses_with_aggregate_amount_raised:
+                most_recent_round = max(
+                    round_info_responses_with_aggregate_amount_raised,
+                    key=lambda r: r.timeline.closed_date or date.min,
+                )
+                amount = most_recent_round.transaction.aggregate_amount_raised
+                total_capital_raised = float(amount) if amount is not None else None
+                currency = most_recent_round.transaction.currency
 
         summaries[identifier] = FundingSummary(
             company_id=identifier,
