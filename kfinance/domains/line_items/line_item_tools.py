@@ -154,8 +154,9 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         - Exception: with multiple identifiers and absolute time, calendar_type=None defaults to 'calendar' for cross-company comparability; calendar_type='fiscal' returns fiscal data but should not be compared across companies since fiscal years have different end dates.
 
         Examples:
-        Query: "Get MSFT and AAPL revenue quarterly"
+        Query: "Get MSFT and AAPL revenue and gross profit quarterly"
         Function: get_financial_line_item_from_identifiers(line_item="revenue", identifiers=["MSFT", "AAPL"], period_type="quarterly")
+        Function: get_financial_line_item_from_identifiers(line_item="gross_profit", identifiers=["MSFT", "AAPL"], period_type="quarterly")
 
         Query: "General Electric's ebt excluding unusual items for FY2023"
         Function: get_financial_line_item_from_identifiers(line_item="ebt_excluding_unusual_items", identifiers=["General Electric"], period_type="annual", calendar_type="fiscal", start_year=2023, end_year=2023)
