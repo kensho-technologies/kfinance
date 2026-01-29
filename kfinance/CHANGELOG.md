@@ -3,7 +3,7 @@
 ## v4.1.2
 - Add line item example with multiple line items
 
-## v.4.1.1
+## v4.1.1
 - Update line item, statement, and segment tool descriptions for fiscal period lookup
 
 ## v4.1.0
