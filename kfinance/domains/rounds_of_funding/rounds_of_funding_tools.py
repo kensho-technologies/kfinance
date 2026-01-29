@@ -75,7 +75,7 @@ def filter_rounds_of_funding_responses_by_date_range(
     return rounds_of_funding_responses
 
 
-def sort_rounds_of_funding_responses(
+def sort_and_limit_rounds_of_funding_responses(
     rounds_of_funding_responses: dict[str, RoundsOfFundingResp],
     sort_order: Literal["asc", "desc"] = "desc",
     limit: int | None = None,
@@ -177,7 +177,9 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
             rounds_of_funding_responses, start_date, end_date
         )
 
-        sorted_responses = sort_rounds_of_funding_responses(filtered_responses, sort_order, limit)
+        sorted_responses = sort_and_limit_rounds_of_funding_responses(
+            filtered_responses, sort_order, limit
+        )
 
         return GetRoundsOfFundingFromIdentifiersResp(
             results=sorted_responses, errors=list(id_triple_resp.errors.values())
