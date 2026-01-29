@@ -1,4 +1,5 @@
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
@@ -192,39 +193,13 @@ class AdvisorsResp(BaseModel):
     advisors: list[AdvisorResp]
 
 
-class AdvisorTaskKey(BaseModel):
-    """Key model for organizing advisor fetch tasks"""
+@dataclass(frozen=True)
+class AdvisorTaskKey:
+    """Key dataclass for advisor fetch tasks"""
 
     transaction_id: int
     role: RoundsOfFundingRole
     company_id: int
-
-    def to_string(self) -> str:
-        """Convert to string key for use in dictionaries"""
-        # Map the role to shorter strings for key generation
-        role_short = (
-            "target" if self.role == RoundsOfFundingRole.company_raising_funds else "investor"
-        )
-        return f"{role_short}_{self.transaction_id}_{self.company_id}"
-
-    @classmethod
-    def from_string(cls, key: str) -> "AdvisorTaskKey":
-        """Parse string key back to AdvisorTaskKey"""
-        parts = key.split("_", 2)
-        if len(parts) != 3:
-            raise ValueError(f"Invalid key format: {key}")
-        role_str, transaction_id, company_id = parts
-        # Map short strings back to enum values
-        role = (
-            RoundsOfFundingRole.company_raising_funds
-            if role_str == "target"
-            else RoundsOfFundingRole.company_investing_in_round_of_funding
-        )
-        return cls(
-            transaction_id=int(transaction_id),
-            role=role,
-            company_id=int(company_id),
-        )
 
 
 class CompanyIdAndNameWithAdvisors(CompanyIdAndName):

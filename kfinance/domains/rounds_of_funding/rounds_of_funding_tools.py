@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.permission_models import Permission
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
+    AdvisorsResp,
     AdvisorTaskKey,
     FundingSummary,
     RoundOfFundingInfo,
@@ -43,6 +44,58 @@ class GetRoundsofFundingFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 class GetRoundsOfFundingFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, RoundsOfFundingResp]
+
+
+def filter_rounds_of_funding_responses_by_date_range(
+    rounds_of_funding_responses: dict[str, RoundsOfFundingResp],
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> dict[str, RoundsOfFundingResp]:
+    """Filter rounds of funding responses by date range"""
+    if start_date or end_date:
+        filtered_responses = {}
+        for identifier, response in rounds_of_funding_responses.items():
+            filtered_rounds = []
+            for round_of_funding in response.rounds_of_funding:
+                # Skip rounds without a closed_date if filtering by date
+                if round_of_funding.closed_date is None:
+                    continue
+
+                if start_date and round_of_funding.closed_date < start_date:
+                    continue
+                if end_date and round_of_funding.closed_date > end_date:
+                    continue
+
+                filtered_rounds.append(round_of_funding)
+
+            filtered_responses[identifier] = RoundsOfFundingResp(rounds_of_funding=filtered_rounds)
+
+        return filtered_responses
+
+    return rounds_of_funding_responses
+
+
+def sort_and_limit_rounds_of_funding_responses(
+    rounds_of_funding_responses: dict[str, RoundsOfFundingResp],
+    sort_order: Literal["asc", "desc"] = "desc",
+    limit: int | None = None,
+) -> dict[str, RoundsOfFundingResp]:
+    """Sort rounds of funding by closed_date and optionally limit results."""
+    sorted_responses = {}
+    for identifier, response in rounds_of_funding_responses.items():
+        rounds = response.rounds_of_funding
+
+        # Sort by closed_date (putting None dates at the end)
+        if sort_order == "desc":
+            rounds.sort(key=lambda r: r.closed_date or date.min, reverse=True)
+        else:
+            rounds.sort(key=lambda r: r.closed_date or date.max, reverse=False)
+
+        if limit is not None:
+            rounds = rounds[:limit]
+
+        sorted_responses[identifier] = RoundsOfFundingResp(rounds_of_funding=rounds)
+    return sorted_responses
 
 
 class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
@@ -120,45 +173,16 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
             process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
         )
 
-        if start_date or end_date:
-            filtered_responses = {}
-            for identifier, response in rounds_of_funding_responses.items():
-                filtered_rounds = []
-                for round_of_funding in response.rounds_of_funding:
-                    # Skip rounds without a closed_date if filtering by date
-                    if round_of_funding.closed_date is None:
-                        continue
+        filtered_responses = filter_rounds_of_funding_responses_by_date_range(
+            rounds_of_funding_responses, start_date, end_date
+        )
 
-                    if start_date and round_of_funding.closed_date < start_date:
-                        continue
-                    if end_date and round_of_funding.closed_date > end_date:
-                        continue
-
-                    filtered_rounds.append(round_of_funding)
-
-                filtered_responses[identifier] = RoundsOfFundingResp(
-                    rounds_of_funding=filtered_rounds
-                )
-
-            rounds_of_funding_responses = filtered_responses
-
-        final_responses = {}
-        for identifier, response in rounds_of_funding_responses.items():
-            rounds = response.rounds_of_funding
-
-            # Sort by closed_date (putting None dates at the end)
-            if sort_order == "desc":
-                rounds.sort(key=lambda r: r.closed_date or date.min, reverse=True)
-            else:
-                rounds.sort(key=lambda r: r.closed_date or date.max, reverse=False)
-
-            if limit is not None:
-                rounds = rounds[:limit]
-
-            final_responses[identifier] = RoundsOfFundingResp(rounds_of_funding=rounds)
+        sorted_responses = sort_and_limit_rounds_of_funding_responses(
+            filtered_responses, sort_order, limit
+        )
 
         return GetRoundsOfFundingFromIdentifiersResp(
-            results=final_responses, errors=list(id_triple_resp.errors.values())
+            results=sorted_responses, errors=list(id_triple_resp.errors.values())
         )
 
 
@@ -170,6 +194,40 @@ class GetRoundsOfFundingInfoFromTransactionIdsArgs(BaseModel):
 
 class GetRoundsOfFundingInfoFromTransactionIdsResp(ToolRespWithErrors):
     results: dict[int, RoundOfFundingInfoWithAdvisors]
+
+
+def merge_round_of_info_reponses_with_advisors_responses(
+    round_of_info_responses: dict[int, RoundOfFundingInfo],
+    advisor_responses: dict[AdvisorTaskKey, AdvisorsResp],
+) -> dict[int, RoundOfFundingInfoWithAdvisors]:
+    """Merge round of info responses with advisors responses"""
+
+    round_of_info_with_advisors = {}
+    for transaction_id, round_of_info in round_of_info_responses.items():
+        target_key = AdvisorTaskKey(
+            transaction_id=transaction_id,
+            role=RoundsOfFundingRole.company_raising_funds,
+            company_id=round_of_info.participants.target.company_id,
+        )
+        target_advisors_resp = advisor_responses.get(target_key)
+        target_advisors = target_advisors_resp.advisors if target_advisors_resp else []
+
+        investor_advisors = {}
+        for investor in round_of_info.participants.investors:
+            investor_key = AdvisorTaskKey(
+                transaction_id=transaction_id,
+                role=RoundsOfFundingRole.company_investing_in_round_of_funding,
+                company_id=investor.company_id,
+            )
+            advisor_resp = advisor_responses.get(investor_key)
+            investor_advisors[investor.company_id] = advisor_resp.advisors if advisor_resp else []
+
+        # Create round info with advisors
+        round_of_info_with_advisors[transaction_id] = round_of_info.with_advisors(
+            target_advisors=target_advisors, investor_advisors=investor_advisors
+        )
+
+    return round_of_info_with_advisors
 
 
 class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
@@ -285,7 +343,7 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
                     kwargs=dict(
                         transaction_id=transaction_id,
                     ),
-                    result_key=target_key.to_string(),
+                    result_key=target_key,
                 )
             )
 
@@ -302,7 +360,7 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
                             transaction_id=transaction_id,
                             advised_company_id=investor_key.company_id,
                         ),
-                        result_key=investor_key.to_string(),
+                        result_key=investor_key,
                     )
                 )
 
@@ -310,33 +368,9 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
             api_client=api_client, tasks=advisor_tasks
         )
 
-        # Merge advisor data into round of funding info
-        round_of_info_with_advisors = {}
-        for transaction_id, round_of_info in round_of_info_responses.items():
-            target_key = AdvisorTaskKey(
-                transaction_id=transaction_id,
-                role=RoundsOfFundingRole.company_raising_funds,
-                company_id=round_of_info.participants.target.company_id,
-            )
-            target_advisors_resp = advisor_responses.get(target_key.to_string())
-            target_advisors = target_advisors_resp.advisors if target_advisors_resp else []
-
-            investor_advisors = {}
-            for investor in round_of_info.participants.investors:
-                investor_key = AdvisorTaskKey(
-                    transaction_id=transaction_id,
-                    role=RoundsOfFundingRole.company_investing_in_round_of_funding,
-                    company_id=investor.company_id,
-                )
-                advisor_resp = advisor_responses.get(investor_key.to_string())
-                investor_advisors[investor.company_id] = (
-                    advisor_resp.advisors if advisor_resp else []
-                )
-
-            # Create round info with advisors
-            round_of_info_with_advisors[transaction_id] = round_of_info.with_advisors(
-                target_advisors=target_advisors, investor_advisors=investor_advisors
-            )
+        round_of_info_with_advisors = merge_round_of_info_reponses_with_advisors_responses(
+            round_of_info_responses, advisor_responses
+        )
 
         return GetRoundsOfFundingInfoFromTransactionIdsResp(
             results=round_of_info_with_advisors,
@@ -350,6 +384,65 @@ class GetFundingSummaryFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 class GetFundingSummaryFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, FundingSummary]
+
+
+def build_funding_summaries_from_rof_responses(
+    rounds_of_funding_responses: dict[str, RoundsOfFundingResp],
+    detailed_round_info_responses: dict[int, RoundOfFundingInfo],
+) -> dict[str, FundingSummary]:
+    """Build funding summaries from rounds of funding and detailed round info responses."""
+    summaries = {}
+    for identifier, response in rounds_of_funding_responses.items():
+        rounds = response.rounds_of_funding
+        company_transaction_ids = [r.transaction_id for r in response.rounds_of_funding]
+
+        total_rounds = len(rounds)
+        dates = [r.closed_date for r in rounds if r.closed_date is not None]
+        first_funding_date = min(dates) if dates else None
+        most_recent_funding_date = max(dates) if dates else None
+
+        rounds_by_type: dict[str, int] = {}
+        for round_of_funding in rounds:
+            funding_type = round_of_funding.funding_type or "Unknown"
+            rounds_by_type[funding_type] = rounds_by_type.get(funding_type, 0) + 1
+
+        total_capital_raised = None
+        currency = None
+        round_info_responses_with_aggregate_amount_raised = [
+            detailed_round_info_responses[transaction_id]
+            for transaction_id in company_transaction_ids
+            if transaction_id in detailed_round_info_responses
+            and detailed_round_info_responses[transaction_id].transaction.aggregate_amount_raised
+            is not None
+        ]
+        # Sort transactions by closed_date descending to get most recent aggregate_amount_raised
+        # (aggregate_amount_raised is cumulative, so the most recent round has the total)
+        if round_info_responses_with_aggregate_amount_raised:
+            if round_info_responses_with_aggregate_amount_raised:
+                most_recent_round = max(
+                    round_info_responses_with_aggregate_amount_raised,
+                    key=lambda r: r.timeline.closed_date or date.min,
+                )
+                amount = most_recent_round.transaction.aggregate_amount_raised
+                total_capital_raised = float(amount) if amount is not None else None
+                currency = most_recent_round.transaction.currency
+
+        summaries[identifier] = FundingSummary(
+            company_id=identifier,
+            total_capital_raised=total_capital_raised,
+            total_capital_raised_currency=currency,
+            total_rounds=total_rounds,
+            first_funding_date=first_funding_date,
+            most_recent_funding_date=most_recent_funding_date,
+            rounds_by_type=rounds_by_type,
+            sources=[
+                {
+                    "notes": "total_capital_raised, total_rounds, first_funding_date, most_recent_funding_date, and rounds_by_type are derived from underlying rounds of funding data that might be non-comprehensive."
+                }
+            ],
+        )
+
+    return summaries
 
 
 class GetFundingSummaryFromIdentifiers(KfinanceTool):
@@ -393,12 +486,10 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
         )
 
         all_transaction_ids = []
-        identifier_to_transaction_ids = {}
 
-        for identifier, response in rounds_of_funding_responses.items():
+        for response in rounds_of_funding_responses.values():
             transaction_ids = [r.transaction_id for r in response.rounds_of_funding]
             all_transaction_ids.extend(transaction_ids)
-            identifier_to_transaction_ids[identifier] = transaction_ids
 
         detail_tasks = [
             Task(
@@ -409,52 +500,13 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
             for transaction_id in all_transaction_ids
         ]
 
-        detailed_round_info: dict[int, RoundOfFundingInfo] = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=detail_tasks
+        detailed_round_info_responses: dict[int, RoundOfFundingInfo] = (
+            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=detail_tasks)
         )
 
-        summaries = {}
-        for identifier, response in rounds_of_funding_responses.items():
-            rounds = response.rounds_of_funding
-            company_transaction_ids = identifier_to_transaction_ids[identifier]
-
-            total_rounds = len(rounds)
-            dates = [r.closed_date for r in rounds if r.closed_date is not None]
-            first_funding_date = min(dates) if dates else None
-            most_recent_funding_date = max(dates) if dates else None
-
-            rounds_by_type: dict[str, int] = {}
-            for round_of_funding in rounds:
-                funding_type = round_of_funding.funding_type or "Unknown"
-                rounds_by_type[funding_type] = rounds_by_type.get(funding_type, 0) + 1
-
-            total_capital_raised = None
-            currency = None
-            for transaction_id in company_transaction_ids:
-                if transaction_id in detailed_round_info:
-                    round_detail = detailed_round_info[transaction_id]
-                    if (
-                        total_capital_raised is None or currency is None
-                    ) and round_detail.transaction.aggregate_amount_raised:
-                        total_capital_raised = float(
-                            round_detail.transaction.aggregate_amount_raised
-                        )
-                        currency = round_detail.transaction.currency
-
-            summaries[identifier] = FundingSummary(
-                company_id=identifier,
-                total_capital_raised=total_capital_raised,
-                total_capital_raised_currency=currency,
-                total_rounds=total_rounds,
-                first_funding_date=first_funding_date,
-                most_recent_funding_date=most_recent_funding_date,
-                rounds_by_type=rounds_by_type,
-                sources=[
-                    {
-                        "notes": "total_rounds, first_funding_date, most_recent_funding_date, and rounds_by_type are derived from underlying rounds of funding data that might be non-comprehensive."
-                    }
-                ],
-            )
+        summaries = build_funding_summaries_from_rof_responses(
+            rounds_of_funding_responses, detailed_round_info_responses
+        )
 
         return GetFundingSummaryFromIdentifiersResp(
             results=summaries, errors=list(id_triple_resp.errors.values())
