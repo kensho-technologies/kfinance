@@ -1,9 +1,12 @@
 # Changelog
 
+## v.4.1.3
+- Refractor Rounds of Funding tools and correct total_capital_raised
+
 ## v4.1.2
 - Add line item example with multiple line items
 
-## v4.1.1
+## v.4.1.1
 - Update line item, statement, and segment tool descriptions for fiscal period lookup
 
 ## v4.1.0
