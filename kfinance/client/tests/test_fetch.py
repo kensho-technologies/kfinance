@@ -401,7 +401,7 @@ class TestFetchItem(TestCase):
 
     def test_fetch_estimate(self) -> None:
         company_id = 21719
-        estimate_type = "estimate"
+        estimate_type = "consensus"
         expected_url = f"{self.kfinance_api_client.url_base}estimates/"
         expected_request_body = {
             "company_id": company_id,

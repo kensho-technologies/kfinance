@@ -463,15 +463,13 @@ class MockKFinanceApiClient:
         self,
         estimate_type,
         company_id,
-        period_type,
         start_year,
         end_year,
         start_quarter,
         end_quarter,
-        num_periods_forward,
-        num_periods_backward,
+        period_type,
     ):
-        estimates_resp = MOCK_COMPANY_DB[company_id]["estimates"][estimate_type]
+        estimates_resp = MOCK_COMPANY_DB[company_id]["estimates"]
         return PostResponse[EstimatesResp](results={str(company_id): estimates_resp}, errors={})
 
     def fetch_line_item(
@@ -676,12 +674,15 @@ class TestCompany(TestCase):
 
         estimates_data = {}
         for period_key, period_data in estimates_response.periods.items():
-            estimates_data[period_key] = period_data.estimate.value
+            period_estimates = {}
+            for estimate in period_data.estimates:
+                period_estimates[estimate.name] = estimate.value
+            estimates_data[period_key] = period_estimates
 
         expected_estimate = (
-            pd.DataFrame({"estimate": estimates_data}).apply(pd.to_numeric).replace(np.nan, None)
+            pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
         )
-        estimate = self.msft_company.company.estimate()
+        estimate = self.msft_company.company.consensus_estimates()
         pd.testing.assert_frame_equal(expected_estimate, estimate)
 
     def test_revenue(self) -> None:

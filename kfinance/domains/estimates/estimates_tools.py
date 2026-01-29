@@ -152,6 +152,8 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
                     most_recent_year_data = line_item_response.periods[most_recent_year]
                     line_item_response.periods = {most_recent_year: most_recent_year_data}
 
+        all_errors = list(ids_response.errors.values()) + all_errors
+
         return GetEstimatesFromIdentifiersResp(results=identifiers_to_results, errors=all_errors)
 
 

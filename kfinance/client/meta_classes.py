@@ -559,10 +559,20 @@ class CompanyFunctionsMetaClass:
         )
 
         if not estimate_response.results:
-            return {}
+            return pd.DataFrame()
 
         estimate_resp = list(estimate_response.results.values())[0]
-        return estimate_resp.model_dump(mode="json")["periods"]
+        periods = estimate_resp.model_dump(mode="json")["periods"]
+
+        estimates_data = {}
+        for period_key, period_data in periods.items():
+            period_estimates = {}
+            for estimate in period_data["estimates"]:
+                period_estimates[estimate["name"]] = estimate["value"]
+            estimates_data[period_key] = period_estimates
+
+        return pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
+
 
     def consensus_estimates(
         self,
