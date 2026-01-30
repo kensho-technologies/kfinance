@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import logging
 from queue import Queue
 from time import time
-from typing import Callable, Generator, Optional
+from typing import Any, Callable, Generator, Optional
 from uuid import uuid4
 
 import jwt
@@ -114,7 +114,7 @@ class KFinanceApiClient:
         self.okta_auth_server = okta_auth_server
         self._thread_pool = thread_pool
         self.url_base = f"{self.api_host}/api/v{self.api_version}/"
-        self._access_token_expiry = 0
+        self._access_token_expiry: Any = 0
         self._access_token: str | None = None
         self.user_agent_source = "object_oriented"
         self._batch_id: str | None = None
