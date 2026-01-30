@@ -3,14 +3,19 @@ from contextlib import contextmanager
 import logging
 from queue import Queue
 from time import time
-from typing import Callable, Generator, Optional
+from typing import Any, Callable, Generator, Optional
 from uuid import uuid4
 
 import jwt
 import requests
 
 from kfinance.client.industry_models import IndustryClassification
-from kfinance.client.models.date_and_period_models import Periodicity, PeriodType
+from kfinance.client.models.date_and_period_models import (
+    EstimatePeriodType,
+    EstimateType,
+    Periodicity,
+    PeriodType,
+)
 from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
 from kfinance.domains.business_relationships.business_relationship_models import (
@@ -26,6 +31,7 @@ from kfinance.domains.companies.company_models import (
 )
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.domains.earnings.earning_models import EarningsCallResp
+from kfinance.domains.estimates.estimates_models import EstimatesResp
 from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerInfo,
@@ -108,7 +114,7 @@ class KFinanceApiClient:
         self.okta_auth_server = okta_auth_server
         self._thread_pool = thread_pool
         self.url_base = f"{self.api_host}/api/v{self.api_version}/"
-        self._access_token_expiry = 0
+        self._access_token_expiry: Any = 0
         self._access_token: str | None = None
         self.user_agent_source = "object_oriented"
         self._batch_id: str | None = None
@@ -827,3 +833,44 @@ class KFinanceApiClient:
         """
         url = f"{self.url_base}fundinground/info/{transaction_id}/advisors/investor/{advised_company_id}"
         return AdvisorsResp.model_validate(self.fetch(url))
+
+    def fetch_estimates(
+        self,
+        company_id: int,
+        estimate_type: EstimateType,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_forward: int | None = None,
+        num_periods_backward: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+    ) -> PostResponse[EstimatesResp]:
+        """Get estimates or guidance for a specified duration."""
+
+        url = f"{self.url_base}estimates/"
+
+        period_type_val = period_type.value if period_type is not None else None
+
+        request_body: dict[str, str | int | list[int]] = {
+            "estimate_type": estimate_type.value,
+            "company_id": company_id,
+        }
+
+        fields = [
+            ("fiscal_start_year", start_year),
+            ("fiscal_end_year", end_year),
+            ("fiscal_start_quarter", start_quarter),
+            ("fiscal_end_quarter", end_quarter),
+            ("num_periods_forward", num_periods_forward),
+            ("num_periods_backward", num_periods_backward),
+            ("period_type", period_type_val),
+        ]
+
+        for key, value in fields:
+            if value is not None:
+                request_body[key] = value
+
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+
+        return PostResponse[EstimatesResp].model_validate(response_data)

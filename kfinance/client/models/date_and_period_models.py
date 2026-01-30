@@ -5,6 +5,22 @@ from pydantic import BaseModel, Field
 from strenum import StrEnum
 
 
+NumPeriodsForward = Annotated[
+    int,
+    Field(
+        ge=0, le=99, description="The number of periods in the future to retrieve estimate data."
+    ),
+]
+
+NumPeriodsBackward = Annotated[
+    int,
+    Field(
+        ge=0,
+        le=99,
+        description="The number of periods in the past to retrieve estimate data.",
+    ),
+]
+
 # Constrained integer types for period counts
 NumPeriods = Annotated[
     int,
@@ -28,6 +44,17 @@ class PeriodType(StrEnum):
     quarterly = "quarterly"
     ltm = "ltm"
     ytd = "ytd"
+
+
+class EstimatePeriodType(StrEnum):
+    annual = "annual"
+    quarterly = "quarterly"
+    semi_annual = "semi_annual"
+
+
+class EstimateType(StrEnum):
+    consensus = "consensus"
+    guidance = "guidance"
 
 
 class Periodicity(StrEnum):

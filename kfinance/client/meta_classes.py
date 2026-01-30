@@ -8,7 +8,11 @@ import numpy as np
 import pandas as pd
 
 from kfinance.client.fetch import KFinanceApiClient
-from kfinance.client.models.date_and_period_models import PeriodType
+from kfinance.client.models.date_and_period_models import (
+    EstimatePeriodType,
+    EstimateType,
+    PeriodType,
+)
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
 )
@@ -523,6 +527,100 @@ class CompanyFunctionsMetaClass:
                 )
                 for company in competitors_data.competitors
             ],
+        )
+
+    def _estimate(
+        self,
+        estimate_type: EstimateType,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_forward: int | None = None,
+        num_periods_backward: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+    ) -> pd.DataFrame:
+        try:
+            self.validate_inputs(
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+            )
+        except ValueError:
+            return pd.DataFrame()
+
+        estimate_response = self.kfinance_api_client.fetch_estimates(
+            company_id=self.company_id,
+            estimate_type=estimate_type,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            num_periods_forward=num_periods_forward,
+            num_periods_backward=num_periods_backward,
+        )
+
+        if not estimate_response.results:
+            return pd.DataFrame()
+
+        estimate_resp = list(estimate_response.results.values())[0]
+        periods = estimate_resp.model_dump(mode="json")["periods"]
+
+        estimates_data = {}
+        for period_key, period_data in periods.items():
+            period_estimates = {}
+            for estimate in period_data["estimates"]:
+                period_estimates[estimate["name"]] = estimate["value"]
+            estimates_data[period_key] = period_estimates
+
+        return pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
+
+    def consensus_estimates(
+        self,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_forward: int | None = None,
+        num_periods_backward: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+    ) -> pd.DataFrame:
+        """Get consensus estimates for the time range and period type."""
+
+        return self._estimate(
+            estimate_type=EstimateType.consensus,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            num_periods_forward=num_periods_forward,
+            num_periods_backward=num_periods_backward,
+            period_type=period_type,
+        )
+
+    def guidance(
+        self,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_forward: int | None = None,
+        num_periods_backward: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+    ) -> pd.DataFrame:
+        """Get guidance for the time range and period type."""
+
+        return self._estimate(
+            estimate_type=EstimateType.guidance,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            num_periods_forward=num_periods_forward,
+            num_periods_backward=num_periods_backward,
+            period_type=period_type,
         )
 
 
