@@ -467,6 +467,8 @@ class MockKFinanceApiClient:
         end_year,
         start_quarter,
         end_quarter,
+        num_periods_forward,
+        num_periods_backward,
         period_type,
     ):
         estimates_resp = MOCK_COMPANY_DB[company_id]["estimates"]
