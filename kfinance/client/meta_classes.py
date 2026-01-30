@@ -536,6 +536,8 @@ class CompanyFunctionsMetaClass:
         end_year: int | None = None,
         start_quarter: int | None = None,
         end_quarter: int | None = None,
+        num_periods_forward: int | None = None,
+        num_periods_backward: int | None = None,
         period_type: EstimatePeriodType | None = None,
     ) -> pd.DataFrame:
         try:
@@ -556,6 +558,8 @@ class CompanyFunctionsMetaClass:
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
+            num_periods_forward=num_periods_forward,
+            num_periods_backward=num_periods_backward,
         )
 
         if not estimate_response.results:
@@ -579,6 +583,8 @@ class CompanyFunctionsMetaClass:
         end_year: int | None = None,
         start_quarter: int | None = None,
         end_quarter: int | None = None,
+        num_periods_forward: int | None = None,
+        num_periods_backward: int | None = None,
         period_type: EstimatePeriodType | None = None,
     ) -> pd.DataFrame:
         """Get consensus estimates for the time range and period type."""
@@ -589,6 +595,8 @@ class CompanyFunctionsMetaClass:
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
+            num_periods_forward=num_periods_forward,
+            num_periods_backward=num_periods_backward,
             period_type=period_type,
         )
 
@@ -598,6 +606,8 @@ class CompanyFunctionsMetaClass:
         end_year: int | None = None,
         start_quarter: int | None = None,
         end_quarter: int | None = None,
+        num_periods_forward: int | None = None,
+        num_periods_backward: int | None = None,
         period_type: EstimatePeriodType | None = None,
     ) -> pd.DataFrame:
         """Get guidance for the time range and period type."""
@@ -608,6 +618,8 @@ class CompanyFunctionsMetaClass:
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
+            num_periods_forward=num_periods_forward,
+            num_periods_backward=num_periods_backward,
             period_type=period_type,
         )
 
