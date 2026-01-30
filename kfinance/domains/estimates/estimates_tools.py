@@ -22,7 +22,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 
 class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     period_type: EstimatePeriodType | None = Field(
-        default=None, description="The period type (annual, semi-annual, or quarterly"
+        default=None, description="The period type (annual, semi-annual, or quarterly)."
     )
     start_year: int | None = Field(
         default=None,
@@ -133,24 +133,6 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
             identifiers_to_results[original_identifier] = response.results[str(company_id)]
             if response.errors and "errors" in response.errors:
                 all_errors.append(response.errors["errors"])
-
-        # If no date and multiple companies, only return the most recent value.
-        # By default, we return 5 years of data, which can be too much when
-        # returning data for many companies.
-        if (
-            start_year is None
-            and end_year is None
-            and start_quarter is None
-            and end_quarter is None
-            and num_periods_forward is None
-            and num_periods_backward is None
-            and len(identifiers_to_results) > 1
-        ):
-            for line_item_response in identifiers_to_results.values():
-                if line_item_response.periods:
-                    most_recent_year = max(line_item_response.periods.keys())
-                    most_recent_year_data = line_item_response.periods[most_recent_year]
-                    line_item_response.periods = {most_recent_year: most_recent_year_data}
 
         all_errors = list(ids_response.errors.values()) + all_errors
 
