@@ -1,6 +1,6 @@
 # Changelog
 
-## v.4.1.3
+## v4.1.3
 - Refractor Rounds of Funding tools and fix total_capital_raised
 
 ## v4.1.2
