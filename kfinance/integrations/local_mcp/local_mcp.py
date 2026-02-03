@@ -4,6 +4,7 @@ import click
 from fastmcp.tools import FunctionTool
 from fastmcp.utilities.logging import get_logger
 from langchain_core.utils.function_calling import convert_to_openai_tool
+from mcp.types import ToolAnnotations
 
 from kfinance.client.kfinance import Client
 from kfinance.integrations.local_mcp.kfinance_mcp import KfinanceMcp
@@ -30,6 +31,11 @@ def build_mcp_tool_from_kfinance_tool(kfinance_tool: KfinanceTool) -> FunctionTo
         # for example with integer literals, which our args models allow but the
         # mcp-internal validation disallows.
         fn=kfinance_tool.run_without_langchain,
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            openWorldHint=False,
+            destructiveHint=False,
+        ),
     )
 
 
