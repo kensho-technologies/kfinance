@@ -28,6 +28,7 @@ from kfinance.domains.business_relationships.business_relationship_models import
 from kfinance.domains.capitalizations.capitalization_models import Capitalizations
 from kfinance.domains.companies.company_models import CompanyIdAndName, IdentificationTriple
 from kfinance.domains.earnings.earning_models import EarningsCallResp
+from kfinance.domains.estimates.estimates_models import EstimatesResp
 from kfinance.domains.line_items.line_item_models import LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerInfo,
@@ -103,6 +104,24 @@ MOCK_COMPANY_DB = {
                         "datetime": "2025-01-25T21:30:00Z",
                     },
                 ]
+            }
+        ),
+        "estimates": EstimatesResp.model_validate(
+            {
+                "estimate_type": "consensus",
+                "currency": "USD",
+                "period_type": "quarterly",
+                "periods": {
+                    "FY2025Q4": {
+                        "period_end_date": "2025-12-31",
+                        "estimates": [
+                            {"name": "Revenue Consensus High", "value": "3955000000.000000"},
+                            {"name": "Revenue Consensus Low", "value": "3806400000.000000"},
+                            {"name": "Revenue Consensus Mean", "value": "3881725460.000000"},
+                            {"name": "Revenue Consensus Median", "value": "3883000000.000000"},
+                        ],
+                    }
+                },
             }
         ),
         "line_items": {
@@ -440,6 +459,21 @@ class MockKFinanceApiClient:
             results={str(company_ids[0]): INCOME_STATEMENT}, errors={}
         )
 
+    def fetch_estimates(
+        self,
+        estimate_type,
+        company_id,
+        start_year,
+        end_year,
+        start_quarter,
+        end_quarter,
+        num_periods_forward,
+        num_periods_backward,
+        period_type,
+    ):
+        estimates_resp = MOCK_COMPANY_DB[company_id]["estimates"]
+        return PostResponse[EstimatesResp](results={str(company_id): estimates_resp}, errors={})
+
     def fetch_line_item(
         self,
         company_ids,
@@ -636,6 +670,20 @@ class TestCompany(TestCase):
 
         income_statement = self.msft_company.company.income_statement()
         pd.testing.assert_frame_equal(expected_income_statement, income_statement)
+
+    def test_estimate(self) -> None:
+        estimates_response: EstimatesResp = MOCK_COMPANY_DB[msft_company_id]["estimates"]
+
+        estimates_data = {}
+        for period_key, period_data in estimates_response.periods.items():
+            period_estimates = {}
+            for estimate in period_data.estimates:
+                period_estimates[estimate.name] = estimate.value
+            estimates_data[period_key] = period_estimates
+
+        expected_estimate = pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
+        estimate = self.msft_company.company.consensus_estimates()
+        pd.testing.assert_frame_equal(expected_estimate, estimate)
 
     def test_revenue(self) -> None:
         """test revenue"""
