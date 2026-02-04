@@ -161,7 +161,7 @@ class KFinanceApiClient:
                 self._access_token,
                 # nosemgrep:  python.jwt.security.unverified-jwt-decode.unverified-jwt-decode
                 options={"verify_signature": False},
-            ).get("exp")
+            ).get("exp", 0)
             # When the access token gets refreshed, also refresh user permissions in case they
             # have been updated.
             self._refresh_user_permissions()

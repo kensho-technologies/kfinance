@@ -1,5 +1,8 @@
 # Changelog
 
+## v4.1.3
+- Refactor Rounds of Funding tools and fix total_capital_raised
+
 ## v4.1.2
 - Add line item example with multiple line items
 
