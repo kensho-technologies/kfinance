@@ -1,5 +1,8 @@
 # Changelog
 
+## v4.1.4
+- Add estimates tools
+
 ## v4.1.3
 - Refactor Rounds of Funding tools and fix total_capital_raised
 

@@ -24,19 +24,19 @@ class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     period_type: EstimatePeriodType | None = Field(
         default=None, description="The period type (annual, semi-annual, or quarterly)."
     )
-    start_year: int | None = Field(
+    fiscal_start_year: int | None = Field(
         default=None,
         description="The starting year for the data range. Use null for the most recent data.",
     )
-    end_year: int | None = Field(
+    fiscal_end_year: int | None = Field(
         default=None,
         description="The ending year for the data range. Use null for the most recent data.",
     )
-    start_quarter: ValidQuarter | None = Field(
+    fiscal_start_quarter: ValidQuarter | None = Field(
         default=None,
         description="Starting quarter (1-4). Used when period_type is semi-annual or quarterly.",
     )
-    end_quarter: ValidQuarter | None = Field(
+    fiscal_end_quarter: ValidQuarter | None = Field(
         default=None,
         description="Ending quarter (1-4). Used when period_type is semi-annual or quarterly.",
     )
@@ -67,10 +67,10 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
         self,
         identifiers: list[str],
         period_type: EstimatePeriodType | None = None,
-        start_year: int | None = None,
-        end_year: int | None = None,
-        start_quarter: Literal[1, 2, 3, 4] | None = None,
-        end_quarter: Literal[1, 2, 3, 4] | None = None,
+        fiscal_start_year: int | None = None,
+        fiscal_end_year: int | None = None,
+        fiscal_start_quarter: Literal[1, 2, 3, 4] | None = None,
+        fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
     ) -> GetEstimatesFromIdentifiersResp:
@@ -122,10 +122,10 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
                 company_id=company_id,
                 estimate_type=self.estimate_type,
                 period_type=period_type,
-                start_year=start_year,
-                end_year=end_year,
-                start_quarter=start_quarter,
-                end_quarter=end_quarter,
+                start_year=fiscal_start_year,
+                end_year=fiscal_end_year,
+                start_quarter=fiscal_start_quarter,
+                end_quarter=fiscal_end_quarter,
                 num_periods_forward=num_periods_forward,
                 num_periods_backward=num_periods_backward,
             )

@@ -19,6 +19,10 @@ from kfinance.domains.earnings.earning_tools import (
     GetNextEarningsFromIdentifiers,
     GetTranscriptFromKeyDevId,
 )
+from kfinance.domains.estimates.estimates_tools import (
+    GetConsensusEstimatesFromIdentifiers,
+    GetGuidanceFromIdentifiers,
+)
 from kfinance.domains.line_items.line_item_tools import GetFinancialLineItemFromIdentifiers
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools import (
     GetAdvisorsForCompanyInTransactionFromIdentifier,
@@ -82,4 +86,7 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetRoundsOfFundingFromIdentifiers,
     GetRoundsOfFundingInfoFromTransactionIds,
     GetFundingSummaryFromIdentifiers,
+    # Estimates
+    GetConsensusEstimatesFromIdentifiers,
+    GetGuidanceFromIdentifiers,
 ]
