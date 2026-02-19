@@ -1,92 +1,51 @@
 from kfinance.domains.business_relationships.business_relationship_tools import (
     GetBusinessRelationshipFromIdentifiers,
 )
-from kfinance.domains.capitalizations.capitalization_tools import GetCapitalizationFromIdentifiers
-from kfinance.domains.companies.company_tools import (
-    GetCompanyDescriptionFromIdentifiers,
-    GetCompanyOtherNamesFromIdentifiers,
-    GetCompanySummaryFromIdentifiers,
-    GetInfoFromIdentifiers,
-)
-from kfinance.domains.competitors.competitor_tools import GetCompetitorsFromIdentifiers
-from kfinance.domains.cusip_and_isin.cusip_and_isin_tools import (
-    GetCusipFromIdentifiers,
-    GetIsinFromIdentifiers,
-)
-from kfinance.domains.earnings.earning_tools import (
-    GetEarningsFromIdentifiers,
-    GetLatestEarningsFromIdentifiers,
-    GetNextEarningsFromIdentifiers,
-    GetTranscriptFromKeyDevId,
-)
-from kfinance.domains.estimates.estimates_tools import (
-    GetConsensusEstimatesFromIdentifiers,
-    GetGuidanceFromIdentifiers,
-)
-from kfinance.domains.line_items.line_item_tools import GetFinancialLineItemFromIdentifiers
-from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools import (
-    GetAdvisorsForCompanyInTransactionFromIdentifier,
-    GetMergerInfoFromTransactionId,
-    GetMergersFromIdentifiers,
-)
-from kfinance.domains.prices.price_tools import (
-    GetHistoryMetadataFromIdentifiers,
-    GetPricesFromIdentifiers,
-)
-from kfinance.domains.rounds_of_funding.rounds_of_funding_tools import (
-    GetFundingSummaryFromIdentifiers,
-    GetRoundsOfFundingFromIdentifiers,
-    GetRoundsOfFundingInfoFromTransactionIds,
-)
-from kfinance.domains.segments.segment_tools import GetSegmentsFromIdentifiers
-from kfinance.domains.statements.statement_tools import GetFinancialStatementFromIdentifiers
-from kfinance.integrations.tool_calling.static_tools.get_latest import GetLatest
-from kfinance.integrations.tool_calling.static_tools.get_n_quarters_ago import GetNQuartersAgo
 from kfinance.integrations.tool_calling.tool_calling_models import KfinanceTool
 
 
 # A list of all available tools
 ALL_TOOLS: list[type[KfinanceTool]] = [
-    # Static / no API call tools
-    GetLatest,
-    GetNQuartersAgo,
-    # Business Relationships
+    # # Static / no API call tools
+    # GetLatest,
+    # GetNQuartersAgo,
+    # # Business Relationships
     GetBusinessRelationshipFromIdentifiers,
-    # Capitalizations
-    GetCapitalizationFromIdentifiers,
-    # Companies
-    GetInfoFromIdentifiers,
-    GetCompanyOtherNamesFromIdentifiers,
-    GetCompanySummaryFromIdentifiers,
-    GetCompanyDescriptionFromIdentifiers,
-    # Competitors
-    GetCompetitorsFromIdentifiers,
-    # Cusip and Isin
-    GetCusipFromIdentifiers,
-    GetIsinFromIdentifiers,
-    # Earnings
-    GetEarningsFromIdentifiers,
-    GetLatestEarningsFromIdentifiers,
-    GetNextEarningsFromIdentifiers,
-    GetTranscriptFromKeyDevId,
-    # Line Items
-    GetFinancialLineItemFromIdentifiers,
-    # Prices
-    GetPricesFromIdentifiers,
-    GetHistoryMetadataFromIdentifiers,
-    # Segments
-    GetSegmentsFromIdentifiers,
-    # Statements
-    GetFinancialStatementFromIdentifiers,
-    # Mergers & Acquisitions
-    GetAdvisorsForCompanyInTransactionFromIdentifier,
-    GetMergerInfoFromTransactionId,
-    GetMergersFromIdentifiers,
-    # Rounds of Funding
-    GetRoundsOfFundingFromIdentifiers,
-    GetRoundsOfFundingInfoFromTransactionIds,
-    GetFundingSummaryFromIdentifiers,
-    # Estimates
-    GetConsensusEstimatesFromIdentifiers,
-    GetGuidanceFromIdentifiers,
+    # # Capitalizations
+    # GetCapitalizationFromIdentifiers,
+    # # Companies
+    # GetInfoFromIdentifiers,
+    # GetCompanyOtherNamesFromIdentifiers,
+    # GetCompanySummaryFromIdentifiers,
+    # GetCompanyDescriptionFromIdentifiers,
+    # # Competitors
+    # GetCompetitorsFromIdentifiers,
+    # # Cusip and Isin
+    # GetCusipFromIdentifiers,
+    # GetIsinFromIdentifiers,
+    # # Earnings
+    # GetEarningsFromIdentifiers,
+    # GetLatestEarningsFromIdentifiers,
+    # GetNextEarningsFromIdentifiers,
+    # GetTranscriptFromKeyDevId,
+    # # Line Items
+    # GetFinancialLineItemFromIdentifiers,
+    # # Prices
+    # GetPricesFromIdentifiers,
+    # GetHistoryMetadataFromIdentifiers,
+    # # Segments
+    # GetSegmentsFromIdentifiers,
+    # # Statements
+    # GetFinancialStatementFromIdentifiers,
+    # # Mergers & Acquisitions
+    # GetAdvisorsForCompanyInTransactionFromIdentifier,
+    # GetMergerInfoFromTransactionId,
+    # GetMergersFromIdentifiers,
+    # # Rounds of Funding
+    # GetRoundsOfFundingFromIdentifiers,
+    # GetRoundsOfFundingInfoFromTransactionIds,
+    # GetFundingSummaryFromIdentifiers,
+    # # Estimates
+    # GetConsensusEstimatesFromIdentifiers,
+    # GetGuidanceFromIdentifiers,
 ]

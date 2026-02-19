@@ -50,6 +50,7 @@ from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
     RoundOfFundingInfo,
     RoundOfFundingInfoTimeline,
 )
+from kfinance.httpx_utils import KfinanceHttpxClient
 
 
 if TYPE_CHECKING:
@@ -1785,6 +1786,7 @@ class Client:
             )
             stdout.write("Login credentials received.\n")
 
+        self.httpx_client = KfinanceHttpxClient(api_client=self.kfinance_api_client)
         self._tools: list[KfinanceTool] | None = None
 
     @property

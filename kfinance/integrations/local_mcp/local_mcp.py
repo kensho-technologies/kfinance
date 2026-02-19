@@ -24,12 +24,14 @@ def build_mcp_tool_from_kfinance_tool(kfinance_tool: KfinanceTool) -> FunctionTo
         parameters=convert_to_openai_tool(kfinance_tool)["function"]["parameters"],
         # The langchain runner internally validates input arguments via the args_schema.
         # When running with mcp, we need to reproduce that validation ourselves in
-        # run_without_langchain (which then calls _run).
-        # If we pass in the underlying _run method directly, mcp generates a schema from
-        # the _run type hints but bypasses our internal validation. This causes errors,
+        # arun_without_langchain (which then calls _arun).
+        # If we pass in the underlying _arun method directly, mcp generates a schema from
+        # the _arun type hints but bypasses our internal validation. This causes errors,
         # for example with integer literals, which our args models allow but the
         # mcp-internal validation disallows.
-        fn=kfinance_tool.run_without_langchain,
+        # Use the async version to avoid event loop conflicts.
+        # fn=kfinance_tool.arun_without_langchain,
+        fn=kfinance_tool.arun_without_langchain,
     )
 
 

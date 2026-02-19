@@ -1,9 +1,11 @@
 from textwrap import dedent
 from typing import Type
 
+import httpx
 from pydantic import BaseModel
 
-from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
+from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
+from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
@@ -47,48 +49,78 @@ class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = GetBusinessRelationshipFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.RelationshipPermission}
 
-    def _run(
+    async def _arun(
         self, identifiers: list[str], business_relationship: BusinessRelationshipType
     ) -> GetBusinessRelationshipFromIdentifiersResp:
-        """Sample response:
-
-        {
-            'business_relationship': 'supplier',
-            'results': {
-                'SPGI': {
-                    'current': [
-                        {'company_id': 'C_883103', 'company_name': 'CRISIL Limited'}
-                    ],
-                    'previous': [
-                        {'company_id': 'C_472898', 'company_name': 'Morgan Stanley'},
-                        {'company_id': 'C_8182358', 'company_name': 'Eloqua, Inc.'}
-                    ]
-                }
-            },
-            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']}
-        """
-
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-
-        tasks = [
-            Task(
-                func=api_client.fetch_companies_from_business_relationship,
-                kwargs=dict(
-                    company_id=id_triple.company_id,
-                    relationship_type=business_relationship,
-                ),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-
-        relationship_responses = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
-        )
-
-        return GetBusinessRelationshipFromIdentifiersResp(
+        """"""
+        return await get_business_relationship_from_identifiers(
+            identifiers=identifiers,
             business_relationship=business_relationship,
-            results=relationship_responses,
-            errors=list(id_triple_resp.errors.values()),
+            httpx_client=self.kfinance_client.httpx_client,
         )
+
+
+async def get_business_relationship_from_identifiers(
+    identifiers: list[str],
+    business_relationship: BusinessRelationshipType,
+    httpx_client: httpx.AsyncClient,
+) -> GetBusinessRelationshipFromIdentifiersResp:
+    """Fetch business relationships for all identifiers.
+
+    Sample Response:
+    {
+        'business_relationship': 'supplier',
+        'results': {
+            'SPGI': {
+                'current': [
+                    {'company_id': 'C_883103', 'company_name': 'CRISIL Limited'}
+                ],
+                'previous': [
+                    {'company_id': 'C_472898', 'company_name': 'Morgan Stanley'},
+                    {'company_id': 'C_8182358', 'company_name': 'Eloqua, Inc.'}
+                ]
+            }
+        },
+        'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']}
+    """
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_business_relationship_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                business_relationship=business_relationship,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
+        )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, RelationshipResponse] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    return GetBusinessRelationshipFromIdentifiersResp(
+        business_relationship=business_relationship, results=results, errors=errors
+    )
+
+
+async def fetch_business_relationship_from_company_id(
+    company_id: int,
+    business_relationship: BusinessRelationshipType,
+    httpx_client: httpx.AsyncClient,
+) -> RelationshipResponse:
+    """Fetch and return business relationship for one identifier."""
+    resp = await httpx_client.get(url=f"/relationship/{company_id}/{business_relationship}")
+    return RelationshipResponse.model_validate(resp.json())
