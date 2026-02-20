@@ -1,5 +1,5 @@
 import asyncio
-from typing import Annotated, Any, Callable, Dict, Literal, Type
+from typing import Annotated, Any, Callable, Dict, Literal, Type, Coroutine
 
 from asyncer import syncify
 from langchain_core.tools import BaseTool
@@ -65,19 +65,20 @@ class KfinanceTool(BaseTool):
         result_model = await self._arun(**args_dict)
         return result_model.model_dump(mode="json", exclude_none=True)
 
-    def run_with_grounding(self, *args: Any, **kwargs: Any) -> Any:
-        """Execute a Kfinance tool with grounding support.
+    async def run_with_endpoint_tracking(self, *args: Any, **kwargs: Any) -> Any:
+        """Execute a Kfinance tool with endpoint tracking.
 
-        This is a wrapper around the `run_without_langchain` method that adds grounding
-        support, for returning the endpoint urls along with the data as citation info for the LRA Data Agent.
+        This is a wrapper around the `_arun` method that adds grounding support
+        for returning the endpoint urls along with the data as citation info for the LRA Data Agent.
         """
-        with self.kfinance_client.kfinance_api_client.endpoint_tracker() as endpoint_tracker_queue:
+        with self.kfinance_client.httpx_client.endpoint_tracker() as endpoint_tracker_queue:
             args_model = self.args_schema.model_validate(kwargs)
             args_dict = args_model.model_dump()
             args_dict = {k: v for k, v in args_dict.items() if k in kwargs}
-            result_model = self._run(**args_dict)
+            result_model = await self._arun(**args_dict)
 
-            # After completion of tool data fetching and within the endpoint_tracker context manager scope, dequeue the endpoint_tracker_queue
+            # After completion of tool data fetching and within the endpoint_tracker context manager scope,
+            # dequeue the endpoint_tracker_queue
             endpoint_urls = []
             while not endpoint_tracker_queue.empty():
                 endpoint_urls.append(endpoint_tracker_queue.get())
@@ -110,7 +111,8 @@ class KfinanceTool(BaseTool):
         )
         return syncify(self._arun, raise_sync_error=False)(*args, **kwargs)
 
-    def _arun(self, *args: Any, **kwargs: Any) -> BaseModel:
+
+    def _arun(self, *args: Any, **kwargs: Any) -> Coroutine[Any, Any, BaseModel]:
         """Run tool asynchronously"""
 
 

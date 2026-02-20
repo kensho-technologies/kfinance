@@ -46,7 +46,7 @@ class TestGetEndpointsFromToolCallsWithGrounding:
         )
 
         tool = GetInfoFromIdentifiers(kfinance_client=mock_client)
-        resp = tool.run_with_grounding(identifiers=["SPGI"])
+        resp = tool.run_with_endpoint_tracking(identifiers=["SPGI"])
         assert resp == expected_resp
 
 

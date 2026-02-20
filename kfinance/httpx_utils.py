@@ -1,11 +1,17 @@
 import asyncio
 import atexit
+from contextlib import contextmanager
+from contextvars import ContextVar
+from queue import Queue
 from typing import Any, Generator
 
 import httpx
 from httpx import Request, Response
 
 from kfinance.client.fetch import KFinanceApiClient
+
+# Context variable for tracking endpoint URLs across async contexts
+_endpoint_tracker_queue: ContextVar[Queue[str] | None] = ContextVar('endpoint_tracker_queue', default=None)
 
 
 class KfinanceBearerAuth(httpx.Auth):
@@ -20,7 +26,7 @@ class KfinanceBearerAuth(httpx.Auth):
 
 
 class KfinanceHttpxClient(httpx.AsyncClient):
-    """httpx.AsyncClient subclass that automatically prefixes URLs with a base URL and auto-registers cleanup."""
+    """httpx.AsyncClient subclass that automatically prefixes URLs with a base URL and includes endpoint tracking."""
 
     def __init__(self, api_client: KFinanceApiClient) -> None:
         """"""
@@ -30,6 +36,29 @@ class KfinanceHttpxClient(httpx.AsyncClient):
 
         # Auto-register cleanup on exit
         atexit.register(self._cleanup_on_exit)
+
+    @contextmanager
+    def endpoint_tracker(self) -> Generator[Queue[str], None, None]:
+        """Context manager to track endpoint URLs accessed during execution.
+
+        This is safe for concurrent async operations as it uses contextvars
+        to ensure each async context gets its own tracking queue.
+
+        Usage:
+            with httpx_client.endpoint_tracker() as queue:
+                # Make requests
+                await httpx_client.get("some/endpoint")
+                # After requests, dequeue URLs
+                endpoint_urls = []
+                while not queue.empty():
+                    endpoint_urls.append(queue.get())
+        """
+        queue = Queue[str]()
+        token = _endpoint_tracker_queue.set(queue)
+        try:
+            yield queue
+        finally:
+            _endpoint_tracker_queue.reset(token)
 
     def _cleanup_on_exit(self) -> None:
         """Clean up the httpx client on process exit."""
@@ -50,5 +79,12 @@ class KfinanceHttpxClient(httpx.AsyncClient):
         return f"{self._kfinance_base_url}/{url.lstrip('/')}"
 
     async def request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:  # type: ignore[override]
-        """Override request to prepend base_url to relative URLs."""
-        return await super().request(method=method, url=self._build_url(url), **kwargs)
+        """Override request to prepend base_url to relative URLs and track endpoints."""
+        full_url = self._build_url(url)
+
+        # Track endpoint if tracking is active in the current async context
+        queue = _endpoint_tracker_queue.get(None)
+        if queue is not None:
+            queue.put(full_url)
+
+        return await super().request(method=method, url=full_url, **kwargs)
