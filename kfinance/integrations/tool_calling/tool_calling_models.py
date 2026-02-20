@@ -110,6 +110,9 @@ class KfinanceTool(BaseTool):
         )
         return syncify(self._arun, raise_sync_error=False)(*args, **kwargs)
 
+    def _arun(self, *args: Any, **kwargs: Any) -> BaseModel:
+        """Run tool asynchronously"""
+
 
 class ToolArgsWithIdentifier(BaseModel):
     """Tool argument with an identifier.
