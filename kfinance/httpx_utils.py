@@ -10,8 +10,11 @@ from httpx import Request, Response
 
 from kfinance.client.fetch import KFinanceApiClient
 
+
 # Context variable for tracking endpoint URLs across async contexts
-_endpoint_tracker_queue: ContextVar[Queue[str] | None] = ContextVar('endpoint_tracker_queue', default=None)
+_endpoint_tracker_queue: ContextVar[Queue[str] | None] = ContextVar(
+    "endpoint_tracker_queue", default=None
+)
 
 
 class KfinanceBearerAuth(httpx.Auth):

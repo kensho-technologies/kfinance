@@ -1,14 +1,21 @@
 from datetime import datetime
 
+import httpx
 import pytest
+from pytest_httpx import HTTPXMock
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
+from kfinance.domains.companies.company_models import IdentificationTriple
 
 
 SPGI_COMPANY_ID = 21719
 SPGI_SECURITY_ID = 2629107
 SPGI_TRADING_ITEM_ID = 2629108
+
+SPGI_ID_TRIPLE = IdentificationTriple(
+    company_id=SPGI_COMPANY_ID, security_id=SPGI_SECURITY_ID, trading_item_id=SPGI_TRADING_ITEM_ID
+)
 
 
 @pytest.fixture
@@ -20,15 +27,9 @@ def mock_client(requests_mock: Mocker) -> Client:
     client.kfinance_api_client._access_token = "foo"  # noqa: SLF001
     client.kfinance_api_client._access_token_expiry = int(datetime(2100, 1, 1).timestamp())  # noqa: SLF001
 
-    # Create a mock for the SPGI id triple.
-    spgi_id_triple = {
-        "trading_item_id": SPGI_TRADING_ITEM_ID,
-        "security_id": SPGI_SECURITY_ID,
-        "company_id": SPGI_COMPANY_ID,
-    }
     requests_mock.get(
         url="https://kfinance.kensho.com/api/v1/id/SPGI",
-        json=spgi_id_triple,
+        json=SPGI_ID_TRIPLE.model_dump(mode="json"),
     )
     requests_mock.get(
         url="https://kfinance.kensho.com/api/v1/id/MSFT",
@@ -50,7 +51,7 @@ def mock_client(requests_mock: Mocker) -> Client:
     requests_mock.post(
         url="https://kfinance.kensho.com/api/v1/ids",
         additional_matcher=lambda req: req.json().get("identifiers") == ["SPGI"],
-        json={"data": {"SPGI": spgi_id_triple}},
+        json={"data": {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")}},
     )
     # Fetch a non-existent company (which will include an error)
     requests_mock.post(
@@ -80,7 +81,7 @@ def mock_client(requests_mock: Mocker) -> Client:
         additional_matcher=lambda req: req.json().get("identifiers") == ["SPGI", "non-existent"],
         json={
             "data": {
-                "SPGI": spgi_id_triple,
+                "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
                 "non-existent": {
                     "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
                 },
@@ -93,7 +94,7 @@ def mock_client(requests_mock: Mocker) -> Client:
         additional_matcher=lambda req: req.json().get("identifiers") == ["SPGI", "private_company"],
         json={
             "data": {
-                "SPGI": spgi_id_triple,
+                "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
                 "private_company": {"company_id": 1, "security_id": None, "trading_item_id": None},
             }
         },
@@ -111,3 +112,45 @@ def mock_client(requests_mock: Mocker) -> Client:
     )
 
     return client
+
+
+@pytest.fixture(scope="function")
+def httpx_client(httpx_mock: HTTPXMock) -> httpx.AsyncClient:
+    """Create an async httpx client with mock responses for id resolution."""
+
+    # Fetch SPGI
+    httpx_mock.add_response(
+        url="https://kfinance.kensho.com/api/v1/ids",
+        match_json={"identifiers": ["SPGI"]},
+        json={"data": {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")}},
+        is_optional=True,
+    )
+    # Fetch non-existent company (only includes an error)
+    httpx_mock.add_response(
+        url="https://kfinance.kensho.com/api/v1/ids",
+        match_json={"identifiers": ["non-existent"]},
+        json={
+            "data": {
+                "non-existent": {
+                    "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                },
+            }
+        },
+        is_optional=True,
+    )
+    # Fetch SPGI and a non-existent company (which will include an error)
+    httpx_mock.add_response(
+        url="https://kfinance.kensho.com/api/v1/ids",
+        match_json={"identifiers": ["SPGI", "non-existent"]},
+        json={
+            "data": {
+                "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
+                "non-existent": {
+                    "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                },
+            }
+        },
+        is_optional=True,
+    )
+
+    return httpx.AsyncClient(base_url="https://kfinance.kensho.com/api/v1")

@@ -1,5 +1,6 @@
+import abc
 import asyncio
-from typing import Annotated, Any, Callable, Dict, Literal, Type, Coroutine
+from typing import Annotated, Any, Callable, Coroutine, Dict, Literal, Type
 
 from asyncer import syncify
 from langchain_core.tools import BaseTool
@@ -111,7 +112,7 @@ class KfinanceTool(BaseTool):
         )
         return syncify(self._arun, raise_sync_error=False)(*args, **kwargs)
 
-
+    @abc.abstractmethod
     def _arun(self, *args: Any, **kwargs: Any) -> Coroutine[Any, Any, BaseModel]:
         """Run tool asynchronously"""
 
