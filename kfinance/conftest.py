@@ -152,5 +152,17 @@ def httpx_client(httpx_mock: HTTPXMock) -> httpx.AsyncClient:
         },
         is_optional=True,
     )
+    # Fetch C_1 and C_2 (for multi-company testing)
+    httpx_mock.add_response(
+        url="https://kfinance.kensho.com/api/v1/ids",
+        match_json={"identifiers": ["C_1", "C_2"]},
+        json={
+            "data": {
+                "C_1": {"company_id": 1, "security_id": 1, "trading_item_id": 1},
+                "C_2": {"company_id": 2, "security_id": 2, "trading_item_id": 2},
+            }
+        },
+        is_optional=True,
+    )
 
     return httpx.AsyncClient(base_url="https://kfinance.kensho.com/api/v1")

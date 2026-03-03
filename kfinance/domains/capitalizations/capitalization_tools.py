@@ -2,9 +2,11 @@ from datetime import date
 from textwrap import dedent
 from typing import Type
 
+import httpx
 from pydantic import BaseModel, Field
 
-from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
+from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
+from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
 from kfinance.domains.capitalizations.capitalization_models import Capitalization, Capitalizations
 from kfinance.integrations.tool_calling.tool_calling_models import (
@@ -56,69 +58,112 @@ class GetCapitalizationFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = GetCapitalizationFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.PricingPermission}
 
-    def _run(
+
+    async def _arun(
         self,
         identifiers: list[str],
         capitalization: Capitalization,
-        start_date: str | None = None,
-        end_date: str | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
     ) -> GetCapitalizationFromIdentifiersResp:
-        """Sample response:
-
-        {
-            'capitalization': 'market_cap'
-            'results': {
-                'SPGI': {
-                        {'date': '2024-04-10', 'market_cap': {'value': '132766738270.00', 'unit': 'USD'}},
-                        {'date': '2024-04-11', 'market_cap': {'value': '132416066761.00', 'unit': 'USD'}}
-                    ]
-                }
-            },
-            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
-        }
-        """
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-
-        tasks = [
-            Task(
-                func=api_client.fetch_market_caps_tevs_and_shares_outstanding,
-                kwargs=dict(
-                    company_id=id_triple.company_id, start_date=start_date, end_date=end_date
-                ),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-
-        capitalization_responses = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
+        """"""
+        return await get_capitalizations_from_identifiers(
+            identifiers=identifiers,
+            capitalization=capitalization,
+            start_date=start_date,
+            end_date=end_date,
+            httpx_client=self.kfinance_client.httpx_client,
         )
 
-        for identifier, capitalization_response in capitalization_responses.items():
-            # If we get an empty response for a company, assign an empty object
-            if not capitalization_response:
-                capitalization_responses[identifier] = Capitalizations(capitalizations=list())
-                capitalization_response = capitalization_responses[identifier]
+
+async def get_capitalizations_from_identifiers(
+    identifiers: list[str],
+    capitalization: Capitalization,
+    start_date: date | None,
+    end_date: date | None,
+    httpx_client: httpx.AsyncClient,
+) -> GetCapitalizationFromIdentifiersResp:
+    """Fetch market_cap, tev, or shares_outstanding for all identifiers.
+
+    Sample Response:
+
+    {
+        'capitalization': 'market_cap'
+        'results': {
+            'SPGI': [
+                {'date': '2024-04-10', 'market_cap': {'value': '132766738270.00', 'unit': 'USD'}},
+                {'date': '2024-04-11', 'market_cap': {'value': '132416066761.00', 'unit': 'USD'}}
+            ]
+        },
+        'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
+    }
+    """
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_capitalizations_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                start_date=start_date,
+                end_date=end_date,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
+        )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, Capitalizations] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            capitalization_response: Capitalizations = task.result
             # If we return results for more than one company and the start and end dates are unset,
             # truncate data to only return the most recent datapoint.
-            if len(capitalization_responses) > 1 and start_date is None and end_date is None:
+            if (
+                len(tasks) > 1
+                and start_date is None
+                and end_date is None
+                and len(capitalization_response.capitalizations) > 1
+            ):
                 capitalization_response.capitalizations = capitalization_response.capitalizations[
                     -1:
                 ]
             # Set capitalizations that were not requested to None.
             # That way, they can be skipped for serialization via `exclude_none=True`
-            if capitalization_response.capitalizations:
-                for daily_capitalization in capitalization_response.capitalizations:
-                    if capitalization is not Capitalization.market_cap:
-                        daily_capitalization.market_cap = None
-                    if capitalization is not Capitalization.tev:
-                        daily_capitalization.tev = None
-                    if capitalization is not Capitalization.shares_outstanding:
-                        daily_capitalization.shares_outstanding = None
+            for daily_capitalization in capitalization_response.capitalizations:
+                if capitalization is not Capitalization.market_cap:
+                    daily_capitalization.market_cap = None
+                if capitalization is not Capitalization.tev:
+                    daily_capitalization.tev = None
+                if capitalization is not Capitalization.shares_outstanding:
+                    daily_capitalization.shares_outstanding = None
+            results[task.result_key] = capitalization_response
 
-        return GetCapitalizationFromIdentifiersResp(
-            capitalization=capitalization,
-            results=capitalization_responses,
-            errors=list(id_triple_resp.errors.values()),
-        )
+    return GetCapitalizationFromIdentifiersResp(
+        capitalization=capitalization, results=results, errors=errors
+    )
+
+
+async def fetch_capitalizations_from_company_id(
+    company_id: int,
+    start_date: date | None,
+    end_date: date | None,
+    httpx_client: httpx.AsyncClient,
+) -> Capitalizations:
+    """Fetch and return capitalizations for one identifier."""
+    url = (
+        f"/market_cap/{company_id}/"
+        f"{start_date.isoformat() if start_date is not None else 'none'}/"
+        f"{end_date.isoformat() if end_date is not None else 'none'}"
+    )
+    resp = await httpx_client.get(url=url)
+    return Capitalizations.model_validate(resp.json())
