@@ -1,143 +1,234 @@
-from requests_mock import Mocker
+import httpx
+import pytest
+from pytest_httpx import HTTPXMock
 
-from kfinance.client.kfinance import Client
-from kfinance.conftest import SPGI_COMPANY_ID
-from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
-from kfinance.domains.companies.company_tools import (
-    GetCompanyDescriptionFromIdentifiers,
-    GetCompanyDescriptionFromIdentifiersResp,
-    GetCompanyOtherNamesFromIdentifiers,
-    GetCompanyOtherNamesFromIdentifiersResp,
-    GetCompanySummaryFromIdentifiers,
-    GetCompanySummaryFromIdentifiersResp,
-    GetInfoFromIdentifiers,
-    GetInfoFromIdentifiersResp,
+from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
+from kfinance.domains.companies.company_models import (
+    CompanyDescriptions,
+    CompanyOtherNames,
+    NativeName,
+    prefix_company_id,
 )
-from kfinance.integrations.tool_calling.tool_calling_models import ToolArgsWithIdentifiers
+from kfinance.domains.companies.company_tools import (
+    GetCompanyDescriptionFromIdentifiersResp,
+    GetCompanyOtherNamesFromIdentifiersResp,
+    GetCompanySummaryFromIdentifiersResp,
+    GetInfoFromIdentifiersResp,
+    fetch_company_other_names_from_company_id,
+    fetch_company_summary_and_description_from_company_id,
+    fetch_info_from_company_id,
+    get_company_other_names_from_identifiers,
+    get_company_summary_or_description_from_identifiers,
+    get_info_from_identifiers,
+)
 
 
-class TestGetInfoFromIdentifiers:
-    def test_get_info_from_identifiers(self, mock_client: Client, requests_mock: Mocker):
-        """
-        GIVEN the GetInfoFromIdentifiers tool
-        WHEN request info for SPGI and a non-existent company
-        THEN we get back info for SPGI and an error for the non-existent company
-        """
+class TestGetCompanyInfo:
+    spgi_info_resp = {"name": "S&P Global Inc.", "status": "Operating"}
 
-        info_resp = {
-            "name": "S&P Global Inc.",
-            "status": "Operating",
-            "company_id": f"{COMPANY_ID_PREFIX}{SPGI_COMPANY_ID}",
-        }
-        expected_response = GetInfoFromIdentifiersResp.model_validate(
-            {
-                "results": {"SPGI": info_resp},
-                "errors": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                ],
-            }
-        )
-        del info_resp["company_id"]
-        requests_mock.get(
+    @pytest.fixture
+    def add_spgi_info_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+        """Add mock response for SPGI company info."""
+        httpx_mock.add_response(
+            method="GET",
             url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}",
-            json=info_resp,
+            json=self.spgi_info_resp,
         )
 
-        tool = GetInfoFromIdentifiers(kfinance_client=mock_client)
-        resp = tool.run(
-            ToolArgsWithIdentifiers(identifiers=["SPGI", "non-existent"]).model_dump(mode="json")
-        )
-        assert resp == expected_response
-
-
-class TestGetCompanyDescriptions:
-    description = "S&P Global Inc. (S&P Global), together... [description]"
-    summary = "S&P Global Inc., together... [summary]"
-    descriptions_data = {
-        "summary": summary,
-        "description": description,
-    }
-
-    def test_get_company_summary_from_identifier(self, mock_client: Client, requests_mock: Mocker):
+    @pytest.mark.asyncio
+    async def test_fetch_info_from_company_id(
+        self, httpx_client: httpx.AsyncClient, add_spgi_info_mock_resp: None
+    ) -> None:
         """
-        GIVEN the GetCompanySummaryFromIdentifier tool
-        WHEN we request the company summary (short description) for SPGI
-        THEN we get back SPGI company's summary (short description)
+        WHEN we request SPGI's company info (using SPGI's company id)
+        THEN we get back SPGI's company info
         """
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}/descriptions",
-            # truncated from the original API response
-            json=self.descriptions_data,
+
+        resp = await fetch_info_from_company_id(
+            company_id=SPGI_ID_TRIPLE.company_id,
+            httpx_client=httpx_client,
         )
 
-        tool = GetCompanySummaryFromIdentifiers(kfinance_client=mock_client)
-        args = ToolArgsWithIdentifiers(identifiers=["SPGI"])
-        response = tool.run(args.model_dump(mode="json"))
-        expected_response = GetCompanySummaryFromIdentifiersResp.model_validate(
-            {"results": {"SPGI": self.summary}}
-        )
-        assert response == expected_response
+        assert resp == self.spgi_info_resp
 
-    def test_get_company_description_from_identifier(
-        self, mock_client: Client, requests_mock: Mocker
-    ):
+    @pytest.mark.asyncio
+    async def test_get_info_from_identifiers(
+        self, httpx_client: httpx.AsyncClient, add_spgi_info_mock_resp: None
+    ) -> None:
         """
-        GIVEN the GetCompanyDescriptionFromIdentifier tool
-        WHEN we request the company description for SPGI
-        THEN we get back SPGI company's description
+        WHEN we fetch company info for SPGI and a non-existent company
+        THEN we get back SPGI's company info and an error for the non-existent company
         """
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}/descriptions",
-            # truncated from the original API response
-            json=self.descriptions_data,
+
+        expected_resp = GetInfoFromIdentifiersResp(
+            results={"SPGI": self.spgi_info_resp},
+            errors=[
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+        )
+        expected_resp.results["SPGI"]["company_id"] = prefix_company_id(SPGI_ID_TRIPLE.company_id)
+
+        resp = await get_info_from_identifiers(
+            identifiers=["SPGI", "non-existent"],
+            httpx_client=httpx_client,
         )
 
-        tool = GetCompanyDescriptionFromIdentifiers(kfinance_client=mock_client)
-        args = ToolArgsWithIdentifiers(identifiers=["SPGI"])
-        response = tool.run(args.model_dump(mode="json"))
-        expected_response = GetCompanyDescriptionFromIdentifiersResp.model_validate(
-            {"results": {"SPGI": self.description}}
-        )
-        assert response == expected_response
+        assert resp == expected_resp
 
 
 class TestGetCompanyOtherNames:
-    alternate_names = ["S&P Global", "S&P Global, Inc.", "S&P"]
-    historical_names = [
-        "McGraw-Hill Publishing Company, Inc.",
-        "McGraw-Hill Book Company",
-        "McGraw Hill Financial, Inc.",
-        "The McGraw-Hill Companies, Inc.",
-    ]
-    native_names = [
-        {"name": "KLab Venture Partners 株式会社", "language": "Japanese"},
-        {"name": "株式会社ANOBAKA", "language": "Japanese"},
-        {"name": "株式会社KVP", "language": "Japanese"},
-    ]
-
-    company_other_names_info = {
-        "alternate_names": alternate_names,
-        "historical_names": historical_names,
-        "native_names": native_names,
+    spgi_other_names_resp = {
+        "alternate_names": ["S&P Global", "S&P Global, Inc.", "S&P"],
+        "historical_names": [
+            "McGraw-Hill Publishing Company, Inc.",
+            "The McGraw-Hill Companies, Inc.",
+        ],
+        "native_names": [
+            {"name": "KLab Venture Partners 株式会社", "language": "Japanese"},
+            {"name": "株式会社ANOBAKA", "language": "Japanese"},
+        ],
     }
 
-    def test_get_company_other_names_from_identifier(
-        self, mock_client: Client, requests_mock: Mocker
-    ):
-        """
-        GIVEN the GetCompanyOtherNamesFromIdentifier tool
-        WHEN we request the other names for SPGI
-        THEN we get back SPGI's other names
-        """
-        requests_mock.get(
+    spgi_other_names_model = CompanyOtherNames(
+        alternate_names=["S&P Global", "S&P Global, Inc.", "S&P"],
+        historical_names=[
+            "McGraw-Hill Publishing Company, Inc.",
+            "The McGraw-Hill Companies, Inc.",
+        ],
+        native_names=[
+            NativeName(name="KLab Venture Partners 株式会社", language="Japanese"),
+            NativeName(name="株式会社ANOBAKA", language="Japanese"),
+        ],
+    )
+
+    @pytest.fixture
+    def add_spgi_other_names_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+        """Add mock response for SPGI other names."""
+        httpx_mock.add_response(
+            method="GET",
             url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}/names",
-            json=self.company_other_names_info,
+            json=self.spgi_other_names_resp,
         )
 
-        tool = GetCompanyOtherNamesFromIdentifiers(kfinance_client=mock_client)
-        args = ToolArgsWithIdentifiers(identifiers=["SPGI"])
-        response = tool.run(args.model_dump(mode="json"))
-        expected_response = GetCompanyOtherNamesFromIdentifiersResp.model_validate(
-            {"results": {"SPGI": self.company_other_names_info}}
+    @pytest.mark.asyncio
+    async def test_get_company_other_names(
+        self, httpx_client: httpx.AsyncClient, add_spgi_other_names_mock_resp: None
+    ) -> None:
+        """
+        WHEN we fetch SPGI other names  (using SPGI's company id)
+        THEN we get back SPGI other names.
+        """
+
+        resp = await fetch_company_other_names_from_company_id(
+            company_id=SPGI_ID_TRIPLE.company_id,
+            httpx_client=httpx_client,
         )
-        assert response == expected_response
+
+        assert resp == self.spgi_other_names_model
+
+    @pytest.mark.asyncio
+    async def test_get_other_names_from_identifiers(
+        self, httpx_client: httpx.AsyncClient, add_spgi_other_names_mock_resp: None
+    ) -> None:
+        """
+        WHEN we fetch other names for SPGI and a non-existent company
+        THEN we get back SPGI's other names and an error for the non-existent company
+        """
+
+        expected_resp = GetCompanyOtherNamesFromIdentifiersResp(
+            results={"SPGI": self.spgi_other_names_model},
+            errors=[
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+        )
+
+        resp = await get_company_other_names_from_identifiers(
+            identifiers=["SPGI", "non-existent"],
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp
+
+
+class TestGetCompanySummaryAndDescription:
+    spgi_descriptions_resp = {
+        "summary": "S&P Global Inc. (S&P Global), [short summary]",
+        "description": "S&P Global Inc., [long description]",
+    }
+    spgi_descriptions_model = CompanyDescriptions(
+        summary="S&P Global Inc. (S&P Global), [short summary]",
+        description="S&P Global Inc., [long description]",
+    )
+
+    @pytest.fixture
+    def add_spgi_descriptions_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+        """Add mock response for SPGI descriptions."""
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}/descriptions",
+            json=self.spgi_descriptions_resp,
+        )
+
+    @pytest.mark.asyncio
+    async def test_fetch_company_summary_and_description_from_company_id(
+        self, httpx_client: httpx.AsyncClient, add_spgi_descriptions_mock_resp: None
+    ) -> None:
+        """
+        WHEN we request SPGI's summary and description (using SPGI's company id)
+        THEN we get back SPGI's summary and description
+        """
+
+        resp = await fetch_company_summary_and_description_from_company_id(
+            company_id=SPGI_ID_TRIPLE.company_id,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == self.spgi_descriptions_model
+
+    @pytest.mark.asyncio
+    async def test_get_company_summary_from_identifiers(
+        self, httpx_client: httpx.AsyncClient, add_spgi_descriptions_mock_resp: None
+    ) -> None:
+        """
+        WHEN we fetch the summary for SPGI and a non-existent company
+        THEN we get back SPGI's summary and an error for the non-existent company
+        """
+
+        expected_resp = GetCompanySummaryFromIdentifiersResp(
+            results={"SPGI": self.spgi_descriptions_model.summary},
+            errors=[
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+        )
+
+        resp = await get_company_summary_or_description_from_identifiers(
+            identifiers=["SPGI", "non-existent"],
+            httpx_client=httpx_client,
+            summary_or_description="summary",
+        )
+
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_get_company_description_from_identifiers(
+        self, httpx_client: httpx.AsyncClient, add_spgi_descriptions_mock_resp: None
+    ) -> None:
+        """
+        WHEN we fetch the description for SPGI and a non-existent company
+        THEN we get back SPGI's description and an error for the non-existent company
+        """
+
+        expected_resp = GetCompanyDescriptionFromIdentifiersResp(
+            results={"SPGI": self.spgi_descriptions_model.description},
+            errors=[
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+        )
+
+        resp = await get_company_summary_or_description_from_identifiers(
+            identifiers=["SPGI", "non-existent"],
+            httpx_client=httpx_client,
+            summary_or_description="description",
+        )
+
+        assert resp == expected_resp
