@@ -1,8 +1,11 @@
 from textwrap import dedent
 from typing import Literal, Type
 
+import httpx
 from pydantic import BaseModel, Field
 
+from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
+from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import CalendarType
@@ -85,7 +88,8 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         Permission.PrivateCompanyFinancialsPermission,
     }
 
-    def _run(
+
+    async def _arun(
         self,
         identifiers: list[str],
         statement: StatementType,
@@ -98,72 +102,10 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
         num_periods: int | None = None,
         num_periods_back: int | None = None,
     ) -> GetFinancialStatementFromIdentifiersResp:
-        """Sample response:
-
-        {
-            'results': {
-                'SPGI': {
-                    'currency': 'USD',
-                    'periods': {
-                        'CY2020': {
-                            'period_end_date': '2020-12-31',
-                            'num_months': 12,
-                            'statements': [
-                                {
-                                    'name': 'Income Statement',
-                                    'line_items': [
-                                        {
-                                            'name': 'Revenues',
-                                            'value': 7442000000.0,
-                                            'sources': [
-                                                {
-                                                    'type': 'doc-viewer statement',
-                                                    'url': 'https://www.capitaliq.spglobal.com/...'
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            'name': 'Total Revenues',
-                                            'value': 7442000000.0
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        'CY2021': {
-                            'period_end_date': '2021-12-31',
-                            'num_months': 12,
-                            'statements': [
-                                {
-                                    'name': 'Income Statement',
-                                    'line_items': [
-                                        {
-                                            'name': 'Revenues',
-                                            'value': 8243000000.0
-                                        },
-                                        {
-                                            'name': 'Total Revenues',
-                                            'value': 8243000000.0
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
-        }
-        """
-        api_client = self.kfinance_client.kfinance_api_client
-
-        # First resolve identifiers to company IDs
-        ids_response = api_client.unified_fetch_id_triples(identifiers)
-
-        # Call the simplified fetch_statement API with company IDs
-        response = api_client.fetch_statement(
-            company_ids=ids_response.company_ids,
-            statement_type=statement.value,
+        """"""
+        return await get_financial_statement_from_identifiers(
+            identifiers=identifiers,
+            statement=statement,
             period_type=period_type,
             start_year=start_year,
             end_year=end_year,
@@ -172,30 +114,115 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
             calendar_type=calendar_type,
             num_periods=num_periods,
             num_periods_back=num_periods_back,
+            httpx_client=self.kfinance_client.httpx_client,
         )
 
-        identifier_to_results = {}
-        for company_id_str, statement_resp in response.results.items():
-            original_identifier = ids_response.get_identifier_from_company_id(int(company_id_str))
-            identifier_to_results[original_identifier] = statement_resp
 
-        # If no date and multiple companies, only return the most recent value.
-        # By default, we return 5 years of data, which can be too much when
-        # returning data for many companies.
-        if (
-            start_year is None
-            and end_year is None
-            and start_quarter is None
-            and end_quarter is None
-            and num_periods is None
-            and num_periods_back is None
-            and len(identifier_to_results) > 1
-        ):
-            for result in identifier_to_results.values():
-                result.remove_all_periods_other_than_the_most_recent_one()
+async def get_financial_statement_from_identifiers(
+    identifiers: list[str],
+    statement: StatementType,
+    httpx_client: httpx.AsyncClient,
+    period_type: PeriodType | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    start_quarter: Literal[1, 2, 3, 4] | None = None,
+    end_quarter: Literal[1, 2, 3, 4] | None = None,
+    calendar_type: CalendarType | None = None,
+    num_periods: int | None = None,
+    num_periods_back: int | None = None,
+) -> GetFinancialStatementFromIdentifiersResp:
+    """Fetch financial statements for all identifiers."""
 
-        all_errors = list(ids_response.errors.values()) + list(response.errors.values())
+    # First resolve identifiers to company IDs
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
 
-        return GetFinancialStatementFromIdentifiersResp(
-            results=identifier_to_results, errors=all_errors
-        )
+    # Call the statements API with company IDs
+    statements_resp = await fetch_statements_from_company_ids(
+        company_ids=id_triple_resp.company_ids,
+        statement_type=statement.value,
+        period_type=period_type,
+        start_year=start_year,
+        end_year=end_year,
+        start_quarter=start_quarter,
+        end_quarter=end_quarter,
+        calendar_type=calendar_type,
+        num_periods=num_periods,
+        num_periods_back=num_periods_back,
+        httpx_client=httpx_client,
+    )
+
+    # Add any errors from the statements API
+    errors.extend(statements_resp.errors)
+
+    # Map results back to original identifiers
+    identifier_to_results = {}
+    for company_id_str, statement_data in statements_resp.results.items():
+        original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+        identifier_to_results[original_identifier] = statement_data
+
+    # If no date and multiple companies, only return the most recent value.
+    # By default, we return 5 years of data, which can be too much when
+    # returning data for many companies.
+    if (
+        start_year is None
+        and end_year is None
+        and start_quarter is None
+        and end_quarter is None
+        and num_periods is None
+        and num_periods_back is None
+        and len(identifier_to_results) > 1
+    ):
+        for result in identifier_to_results.values():
+            result.remove_all_periods_other_than_the_most_recent_one()
+
+    return GetFinancialStatementFromIdentifiersResp(results=identifier_to_results, errors=errors)
+
+
+async def fetch_statements_from_company_ids(
+    company_ids: list[int],
+    statement_type: str,
+    httpx_client: httpx.AsyncClient,
+    period_type: PeriodType | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    start_quarter: Literal[1, 2, 3, 4] | None = None,
+    end_quarter: Literal[1, 2, 3, 4] | None = None,
+    calendar_type: CalendarType | None = None,
+    num_periods: int | None = None,
+    num_periods_back: int | None = None,
+) -> "StatementsBatchResp":
+    """Fetch statements data from the API for multiple company IDs."""
+
+    # Prepare the request payload
+    payload = {
+        "company_ids": company_ids,
+        "statement_type": statement_type,
+    }
+
+    # Add optional parameters if they are not None
+    if period_type is not None:
+        payload["period_type"] = period_type.value
+    if start_year is not None:
+        payload["start_year"] = start_year
+    if end_year is not None:
+        payload["end_year"] = end_year
+    if start_quarter is not None:
+        payload["start_quarter"] = start_quarter
+    if end_quarter is not None:
+        payload["end_quarter"] = end_quarter
+    if calendar_type is not None:
+        payload["calendar_type"] = calendar_type.value
+    if num_periods is not None:
+        payload["num_periods"] = num_periods
+    if num_periods_back is not None:
+        payload["num_periods_back"] = num_periods_back
+
+    url = "/statements/"
+    resp = await httpx_client.post(url=url, json=payload)
+
+    # Import the model here to avoid circular imports
+    from kfinance.domains.statements.statement_models import StatementsBatchResp
+    return StatementsBatchResp.model_validate(resp.json())
