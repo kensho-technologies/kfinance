@@ -1,5 +1,5 @@
 from textwrap import dedent
-from typing import Literal, Type
+from typing import Literal, Type, Any
 
 import httpx
 from pydantic import BaseModel, Field
@@ -171,7 +171,7 @@ async def fetch_segments_from_company_ids(
     calendar_type: CalendarType | None = None,
     num_periods: int | None = None,
     num_periods_back: int | None = None,
-) -> "SegmentsBatchResp":
+) -> SegmentsBatchResp:
     """Fetch segments data from the API for multiple company IDs."""
 
     # Prepare the request payload
