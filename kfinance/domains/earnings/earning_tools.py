@@ -1,10 +1,11 @@
 from textwrap import dedent
 from typing import Type
 
+import httpx
 from pydantic import BaseModel, Field
 
-from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
-from kfinance.client.fetch import KFinanceApiClient
+from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
+from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
 from kfinance.domains.earnings.earning_models import EarningsCall, EarningsCallResp
 from kfinance.integrations.tool_calling.tool_calling_models import (
@@ -38,9 +39,13 @@ class GetTranscriptFromKeyDevId(KfinanceTool):
     args_schema: Type[BaseModel] = GetTranscriptFromKeyDevIdArgs
     accepted_permissions: set[Permission] | None = {Permission.TranscriptsPermission}
 
-    def _run(self, key_dev_id: int) -> GetTranscriptFromKeyDevIdResp:
-        transcript = self.kfinance_client.transcript(key_dev_id)
-        return GetTranscriptFromKeyDevIdResp(transcript=transcript.raw)
+    async def _arun(self, key_dev_id: int) -> GetTranscriptFromKeyDevIdResp:
+        """"""
+        transcript = await get_transcript_from_key_dev_id(
+            key_dev_id=key_dev_id,
+            httpx_client=self.kfinance_client.httpx_client,
+        )
+        return GetTranscriptFromKeyDevIdResp(transcript=transcript)
 
 
 class GetEarningsFromIdentifiersResp(ToolRespWithErrors):
@@ -75,25 +80,11 @@ class GetEarningsFromIdentifiers(KfinanceTool):
         Permission.TranscriptsPermission,
     }
 
-    def _run(self, identifiers: list[str]) -> GetEarningsFromIdentifiersResp:
-        """Sample response:
-
-        {
-            "results": {
-                'SPGI': [
-                    {
-                        'datetime': '2025-04-29T12:30:00Z',
-                        'key_dev_id': 12346,
-                        'name': 'SPGI Q1 2025 Earnings Call'
-                    }
-                ]
-            },
-            "errors": ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
-        }
-
-        """
-        return get_earnings_from_identifiers(
-            identifiers=identifiers, kfinance_api_client=self.kfinance_client.kfinance_api_client
+    async def _arun(self, identifiers: list[str]) -> GetEarningsFromIdentifiersResp:
+        """"""
+        return await get_earnings_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
         )
 
 
@@ -121,22 +112,11 @@ class GetLatestEarningsFromIdentifiers(KfinanceTool):
         Permission.TranscriptsPermission,
     }
 
-    def _run(self, identifiers: list[str]) -> GetNextOrLatestEarningsFromIdentifiersResp:
-        """Sample response:
-
-        {
-            "results": {
-                'JPM': {
-                    'datetime': '2025-04-29T12:30:00Z',
-                    'key_dev_id': 12346,
-                    'name': 'SPGI Q1 2025 Earnings Call'
-                },
-            },
-            "errors": ["No latest earnings available for Kensho."]
-        }
-        """
-        earnings_responses = get_earnings_from_identifiers(
-            identifiers=identifiers, kfinance_api_client=self.kfinance_client.kfinance_api_client
+    async def _arun(self, identifiers: list[str]) -> GetNextOrLatestEarningsFromIdentifiersResp:
+        """"""
+        earnings_responses = await get_earnings_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
         )
         output_model = GetNextOrLatestEarningsFromIdentifiersResp(results=dict(), errors=list())
         for identifier, earnings in earnings_responses.results.items():
@@ -145,6 +125,8 @@ class GetLatestEarningsFromIdentifiers(KfinanceTool):
                 output_model.results[identifier] = most_recent_earnings
             else:
                 output_model.errors.append(f"No latest earnings available for {identifier}.")
+        # Add errors from the earnings fetch
+        output_model.errors.extend(earnings_responses.errors)
         return output_model
 
 
@@ -172,22 +154,11 @@ class GetNextEarningsFromIdentifiers(KfinanceTool):
         Permission.TranscriptsPermission,
     }
 
-    def _run(self, identifiers: list[str]) -> GetNextOrLatestEarningsFromIdentifiersResp:
-        """Sample response:
-
-        {
-            "results": {
-                'JPM': {
-                    'datetime': '2025-04-29T12:30:00Z',
-                    'key_dev_id': 12346,
-                    'name': 'SPGI Q1 2025 Earnings Call'
-                },
-            },
-            "errors": ["No next earnings available for Kensho."]
-        }
-        """
-        earnings_responses = get_earnings_from_identifiers(
-            identifiers=identifiers, kfinance_api_client=self.kfinance_client.kfinance_api_client
+    async def _arun(self, identifiers: list[str]) -> GetNextOrLatestEarningsFromIdentifiersResp:
+        """"""
+        earnings_responses = await get_earnings_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
         )
         output_model = GetNextOrLatestEarningsFromIdentifiersResp(results=dict(), errors=list())
         for identifier, earnings in earnings_responses.results.items():
@@ -196,30 +167,71 @@ class GetNextEarningsFromIdentifiers(KfinanceTool):
                 output_model.results[identifier] = next_earnings
             else:
                 output_model.errors.append(f"No next earnings available for {identifier}.")
+        # Add errors from the earnings fetch
+        output_model.errors.extend(earnings_responses.errors)
         return output_model
 
 
-def get_earnings_from_identifiers(
-    identifiers: list[str], kfinance_api_client: KFinanceApiClient
+async def get_earnings_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
 ) -> GetEarningsFromIdentifiersResp:
-    """Return the earnings call response for all passed identifiers."""
+    """Fetch earnings for all identifiers."""
 
-    api_client = kfinance_api_client
-    id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
 
     tasks = [
-        Task(
-            func=kfinance_api_client.fetch_earnings,
-            kwargs=dict(company_id=id_triple.company_id),
+        AsyncTask(
+            func=fetch_earnings_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                httpx_client=httpx_client,
+            ),
             result_key=identifier,
         )
         for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
     ]
 
-    earnings_responses = process_tasks_in_thread_pool_executor(
-        api_client=kfinance_api_client, tasks=tasks
-    )
-    resp_model = GetEarningsFromIdentifiersResp(
-        results=earnings_responses, errors=list(id_triple_resp.errors.values())
-    )
-    return resp_model
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, EarningsCallResp] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    return GetEarningsFromIdentifiersResp(results=results, errors=errors)
+
+
+async def fetch_earnings_from_company_id(
+    company_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> EarningsCallResp:
+    """Fetch earnings for one company_id."""
+    url = f"/earnings/{company_id}"
+    resp = await httpx_client.get(url=url)
+    return EarningsCallResp.model_validate(resp.json())
+
+
+async def get_transcript_from_key_dev_id(
+    key_dev_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> str:
+    """Fetch raw transcript text for a key_dev_id."""
+    url = f"/transcript/{key_dev_id}"
+    resp = await httpx_client.get(url=url)
+    transcript_data = resp.json()
+
+    # Convert transcript components to raw text format (same as sync version)
+    transcript_parts = []
+    for component in transcript_data.get("transcript", []):
+        if component.get("component_type") == "speech":
+            person_name = component.get("person_name", "")
+            text = component.get("text", "")
+            transcript_parts.append(f"{person_name}: {text}")
+
+    return "\n\n".join(transcript_parts)

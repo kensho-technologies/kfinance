@@ -152,6 +152,18 @@ def httpx_client(httpx_mock: HTTPXMock) -> httpx.AsyncClient:
         },
         is_optional=True,
     )
+    # Fetch SPGI and a private company (which will only have a company_id but no security or trading item id.)
+    httpx_mock.add_response(
+        url="https://kfinance.kensho.com/api/v1/ids",
+        match_json={"identifiers": ["SPGI", "private_company"]},
+        json={
+            "data": {
+                "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
+                "private_company": {"company_id": 1, "security_id": None, "trading_item_id": None},
+            }
+        },
+        is_optional=True,
+    )
     # Fetch C_1 and C_2 (for multi-company testing)
     httpx_mock.add_response(
         url="https://kfinance.kensho.com/api/v1/ids",
