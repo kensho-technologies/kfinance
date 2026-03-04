@@ -1,6 +1,6 @@
 from difflib import SequenceMatcher
 from textwrap import dedent
-from typing import Literal, Type
+from typing import Literal, Type, Any
 
 import httpx
 from pydantic import BaseModel, Field, model_validator
@@ -301,7 +301,7 @@ async def fetch_line_item_from_company_ids(
 ) -> dict[str, LineItemResp]:
     """Fetch line items for a list of company IDs."""
     # Build the request payload
-    params = {
+    params: dict[str, Any] = {
         "company_ids": company_ids,
         "line_item": line_item,
     }
