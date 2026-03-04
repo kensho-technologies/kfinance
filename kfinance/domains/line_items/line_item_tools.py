@@ -2,7 +2,11 @@ from difflib import SequenceMatcher
 from textwrap import dedent
 from typing import Literal, Type
 
+import httpx
 from pydantic import BaseModel, Field, model_validator
+
+from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
+from kfinance.client.id_resolution import unified_fetch_id_triples
 
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.permission_models import Permission
@@ -176,7 +180,7 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         Permission.PrivateCompanyFinancialsPermission,
     }
 
-    def _run(
+    async def _arun(
         self,
         identifiers: list[str],
         line_item: str,
@@ -189,53 +193,11 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
         num_periods: int | None = None,
         num_periods_back: int | None = None,
     ) -> GetFinancialLineItemFromIdentifiersResp:
-        """Sample response:
-
-        {
-            'SPGI': {
-                'currency': 'USD',
-                'periods': {
-                    'FY2022': {
-                        'period_end_date': '2022-12-31',
-                        'num_months': 12,
-                        'line_item': {
-                            'name': 'Revenue',
-                            'value': 11181000000.0,
-                            'sources': [
-                                {
-                                    'type': 'doc-viewer line item',
-                                    'url': 'https://www.capitaliq.spglobal.com/...'
-                                }
-                            ]
-                        }
-                    },
-                    'FY2023': {
-                        'period_end_date': '2023-12-31',
-                        'num_months': 12,
-                        'line_item': {
-                            'name': 'Revenue',
-                            'value': 12497000000.0,
-                            'sources': [
-                                {
-                                    'type': 'doc-viewer line item',
-                                    'url': 'https://www.capitaliq.spglobal.com/...'
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        }
-
-        """
-        api_client = self.kfinance_client.kfinance_api_client
-
-        # First resolve identifiers to company IDs
-        ids_response = api_client.unified_fetch_id_triples(identifiers)
-
-        response = api_client.fetch_line_item(
-            company_ids=ids_response.company_ids,
+        """"""
+        return await get_financial_line_item_from_identifiers(
+            identifiers=identifiers,
             line_item=line_item,
+            httpx_client=self.kfinance_client.httpx_client,
             period_type=period_type,
             start_year=start_year,
             end_year=end_year,
@@ -246,28 +208,127 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
             num_periods_back=num_periods_back,
         )
 
-        identifier_to_results = {}
-        for company_id_str, line_item_resp in response.results.items():
-            original_identifier = ids_response.get_identifier_from_company_id(int(company_id_str))
-            identifier_to_results[original_identifier] = line_item_resp
 
-        # If no date and multiple companies, only return the most recent value.
-        # By default, we return 5 years of data, which can be too much when
-        # returning data for many companies.
-        if (
-            start_year is None
-            and end_year is None
-            and start_quarter is None
-            and end_quarter is None
-            and num_periods is None
-            and num_periods_back is None
-            and len(identifier_to_results) > 1
-        ):
-            for line_item_response in identifier_to_results.values():
-                line_item_response.remove_all_periods_other_than_the_most_recent_one()
+async def get_financial_line_item_from_identifiers(
+    identifiers: list[str],
+    line_item: str,
+    httpx_client: httpx.AsyncClient,
+    period_type: PeriodType | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    start_quarter: Literal[1, 2, 3, 4] | None = None,
+    end_quarter: Literal[1, 2, 3, 4] | None = None,
+    calendar_type: CalendarType | None = None,
+    num_periods: int | None = None,
+    num_periods_back: int | None = None,
+) -> GetFinancialLineItemFromIdentifiersResp:
+    """Fetch financial line items for all identifiers."""
 
-        all_errors = list(ids_response.errors.values()) + list(response.errors.values())
+    # First resolve identifiers to company IDs
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
 
-        return GetFinancialLineItemFromIdentifiersResp(
-            results=identifier_to_results, errors=all_errors
+    # Get the company IDs from the id triples
+    company_ids = [
+        id_triple.company_id for id_triple in id_triple_resp.identifiers_to_id_triples.values()
+    ]
+
+    # Create a single task to fetch line items for all company IDs at once
+    if company_ids:
+        task = AsyncTask(
+            func=fetch_line_item_from_company_ids,
+            kwargs=dict(
+                company_ids=company_ids,
+                line_item=line_item,
+                httpx_client=httpx_client,
+                period_type=period_type,
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+                calendar_type=calendar_type,
+                num_periods=num_periods,
+                num_periods_back=num_periods_back,
+            ),
+            result_key="line_items",
         )
+
+        await batch_execute_async_tasks(tasks=[task])
+
+        if task.error:
+            errors.append(task.error)
+            results = {}
+        else:
+            # Map company IDs back to original identifiers
+            identifier_to_results = {}
+            for company_id_str, line_item_resp in task.result.items():
+                original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+                identifier_to_results[original_identifier] = line_item_resp
+            results = identifier_to_results
+    else:
+        results = {}
+
+    # If no date and multiple companies, only return the most recent value
+    if (
+        start_year is None
+        and end_year is None
+        and start_quarter is None
+        and end_quarter is None
+        and num_periods is None
+        and num_periods_back is None
+        and len(results) > 1
+    ):
+        for line_item_response in results.values():
+            line_item_response.remove_all_periods_other_than_the_most_recent_one()
+
+    return GetFinancialLineItemFromIdentifiersResp(results=results, errors=errors)
+
+
+async def fetch_line_item_from_company_ids(
+    company_ids: list[int],
+    line_item: str,
+    httpx_client: httpx.AsyncClient,
+    period_type: PeriodType | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    start_quarter: Literal[1, 2, 3, 4] | None = None,
+    end_quarter: Literal[1, 2, 3, 4] | None = None,
+    calendar_type: CalendarType | None = None,
+    num_periods: int | None = None,
+    num_periods_back: int | None = None,
+) -> dict[str, LineItemResp]:
+    """Fetch line items for a list of company IDs."""
+    # Build the request payload
+    params = {
+        "company_ids": company_ids,
+        "line_item": line_item,
+    }
+
+    if period_type is not None:
+        params["period_type"] = period_type.value
+    if start_year is not None:
+        params["start_year"] = start_year
+    if end_year is not None:
+        params["end_year"] = end_year
+    if start_quarter is not None:
+        params["start_quarter"] = start_quarter
+    if end_quarter is not None:
+        params["end_quarter"] = end_quarter
+    if calendar_type is not None:
+        params["calendar_type"] = calendar_type.value
+    if num_periods is not None:
+        params["num_periods"] = num_periods
+    if num_periods_back is not None:
+        params["num_periods_back"] = num_periods_back
+
+    resp = await httpx_client.post(url="/line_item/", json=params)
+    response_data = resp.json()
+
+    # Convert the response data to LineItemResp objects
+    results = {}
+    for company_id_str, line_item_data in response_data["results"].items():
+        results[company_id_str] = LineItemResp.model_validate(line_item_data)
+
+    return results
