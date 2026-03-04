@@ -4,7 +4,7 @@ from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
-from kfinance.domains.statements.statement_models import StatementType, StatementsResp
+from kfinance.domains.statements.statement_models import StatementsResp, StatementType
 from kfinance.domains.statements.statement_tools import (
     GetFinancialStatementFromIdentifiersResp,
     fetch_statements_from_company_ids,
@@ -72,9 +72,13 @@ class TestStatements:
             httpx_client=httpx_client,
         )
 
-        expected_resp_data = {"results": {str(SPGI_ID_TRIPLE.company_id): self.statement_resp}, "errors": {}}
+        expected_resp_data = {
+            "results": {str(SPGI_ID_TRIPLE.company_id): self.statement_resp},
+            "errors": {},
+        }
         # Import here to avoid circular imports
         from kfinance.domains.statements.statement_models import StatementsBatchResp
+
         expected_resp = StatementsBatchResp.model_validate(expected_resp_data)
 
         assert resp == expected_resp
@@ -106,7 +110,9 @@ class TestStatements:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock) -> None:
+    async def test_most_recent_request(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
         """
         WHEN we request most recent statements for multiple companies
         THEN we only get back the most recent statement for each company
@@ -121,16 +127,18 @@ class TestStatements:
             json={"results": {"1": self.statement_resp, "2": self.statement_resp}, "errors": {}},
         )
 
-        expected_single_company_response = StatementsResp.model_validate({
-            "currency": "USD",
-            "periods": {
-                "CY2021": {
-                    "period_end_date": "2021-12-31",
-                    "num_months": 12,
-                    "statements": self.statement_resp["periods"]["CY2021"]["statements"],
-                }
-            },
-        })
+        expected_single_company_response = StatementsResp.model_validate(
+            {
+                "currency": "USD",
+                "periods": {
+                    "CY2021": {
+                        "period_end_date": "2021-12-31",
+                        "num_months": 12,
+                        "statements": self.statement_resp["periods"]["CY2021"]["statements"],
+                    }
+                },
+            }
+        )
 
         expected_response = GetFinancialStatementFromIdentifiersResp(
             results={

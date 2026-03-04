@@ -12,7 +12,6 @@ from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     AdvisorResp,
     MergerInfo,
-    MergersResp,
 )
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools import (
     GetAdvisorsForCompanyInTransactionFromIdentifierResp,
@@ -130,11 +129,13 @@ class TestMergersAndAcquisitions:
             },
         )
 
-        expected_response = MergerInfo.model_validate({
-            "timeline": timeline_resp,
-            "participants": participants_resp,
-            "consideration": consideration_resp,
-        })
+        expected_response = MergerInfo.model_validate(
+            {
+                "timeline": timeline_resp,
+                "participants": participants_resp,
+                "consideration": consideration_resp,
+            }
+        )
 
         resp = await get_merger_info_from_transaction_id(
             transaction_id=transaction_id,

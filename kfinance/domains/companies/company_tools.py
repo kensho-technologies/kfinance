@@ -1,5 +1,5 @@
 from textwrap import dedent
-from typing import Type
+from typing import Literal, Type, overload
 
 import httpx
 from pydantic import BaseModel
@@ -8,7 +8,6 @@ from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
 from kfinance.domains.companies.company_models import (
-    COMPANY_ID_PREFIX,
     CompanyDescriptions,
     CompanyOtherNames,
     prefix_company_id,
@@ -41,7 +40,6 @@ class GetInfoFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = None
 
-
     async def _arun(self, identifiers: list[str]) -> GetInfoFromIdentifiersResp:
         """"""
         return await get_info_from_identifiers(
@@ -70,7 +68,6 @@ class GetCompanyOtherNamesFromIdentifiers(KfinanceTool):
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
-
 
     async def _arun(
         self,
@@ -104,7 +101,6 @@ class GetCompanySummaryFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
 
-
     async def _arun(
         self,
         identifiers: list[str],
@@ -137,7 +133,6 @@ class GetCompanyDescriptionFromIdentifiers(KfinanceTool):
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
-
 
     async def _arun(
         self,
@@ -267,9 +262,6 @@ async def fetch_company_other_names_from_company_id(
     url = f"/info/{company_id}/names"
     resp = await httpx_client.get(url=url)
     return CompanyOtherNames.model_validate(resp.json())
-
-
-from typing import Literal, overload
 
 
 @overload

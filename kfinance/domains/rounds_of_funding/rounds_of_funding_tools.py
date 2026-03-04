@@ -124,7 +124,6 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = GetRoundsofFundingFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-
     async def _arun(
         self,
         identifiers: list[str],
@@ -211,8 +210,9 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
     args_schema: Type[BaseModel] = GetRoundsOfFundingInfoFromTransactionIdsArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-
-    async def _arun(self, transaction_ids: list[int]) -> GetRoundsOfFundingInfoFromTransactionIdsResp:
+    async def _arun(
+        self, transaction_ids: list[int]
+    ) -> GetRoundsOfFundingInfoFromTransactionIdsResp:
         """"""
         return await get_rounds_of_funding_info_from_transaction_ids(
             transaction_ids=transaction_ids,
@@ -309,7 +309,6 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = GetFundingSummaryFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-
     async def _arun(self, identifiers: list[str]) -> GetFundingSummaryFromIdentifiersResp:
         """"""
         return await get_funding_summary_from_identifiers(
@@ -364,9 +363,7 @@ async def get_rounds_of_funding_from_identifiers(
         filtered_responses, sort_order, limit
     )
 
-    return GetRoundsOfFundingFromIdentifiersResp(
-        results=sorted_responses, errors=errors
-    )
+    return GetRoundsOfFundingFromIdentifiersResp(results=sorted_responses, errors=errors)
 
 
 async def fetch_rounds_of_funding_from_company_id(
@@ -390,7 +387,7 @@ async def get_rounds_of_funding_info_from_transaction_ids(
 ) -> GetRoundsOfFundingInfoFromTransactionIdsResp:
     """Fetch detailed round of funding info for transaction IDs."""
 
-    tasks = [
+    tasks: list[AsyncTask[int]] = [
         AsyncTask(
             func=fetch_rounds_of_funding_info_from_transaction_id,
             kwargs=dict(
@@ -413,7 +410,7 @@ async def get_rounds_of_funding_info_from_transaction_ids(
             round_of_info_responses[task.result_key] = task.result
 
     # Fetch advisor info for all companies in all transactions
-    advisor_tasks = []
+    advisor_tasks: list[AsyncTask[AdvisorTaskKey]] = []
 
     for transaction_id, round_of_info in round_of_info_responses.items():
         target_key = AdvisorTaskKey(
@@ -453,12 +450,12 @@ async def get_rounds_of_funding_info_from_transaction_ids(
     await batch_execute_async_tasks(tasks=advisor_tasks)
 
     advisor_responses: dict[AdvisorTaskKey, AdvisorsResp] = dict()
-    for task in advisor_tasks:
+    for task in advisor_tasks:  # type: ignore[assignment]
         if task.error:
             # Skip errors in advisor fetches
             continue
         else:
-            advisor_responses[task.result_key] = task.result
+            advisor_responses[task.result_key] = task.result  # type: ignore[index]
 
     round_of_info_with_advisors = merge_round_of_info_reponses_with_advisors_responses(
         round_of_info_responses, advisor_responses
@@ -512,7 +509,7 @@ async def get_funding_summary_from_identifiers(
     )
     errors: list[str] = list(id_triple_resp.errors.values())
 
-    tasks = [
+    tasks: list[AsyncTask[str]] = [
         AsyncTask(
             func=fetch_rounds_of_funding_from_company_id,
             kwargs=dict(
@@ -539,7 +536,7 @@ async def get_funding_summary_from_identifiers(
         transaction_ids = [r.transaction_id for r in response.rounds_of_funding]
         all_transaction_ids.extend(transaction_ids)
 
-    detail_tasks = [
+    detail_tasks: list[AsyncTask[int]] = [
         AsyncTask(
             func=fetch_rounds_of_funding_info_from_transaction_id,
             kwargs=dict(
@@ -554,17 +551,15 @@ async def get_funding_summary_from_identifiers(
     await batch_execute_async_tasks(tasks=detail_tasks)
 
     detailed_round_info_responses: dict[int, RoundOfFundingInfo] = dict()
-    for task in detail_tasks:
+    for task in detail_tasks:  # type: ignore[assignment]
         if task.error:
             # Skip errors in individual detail fetches
             continue
         else:
-            detailed_round_info_responses[task.result_key] = task.result
+            detailed_round_info_responses[task.result_key] = task.result  # type: ignore[index]
 
     summaries = build_funding_summaries_from_rof_responses(
         rounds_of_funding_responses, detailed_round_info_responses
     )
 
-    return GetFundingSummaryFromIdentifiersResp(
-        results=summaries, errors=errors
-    )
+    return GetFundingSummaryFromIdentifiersResp(results=summaries, errors=errors)

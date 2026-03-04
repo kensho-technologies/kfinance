@@ -58,7 +58,6 @@ class GetCapitalizationFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = GetCapitalizationFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.PricingPermission}
 
-
     async def _arun(
         self,
         identifiers: list[str],

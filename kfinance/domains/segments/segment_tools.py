@@ -4,12 +4,11 @@ from typing import Literal, Type
 import httpx
 from pydantic import BaseModel, Field
 
-from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import CalendarType
-from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
+from kfinance.domains.segments.segment_models import SegmentsBatchResp, SegmentsResp, SegmentType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
@@ -66,7 +65,6 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
     """).strip()
     args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.SegmentsPermission}
-
 
     async def _arun(
         self,
@@ -177,7 +175,7 @@ async def fetch_segments_from_company_ids(
     """Fetch segments data from the API for multiple company IDs."""
 
     # Prepare the request payload
-    payload = {
+    payload: dict[str, Any] = {
         "company_ids": company_ids,
         "segment_type": segment_type.value,
     }
@@ -203,6 +201,4 @@ async def fetch_segments_from_company_ids(
     url = "/segments/"
     resp = await httpx_client.post(url=url, json=payload)
 
-    # Import the model here to avoid circular imports
-    from kfinance.domains.segments.segment_models import SegmentsBatchResp
     return SegmentsBatchResp.model_validate(resp.json())

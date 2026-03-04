@@ -2,15 +2,13 @@ from datetime import datetime
 
 import httpx
 import pytest
-import time_machine
 from pytest_httpx import HTTPXMock
+import time_machine
 
 from kfinance.conftest import SPGI_ID_TRIPLE
-from kfinance.domains.earnings.earning_models import EarningsCall, EarningsCallResp
+from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.earnings.earning_tools import (
     GetEarningsFromIdentifiersResp,
-    GetNextOrLatestEarningsFromIdentifiersResp,
-    GetTranscriptFromKeyDevIdResp,
     fetch_earnings_from_company_id,
     get_earnings_from_identifiers,
     get_transcript_from_key_dev_id,
@@ -64,20 +62,22 @@ class TestEarnings:
             httpx_client=httpx_client,
         )
 
-        expected_resp = EarningsCallResp.model_validate({
-            "earnings": [
-                {
-                    "name": "SPGI Q1 2025 Earnings Call",
-                    "key_dev_id": 12346,
-                    "datetime": "2025-04-29T12:30:00Z",
-                },
-                {
-                    "name": "SPGI Q4 2024 Earnings Call",
-                    "key_dev_id": 12345,
-                    "datetime": "2025-02-11T13:30:00Z",
-                },
-            ]
-        })
+        expected_resp = EarningsCallResp.model_validate(
+            {
+                "earnings": [
+                    {
+                        "name": "SPGI Q1 2025 Earnings Call",
+                        "key_dev_id": 12346,
+                        "datetime": "2025-04-29T12:30:00Z",
+                    },
+                    {
+                        "name": "SPGI Q4 2024 Earnings Call",
+                        "key_dev_id": 12345,
+                        "datetime": "2025-02-11T13:30:00Z",
+                    },
+                ]
+            }
+        )
         assert resp == expected_resp
 
     @pytest.mark.asyncio
@@ -93,20 +93,22 @@ class TestEarnings:
 
         expected_resp = GetEarningsFromIdentifiersResp(
             results={
-                "SPGI": EarningsCallResp.model_validate({
-                    "earnings": [
-                        {
-                            "name": "SPGI Q1 2025 Earnings Call",
-                            "key_dev_id": 12346,
-                            "datetime": "2025-04-29T12:30:00Z",
-                        },
-                        {
-                            "name": "SPGI Q4 2024 Earnings Call",
-                            "key_dev_id": 12345,
-                            "datetime": "2025-02-11T13:30:00Z",
-                        },
-                    ]
-                })
+                "SPGI": EarningsCallResp.model_validate(
+                    {
+                        "earnings": [
+                            {
+                                "name": "SPGI Q1 2025 Earnings Call",
+                                "key_dev_id": 12346,
+                                "datetime": "2025-04-29T12:30:00Z",
+                            },
+                            {
+                                "name": "SPGI Q4 2024 Earnings Call",
+                                "key_dev_id": 12345,
+                                "datetime": "2025-02-11T13:30:00Z",
+                            },
+                        ]
+                    }
+                )
             },
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
@@ -209,5 +211,7 @@ class TestTranscript:
             httpx_client=httpx_client,
         )
 
-        expected_transcript = "Operator: Good morning, everyone.\n\nCEO: Thank you for joining us today."
+        expected_transcript = (
+            "Operator: Good morning, everyone.\n\nCEO: Thank you for joining us today."
+        )
         assert resp == expected_transcript

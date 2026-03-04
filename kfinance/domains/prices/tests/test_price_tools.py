@@ -94,7 +94,9 @@ class TestPrices:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock) -> None:
+    async def test_most_recent_request(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
         """
         WHEN we request most recent prices for multiple companies
         THEN we only get back the most recent prices for each company
@@ -110,18 +112,20 @@ class TestPrices:
                 json=self.prices_resp,
             )
 
-        expected_single_company_response = PriceHistory.model_validate({
-            "prices": [
-                {
-                    "date": "2024-04-12",
-                    "open": {"value": "419.23", "unit": "USD"},
-                    "high": {"value": "421.94", "unit": "USD"},
-                    "low": {"value": "416.45", "unit": "USD"},
-                    "close": {"value": "417.81", "unit": "USD"},
-                    "volume": {"value": "1182229", "unit": "Shares"},
-                }
-            ]
-        })
+        expected_single_company_response = PriceHistory.model_validate(
+            {
+                "prices": [
+                    {
+                        "date": "2024-04-12",
+                        "open": {"value": "419.23", "unit": "USD"},
+                        "high": {"value": "421.94", "unit": "USD"},
+                        "low": {"value": "416.45", "unit": "USD"},
+                        "close": {"value": "417.81", "unit": "USD"},
+                        "volume": {"value": "1182229", "unit": "Shares"},
+                    }
+                ]
+            }
+        )
 
         expected_response = GetPricesFromIdentifiersResp(
             results={

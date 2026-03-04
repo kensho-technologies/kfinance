@@ -41,7 +41,6 @@ class GetCompetitorsFromIdentifiers(KfinanceTool):
     args_schema: Type[GetCompetitorsFromIdentifiersArgs] = GetCompetitorsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.CompetitorsPermission}
 
-
     async def _arun(
         self,
         identifiers: list[str],

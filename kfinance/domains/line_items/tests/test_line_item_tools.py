@@ -1,8 +1,6 @@
-from decimal import Decimal
-
 import httpx
-import pytest
 from langchain_core.utils.function_calling import convert_to_openai_tool
+import pytest
 from pytest_httpx import HTTPXMock
 
 from kfinance.client.kfinance import Client
@@ -11,7 +9,6 @@ from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.line_items.line_item_models import LineItemResp, LineItemScore
 from kfinance.domains.line_items.line_item_tools import (
     GetFinancialLineItemFromIdentifiers,
-    GetFinancialLineItemFromIdentifiersArgs,
     GetFinancialLineItemFromIdentifiersResp,
     _find_similar_line_items,
     fetch_line_item_from_company_ids,
@@ -68,7 +65,9 @@ class TestGetFinancialLineItemFromIdentifiers:
             httpx_client=httpx_client,
         )
 
-        expected_resp = {str(SPGI_ID_TRIPLE.company_id): LineItemResp.model_validate(self.line_item_resp)}
+        expected_resp = {
+            str(SPGI_ID_TRIPLE.company_id): LineItemResp.model_validate(self.line_item_resp)
+        }
         assert resp == expected_resp
 
     @pytest.mark.asyncio
@@ -83,9 +82,7 @@ class TestGetFinancialLineItemFromIdentifiers:
         """
 
         expected_response = GetFinancialLineItemFromIdentifiersResp(
-            results={
-                "SPGI": LineItemResp.model_validate(self.line_item_resp)
-            },
+            results={"SPGI": LineItemResp.model_validate(self.line_item_resp)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -100,7 +97,9 @@ class TestGetFinancialLineItemFromIdentifiers:
         assert resp == expected_response
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock) -> None:
+    async def test_most_recent_request(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
         """
         WHEN we request most recent line items for multiple companies
         THEN we only get back the most recent line item for each company
@@ -115,16 +114,18 @@ class TestGetFinancialLineItemFromIdentifiers:
             json={"results": {"1": self.line_item_resp, "2": self.line_item_resp}, "errors": {}},
         )
 
-        line_item_resp = LineItemResp.model_validate({
-            "currency": "USD",
-            "periods": {
-                "CY2024": {
-                    "period_end_date": "2024-12-31",
-                    "num_months": 12,
-                    "line_item": {"name": "Revenue", "value": "14208000000.0", "sources": []},
-                }
-            },
-        })
+        line_item_resp = LineItemResp.model_validate(
+            {
+                "currency": "USD",
+                "periods": {
+                    "CY2024": {
+                        "period_end_date": "2024-12-31",
+                        "num_months": 12,
+                        "line_item": {"name": "Revenue", "value": "14208000000.0", "sources": []},
+                    }
+                },
+            }
+        )
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={"C_1": line_item_resp, "C_2": line_item_resp},
         )
@@ -138,7 +139,9 @@ class TestGetFinancialLineItemFromIdentifiers:
         assert resp == expected_response
 
     @pytest.mark.asyncio
-    async def test_empty_most_recent_request(self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock) -> None:
+    async def test_empty_most_recent_request(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
         """
         WHEN we request most recent line items for multiple companies
         THEN we only get back the most recent line item for each company

@@ -57,7 +57,10 @@ class TestSegments:
         httpx_mock.add_response(
             method="POST",
             url="https://kfinance.kensho.com/api/v1/segments/",
-            json={"results": {str(SPGI_ID_TRIPLE.company_id): self.segments_response}, "errors": {}},
+            json={
+                "results": {str(SPGI_ID_TRIPLE.company_id): self.segments_response},
+                "errors": {},
+            },
             is_optional=True,
         )
 
@@ -78,9 +81,13 @@ class TestSegments:
             httpx_client=httpx_client,
         )
 
-        expected_resp_data = {"results": {str(SPGI_ID_TRIPLE.company_id): self.segments_response}, "errors": {}}
+        expected_resp_data = {
+            "results": {str(SPGI_ID_TRIPLE.company_id): self.segments_response},
+            "errors": {},
+        }
         # Import here to avoid circular imports
         from kfinance.domains.segments.segment_models import SegmentsBatchResp
+
         expected_resp = SegmentsBatchResp.model_validate(expected_resp_data)
 
         assert resp == expected_resp
@@ -112,7 +119,9 @@ class TestSegments:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock) -> None:
+    async def test_most_recent_request(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
         """
         WHEN we request most recent segments for multiple companies
         THEN we only get back the most recent segment for each company
@@ -124,19 +133,24 @@ class TestSegments:
         httpx_mock.add_response(
             method="POST",
             url="https://kfinance.kensho.com/api/v1/segments/",
-            json={"results": {"1": self.segments_response, "2": self.segments_response}, "errors": {}},
+            json={
+                "results": {"1": self.segments_response, "2": self.segments_response},
+                "errors": {},
+            },
         )
 
-        expected_single_company_response = SegmentsResp.model_validate({
-            "currency": "USD",
-            "periods": {
-                "CY2021": {
-                    "period_end_date": "2021-12-31",
-                    "num_months": 12,
-                    "segments": self.segments_response["periods"]["CY2021"]["segments"],
-                }
-            },
-        })
+        expected_single_company_response = SegmentsResp.model_validate(
+            {
+                "currency": "USD",
+                "periods": {
+                    "CY2021": {
+                        "period_end_date": "2021-12-31",
+                        "num_months": 12,
+                        "segments": self.segments_response["periods"]["CY2021"]["segments"],
+                    }
+                },
+            }
+        )
 
         expected_response = GetSegmentsFromIdentifiersResp(
             results={

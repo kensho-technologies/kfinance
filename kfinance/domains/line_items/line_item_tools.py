@@ -1,13 +1,12 @@
 from difflib import SequenceMatcher
 from textwrap import dedent
-from typing import Literal, Type, Any
+from typing import Any, Literal, Type
 
 import httpx
 from pydantic import BaseModel, Field, model_validator
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
-
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
@@ -264,7 +263,9 @@ async def get_financial_line_item_from_identifiers(
             # Map company IDs back to original identifiers
             identifier_to_results = {}
             for company_id_str, line_item_resp in task.result.items():
-                original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+                original_identifier = id_triple_resp.get_identifier_from_company_id(
+                    int(company_id_str)
+                )
                 identifier_to_results[original_identifier] = line_item_resp
             results = identifier_to_results
     else:

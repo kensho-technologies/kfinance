@@ -37,7 +37,6 @@ class GetCusipFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.IDPermission}
 
-
     async def _arun(self, identifiers: list[str]) -> GetCusipOrIsinFromIdentifiersResp:
         """"""
         return await get_cusip_or_isin_from_identifiers(
@@ -63,7 +62,6 @@ class GetIsinFromIdentifiers(KfinanceTool):
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.IDPermission}
-
 
     async def _arun(self, identifiers: list[str]) -> GetCusipOrIsinFromIdentifiersResp:
         """"""

@@ -55,7 +55,10 @@ class TestEstimates:
         httpx_mock.add_response(
             method="POST",
             url="https://kfinance.kensho.com/api/v1/estimates/",
-            json={"results": {str(SPGI_ID_TRIPLE.company_id): self.estimates_response}, "errors": {}},
+            json={
+                "results": {str(SPGI_ID_TRIPLE.company_id): self.estimates_response},
+                "errors": {},
+            },
             is_optional=True,
         )
 

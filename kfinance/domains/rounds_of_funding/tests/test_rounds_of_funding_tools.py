@@ -8,11 +8,9 @@ from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
     AdvisorResp,
-    AdvisorsResp,
     CompanyIdAndNameWithAdvisors,
     FundingSummary,
     InvestorInRoundOfFundingWithAdvisors,
-    RoundOfFundingInfo,
     RoundOfFundingInfoSecurity,
     RoundOfFundingInfoTimeline,
     RoundOfFundingInfoTransaction,
