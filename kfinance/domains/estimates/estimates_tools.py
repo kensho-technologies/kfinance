@@ -2,8 +2,11 @@ from abc import ABC, abstractmethod
 from textwrap import dedent
 from typing import Literal, Type
 
+import httpx
 from pydantic import BaseModel, Field
 
+from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
+from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import (
     EstimatePeriodType,
     EstimateType,
@@ -63,7 +66,7 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
         """The estimate type property."""
         pass
 
-    def _run(
+    async def _arun(
         self,
         identifiers: list[str],
         period_type: EstimatePeriodType | None = None,
@@ -74,69 +77,19 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
     ) -> GetEstimatesFromIdentifiersResp:
-        """Sample response:
-
-        "SPGI": {
-            "estimate_type": "consensus",
-            "currency": "USD",
-            "period_type": "quarterly",
-            "periods": {
-                "FY2025Q4": {
-                    "period_end_date": "2025-12-31",
-                    "estimates": [
-                        {
-                            "name": "Revenue Consensus High",
-                            "value": "3955000000.000000",
-                        },
-                        {
-                            "name": "Revenue Consensus Low",
-                            "value": "3806400000.000000",
-                        },
-                        {
-                            "name": "Revenue Consensus Mean",
-                            "value": "3881725460.000000",
-                        },
-                        {
-                            "name": "Revenue Consensus Median",
-                            "value": "3883000000.000000",
-                        },
-                    ],
-                }
-            },
-        }
-        """
-
-        api_client = self.kfinance_client.kfinance_api_client
-        ids_response = api_client.unified_fetch_id_triples(identifiers)
-        company_id_to_identifier = {
-            id_triple.company_id: identifier
-            for identifier, id_triple in ids_response.identifiers_to_id_triples.items()
-        }
-        company_ids = [
-            id_triple.company_id for id_triple in ids_response.identifiers_to_id_triples.values()
-        ]
-        identifiers_to_results = {}
-        all_errors = []
-        for company_id in company_ids:
-            response = api_client.fetch_estimates(
-                company_id=company_id,
-                estimate_type=self.estimate_type,
-                period_type=period_type,
-                start_year=fiscal_start_year,
-                end_year=fiscal_end_year,
-                start_quarter=fiscal_start_quarter,
-                end_quarter=fiscal_end_quarter,
-                num_periods_forward=num_periods_forward,
-                num_periods_backward=num_periods_backward,
-            )
-            original_identifier = company_id_to_identifier[company_id]
-            identifiers_to_results[original_identifier] = response.results[str(company_id)]
-            if response.errors and "errors" in response.errors:
-                all_errors.append(response.errors["errors"])
-
-        all_errors = list(ids_response.errors.values()) + all_errors
-
-        return GetEstimatesFromIdentifiersResp(results=identifiers_to_results, errors=all_errors)
+        """"""
+        return await get_estimates_from_identifiers(
+            identifiers=identifiers,
+            estimate_type=self.estimate_type,
+            httpx_client=self.kfinance_client.httpx_client,
+            period_type=period_type,
+            fiscal_start_year=fiscal_start_year,
+            fiscal_end_year=fiscal_end_year,
+            fiscal_start_quarter=fiscal_start_quarter,
+            fiscal_end_quarter=fiscal_end_quarter,
+            num_periods_forward=num_periods_forward,
+            num_periods_backward=num_periods_backward,
+        )
 
 
 class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
@@ -161,3 +114,96 @@ class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
     def estimate_type(self) -> EstimateType:
         """The estimate type is guidance."""
         return EstimateType.guidance
+
+
+async def get_estimates_from_identifiers(
+    identifiers: list[str],
+    estimate_type: EstimateType,
+    httpx_client: httpx.AsyncClient,
+    period_type: EstimatePeriodType | None = None,
+    fiscal_start_year: int | None = None,
+    fiscal_end_year: int | None = None,
+    fiscal_start_quarter: Literal[1, 2, 3, 4] | None = None,
+    fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
+    num_periods_forward: int | None = None,
+    num_periods_backward: int | None = None,
+) -> GetEstimatesFromIdentifiersResp:
+    """Fetch estimates for all identifiers."""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_estimates_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                estimate_type=estimate_type,
+                httpx_client=httpx_client,
+                period_type=period_type,
+                fiscal_start_year=fiscal_start_year,
+                fiscal_end_year=fiscal_end_year,
+                fiscal_start_quarter=fiscal_start_quarter,
+                fiscal_end_quarter=fiscal_end_quarter,
+                num_periods_forward=num_periods_forward,
+                num_periods_backward=num_periods_backward,
+            ),
+            result_key=identifier,
+        )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, EstimatesResp] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    return GetEstimatesFromIdentifiersResp(results=results, errors=errors)
+
+
+async def fetch_estimates_from_company_id(
+    company_id: int,
+    estimate_type: EstimateType,
+    httpx_client: httpx.AsyncClient,
+    period_type: EstimatePeriodType | None = None,
+    fiscal_start_year: int | None = None,
+    fiscal_end_year: int | None = None,
+    fiscal_start_quarter: Literal[1, 2, 3, 4] | None = None,
+    fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
+    num_periods_forward: int | None = None,
+    num_periods_backward: int | None = None,
+) -> EstimatesResp:
+    """Fetch estimates for one company_id."""
+    # Build query parameters
+    params = {
+        "company_id": company_id,
+        "estimate_type": estimate_type.value,
+    }
+
+    if period_type is not None:
+        params["period_type"] = period_type.value
+    if fiscal_start_year is not None:
+        params["start_year"] = fiscal_start_year
+    if fiscal_end_year is not None:
+        params["end_year"] = fiscal_end_year
+    if fiscal_start_quarter is not None:
+        params["start_quarter"] = fiscal_start_quarter
+    if fiscal_end_quarter is not None:
+        params["end_quarter"] = fiscal_end_quarter
+    if num_periods_forward is not None:
+        params["num_periods_forward"] = num_periods_forward
+    if num_periods_backward is not None:
+        params["num_periods_backward"] = num_periods_backward
+
+    resp = await httpx_client.post(url="/estimates/", json=params)
+    response_data = resp.json()
+
+    # Extract the result for this specific company_id
+    company_result = response_data["results"][str(company_id)]
+    return EstimatesResp.model_validate(company_result)
