@@ -15,11 +15,15 @@ from kfinance.client.models.date_and_period_models import (
 )
 from kfinance.client.permission_models import Permission
 from kfinance.domains.estimates.estimates_models import EstimatesResp
+from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
     ToolRespWithErrors,
     ValidQuarter,
+)
+from kfinance.domains.line_items.response_notes import (
+    insert_fiscal_period_notes,
 )
 
 
@@ -54,6 +58,7 @@ class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 class GetEstimatesFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, EstimatesResp]  # identifier -> response
+    notes: list[str] = Field(default_factory=list)
 
 
 class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
@@ -95,7 +100,10 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
 class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_consensus_estimates_from_identifiers"
     description: str = dedent("""
-        Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given company id. Returns statistical aggregates including high, low, mean, median, and number of estimates. When periods have ended, actual reported values are also returned.
+        Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given identifier. 
+        
+        Returns statistical aggregates including high, low, mean, median, and number of estimates. 
+        When periods have ended, actual reported values are also returned.
     """).strip()
 
     @property
@@ -107,7 +115,9 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
 class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_guidance_from_identifiers"
     description: str = dedent("""
-        Get company-issued financial guidance for a given company id. Returns the most recent guidance provided by the company for future periods, or the final guidance issued before results were reported for past periods.
+        Get company-issued financial guidance for a given identifier. 
+        
+        Returns the most recent guidance provided by the company for future periods, or the final guidance issued before results were reported for past periods.
     """).strip()
 
     @property
@@ -164,7 +174,16 @@ async def get_estimates_from_identifiers(
         else:
             results[task.result_key] = task.result
 
-    return GetEstimatesFromIdentifiersResp(results=results, errors=errors)
+    resp_model = GetEstimatesFromIdentifiersResp(results=results, errors=errors)
+
+    # Add explanatory notes
+    insert_fiscal_period_notes(
+        calendar_type=CalendarType.fiscal,  # Estimates are always fiscal
+        period_type=period_type,
+        resp_model=resp_model,
+    )
+
+    return resp_model
 
 
 async def fetch_estimates_from_company_id(

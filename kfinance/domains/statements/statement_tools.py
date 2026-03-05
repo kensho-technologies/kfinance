@@ -19,6 +19,9 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolRespWithErrors,
     ValidQuarter,
 )
+from kfinance.domains.line_items.response_notes import (
+    insert_fiscal_period_notes,
+)
 
 
 class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers):
@@ -55,6 +58,7 @@ class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, StatementsResp]  # identifier -> response
+    notes: list[str] = Field(default_factory=list)
 
 
 class GetFinancialStatementFromIdentifiers(KfinanceTool):
@@ -180,7 +184,16 @@ async def get_financial_statement_from_identifiers(
         for result in identifier_to_results.values():
             result.remove_all_periods_other_than_the_most_recent_one()
 
-    return GetFinancialStatementFromIdentifiersResp(results=identifier_to_results, errors=errors)
+    resp_model = GetFinancialStatementFromIdentifiersResp(results=identifier_to_results, errors=errors)
+
+    # Add explanatory notes
+    insert_fiscal_period_notes(
+        calendar_type=calendar_type,
+        period_type=period_type,
+        resp_model=resp_model,
+    )
+
+    return resp_model
 
 
 async def fetch_statements_from_company_ids(

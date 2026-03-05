@@ -10,6 +10,10 @@ from kfinance.domains.estimates.estimates_tools import (
     fetch_estimates_from_company_id,
     get_estimates_from_identifiers,
 )
+from kfinance.domains.line_items.response_notes import (
+    FISCAL_PERIOD_WARNING,
+    FISCAL_YEAR_TERMINOLOGY_WARNING,
+)
 
 
 class TestEstimates:
@@ -98,6 +102,7 @@ class TestEstimates:
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
 
         resp = await get_estimates_from_identifiers(
@@ -120,7 +125,7 @@ class TestEstimates:
         """
         guidance_response = {
             **self.estimates_response,
-            "estimate_type": "guidance",  # Different from consensus
+            "estimate_type": "guidance",
         }
 
         httpx_mock.add_response(

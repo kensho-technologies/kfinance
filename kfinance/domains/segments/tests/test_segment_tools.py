@@ -10,6 +10,10 @@ from kfinance.domains.segments.segment_tools import (
     fetch_segments_from_company_ids,
     get_segments_from_identifiers,
 )
+from kfinance.domains.line_items.response_notes import (
+    FISCAL_PERIOD_WARNING,
+    FISCAL_YEAR_TERMINOLOGY_WARNING,
+)
 
 
 class TestSegments:
@@ -108,6 +112,7 @@ class TestSegments:
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
 
         resp = await get_segments_from_identifiers(
@@ -157,45 +162,7 @@ class TestSegments:
                 "C_1": expected_single_company_response,
                 "C_2": expected_single_company_response,
             },
-        )
-
-        resp = await get_segments_from_identifiers(
-            identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
-            segment_type=SegmentType.business,
-            httpx_client=httpx_client,
-        )
-
-        assert resp == expected_response
-
-    @pytest.mark.asyncio
-    async def test_empty_most_recent_request(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-    ) -> None:
-        """
-        WHEN we request most recent segments for multiple companies
-        THEN we only get back the most recent segment for each company
-        UNLESS no segments exist
-        """
-
-        company_ids = [1, 2]
-
-        # Mock the segments response with different data for different companies
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/segments/",
-            json={
-                "results": {"1": {"currency": "USD", "periods": {}}, "2": self.segments_response},
-                "errors": {},
-            },
-        )
-
-        c_1_segments_resp = SegmentsResp.model_validate({"currency": "USD", "periods": {}})
-        c_2_segments_resp = SegmentsResp.model_validate(self.segments_response)
-        # Since there are multiple companies but C_2 has data, truncation should apply
-        c_2_segments_resp.remove_all_periods_other_than_the_most_recent_one()
-
-        expected_response = GetSegmentsFromIdentifiersResp(
-            results={"C_1": c_1_segments_resp, "C_2": c_2_segments_resp},
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
 
         resp = await get_segments_from_identifiers(

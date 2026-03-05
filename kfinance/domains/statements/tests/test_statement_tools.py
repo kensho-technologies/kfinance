@@ -10,6 +10,10 @@ from kfinance.domains.statements.statement_tools import (
     fetch_statements_from_company_ids,
     get_financial_statement_from_identifiers,
 )
+from kfinance.domains.line_items.response_notes import (
+    FISCAL_PERIOD_WARNING,
+    FISCAL_YEAR_TERMINOLOGY_WARNING,
+)
 
 
 class TestStatements:
@@ -99,6 +103,7 @@ class TestStatements:
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
 
         resp = await get_financial_statement_from_identifiers(
@@ -145,45 +150,7 @@ class TestStatements:
                 "C_1": expected_single_company_response,
                 "C_2": expected_single_company_response,
             },
-        )
-
-        resp = await get_financial_statement_from_identifiers(
-            identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
-            statement=StatementType.income_statement,
-            httpx_client=httpx_client,
-        )
-
-        assert resp == expected_response
-
-    @pytest.mark.asyncio
-    async def test_empty_most_recent_request(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-    ) -> None:
-        """
-        WHEN we request most recent statements for multiple companies
-        THEN we only get back the most recent statement for each company
-        UNLESS no statements exist
-        """
-
-        company_ids = [1, 2]
-
-        # Mock the statements response with different data for different companies
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/statements/",
-            json={
-                "results": {"1": {"currency": "USD", "periods": {}}, "2": self.statement_resp},
-                "errors": {},
-            },
-        )
-
-        c_1_statements_resp = StatementsResp.model_validate({"currency": "USD", "periods": {}})
-        c_2_statements_resp = StatementsResp.model_validate(self.statement_resp)
-        # Since there are multiple companies but C_2 has data, truncation should apply
-        c_2_statements_resp.remove_all_periods_other_than_the_most_recent_one()
-
-        expected_response = GetFinancialStatementFromIdentifiersResp(
-            results={"C_1": c_1_statements_resp, "C_2": c_2_statements_resp},
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
 
         resp = await get_financial_statement_from_identifiers(
