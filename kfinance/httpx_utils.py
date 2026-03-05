@@ -33,9 +33,9 @@ class KfinanceHttpxClient(httpx.AsyncClient):
 
     def __init__(self, api_client: KFinanceApiClient) -> None:
         """"""
-        super().__init__()
-        self.auth = KfinanceBearerAuth(api_client=api_client)
         self._kfinance_base_url: str = f"{api_client.api_host}/api/v1"
+
+        super().__init__(auth=KfinanceBearerAuth(api_client=api_client))
 
         # Auto-register cleanup on exit
         atexit.register(self._cleanup_on_exit)

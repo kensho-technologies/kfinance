@@ -41,11 +41,10 @@ class GetTranscriptFromKeyDevId(KfinanceTool):
 
     async def _arun(self, key_dev_id: int) -> GetTranscriptFromKeyDevIdResp:
         """"""
-        transcript = await get_transcript_from_key_dev_id(
+        return await get_transcript_from_key_dev_id(
             key_dev_id=key_dev_id,
             httpx_client=self.kfinance_client.httpx_client,
         )
-        return GetTranscriptFromKeyDevIdResp(transcript=transcript)
 
 
 class GetEarningsFromIdentifiersResp(ToolRespWithErrors):
@@ -242,7 +241,7 @@ async def fetch_earnings_from_company_id(
 async def get_transcript_from_key_dev_id(
     key_dev_id: int,
     httpx_client: httpx.AsyncClient,
-) -> str:
+) -> GetTranscriptFromKeyDevIdResp:
     """Fetch raw transcript text for a key_dev_id."""
     url = f"/transcript/{key_dev_id}"
     resp = await httpx_client.get(url=url)
@@ -255,4 +254,5 @@ async def get_transcript_from_key_dev_id(
         text = component.get("text", "")
         transcript_parts.append(f"{person_name}: {text}")
 
-    return "\n\n".join(transcript_parts)
+    transcript_text = "\n\n".join(transcript_parts)
+    return GetTranscriptFromKeyDevIdResp(transcript=transcript_text)

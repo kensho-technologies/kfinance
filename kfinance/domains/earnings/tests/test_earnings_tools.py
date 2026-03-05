@@ -9,6 +9,7 @@ from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.earnings.earning_tools import (
     GetEarningsFromIdentifiersResp,
+    GetTranscriptFromKeyDevIdResp,
     fetch_earnings_from_company_id,
     get_earnings_from_identifiers,
     get_transcript_from_key_dev_id,
@@ -211,7 +212,7 @@ class TestTranscript:
             httpx_client=httpx_client,
         )
 
-        expected_transcript = (
-            "Operator: Good morning, everyone.\n\nCEO: Thank you for joining us today."
+        expected_response = GetTranscriptFromKeyDevIdResp(
+            transcript="Operator: Good morning, everyone.\n\nCEO: Thank you for joining us today."
         )
-        assert resp == expected_transcript
+        assert resp == expected_response
