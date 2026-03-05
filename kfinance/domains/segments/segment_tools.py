@@ -8,15 +8,15 @@ from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import CalendarType
+from kfinance.domains.line_items.response_notes import (
+    insert_fiscal_period_notes,
+)
 from kfinance.domains.segments.segment_models import SegmentsBatchResp, SegmentsResp, SegmentType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
     ToolRespWithErrors,
     ValidQuarter,
-)
-from kfinance.domains.line_items.response_notes import (
-    insert_fiscal_period_notes,
 )
 
 

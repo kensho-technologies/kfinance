@@ -6,7 +6,7 @@ from pytest_httpx import HTTPXMock
 from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
-from kfinance.domains.line_items.line_item_models import LineItemResp, LineItemScore
+from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp, LineItemScore
 from kfinance.domains.line_items.line_item_tools import (
     GetFinancialLineItemFromIdentifiers,
     GetFinancialLineItemFromIdentifiersResp,
@@ -14,11 +14,10 @@ from kfinance.domains.line_items.line_item_tools import (
     fetch_line_item_from_company_ids,
     get_financial_line_item_from_identifiers,
 )
-from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.line_items.response_notes import (
-    SOURCE_LINK_NOTE,
     FISCAL_PERIOD_WARNING,
     FISCAL_YEAR_TERMINOLOGY_WARNING,
+    SOURCE_LINK_NOTE,
 )
 
 
@@ -163,7 +162,6 @@ class TestGetFinancialLineItemFromIdentifiers:
         )
 
         assert resp == expected_response
-
 
     def test_line_items_and_aliases_included_in_schema(self, mock_client: Client):
         """

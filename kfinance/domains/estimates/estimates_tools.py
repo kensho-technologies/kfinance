@@ -16,14 +16,14 @@ from kfinance.client.models.date_and_period_models import (
 from kfinance.client.permission_models import Permission
 from kfinance.domains.estimates.estimates_models import EstimatesResp
 from kfinance.domains.line_items.line_item_models import CalendarType
+from kfinance.domains.line_items.response_notes import (
+    insert_fiscal_period_notes,
+)
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
     ToolRespWithErrors,
     ValidQuarter,
-)
-from kfinance.domains.line_items.response_notes import (
-    insert_fiscal_period_notes,
 )
 
 
@@ -100,9 +100,9 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
 class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_consensus_estimates_from_identifiers"
     description: str = dedent("""
-        Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given identifier. 
-        
-        Returns statistical aggregates including high, low, mean, median, and number of estimates. 
+        Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given identifier.
+
+        Returns statistical aggregates including high, low, mean, median, and number of estimates.
         When periods have ended, actual reported values are also returned.
     """).strip()
 
@@ -115,8 +115,8 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
 class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_guidance_from_identifiers"
     description: str = dedent("""
-        Get company-issued financial guidance for a given identifier. 
-        
+        Get company-issued financial guidance for a given identifier.
+
         Returns the most recent guidance provided by the company for future periods, or the final guidance issued before results were reported for past periods.
     """).strip()
 

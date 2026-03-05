@@ -4,15 +4,15 @@ from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
+from kfinance.domains.line_items.response_notes import (
+    FISCAL_PERIOD_WARNING,
+    FISCAL_YEAR_TERMINOLOGY_WARNING,
+)
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.domains.segments.segment_tools import (
     GetSegmentsFromIdentifiersResp,
     fetch_segments_from_company_ids,
     get_segments_from_identifiers,
-)
-from kfinance.domains.line_items.response_notes import (
-    FISCAL_PERIOD_WARNING,
-    FISCAL_YEAR_TERMINOLOGY_WARNING,
 )
 
 

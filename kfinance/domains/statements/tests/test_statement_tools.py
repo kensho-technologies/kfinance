@@ -4,15 +4,15 @@ from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
+from kfinance.domains.line_items.response_notes import (
+    FISCAL_PERIOD_WARNING,
+    FISCAL_YEAR_TERMINOLOGY_WARNING,
+)
 from kfinance.domains.statements.statement_models import StatementsResp, StatementType
 from kfinance.domains.statements.statement_tools import (
     GetFinancialStatementFromIdentifiersResp,
     fetch_statements_from_company_ids,
     get_financial_statement_from_identifiers,
-)
-from kfinance.domains.line_items.response_notes import (
-    FISCAL_PERIOD_WARNING,
-    FISCAL_YEAR_TERMINOLOGY_WARNING,
 )
 
 

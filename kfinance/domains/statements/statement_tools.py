@@ -8,6 +8,9 @@ from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import CalendarType
+from kfinance.domains.line_items.response_notes import (
+    insert_fiscal_period_notes,
+)
 from kfinance.domains.statements.statement_models import (
     StatementsBatchResp,
     StatementsResp,
@@ -18,9 +21,6 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolArgsWithIdentifiers,
     ToolRespWithErrors,
     ValidQuarter,
-)
-from kfinance.domains.line_items.response_notes import (
-    insert_fiscal_period_notes,
 )
 
 
@@ -184,7 +184,9 @@ async def get_financial_statement_from_identifiers(
         for result in identifier_to_results.values():
             result.remove_all_periods_other_than_the_most_recent_one()
 
-    resp_model = GetFinancialStatementFromIdentifiersResp(results=identifier_to_results, errors=errors)
+    resp_model = GetFinancialStatementFromIdentifiersResp(
+        results=identifier_to_results, errors=errors
+    )
 
     # Add explanatory notes
     insert_fiscal_period_notes(

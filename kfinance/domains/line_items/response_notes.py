@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from kfinance.client.models.date_and_period_models import PeriodType
+from kfinance.client.models.date_and_period_models import EstimatePeriodType, PeriodType
 from kfinance.domains.line_items.line_item_models import CalendarType
 
 
@@ -35,12 +35,16 @@ def insert_source_link_note(resp_model: ResponseModelWithNotesField) -> None:
 
 def insert_fiscal_period_notes(
     calendar_type: CalendarType | None,
-    period_type: PeriodType | None,
+    period_type: PeriodType | EstimatePeriodType | None,
     resp_model: ResponseModelWithNotesField,
 ) -> None:
     """Add notes about fiscal periods where necessary into a tool response."""
     if calendar_type is CalendarType.fiscal or calendar_type is None:
         resp_model.notes.append(FISCAL_PERIOD_WARNING)
         # Check if period_type is annual
-        if period_type is None or (period_type and period_type.value == "annual"):
+        if (
+            period_type is None
+            or period_type is PeriodType.annual
+            or period_type is EstimatePeriodType.annual
+        ):
             resp_model.notes.append(FISCAL_YEAR_TERMINOLOGY_WARNING)
