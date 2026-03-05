@@ -141,7 +141,7 @@ class TestRoundsOfFunding:
         """Add mock response for SPGI rounds of funding."""
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/rounds_of_funding/{SPGI_ID_TRIPLE.company_id}",
+            url=f"https://kfinance.kensho.com/api/v1/fundingrounds/target/{SPGI_ID_TRIPLE.company_id}",
             json=self.rounds_of_funding_response,
             is_optional=True,
         )
@@ -287,24 +287,24 @@ class TestRoundsOfFunding:
         # Mock the main funding round API call
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/round_of_funding/info/{transaction_id}",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}",
             json=self.funding_round_response,
         )
 
         # Mock advisor API calls with actual advisor data
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/round_of_funding/info/{transaction_id}/advisors/target",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/target",
             json=self.target_advisors_response,
         )
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/round_of_funding/info/{transaction_id}/advisors/investor/{67890}",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{67890}",
             json=self.investor_advisors_response,
         )
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/round_of_funding/info/{transaction_id}/advisors/investor/{98765}",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{98765}",
             json={"advisors": []},  # No advisors for this investor
         )
 
@@ -393,24 +393,24 @@ class TestRoundsOfFunding:
         # Mock the main funding round API call
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/round_of_funding/info/{transaction_id}",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}",
             json=self.funding_round_response,
         )
 
         # Mock advisor API calls - mixed results
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/round_of_funding/info/{transaction_id}/advisors/target",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/target",
             json={"advisors": []},
         )
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/round_of_funding/info/{transaction_id}/advisors/investor/{67890}",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{67890}",
             json=self.investor_advisors_response,  # Successful call with data
         )
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/round_of_funding/info/{transaction_id}/advisors/investor/{98765}",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{98765}",
             json={"advisors": []},
         )
 
@@ -438,7 +438,7 @@ class TestRoundsOfFunding:
         for company_id in company_ids:
             httpx_mock.add_response(
                 method="GET",
-                url=f"https://kfinance.kensho.com/api/v1/rounds_of_funding/{company_id}",
+                url=f"https://kfinance.kensho.com/api/v1/fundingrounds/target/{company_id}",
                 json=self.funding_summary_rounds_response,
             )
 
@@ -446,7 +446,7 @@ class TestRoundsOfFunding:
         for _ in range(2):  # Two companies will make this call
             httpx_mock.add_response(
                 method="GET",
-                url="https://kfinance.kensho.com/api/v1/round_of_funding/info/789012",
+                url="https://kfinance.kensho.com/api/v1/fundinground/info/789012",
                 json=self.funding_round_response,
             )
 

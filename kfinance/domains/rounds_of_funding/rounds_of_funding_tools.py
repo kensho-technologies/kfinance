@@ -373,9 +373,9 @@ async def fetch_rounds_of_funding_from_company_id(
 ) -> RoundsOfFundingResp:
     """Fetch rounds of funding for one company_id."""
     if role is RoundsOfFundingRole.company_raising_funds:
-        url = f"/rounds_of_funding/{company_id}"
+        url = f"/fundingrounds/target/{company_id}"
     else:
-        url = f"/rounds_of_funding/investing_company/{company_id}"
+        url = f"/fundingrounds/investor/{company_id}"
 
     resp = await httpx_client.get(url=url)
     return RoundsOfFundingResp.model_validate(resp.json())
@@ -472,7 +472,7 @@ async def fetch_rounds_of_funding_info_from_transaction_id(
     httpx_client: httpx.AsyncClient,
 ) -> RoundOfFundingInfo:
     """Fetch detailed round of funding info for one transaction_id."""
-    url = f"/round_of_funding/info/{transaction_id}"
+    url = f"/fundinground/info/{transaction_id}"
     resp = await httpx_client.get(url=url)
     return RoundOfFundingInfo.model_validate(resp.json())
 
@@ -482,7 +482,7 @@ async def fetch_advisors_for_company_raising_round_of_funding(
     httpx_client: httpx.AsyncClient,
 ) -> AdvisorsResp:
     """Fetch advisors for the target company raising funds in a round."""
-    url = f"/round_of_funding/info/{transaction_id}/advisors/target"
+    url = f"/fundinground/info/{transaction_id}/advisors/target"
     resp = await httpx_client.get(url=url)
     return AdvisorsResp.model_validate(resp.json())
 
@@ -493,7 +493,7 @@ async def fetch_advisors_for_company_investing_in_round_of_funding(
     httpx_client: httpx.AsyncClient,
 ) -> AdvisorsResp:
     """Fetch advisors for an investing company in a round of funding."""
-    url = f"/round_of_funding/info/{transaction_id}/advisors/investor/{advised_company_id}"
+    url = f"/fundinground/info/{transaction_id}/advisors/investor/{advised_company_id}"
     resp = await httpx_client.get(url=url)
     return AdvisorsResp.model_validate(resp.json())
 
