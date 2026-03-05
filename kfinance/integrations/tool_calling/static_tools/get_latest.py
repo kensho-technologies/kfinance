@@ -21,3 +21,6 @@ class GetLatest(KfinanceTool):
 
     def _run(self, use_local_timezone: bool = True) -> LatestPeriods:
         return self.kfinance_client.get_latest(use_local_timezone=use_local_timezone)
+
+    async def _arun(self, use_local_timezone: bool = True) -> LatestPeriods:
+        return self._run(use_local_timezone=use_local_timezone)

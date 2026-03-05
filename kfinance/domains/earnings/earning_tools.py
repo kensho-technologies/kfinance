@@ -229,9 +229,8 @@ async def get_transcript_from_key_dev_id(
     # Convert transcript components to raw text format (same as sync version)
     transcript_parts = []
     for component in transcript_data.get("transcript", []):
-        if component.get("component_type") == "speech":
-            person_name = component.get("person_name", "")
-            text = component.get("text", "")
-            transcript_parts.append(f"{person_name}: {text}")
+        person_name = component.get("person_name", "")
+        text = component.get("text", "")
+        transcript_parts.append(f"{person_name}: {text}")
 
     return "\n\n".join(transcript_parts)
