@@ -16,6 +16,10 @@ from kfinance.domains.line_items.line_item_models import (
     LineItemResp,
     LineItemScore,
 )
+from kfinance.domains.line_items.response_notes import (
+    insert_fiscal_period_notes,
+    insert_source_link_note,
+)
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
@@ -141,6 +145,7 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 class GetFinancialLineItemFromIdentifiersResp(ToolRespWithErrors):
     results: dict[str, LineItemResp]  # identifier -> response
+    notes: list[str] = Field(default_factory=list)
 
 
 class GetFinancialLineItemFromIdentifiers(KfinanceTool):
@@ -172,6 +177,8 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
 
         Query: "Compare AAPL and MSFT revenue for 2023"
         Function: get_financial_line_item_from_identifiers(line_item="revenue", identifiers=["AAPL", "MSFT"], period_type="annual", calendar_type="calendar", start_year=2023, end_year=2023)
+
+        Note: This tool automatically includes explanatory notes about data sources, fiscal period warnings, and terminology guidelines.
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialLineItemFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {
@@ -284,7 +291,17 @@ async def get_financial_line_item_from_identifiers(
         for line_item_response in results.values():
             line_item_response.remove_all_periods_other_than_the_most_recent_one()
 
-    return GetFinancialLineItemFromIdentifiersResp(results=results, errors=errors)
+    resp_model = GetFinancialLineItemFromIdentifiersResp(results=results, errors=errors)
+
+    # Add explanatory notes
+    insert_source_link_note(resp_model)
+    insert_fiscal_period_notes(
+        calendar_type=calendar_type,
+        period_type=period_type,
+        resp_model=resp_model,
+    )
+
+    return resp_model
 
 
 async def fetch_line_item_from_company_ids(

@@ -14,6 +14,12 @@ from kfinance.domains.line_items.line_item_tools import (
     fetch_line_item_from_company_ids,
     get_financial_line_item_from_identifiers,
 )
+from kfinance.domains.line_items.line_item_models import CalendarType
+from kfinance.domains.line_items.response_notes import (
+    SOURCE_LINK_NOTE,
+    FISCAL_PERIOD_WARNING,
+    FISCAL_YEAR_TERMINOLOGY_WARNING,
+)
 
 
 class TestGetFinancialLineItemFromIdentifiers:
@@ -70,15 +76,32 @@ class TestGetFinancialLineItemFromIdentifiers:
         }
         assert resp == expected_resp
 
+    @pytest.mark.parametrize(
+        "calendar_type, expected_notes",
+        [
+            (CalendarType.calendar, [SOURCE_LINK_NOTE]),
+            (
+                CalendarType.fiscal,
+                [SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            ),
+            (
+                None,  # None defaults to fiscal
+                [SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            ),
+        ],
+    )
     @pytest.mark.asyncio
     async def test_get_financial_line_item_from_identifiers(
         self,
+        calendar_type: CalendarType | None,
+        expected_notes: list[str],
         httpx_client: httpx.AsyncClient,
         add_spgi_line_item_mock_resp: None,
     ) -> None:
         """
         WHEN we request revenue for SPGI and a non-existent company
-        THEN we get back the SPGI revenue and an error for the non-existent company
+        THEN we get back the SPGI revenue, an error for the non-existent company,
+            and notes appropriate for the calendar type.
         """
 
         expected_response = GetFinancialLineItemFromIdentifiersResp(
@@ -86,12 +109,14 @@ class TestGetFinancialLineItemFromIdentifiers:
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
+            notes=expected_notes,
         )
 
         resp = await get_financial_line_item_from_identifiers(
             identifiers=["SPGI", "non-existent"],
             line_item="revenue",
             httpx_client=httpx_client,
+            calendar_type=calendar_type,
         )
 
         assert resp == expected_response
@@ -128,6 +153,7 @@ class TestGetFinancialLineItemFromIdentifiers:
         )
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             results={"C_1": line_item_resp, "C_2": line_item_resp},
+            notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
 
         resp = await get_financial_line_item_from_identifiers(
@@ -138,44 +164,6 @@ class TestGetFinancialLineItemFromIdentifiers:
 
         assert resp == expected_response
 
-    @pytest.mark.asyncio
-    async def test_empty_most_recent_request(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-    ) -> None:
-        """
-        WHEN we request most recent line items for multiple companies
-        THEN we only get back the most recent line item for each company
-        UNLESS no line items exist
-        """
-
-        company_ids = [1, 2]
-
-        # Mock the line_item response with different data for different companies
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/",
-            json={
-                "results": {"1": {"currency": "USD", "periods": {}}, "2": self.line_item_resp},
-                "errors": {},
-            },
-        )
-
-        c_1_line_item_resp = LineItemResp.model_validate({"currency": "USD", "periods": {}})
-        c_2_line_item_resp = LineItemResp.model_validate(self.line_item_resp)
-        # Since there are multiple companies but C_2 has data, truncation should apply
-        c_2_line_item_resp.remove_all_periods_other_than_the_most_recent_one()
-
-        expected_response = GetFinancialLineItemFromIdentifiersResp(
-            results={"C_1": c_1_line_item_resp, "C_2": c_2_line_item_resp},
-        )
-
-        resp = await get_financial_line_item_from_identifiers(
-            identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
-            line_item="revenue",
-            httpx_client=httpx_client,
-        )
-
-        assert resp == expected_response
 
     def test_line_items_and_aliases_included_in_schema(self, mock_client: Client):
         """

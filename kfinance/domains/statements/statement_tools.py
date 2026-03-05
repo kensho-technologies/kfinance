@@ -1,5 +1,5 @@
 from textwrap import dedent
-from typing import Literal, Type, Any
+from typing import Any, Literal, Type
 
 import httpx
 from pydantic import BaseModel, Field
