@@ -114,20 +114,10 @@ class GetLatestEarningsFromIdentifiers(KfinanceTool):
 
     async def _arun(self, identifiers: list[str]) -> GetNextOrLatestEarningsFromIdentifiersResp:
         """"""
-        earnings_responses = await get_earnings_from_identifiers(
+        return await get_latest_earnings_from_identifiers(
             identifiers=identifiers,
             httpx_client=self.kfinance_client.httpx_client,
         )
-        output_model = GetNextOrLatestEarningsFromIdentifiersResp(results=dict(), errors=list())
-        for identifier, earnings in earnings_responses.results.items():
-            most_recent_earnings = earnings.most_recent_earnings
-            if most_recent_earnings:
-                output_model.results[identifier] = most_recent_earnings
-            else:
-                output_model.errors.append(f"No latest earnings available for {identifier}.")
-        # Add errors from the earnings fetch
-        output_model.errors.extend(earnings_responses.errors)
-        return output_model
 
 
 class GetNextEarningsFromIdentifiers(KfinanceTool):
@@ -156,20 +146,10 @@ class GetNextEarningsFromIdentifiers(KfinanceTool):
 
     async def _arun(self, identifiers: list[str]) -> GetNextOrLatestEarningsFromIdentifiersResp:
         """"""
-        earnings_responses = await get_earnings_from_identifiers(
+        return await get_next_earnings_from_identifiers(
             identifiers=identifiers,
             httpx_client=self.kfinance_client.httpx_client,
         )
-        output_model = GetNextOrLatestEarningsFromIdentifiersResp(results=dict(), errors=list())
-        for identifier, earnings in earnings_responses.results.items():
-            next_earnings = earnings.next_earnings
-            if next_earnings:
-                output_model.results[identifier] = next_earnings
-            else:
-                output_model.errors.append(f"No next earnings available for {identifier}.")
-        # Add errors from the earnings fetch
-        output_model.errors.extend(earnings_responses.errors)
-        return output_model
 
 
 async def get_earnings_from_identifiers(
@@ -205,6 +185,48 @@ async def get_earnings_from_identifiers(
             results[task.result_key] = task.result
 
     return GetEarningsFromIdentifiersResp(results=results, errors=errors)
+
+
+async def get_latest_earnings_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+) -> GetNextOrLatestEarningsFromIdentifiersResp:
+    """Fetch the latest (most recent) earnings call for all identifiers."""
+    earnings_responses = await get_earnings_from_identifiers(
+        identifiers=identifiers,
+        httpx_client=httpx_client,
+    )
+    output_model = GetNextOrLatestEarningsFromIdentifiersResp(results=dict(), errors=list())
+    for identifier, earnings in earnings_responses.results.items():
+        most_recent_earnings = earnings.most_recent_earnings
+        if most_recent_earnings:
+            output_model.results[identifier] = most_recent_earnings
+        else:
+            output_model.errors.append(f"No latest earnings available for {identifier}.")
+    # Add errors from the earnings fetch
+    output_model.errors.extend(earnings_responses.errors)
+    return output_model
+
+
+async def get_next_earnings_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+) -> GetNextOrLatestEarningsFromIdentifiersResp:
+    """Fetch the next scheduled earnings call for all identifiers."""
+    earnings_responses = await get_earnings_from_identifiers(
+        identifiers=identifiers,
+        httpx_client=httpx_client,
+    )
+    output_model = GetNextOrLatestEarningsFromIdentifiersResp(results=dict(), errors=list())
+    for identifier, earnings in earnings_responses.results.items():
+        next_earnings = earnings.next_earnings
+        if next_earnings:
+            output_model.results[identifier] = next_earnings
+        else:
+            output_model.errors.append(f"No next earnings available for {identifier}.")
+    # Add errors from the earnings fetch
+    output_model.errors.extend(earnings_responses.errors)
+    return output_model
 
 
 async def fetch_earnings_from_company_id(
