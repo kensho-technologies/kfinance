@@ -5,8 +5,7 @@ from typing import Literal, Type
 import httpx
 from pydantic import BaseModel, Field
 
-from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
-from kfinance.client.id_resolution import unified_fetch_id_triples
+from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.models.date_and_period_models import (
     EstimatePeriodType,
     EstimateType,
@@ -14,10 +13,10 @@ from kfinance.client.models.date_and_period_models import (
     NumPeriodsForward,
 )
 from kfinance.client.permission_models import Permission
-from kfinance.domains.estimates.estimates_models import EstimatesResp
-from kfinance.domains.line_items.line_item_models import CalendarType
-from kfinance.domains.line_items.response_notes import (
-    insert_fiscal_period_notes,
+from kfinance.domains.estimates.estimates_models import (
+    AnalystRecommendationsResp,
+    ConsensusTargetPriceResp,
+    EstimatesResp,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -126,103 +125,69 @@ class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
         return EstimateType.guidance
 
 
-async def get_estimates_from_identifiers(
-    identifiers: list[str],
-    estimate_type: EstimateType,
-    httpx_client: httpx.AsyncClient,
-    period_type: EstimatePeriodType | None = None,
-    fiscal_start_year: int | None = None,
-    fiscal_end_year: int | None = None,
-    fiscal_start_quarter: Literal[1, 2, 3, 4] | None = None,
-    fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
-    num_periods_forward: int | None = None,
-    num_periods_backward: int | None = None,
-) -> GetEstimatesFromIdentifiersResp:
-    """Fetch estimates for all identifiers."""
+class GetConsensusTargetPriceFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, ConsensusTargetPriceResp]
 
-    id_triple_resp = await unified_fetch_id_triples(
-        identifiers=identifiers, httpx_client=httpx_client
-    )
-    errors: list[str] = list(id_triple_resp.errors.values())
 
-    tasks = [
-        AsyncTask(
-            func=fetch_estimates_from_company_id,
-            kwargs=dict(
-                company_id=id_triple.company_id,
-                estimate_type=estimate_type,
-                httpx_client=httpx_client,
-                period_type=period_type,
-                fiscal_start_year=fiscal_start_year,
-                fiscal_end_year=fiscal_end_year,
-                fiscal_start_quarter=fiscal_start_quarter,
-                fiscal_end_quarter=fiscal_end_quarter,
-                num_periods_forward=num_periods_forward,
-                num_periods_backward=num_periods_backward,
-            ),
-            result_key=identifier,
+class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
+    name: str = "get_consensus_target_price_from_identifiers"
+    # description: str = dedent("""
+    # TODO
+    # """).strip()
+    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
+    accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
+
+    def _run(
+        self,
+        identifiers: list[str],
+    ) -> GetConsensusTargetPriceFromIdentifiersResp:
+        api_client = self.kfinance_client.kfinance_api_client
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
+        tasks = [
+            Task(
+                func=api_client.fetch_consensus_target_price,
+                kwargs=dict(company_id=id_triple.company_id),
+                result_key=identifier,
+            )
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+        ]
+        info_responses: dict[str, ConsensusTargetPriceResp] = process_tasks_in_thread_pool_executor(
+            api_client=api_client, tasks=tasks
         )
-        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-    ]
-
-    await batch_execute_async_tasks(tasks=tasks)
-
-    results: dict[str, EstimatesResp] = dict()
-    for task in tasks:
-        if task.error:
-            errors.append(task.error)
-        else:
-            results[task.result_key] = task.result
-
-    resp_model = GetEstimatesFromIdentifiersResp(results=results, errors=errors)
-
-    # Add explanatory notes
-    insert_fiscal_period_notes(
-        calendar_type=CalendarType.fiscal,  # Estimates are always fiscal
-        period_type=period_type,
-        resp_model=resp_model,
-    )
-
-    return resp_model
+        return GetConsensusTargetPriceFromIdentifiersResp(
+            results=info_responses, errors=list(id_triple_resp.errors.values())
+        )
 
 
-async def fetch_estimates_from_company_id(
-    company_id: int,
-    estimate_type: EstimateType,
-    httpx_client: httpx.AsyncClient,
-    period_type: EstimatePeriodType | None = None,
-    fiscal_start_year: int | None = None,
-    fiscal_end_year: int | None = None,
-    fiscal_start_quarter: Literal[1, 2, 3, 4] | None = None,
-    fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
-    num_periods_forward: int | None = None,
-    num_periods_backward: int | None = None,
-) -> EstimatesResp:
-    """Fetch estimates for one company_id."""
-    # Build query parameters
-    params = {
-        "company_id": company_id,
-        "estimate_type": estimate_type.value,
-    }
+class GetAnalystRecommendationsFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, AnalystRecommendationsResp]
 
-    if period_type is not None:
-        params["period_type"] = period_type.value
-    if fiscal_start_year is not None:
-        params["start_year"] = fiscal_start_year
-    if fiscal_end_year is not None:
-        params["end_year"] = fiscal_end_year
-    if fiscal_start_quarter is not None:
-        params["start_quarter"] = fiscal_start_quarter
-    if fiscal_end_quarter is not None:
-        params["end_quarter"] = fiscal_end_quarter
-    if num_periods_forward is not None:
-        params["num_periods_forward"] = num_periods_forward
-    if num_periods_backward is not None:
-        params["num_periods_backward"] = num_periods_backward
 
-    resp = await httpx_client.post(url="/estimates/", json=params)
-    response_data = resp.json()
+class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
+    name: str = "get_analyst_recommendations_from_identifiers"
+    # description: str = dedent("""
+    # TODO
+    # """).strip()
+    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
+    accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
 
-    # Extract the result for this specific company_id
-    company_result = response_data["results"][str(company_id)]
-    return EstimatesResp.model_validate(company_result)
+    def _run(
+        self,
+        identifiers: list[str],
+    ) -> GetAnalystRecommendationsFromIdentifiersResp:
+        api_client = self.kfinance_client.kfinance_api_client
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
+        tasks = [
+            Task(
+                func=api_client.fetch_analyst_recommendations,
+                kwargs=dict(company_id=id_triple.company_id),
+                result_key=identifier,
+            )
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+        ]
+        info_responses: dict[str, AnalystRecommendationsResp] = (
+            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
+        )
+        return GetAnalystRecommendationsFromIdentifiersResp(
+            results=info_responses, errors=list(id_triple_resp.errors.values())
+        )
