@@ -623,6 +623,34 @@ class CompanyFunctionsMetaClass:
             period_type=period_type,
         )
 
+    def consensus_target_price(
+        self,
+    ) -> pd.DataFrame:
+        """Get consensus target price estimates"""
+
+        consensus_target_price_response = self.kfinance_api_client.fetch_consensus_target_price(
+            company_id=self.company_id,
+        )
+
+        if not consensus_target_price_response:
+            return pd.DataFrame()
+        # TODO
+        return pd.DataFrame()
+
+    def analyst_recommendations(
+        self,
+    ) -> pd.DataFrame:
+        """Get analyst recommendations"""
+
+        analyst_recommendations_response = self.kfinance_api_client.fetch_analyst_recommendations(
+            company_id=self.company_id,
+        )
+
+        if not analyst_recommendations_response:
+            return pd.DataFrame()
+        # TODO
+        return pd.DataFrame()
+
 
 for line_item in LINE_ITEMS:
     line_item_name = line_item["name"]

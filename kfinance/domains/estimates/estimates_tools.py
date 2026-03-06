@@ -4,6 +4,7 @@ from typing import Literal, Type
 
 from pydantic import BaseModel, Field
 
+from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.models.date_and_period_models import (
     EstimatePeriodType,
     EstimateType,
@@ -11,7 +12,11 @@ from kfinance.client.models.date_and_period_models import (
     NumPeriodsForward,
 )
 from kfinance.client.permission_models import Permission
-from kfinance.domains.estimates.estimates_models import EstimatesResp
+from kfinance.domains.estimates.estimates_models import (
+    AnalystRecommendationsResp,
+    ConsensusTargetPriceResp,
+    EstimatesResp,
+)
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
@@ -161,3 +166,71 @@ class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
     def estimate_type(self) -> EstimateType:
         """The estimate type is guidance."""
         return EstimateType.guidance
+
+
+class GetConsensusTargetPriceFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, ConsensusTargetPriceResp]
+
+
+class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
+    name: str = "get_consensus_target_price_from_identifiers"
+    # description: str = dedent("""
+    # TODO
+    # """).strip()
+    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
+    accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
+
+    def _run(
+        self,
+        identifiers: list[str],
+    ) -> GetConsensusTargetPriceFromIdentifiersResp:
+        api_client = self.kfinance_client.kfinance_api_client
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
+        tasks = [
+            Task(
+                func=api_client.fetch_consensus_target_price,
+                kwargs=dict(company_id=id_triple.company_id),
+                result_key=identifier,
+            )
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+        ]
+        info_responses: dict[str, ConsensusTargetPriceResp] = process_tasks_in_thread_pool_executor(
+            api_client=api_client, tasks=tasks
+        )
+        return GetConsensusTargetPriceFromIdentifiersResp(
+            results=info_responses, errors=list(id_triple_resp.errors.values())
+        )
+
+
+class GetAnalystRecommendationsFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, AnalystRecommendationsResp]
+
+
+class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
+    name: str = "get_analyst_recommendations_from_identifiers"
+    # description: str = dedent("""
+    # TODO
+    # """).strip()
+    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
+    accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
+
+    def _run(
+        self,
+        identifiers: list[str],
+    ) -> GetAnalystRecommendationsFromIdentifiersResp:
+        api_client = self.kfinance_client.kfinance_api_client
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
+        tasks = [
+            Task(
+                func=api_client.fetch_analyst_recommendations,
+                kwargs=dict(company_id=id_triple.company_id),
+                result_key=identifier,
+            )
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+        ]
+        info_responses: dict[str, AnalystRecommendationsResp] = (
+            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
+        )
+        return GetAnalystRecommendationsFromIdentifiersResp(
+            results=info_responses, errors=list(id_triple_resp.errors.values())
+        )

@@ -419,6 +419,32 @@ class TestFetchItem(TestCase):
         assert "results" in result.model_dump()
         # errors field is excluded when empty
 
+    def test_fetch_consensus_target_price(self) -> None:
+        company_id = 21719
+        expected_url = (
+            f"{self.kfinance_api_client.url_base}estimates/consensus_target_price/{company_id}"
+        )
+
+        self.kfinance_api_client.fetch.return_value = {"results": {}, "errors": {}}
+        result = self.kfinance_api_client.fetch_consensus_target_price(
+            company_id=company_id,
+        )
+        self.kfinance_api_client.fetch.assert_called_with(expected_url, method="GET")
+        assert "results" in result.model_dump()
+
+    def test_fetch_analyst_recommendations(self) -> None:
+        company_id = 21719
+        expected_url = (
+            f"{self.kfinance_api_client.url_base}estimates/analyst_recommendations/{company_id}"
+        )
+
+        self.kfinance_api_client.fetch.return_value = {"results": {}, "errors": {}}
+        result = self.kfinance_api_client.fetch_analyst_recommendations(
+            company_id=company_id,
+        )
+        self.kfinance_api_client.fetch.assert_called_with(expected_url, method="GET")
+        assert "results" in result.model_dump()
+
 
 class TestMarketCap:
     @pytest.mark.parametrize(

@@ -80,3 +80,7 @@ class TestGetEstimateFromIdentifier:
         args = GetEstimatesFromIdentifiersArgs(identifiers=["SPGI", "NON-EXISTENT"])
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
+
+    # TODO
+    # def test_get_analyst_recommendations_from_identifiers(self, mock_client: Client, requests_mock: Mocker):
+    # def test_get_consensus_target_price_from_identifiers(self, mock_client: Client, requests_mock: Mocker):

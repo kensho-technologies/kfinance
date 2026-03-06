@@ -31,7 +31,11 @@ from kfinance.domains.companies.company_models import (
 )
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.domains.earnings.earning_models import EarningsCallResp
-from kfinance.domains.estimates.estimates_models import EstimatesResp
+from kfinance.domains.estimates.estimates_models import (
+    AnalystRecommendationsResp,
+    ConsensusTargetPriceResp,
+    EstimatesResp,
+)
 from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerInfo,
@@ -874,3 +878,19 @@ class KFinanceApiClient:
         response_data = self.fetch(url, method="POST", request_body=request_body)
 
         return PostResponse[EstimatesResp].model_validate(response_data)
+
+    def fetch_consensus_target_price(
+        self,
+        company_id: int,
+    ) -> ConsensusTargetPriceResp:
+        """Get consensus target price estimates"""
+        url = f"{self.url_base}estimates/consensus_target_price/{company_id}"
+        return ConsensusTargetPriceResp.model_validate(self.fetch(url))
+
+    def fetch_analyst_recommendations(
+        self,
+        company_id: int,
+    ) -> AnalystRecommendationsResp:
+        """Get analyst recommendations"""
+        url = f"{self.url_base}estimates/analyst_recommendations/{company_id}"
+        return AnalystRecommendationsResp.model_validate(self.fetch(url))
