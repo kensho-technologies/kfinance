@@ -75,6 +75,7 @@ class KFinanceApiClient:
         api_version: int = DEFAULT_API_VERSION,
         okta_host: str = DEFAULT_OKTA_HOST,
         okta_auth_server: str = DEFAULT_OKTA_AUTH_SERVER,
+        proxies: Optional[dict] = None,
     ):
         """Configuration of KFinance Client.
 
@@ -96,6 +97,8 @@ class KFinanceApiClient:
         :type okta_host: str
         :param okta_auth_server: the okta route for authentication
         :type okta_auth_server: str
+        :param proxies: proxy definitions for all HTTP requests (Okta authentication, OAuth token refresh, and KFinance API calls). Format: {'http': 'http://proxy:port', 'https': 'https://proxy:port'}
+        :type proxies: dict, Optional
         """
         if refresh_token is not None:
             self.refresh_token = refresh_token
@@ -113,6 +116,7 @@ class KFinanceApiClient:
         self.okta_host = okta_host
         self.okta_auth_server = okta_auth_server
         self._thread_pool = thread_pool
+        self._proxies = proxies or {}
         self.url_base = f"{self.api_host}/api/v{self.api_version}/"
         self._access_token_expiry: Any = 0
         self._access_token: str | None = None
@@ -172,6 +176,7 @@ class KFinanceApiClient:
         response = requests.get(
             f"{self.api_host}/oauth2/refresh?refresh_token={self.refresh_token}",
             timeout=60,
+            proxies=self._proxies,
         )
         response.raise_for_status()
         return response.json().get("access_token")
@@ -203,6 +208,7 @@ class KFinanceApiClient:
                 "client_assertion": encoded,
             },
             timeout=60,
+            proxies=self._proxies,
         )
         response.raise_for_status()
         return response.json().get("access_token")
@@ -273,6 +279,7 @@ class KFinanceApiClient:
             headers=headers,
             json=request_body,
             timeout=60,
+            proxies=self._proxies,
         )
         response.raise_for_status()
         return response.json()
@@ -431,6 +438,7 @@ class KFinanceApiClient:
                 "Authorization": f"Bearer {self.access_token}",
             },
             timeout=60,
+            proxies=self._proxies,
         )
         response.raise_for_status()
         return response.content

@@ -1,5 +1,8 @@
 # Changelog
 
+## v4.1.5
+- Add proxy support to KFinanceApiClient for all HTTP requests (Okta authentication, OAuth token refresh, and KFinance API calls)
+
 ## v4.1.4
 - Add estimates tools
 
