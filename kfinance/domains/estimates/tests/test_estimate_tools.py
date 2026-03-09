@@ -130,15 +130,19 @@ class TestEstimates:
             json={"results": {"21719": consensus_target_price_response}, "errors": {}},
         )
 
+        expected_response = GetConsensusTargetPriceFromIdentifiersResp.model_validate(
+            {
+                "results": {"SPGI": consensus_target_price_response},
+                "errors": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                ],
+            }
+        )
+
         tool = GetConsensusTargetPriceFromIdentifiers(kfinance_client=mock_client)
         args = ToolArgsWithIdentifiers(identifiers=["SPGI", "NON-EXISTENT"])
         response = tool.run(args.model_dump(mode="json"))
-
-        assert isinstance(response, GetConsensusTargetPriceFromIdentifiersResp)
-        assert "SPGI" in response.results
-        assert response.results["SPGI"].currency == "USD"
-        assert len(response.results["SPGI"].estimates) == 4
-        assert len(response.errors) == 1
+        assert response == expected_response
 
     def test_get_analyst_recommendations_from_identifiers(
         self, mock_client: Client, requests_mock: Mocker
@@ -173,11 +177,16 @@ class TestEstimates:
             json={"results": {"21719": analyst_recommendations_response}, "errors": {}},
         )
 
+        expected_response = GetAnalystRecommendationsFromIdentifiersResp.model_validate(
+            {
+                "results": {"SPGI": analyst_recommendations_response},
+                "errors": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                ],
+            }
+        )
+
         tool = GetAnalystRecommendationsFromIdentifiers(kfinance_client=mock_client)
         args = ToolArgsWithIdentifiers(identifiers=["SPGI", "NON-EXISTENT"])
         response = tool.run(args.model_dump(mode="json"))
-
-        assert isinstance(response, GetAnalystRecommendationsFromIdentifiersResp)
-        assert "SPGI" in response.results
-        assert len(response.results["SPGI"].estimates) == 3
-        assert len(response.errors) == 1
+        assert response == expected_response

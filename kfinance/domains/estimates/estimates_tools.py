@@ -80,19 +80,69 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
     ) -> GetEstimatesFromIdentifiersResp:
-        """"""
-        return await get_estimates_from_identifiers(
-            identifiers=identifiers,
-            estimate_type=self.estimate_type,
-            httpx_client=self.kfinance_client.httpx_client,
-            period_type=period_type,
-            fiscal_start_year=fiscal_start_year,
-            fiscal_end_year=fiscal_end_year,
-            fiscal_start_quarter=fiscal_start_quarter,
-            fiscal_end_quarter=fiscal_end_quarter,
-            num_periods_forward=num_periods_forward,
-            num_periods_backward=num_periods_backward,
-        )
+        """Sample response:
+
+        "SPGI": {
+            "estimate_type": "consensus",
+            "currency": "USD",
+            "period_type": "quarterly",
+            "periods": {
+                "FY2025Q4": {
+                    "period_end_date": "2025-12-31",
+                    "estimates": [
+                        {
+                            "name": "Revenue Consensus High",
+                            "value": "3955000000.000000",
+                        },
+                        {
+                            "name": "Revenue Consensus Low",
+                            "value": "3806400000.000000",
+                        },
+                        {
+                            "name": "Revenue Consensus Mean",
+                            "value": "3881725460.000000",
+                        },
+                        {
+                            "name": "Revenue Consensus Median",
+                            "value": "3883000000.000000",
+                        },
+                    ],
+                }
+            },
+        }
+        """
+
+        api_client = self.kfinance_client.kfinance_api_client
+        ids_response = api_client.unified_fetch_id_triples(identifiers)
+        company_id_to_identifier = {
+            id_triple.company_id: identifier
+            for identifier, id_triple in ids_response.identifiers_to_id_triples.items()
+        }
+        company_ids = [
+            id_triple.company_id for id_triple in ids_response.identifiers_to_id_triples.values()
+        ]
+        identifiers_to_results = {}
+        all_errors: list[str] = []
+        for company_id in company_ids:
+            response = api_client.fetch_estimates(
+                company_id=company_id,
+                estimate_type=self.estimate_type,
+                period_type=period_type,
+                start_year=fiscal_start_year,
+                end_year=fiscal_end_year,
+                start_quarter=fiscal_start_quarter,
+                end_quarter=fiscal_end_quarter,
+                num_periods_forward=num_periods_forward,
+                num_periods_backward=num_periods_backward,
+            )
+            original_identifier = company_id_to_identifier[company_id]
+            identifiers_to_results[original_identifier] = response.results[str(company_id)]
+            if response.errors and "errors" in response.errors:
+                all_errors.append(response.errors["errors"])
+
+        all_errors = list(ids_response.errors.values()) + all_errors
+
+        return GetEstimatesFromIdentifiersResp(results=identifiers_to_results, errors=all_errors)
 
 
 class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
