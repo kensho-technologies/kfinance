@@ -120,7 +120,7 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
             id_triple.company_id for id_triple in ids_response.identifiers_to_id_triples.values()
         ]
         identifiers_to_results = {}
-        all_errors = []
+        all_errors: list[str] = []
         for company_id in company_ids:
             response = api_client.fetch_estimates(
                 company_id=company_id,
