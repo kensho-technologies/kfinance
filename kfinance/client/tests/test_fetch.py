@@ -425,12 +425,22 @@ class TestFetchItem(TestCase):
             f"{self.kfinance_api_client.url_base}estimates/consensus_target_price/{company_id}"
         )
 
-        self.kfinance_api_client.fetch.return_value = {"results": {}, "errors": {}}
+        self.kfinance_api_client.fetch.return_value = {
+            "results": {
+                str(company_id): {
+                    "currency": "USD",
+                    "effective_date": "2025-06-01",
+                    "estimates": [],
+                }
+            },
+            "errors": {},
+        }
         result = self.kfinance_api_client.fetch_consensus_target_price(
             company_id=company_id,
         )
-        self.kfinance_api_client.fetch.assert_called_with(expected_url, method="GET")
-        assert "results" in result.model_dump()
+        self.kfinance_api_client.fetch.assert_called_with(expected_url)
+        assert result.results[str(company_id)].currency == "USD"
+        assert result.results[str(company_id)].estimates == []
 
     def test_fetch_analyst_recommendations(self) -> None:
         company_id = 21719
@@ -438,12 +448,20 @@ class TestFetchItem(TestCase):
             f"{self.kfinance_api_client.url_base}estimates/analyst_recommendations/{company_id}"
         )
 
-        self.kfinance_api_client.fetch.return_value = {"results": {}, "errors": {}}
+        self.kfinance_api_client.fetch.return_value = {
+            "results": {
+                str(company_id): {
+                    "effective_date": "2025-06-01",
+                    "estimates": [],
+                }
+            },
+            "errors": {},
+        }
         result = self.kfinance_api_client.fetch_analyst_recommendations(
             company_id=company_id,
         )
-        self.kfinance_api_client.fetch.assert_called_with(expected_url, method="GET")
-        assert "results" in result.model_dump()
+        self.kfinance_api_client.fetch.assert_called_with(expected_url)
+        assert result.results[str(company_id)].estimates == []
 
 
 class TestMarketCap:

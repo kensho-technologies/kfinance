@@ -628,28 +628,45 @@ class CompanyFunctionsMetaClass:
     ) -> pd.DataFrame:
         """Get consensus target price estimates"""
 
-        consensus_target_price_response = self.kfinance_api_client.fetch_consensus_target_price(
+        response = self.kfinance_api_client.fetch_consensus_target_price(
             company_id=self.company_id,
         )
 
-        if not consensus_target_price_response:
+        if not response.results:
             return pd.DataFrame()
-        # TODO
-        return pd.DataFrame()
+
+        result = response.results[str(self.company_id)]
+
+        if not result.estimates:
+            return pd.DataFrame()
+
+        data = {estimate.name: estimate.value for estimate in result.estimates}
+        df = pd.DataFrame([data])
+        df.insert(0, "currency", result.currency)
+        df.insert(1, "effective_date", result.effective_date)
+        return df
 
     def analyst_recommendations(
         self,
     ) -> pd.DataFrame:
         """Get analyst recommendations"""
 
-        analyst_recommendations_response = self.kfinance_api_client.fetch_analyst_recommendations(
+        response = self.kfinance_api_client.fetch_analyst_recommendations(
             company_id=self.company_id,
         )
 
-        if not analyst_recommendations_response:
+        if not response.results:
             return pd.DataFrame()
-        # TODO
-        return pd.DataFrame()
+
+        result = response.results[str(self.company_id)]
+
+        if not result.estimates:
+            return pd.DataFrame()
+
+        data = {estimate.name: estimate.value for estimate in result.estimates}
+        df = pd.DataFrame([data])
+        df.insert(0, "effective_date", result.effective_date)
+        return df
 
 
 for line_item in LINE_ITEMS:

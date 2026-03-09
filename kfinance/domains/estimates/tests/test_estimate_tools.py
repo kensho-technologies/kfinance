@@ -6,6 +6,12 @@ from kfinance.client.models.date_and_period_models import EstimateType
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.estimates.estimates_models import EstimatesResp
 from kfinance.domains.estimates.estimates_tools import (
+    GetAnalystRecommendationsFromIdentifiers,
+    GetAnalystRecommendationsFromIdentifiersResp,
+    GetConsensusEstimatesFromIdentifiers,
+    GetConsensusTargetPriceFromIdentifiers,
+    GetConsensusTargetPriceFromIdentifiersResp,
+    GetEstimatesFromIdentifiersArgs,
     GetEstimatesFromIdentifiersResp,
     fetch_estimates_from_company_id,
     get_estimates_from_identifiers,
@@ -14,6 +20,7 @@ from kfinance.domains.line_items.response_notes import (
     FISCAL_PERIOD_WARNING,
     FISCAL_YEAR_TERMINOLOGY_WARNING,
 )
+from kfinance.integrations.tool_calling.tool_calling_models import ToolArgsWithIdentifiers
 
 
 class TestEstimates:
@@ -88,6 +95,89 @@ class TestEstimates:
         response = tool.run(args.model_dump(mode="json"))
         assert response == expected_response
 
-    # TODO
-    # def test_get_analyst_recommendations_from_identifiers(self, mock_client: Client, requests_mock: Mocker):
-    # def test_get_consensus_target_price_from_identifiers(self, mock_client: Client, requests_mock: Mocker):
+    def test_get_consensus_target_price_from_identifiers(
+        self, mock_client: Client, requests_mock: Mocker
+    ):
+        consensus_target_price_response = {
+            "currency": "USD",
+            "effective_date": "2025-06-01",
+            "estimates": [
+                {"Line Item": "Target Price Consensus High", "Value": "600.000000"},
+                {"Line Item": "Target Price Consensus Low", "Value": "400.000000"},
+                {"Line Item": "Target Price Consensus Mean", "Value": "520.000000"},
+                {"Line Item": "Target Price Consensus Median", "Value": "525.000000"},
+            ],
+        }
+
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/ids",
+            json={
+                "identifiers_to_id_triples": {
+                    "SPGI": {
+                        "company_id": 21719,
+                        "security_id": 2629107,
+                        "trading_item_id": 2629108,
+                    }
+                },
+                "errors": {
+                    "NON-EXISTENT": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                },
+            },
+        )
+
+        requests_mock.get(
+            url="https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/21719",
+            json={"results": {"21719": consensus_target_price_response}, "errors": {}},
+        )
+
+        tool = GetConsensusTargetPriceFromIdentifiers(kfinance_client=mock_client)
+        args = ToolArgsWithIdentifiers(identifiers=["SPGI", "NON-EXISTENT"])
+        response = tool.run(args.model_dump(mode="json"))
+
+        assert isinstance(response, GetConsensusTargetPriceFromIdentifiersResp)
+        assert "SPGI" in response.results
+        assert response.results["SPGI"].currency == "USD"
+        assert len(response.results["SPGI"].estimates) == 4
+        assert len(response.errors) == 1
+
+    def test_get_analyst_recommendations_from_identifiers(
+        self, mock_client: Client, requests_mock: Mocker
+    ):
+        analyst_recommendations_response = {
+            "effective_date": "2025-06-01",
+            "estimates": [
+                {"Line Item": "# of Analyst Recommendations - Buy", "Value": "12"},
+                {"Line Item": "# of Analyst Recommendations - Hold", "Value": "5"},
+                {"Line Item": "# of Analyst Recommendations - Sell", "Value": "1"},
+            ],
+        }
+
+        requests_mock.post(
+            url="https://kfinance.kensho.com/api/v1/ids",
+            json={
+                "identifiers_to_id_triples": {
+                    "SPGI": {
+                        "company_id": 21719,
+                        "security_id": 2629107,
+                        "trading_item_id": 2629108,
+                    }
+                },
+                "errors": {
+                    "NON-EXISTENT": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                },
+            },
+        )
+
+        requests_mock.get(
+            url="https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/21719",
+            json={"results": {"21719": analyst_recommendations_response}, "errors": {}},
+        )
+
+        tool = GetAnalystRecommendationsFromIdentifiers(kfinance_client=mock_client)
+        args = ToolArgsWithIdentifiers(identifiers=["SPGI", "NON-EXISTENT"])
+        response = tool.run(args.model_dump(mode="json"))
+
+        assert isinstance(response, GetAnalystRecommendationsFromIdentifiersResp)
+        assert "SPGI" in response.results
+        assert len(response.results["SPGI"].estimates) == 3
+        assert len(response.errors) == 1

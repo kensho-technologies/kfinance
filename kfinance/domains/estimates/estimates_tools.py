@@ -5,7 +5,6 @@ from typing import Literal, Type
 import httpx
 from pydantic import BaseModel, Field
 
-from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
 from kfinance.client.models.date_and_period_models import (
     EstimatePeriodType,
     EstimateType,
@@ -131,9 +130,9 @@ class GetConsensusTargetPriceFromIdentifiersResp(ToolRespWithErrors):
 
 class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
     name: str = "get_consensus_target_price_from_identifiers"
-    # description: str = dedent("""
-    # TODO
-    # """).strip()
+    description: str = dedent("""
+        Get consensus target price estimates for a given company. Returns the current consensus analyst target price including high, low, mean, and median values.
+    """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
 
@@ -143,19 +142,22 @@ class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
     ) -> GetConsensusTargetPriceFromIdentifiersResp:
         api_client = self.kfinance_client.kfinance_api_client
         id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-        tasks = [
-            Task(
-                func=api_client.fetch_consensus_target_price,
-                kwargs=dict(company_id=id_triple.company_id),
-                result_key=identifier,
-            )
+        company_id_to_identifier = {
+            id_triple.company_id: identifier
             for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-        info_responses: dict[str, ConsensusTargetPriceResp] = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
-        )
+        }
+        identifiers_to_results = {}
+        all_errors: list[str] = []
+        for company_id, identifier in company_id_to_identifier.items():
+            response = api_client.fetch_consensus_target_price(company_id=company_id)
+            identifiers_to_results[identifier] = response.results[str(company_id)]
+            if response.errors and "errors" in response.errors:
+                all_errors.append(response.errors["errors"])
+
+        all_errors = list(id_triple_resp.errors.values()) + all_errors
+
         return GetConsensusTargetPriceFromIdentifiersResp(
-            results=info_responses, errors=list(id_triple_resp.errors.values())
+            results=identifiers_to_results, errors=all_errors
         )
 
 
@@ -165,9 +167,9 @@ class GetAnalystRecommendationsFromIdentifiersResp(ToolRespWithErrors):
 
 class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
     name: str = "get_analyst_recommendations_from_identifiers"
-    # description: str = dedent("""
-    # TODO
-    # """).strip()
+    description: str = dedent("""
+        Get analyst recommendations for a given company. Returns the current consensus analyst recommendation breakdown including buy, hold, sell counts and overall rating.
+    """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
 
@@ -177,17 +179,20 @@ class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
     ) -> GetAnalystRecommendationsFromIdentifiersResp:
         api_client = self.kfinance_client.kfinance_api_client
         id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-        tasks = [
-            Task(
-                func=api_client.fetch_analyst_recommendations,
-                kwargs=dict(company_id=id_triple.company_id),
-                result_key=identifier,
-            )
+        company_id_to_identifier = {
+            id_triple.company_id: identifier
             for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-        info_responses: dict[str, AnalystRecommendationsResp] = (
-            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
-        )
+        }
+        identifiers_to_results = {}
+        all_errors: list[str] = []
+        for company_id, identifier in company_id_to_identifier.items():
+            response = api_client.fetch_analyst_recommendations(company_id=company_id)
+            identifiers_to_results[identifier] = response.results[str(company_id)]
+            if response.errors and "errors" in response.errors:
+                all_errors.append(response.errors["errors"])
+
+        all_errors = list(id_triple_resp.errors.values()) + all_errors
+
         return GetAnalystRecommendationsFromIdentifiersResp(
-            results=info_responses, errors=list(id_triple_resp.errors.values())
+            results=identifiers_to_results, errors=all_errors
         )
