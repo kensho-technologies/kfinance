@@ -8,6 +8,7 @@ from requests_mock import Mocker
 from kfinance.client.fetch import KFinanceApiClient
 from kfinance.client.kfinance import Client
 from kfinance.client.models.date_and_period_models import EstimateType, Periodicity, PeriodType
+from kfinance.client.models.response_models import PostResponse
 from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
@@ -17,6 +18,12 @@ from kfinance.domains.companies.company_models import (
     CompanyDescriptions,
     CompanyIdAndName,
     CompanyOtherNames,
+)
+from kfinance.domains.estimates.estimates_models import (
+    AnalystRecommendationsItem,
+    AnalystRecommendationsResp,
+    ConsensusTargetPriceItem,
+    ConsensusTargetPriceResp,
 )
 from kfinance.domains.segments.segment_models import SegmentType
 
@@ -430,17 +437,34 @@ class TestFetchItem(TestCase):
                 str(company_id): {
                     "currency": "USD",
                     "effective_date": "2025-06-01",
-                    "estimates": [],
+                    "estimates": [
+                        {"Line Item": "Target Price Consensus Mean", "Value": "520.000000"},
+                    ],
                 }
             },
             "errors": {},
         }
+
+        expected_result = PostResponse[ConsensusTargetPriceResp](
+            results={
+                str(company_id): ConsensusTargetPriceResp(
+                    currency="USD",
+                    effective_date="2025-06-01",
+                    estimates=[
+                        ConsensusTargetPriceItem(
+                            name="Target Price Consensus Mean", value="520.000000"
+                        ),
+                    ],
+                )
+            },
+            errors={},
+        )
+
         result = self.kfinance_api_client.fetch_consensus_target_price(
             company_id=company_id,
         )
         self.kfinance_api_client.fetch.assert_called_with(expected_url)
-        assert result.results[str(company_id)].currency == "USD"
-        assert result.results[str(company_id)].estimates == []
+        assert result == expected_result
 
     def test_fetch_analyst_recommendations(self) -> None:
         company_id = 21719
@@ -452,16 +476,33 @@ class TestFetchItem(TestCase):
             "results": {
                 str(company_id): {
                     "effective_date": "2025-06-01",
-                    "estimates": [],
+                    "estimates": [
+                        {"Line Item": "# of Analyst Recommendations - Buy", "Value": "12"},
+                    ],
                 }
             },
             "errors": {},
         }
+
+        expected_result = PostResponse[AnalystRecommendationsResp](
+            results={
+                str(company_id): AnalystRecommendationsResp(
+                    effective_date="2025-06-01",
+                    estimates=[
+                        AnalystRecommendationsItem(
+                            name="# of Analyst Recommendations - Buy", value="12"
+                        ),
+                    ],
+                )
+            },
+            errors={},
+        )
+
         result = self.kfinance_api_client.fetch_analyst_recommendations(
             company_id=company_id,
         )
         self.kfinance_api_client.fetch.assert_called_with(expected_url)
-        assert result.results[str(company_id)].estimates == []
+        assert result == expected_result
 
 
 class TestMarketCap:
