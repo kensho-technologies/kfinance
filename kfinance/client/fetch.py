@@ -882,15 +882,17 @@ class KFinanceApiClient:
     def fetch_consensus_target_price(
         self,
         company_id: int,
-    ) -> ConsensusTargetPriceResp:
+    ) -> PostResponse[ConsensusTargetPriceResp]:
         """Get consensus target price estimates"""
         url = f"{self.url_base}estimates/consensus_target_price/{company_id}"
-        return ConsensusTargetPriceResp.model_validate(self.fetch(url))
+        response_data = self.fetch(url)
+        return PostResponse[ConsensusTargetPriceResp].model_validate(response_data)
 
     def fetch_analyst_recommendations(
         self,
         company_id: int,
-    ) -> AnalystRecommendationsResp:
+    ) -> PostResponse[AnalystRecommendationsResp]:
         """Get analyst recommendations"""
         url = f"{self.url_base}estimates/analyst_recommendations/{company_id}"
-        return AnalystRecommendationsResp.model_validate(self.fetch(url))
+        response_data = self.fetch(url)
+        return PostResponse[AnalystRecommendationsResp].model_validate(response_data)
