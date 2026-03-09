@@ -642,8 +642,8 @@ class CompanyFunctionsMetaClass:
 
         data = {estimate.name: estimate.value for estimate in result.estimates}
         df = pd.DataFrame([data])
-        df.insert(0, "currency", result.currency)
-        df.insert(1, "effective_date", result.effective_date)
+        df.insert(0, "effective_date", result.effective_date)
+        df.insert(1, "currency", result.currency)
         return df
 
     def analyst_recommendations(
