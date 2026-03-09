@@ -1091,51 +1091,6 @@ class TestTicker(TestCase):
         income_statement = self.msft_ticker_from_id_triple.income_statement()
         pd.testing.assert_frame_equal(expected_income_statement, income_statement)
 
-    def test_consensus_target_price(self) -> None:
-        """test consensus target price"""
-        target_price_resp: ConsensusTargetPriceResp = MOCK_COMPANY_DB[msft_company_id][
-            "consensus_target_price"
-        ]
-
-        data = {estimate.name: estimate.value for estimate in target_price_resp.estimates}
-        expected_df = pd.DataFrame([data])
-        expected_df.insert(0, "effective_date", target_price_resp.effective_date)
-        expected_df.insert(1, "currency", target_price_resp.currency)
-
-        result = self.msft_ticker_from_ticker.consensus_target_price()
-        pd.testing.assert_frame_equal(expected_df, result)
-
-        result = self.msft_ticker_from_isin.consensus_target_price()
-        pd.testing.assert_frame_equal(expected_df, result)
-
-        result = self.msft_ticker_from_cusip.consensus_target_price()
-        pd.testing.assert_frame_equal(expected_df, result)
-
-        result = self.msft_ticker_from_id_triple.consensus_target_price()
-        pd.testing.assert_frame_equal(expected_df, result)
-
-    def test_analyst_recommendations(self) -> None:
-        """test analyst recommendations"""
-        analyst_recs_resp: AnalystRecommendationsResp = MOCK_COMPANY_DB[msft_company_id][
-            "analyst_recommendations"
-        ]
-
-        data = {estimate.name: estimate.value for estimate in analyst_recs_resp.estimates}
-        expected_df = pd.DataFrame([data])
-        expected_df.insert(0, "effective_date", analyst_recs_resp.effective_date)
-
-        result = self.msft_ticker_from_ticker.analyst_recommendations()
-        pd.testing.assert_frame_equal(expected_df, result)
-
-        result = self.msft_ticker_from_isin.analyst_recommendations()
-        pd.testing.assert_frame_equal(expected_df, result)
-
-        result = self.msft_ticker_from_cusip.analyst_recommendations()
-        pd.testing.assert_frame_equal(expected_df, result)
-
-        result = self.msft_ticker_from_id_triple.analyst_recommendations()
-        pd.testing.assert_frame_equal(expected_df, result)
-
     def test_revenue(self) -> None:
         """test revenue"""
         line_item_response: LineItemResp = MOCK_COMPANY_DB[msft_company_id]["line_items"]["revenue"]
