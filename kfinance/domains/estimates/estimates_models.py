@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel
 
 from kfinance.client.models.date_and_period_models import EstimatePeriodType, EstimateType
 
@@ -24,29 +24,21 @@ class EstimatesResp(BaseModel):
 
 
 class ConsensusTargetPriceItem(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    name: str = Field(alias="Line Item")
-    value: Decimal | None = Field(alias="Value")
+    name: str
+    value: Decimal | None
 
 
 class ConsensusTargetPriceResp(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
     currency: str | None
     effective_date: date
     estimates: list[ConsensusTargetPriceItem]
 
 
 class AnalystRecommendationsItem(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    name: str = Field(alias="Line Item")
-    value: Decimal | None = Field(alias="Value")
+    name: str
+    value: Decimal | None
 
 
 class AnalystRecommendationsResp(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
     effective_date: date | None
     estimates: list[AnalystRecommendationsItem]

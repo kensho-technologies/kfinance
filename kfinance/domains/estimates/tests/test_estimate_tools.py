@@ -93,10 +93,10 @@ class TestGetEstimateFromIdentifier:
             "currency": "USD",
             "effective_date": "2025-06-01",
             "estimates": [
-                {"Line Item": "Target Price Consensus High", "Value": "600.000000"},
-                {"Line Item": "Target Price Consensus Low", "Value": "400.000000"},
-                {"Line Item": "Target Price Consensus Mean", "Value": "520.000000"},
-                {"Line Item": "Target Price Consensus Median", "Value": "525.000000"},
+                {"name": "Target Price Consensus High", "value": "600.000000"},
+                {"name": "Target Price Consensus Low", "value": "400.000000"},
+                {"name": "Target Price Consensus Mean", "value": "520.000000"},
+                {"name": "Target Price Consensus Median", "value": "525.000000"},
             ],
         }
 
@@ -141,9 +141,9 @@ class TestGetEstimateFromIdentifier:
         analyst_recommendations_response = {
             "effective_date": "2025-06-01",
             "estimates": [
-                {"Line Item": "# of Analyst Recommendations - Buy", "Value": "12"},
-                {"Line Item": "# of Analyst Recommendations - Hold", "Value": "5"},
-                {"Line Item": "# of Analyst Recommendations - Sell", "Value": "1"},
+                {"name": "# of Analyst Recommendations - Buy", "value": "12"},
+                {"name": "# of Analyst Recommendations - Hold", "value": "5"},
+                {"name": "# of Analyst Recommendations - Sell", "value": "1"},
             ],
         }
 

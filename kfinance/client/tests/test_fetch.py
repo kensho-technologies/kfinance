@@ -438,7 +438,7 @@ class TestFetchItem(TestCase):
                     "currency": "USD",
                     "effective_date": "2025-06-01",
                     "estimates": [
-                        {"Line Item": "Target Price Consensus Mean", "Value": "520.000000"},
+                        {"name": "Target Price Consensus Mean", "value": "520.000000"},
                     ],
                 }
             },
@@ -477,7 +477,7 @@ class TestFetchItem(TestCase):
                 str(company_id): {
                     "effective_date": "2025-06-01",
                     "estimates": [
-                        {"Line Item": "# of Analyst Recommendations - Buy", "Value": "12"},
+                        {"name": "# of Analyst Recommendations - Buy", "value": "12"},
                     ],
                 }
             },
