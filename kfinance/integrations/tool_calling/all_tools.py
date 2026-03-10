@@ -20,9 +20,7 @@ from kfinance.domains.earnings.earning_tools import (
     GetTranscriptFromKeyDevId,
 )
 from kfinance.domains.estimates.estimates_tools import (
-    GetAnalystRecommendationsFromIdentifiers,
     GetConsensusEstimatesFromIdentifiers,
-    GetConsensusTargetPriceFromIdentifiers,
     GetGuidanceFromIdentifiers,
 )
 from kfinance.domains.line_items.line_item_tools import GetFinancialLineItemFromIdentifiers
@@ -91,6 +89,4 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     # Estimates
     GetConsensusEstimatesFromIdentifiers,
     GetGuidanceFromIdentifiers,
-    GetAnalystRecommendationsFromIdentifiers,
-    GetConsensusTargetPriceFromIdentifiers,
 ]
