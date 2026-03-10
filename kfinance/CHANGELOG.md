@@ -1,7 +1,7 @@
 # Changelog
 
 ## v4.1.5
-- Add target price and analyst recommendation models
+- Add target price and analyst recommendation tools
 
 ## v4.1.4
 - Add estimates tools
