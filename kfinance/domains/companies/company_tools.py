@@ -1,14 +1,16 @@
 from textwrap import dedent
-from typing import Type
+from typing import Literal, Type, overload
 
+import httpx
 from pydantic import BaseModel
 
-from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
+from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
+from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
 from kfinance.domains.companies.company_models import (
-    COMPANY_ID_PREFIX,
     CompanyDescriptions,
     CompanyOtherNames,
+    prefix_company_id,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -38,51 +40,11 @@ class GetInfoFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = None
 
-    def _run(self, identifiers: list[str]) -> GetInfoFromIdentifiersResp:
-        """Sample response:
-
-        {   "results": {
-                "SPGI": {
-                    "name": "S&P Global Inc.",
-                    "status": "Operating",
-                    "type": "Public Company",
-                    "simple_industry": "Capital Markets",
-                    "number_of_employees": "42350.0000",
-                    "founding_date": "1860-01-01",
-                    "webpage": "www.spglobal.com",
-                    "address": "55 Water Street",
-                    "city": "New York",
-                    "zip_code": "10041-0001",
-                    "state": "New York",
-                    "country": "United States",
-                    "iso_country": "USA",
-                    "company_id": "C_21719"
-                }
-            },
-            "errors": [['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
-        }
-        """
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-
-        tasks = [
-            Task(
-                func=api_client.fetch_info,
-                kwargs=dict(company_id=id_triple.company_id),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-
-        info_responses: dict[str, dict] = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
-        )
-
-        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items():
-            info_responses[identifier]["company_id"] = f"{COMPANY_ID_PREFIX}{id_triple.company_id}"
-
-        return GetInfoFromIdentifiersResp(
-            results=info_responses, errors=list(id_triple_resp.errors.values())
+    async def _arun(self, identifiers: list[str]) -> GetInfoFromIdentifiersResp:
+        """"""
+        return await get_info_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
         )
 
 
@@ -107,25 +69,14 @@ class GetCompanyOtherNamesFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
 
-    def _run(
+    async def _arun(
         self,
         identifiers: list[str],
     ) -> GetCompanyOtherNamesFromIdentifiersResp:
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-        tasks = [
-            Task(
-                func=api_client.fetch_company_other_names,
-                kwargs=dict(company_id=id_triple.company_id),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-        info_responses: dict[str, CompanyOtherNames] = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
-        )
-        return GetCompanyOtherNamesFromIdentifiersResp(
-            results=info_responses, errors=list(id_triple_resp.errors.values())
+        """"""
+        return await get_company_other_names_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
         )
 
 
@@ -150,33 +101,15 @@ class GetCompanySummaryFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
 
-    def _run(
+    async def _arun(
         self,
         identifiers: list[str],
     ) -> GetCompanySummaryFromIdentifiersResp:
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-
-        tasks = [
-            Task(
-                func=api_client.fetch_company_descriptions,
-                kwargs=dict(company_id=id_triple.company_id),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-        company_description_responses: dict[str, CompanyDescriptions] = (
-            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
-        )
-
-        # Extract only the summary field
-        summary_results = {
-            identifier: descriptions.summary
-            for identifier, descriptions in company_description_responses.items()
-        }
-
-        return GetCompanySummaryFromIdentifiersResp(
-            results=summary_results, errors=list(id_triple_resp.errors.values())
+        """"""
+        return await get_company_summary_or_description_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
+            summary_or_description="summary",
         )
 
 
@@ -201,31 +134,200 @@ class GetCompanyDescriptionFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
 
-    def _run(
+    async def _arun(
         self,
         identifiers: list[str],
     ) -> GetCompanyDescriptionFromIdentifiersResp:
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-
-        tasks = [
-            Task(
-                func=api_client.fetch_company_descriptions,
-                kwargs=dict(company_id=id_triple.company_id),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-        company_description_responses: dict[str, CompanyDescriptions] = (
-            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
+        """"""
+        return await get_company_summary_or_description_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
+            summary_or_description="description",
         )
 
-        # Extract only the description field
-        description_results = {
-            identifier: descriptions.description
-            for identifier, descriptions in company_description_responses.items()
+
+async def get_info_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+) -> GetInfoFromIdentifiersResp:
+    """Fetch company info from identifiers
+
+    Sample response:
+
+        {   "results": {
+                "SPGI": {
+                    "name": "S&P Global Inc.",
+                    "status": "Operating",
+                    "type": "Public Company",
+                    "simple_industry": "Capital Markets",
+                    "number_of_employees": "42350.0000",
+                    "founding_date": "1860-01-01",
+                    "webpage": "www.spglobal.com",
+                    "address": "55 Water Street",
+                    "city": "New York",
+                    "zip_code": "10041-0001",
+                    "state": "New York",
+                    "country": "United States",
+                    "iso_country": "USA",
+                    "company_id": "C_21719"
+                }
+            },
+            "errors": [['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
         }
+    """
 
-        return GetCompanyDescriptionFromIdentifiersResp(
-            results=description_results, errors=list(id_triple_resp.errors.values())
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_info_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
         )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, dict[str, str]] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items():
+        results[identifier]["company_id"] = prefix_company_id(id_triple.company_id)
+
+    resp_model = GetInfoFromIdentifiersResp(results=results, errors=errors)
+    return resp_model
+
+
+async def fetch_info_from_company_id(
+    company_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> dict[str, str]:
+    """Fetch and return company info for one company_id."""
+    url = f"/info/{company_id}"
+    resp = await httpx_client.get(url=url)
+    return resp.json()
+
+
+async def get_company_other_names_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+) -> GetCompanyOtherNamesFromIdentifiersResp:
+    """Fetch native, historical, and alternative names for all identifiers."""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_company_other_names_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
+        )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, CompanyOtherNames] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    return GetCompanyOtherNamesFromIdentifiersResp(results=results, errors=errors)
+
+
+async def fetch_company_other_names_from_company_id(
+    company_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> CompanyOtherNames:
+    """Fetch and return other names for one company_id."""
+    url = f"/info/{company_id}/names"
+    resp = await httpx_client.get(url=url)
+    return CompanyOtherNames.model_validate(resp.json())
+
+
+@overload
+async def get_company_summary_or_description_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+    summary_or_description: Literal["summary"],
+) -> GetCompanySummaryFromIdentifiersResp: ...
+
+
+@overload
+async def get_company_summary_or_description_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+    summary_or_description: Literal["description"],
+) -> GetCompanyDescriptionFromIdentifiersResp: ...
+
+
+async def get_company_summary_or_description_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+    summary_or_description: Literal["summary", "description"],
+) -> GetCompanySummaryFromIdentifiersResp | GetCompanyDescriptionFromIdentifiersResp:
+    """Return either the short company summary or the long company description for each identifier"""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_company_summary_and_description_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
+        )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, str] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            if summary_or_description == "summary":
+                result = task.result.summary
+            else:
+                result = task.result.description
+            results[task.result_key] = result
+
+    if summary_or_description == "summary":
+        return GetCompanySummaryFromIdentifiersResp(results=results, errors=errors)
+    else:
+        return GetCompanyDescriptionFromIdentifiersResp(results=results, errors=errors)
+
+
+async def fetch_company_summary_and_description_from_company_id(
+    company_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> CompanyDescriptions:
+    """Fetch the short company summary and long description for a company id."""
+    url = f"/info/{company_id}/descriptions"
+    resp = await httpx_client.get(url=url)
+    return CompanyDescriptions.model_validate(resp.json())

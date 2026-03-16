@@ -1,16 +1,22 @@
-from requests_mock import Mocker
+import httpx
+import pytest
+from pytest_httpx import HTTPXMock
 
-from kfinance.client.kfinance import Client
+from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
-from kfinance.domains.segments.segment_models import SegmentType
+from kfinance.domains.line_items.response_notes import (
+    FISCAL_PERIOD_WARNING,
+    FISCAL_YEAR_TERMINOLOGY_WARNING,
+)
+from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.domains.segments.segment_tools import (
-    GetSegmentsFromIdentifiers,
-    GetSegmentsFromIdentifiersArgs,
     GetSegmentsFromIdentifiersResp,
+    fetch_segments_from_company_ids,
+    get_segments_from_identifiers,
 )
 
 
-class TestGetSegmentsFromIdentifier:
+class TestSegments:
     segments_response = {
         "currency": "USD",
         "periods": {
@@ -49,101 +55,88 @@ class TestGetSegmentsFromIdentifier:
         },
     }
 
-    def test_get_segments_from_identifier(self, mock_client: Client, requests_mock: Mocker):
-        """
-        GIVEN the GetSegmentsFromIdentifier tool
-        WHEN we request the business segment for SPGI and an non-existent company
-        THEN we get back the SPGI business segment and an error for the non-existent company.
-        """
-
-        # Mock the unified_fetch_id_triples response
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/ids",
-            json={
-                "identifiers_to_id_triples": {
-                    "SPGI": {
-                        "company_id": 21719,
-                        "security_id": 2629107,
-                        "trading_item_id": 2629108,
-                    }
-                },
-                "errors": {
-                    "NON-EXISTENT": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                },
-            },
-        )
-
-        # Mock the fetch_segments response
-        requests_mock.post(
+    @pytest.fixture
+    def add_spgi_segments_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+        """Add mock response for SPGI segments."""
+        httpx_mock.add_response(
+            method="POST",
             url="https://kfinance.kensho.com/api/v1/segments/",
-            json={"results": {"21719": self.segments_response}, "errors": {}},
+            json={
+                "results": {str(SPGI_ID_TRIPLE.company_id): self.segments_response},
+                "errors": {},
+            },
+            is_optional=True,
         )
 
-        expected_response = GetSegmentsFromIdentifiersResp.model_validate(
-            {
-                "results": {"SPGI": self.segments_response},
-                "errors": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                ],
-            }
-        )
-
-        tool = GetSegmentsFromIdentifiers(kfinance_client=mock_client)
-        args = GetSegmentsFromIdentifiersArgs(
-            identifiers=["SPGI", "NON-EXISTENT"], segment_type=SegmentType.business
-        )
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
-
-    def test_most_recent_request(self, requests_mock: Mocker, mock_client: Client) -> None:
+    @pytest.mark.asyncio
+    async def test_fetch_segments_from_company_ids(
+        self,
+        httpx_client: httpx.AsyncClient,
+        add_spgi_segments_mock_resp: None,
+    ) -> None:
         """
-        GIVEN the GetFinancialLineItemFromIdentifiers tool
-        WHEN we request most recent segment for multiple companies
+        WHEN we request SPGI's segments (using SPGI's company id)
+        THEN we get back SPGI's segments
+        """
+
+        resp = await fetch_segments_from_company_ids(
+            company_ids=[SPGI_ID_TRIPLE.company_id],
+            segment_type=SegmentType.business,
+            httpx_client=httpx_client,
+        )
+
+        expected_resp_data = {
+            "results": {str(SPGI_ID_TRIPLE.company_id): self.segments_response},
+            "errors": {},
+        }
+        # Import here to avoid circular imports
+        from kfinance.domains.segments.segment_models import SegmentsBatchResp
+
+        expected_resp = SegmentsBatchResp.model_validate(expected_resp_data)
+
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_get_segments_from_identifiers(
+        self,
+        httpx_client: httpx.AsyncClient,
+        add_spgi_segments_mock_resp: None,
+    ) -> None:
+        """
+        WHEN we request segments for SPGI and a non-existent company
+        THEN we get back segments for SPGI and an error for the non-existent company
+        """
+
+        expected_resp = GetSegmentsFromIdentifiersResp(
+            results={"SPGI": SegmentsResp.model_validate(self.segments_response)},
+            errors=[
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+        )
+
+        resp = await get_segments_from_identifiers(
+            identifiers=["SPGI", "non-existent"],
+            segment_type=SegmentType.business,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_most_recent_request(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN we request most recent segments for multiple companies
         THEN we only get back the most recent segment for each company
         """
 
         company_ids = [1, 2]
-        expected_response = GetSegmentsFromIdentifiersResp.model_validate(
-            {
-                "results": {
-                    "C_1": {
-                        "currency": "USD",
-                        "periods": {
-                            "CY2021": {
-                                "period_end_date": "2021-12-31",
-                                "num_months": 12,
-                                "segments": self.segments_response["periods"]["CY2021"]["segments"],
-                            }
-                        },
-                    },
-                    "C_2": {
-                        "currency": "USD",
-                        "periods": {
-                            "CY2021": {
-                                "period_end_date": "2021-12-31",
-                                "num_months": 12,
-                                "segments": self.segments_response["periods"]["CY2021"]["segments"],
-                            }
-                        },
-                    },
-                }
-            }
-        )
 
-        # Mock the unified_fetch_id_triples response
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/ids",
-            json={
-                "identifiers_to_id_triples": {
-                    "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
-                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202},
-                },
-                "errors": {},
-            },
-        )
-
-        # Mock the fetch_segments response
-        requests_mock.post(
+        # Mock the segments response for both companies
+        httpx_mock.add_response(
+            method="POST",
             url="https://kfinance.kensho.com/api/v1/segments/",
             json={
                 "results": {"1": self.segments_response, "2": self.segments_response},
@@ -151,66 +144,31 @@ class TestGetSegmentsFromIdentifier:
             },
         )
 
-        tool = GetSegmentsFromIdentifiers(kfinance_client=mock_client)
-        args = GetSegmentsFromIdentifiersArgs(
-            identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
-            segment_type=SegmentType.business,
-        )
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
-
-    def test_empty_most_recent_request(self, requests_mock: Mocker, mock_client: Client) -> None:
-        """
-        GIVEN the GetFinancialLineItemFromIdentifiers tool
-        WHEN we request most recent segment for multiple companies
-        THEN we only get back the most recent segment for each company
-        UNLESS no segments exist
-        """
-
-        company_ids = [1, 2]
-        expected_response = GetSegmentsFromIdentifiersResp.model_validate(
+        expected_single_company_response = SegmentsResp.model_validate(
             {
-                "results": {
-                    "C_1": {"currency": "USD", "periods": {}},
-                    "C_2": {
-                        "currency": "USD",
-                        "periods": {
-                            "CY2021": {
-                                "period_end_date": "2021-12-31",
-                                "num_months": 12,
-                                "segments": self.segments_response["periods"]["CY2021"]["segments"],
-                            }
-                        },
-                    },
-                }
+                "currency": "USD",
+                "periods": {
+                    "CY2021": {
+                        "period_end_date": "2021-12-31",
+                        "num_months": 12,
+                        "segments": self.segments_response["periods"]["CY2021"]["segments"],
+                    }
+                },
             }
         )
 
-        # Mock the unified_fetch_id_triples response
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/ids",
-            json={
-                "identifiers_to_id_triples": {
-                    "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
-                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202},
-                },
-                "errors": {},
+        expected_response = GetSegmentsFromIdentifiersResp(
+            results={
+                "C_1": expected_single_company_response,
+                "C_2": expected_single_company_response,
             },
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
 
-        # Mock the fetch_segments response with different data for different companies
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/segments/",
-            json={
-                "results": {"1": {"currency": "USD", "periods": {}}, "2": self.segments_response},
-                "errors": {},
-            },
-        )
-
-        tool = GetSegmentsFromIdentifiers(kfinance_client=mock_client)
-        args = GetSegmentsFromIdentifiersArgs(
+        resp = await get_segments_from_identifiers(
             identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
             segment_type=SegmentType.business,
+            httpx_client=httpx_client,
         )
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
+
+        assert resp == expected_response

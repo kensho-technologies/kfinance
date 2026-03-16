@@ -1,10 +1,11 @@
 from textwrap import dedent
 from typing import Type
 
+import httpx
 from pydantic import BaseModel, Field
 
-from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
-from kfinance.client.kfinance import Company, ParticipantInMerger
+from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
+from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     AdvisorResp,
@@ -43,56 +44,11 @@ class GetMergersFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    def _run(self, identifiers: list[str]) -> GetMergersFromIdentifiersResp:
-        """Sample Response:
-
-        {
-            'results': {
-                'SPGI': {
-                    'target': [
-                        {
-                            'transaction_id': 10998717,
-                            'merger_title': 'Closed M/A of Microsoft Corporation',
-                            'closed_date': '2021-01-01'
-                        }
-                    ],
-                    'buyer': [
-                        {
-                           'transaction_id': 517414,
-                           'merger_title': 'Closed M/A of MongoMusic, Inc.',
-                           'closed_date': '2023-01-01'
-                        },
-                    'seller': [
-                        {
-                            'transaction_id': 455551,
-                            'merger_title': 'Closed M/A of VacationSpot.com, Inc.',
-                            'closed_date': '2024-01-01'
-                        },
-                    ]
-                }
-            },
-            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
-        }
-
-        """
-
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-
-        tasks = [
-            Task(
-                func=api_client.fetch_mergers_for_company,
-                kwargs=dict(company_id=id_triple.company_id),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-
-        merger_responses: dict[str, MergersResp] = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
-        )
-        return GetMergersFromIdentifiersResp(
-            results=merger_responses, errors=list(id_triple_resp.errors.values())
+    async def _arun(self, identifiers: list[str]) -> GetMergersFromIdentifiersResp:
+        """"""
+        return await get_mergers_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
         )
 
 
@@ -123,9 +79,11 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
     args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIdArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    def _run(self, transaction_id: int) -> MergerInfo:
-        return self.kfinance_client.kfinance_api_client.fetch_merger_info(
-            transaction_id=transaction_id
+    async def _arun(self, transaction_id: int) -> MergerInfo:
+        """"""
+        return await get_merger_info_from_transaction_id(
+            transaction_id=transaction_id,
+            httpx_client=self.kfinance_client.httpx_client,
         )
 
 
@@ -154,41 +112,109 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
     args_schema: Type[BaseModel] = GetAdvisorsForCompanyInTransactionFromIdentifierArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    def _run(
+    async def _arun(
         self, identifier: str, transaction_id: int
     ) -> GetAdvisorsForCompanyInTransactionFromIdentifierResp:
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=[identifier])
-        # If the identifier cannot be resolved, return the associated error.
-        if id_triple_resp.errors:
-            return GetAdvisorsForCompanyInTransactionFromIdentifierResp(
-                results=[], errors=list(id_triple_resp.errors.values())
+        """"""
+        return await get_advisors_for_company_in_transaction_from_identifier(
+            identifier=identifier,
+            transaction_id=transaction_id,
+            httpx_client=self.kfinance_client.httpx_client,
+        )
+
+
+async def get_mergers_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+) -> GetMergersFromIdentifiersResp:
+    """Fetch mergers for all identifiers."""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_mergers_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
+        )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, MergersResp] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    return GetMergersFromIdentifiersResp(results=results, errors=errors)
+
+
+async def fetch_mergers_from_company_id(
+    company_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> MergersResp:
+    """Fetch mergers for one company_id."""
+    url = f"/mergers/{company_id}"
+    resp = await httpx_client.get(url=url)
+    return MergersResp.model_validate(resp.json())
+
+
+async def get_merger_info_from_transaction_id(
+    transaction_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> MergerInfo:
+    """Fetch detailed merger info for a transaction ID."""
+    url = f"/merger/info/{transaction_id}"
+    resp = await httpx_client.get(url=url)
+    return MergerInfo.model_validate(resp.json())
+
+
+async def get_advisors_for_company_in_transaction_from_identifier(
+    identifier: str,
+    transaction_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> GetAdvisorsForCompanyInTransactionFromIdentifierResp:
+    """Fetch advisors for a company in a specific transaction."""
+
+    # First resolve the identifier to company ID
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=[identifier], httpx_client=httpx_client
+    )
+
+    # If the identifier cannot be resolved, return the associated error
+    if id_triple_resp.errors:
+        return GetAdvisorsForCompanyInTransactionFromIdentifierResp(
+            results=[], errors=list(id_triple_resp.errors.values())
+        )
+
+    id_triple = id_triple_resp.identifiers_to_id_triples[identifier]
+    company_id = id_triple.company_id
+
+    # Fetch advisors for this company in the transaction
+    url = f"/merger/info/{transaction_id}/advisors/{company_id}"
+    resp = await httpx_client.get(url=url)
+    response_data = resp.json()
+
+    advisors_response: list[AdvisorResp] = []
+    if "advisors" in response_data and response_data["advisors"]:
+        for advisor in response_data["advisors"]:
+            advisors_response.append(
+                AdvisorResp(
+                    advisor_company_id=advisor["advisor_company_id"],
+                    advisor_company_name=advisor["advisor_company_name"],
+                    advisor_type_name=advisor["advisor_type_name"],
+                )
             )
 
-        id_triple = id_triple_resp.identifiers_to_id_triples[identifier]
-
-        participant_in_merger = ParticipantInMerger(
-            kfinance_api_client=api_client,
-            transaction_id=transaction_id,
-            company=Company(
-                kfinance_api_client=api_client,
-                company_id=id_triple.company_id,
-            ),
-        )
-
-        advisors = participant_in_merger.advisors
-
-        advisors_response: list[AdvisorResp] = []
-        if advisors:
-            for advisor in advisors:
-                advisors_response.append(
-                    AdvisorResp(
-                        advisor_company_id=advisor.company.company_id,
-                        advisor_company_name=advisor.company.name,
-                        advisor_type_name=advisor.advisor_type_name,
-                    )
-                )
-
-        return GetAdvisorsForCompanyInTransactionFromIdentifierResp(
-            results=advisors_response, errors=list(id_triple_resp.errors.values())
-        )
+    return GetAdvisorsForCompanyInTransactionFromIdentifierResp(
+        results=advisors_response, errors=[]
+    )

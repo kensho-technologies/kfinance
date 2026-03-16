@@ -1,7 +1,10 @@
 from textwrap import dedent
 from typing import Type
 
-from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
+import httpx
+
+from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
+from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.integrations.tool_calling.tool_calling_models import (
@@ -38,39 +41,78 @@ class GetCompetitorsFromIdentifiers(KfinanceTool):
     args_schema: Type[GetCompetitorsFromIdentifiersArgs] = GetCompetitorsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.CompetitorsPermission}
 
-    def _run(
+    async def _arun(
         self,
         identifiers: list[str],
         competitor_source: CompetitorSource,
     ) -> GetCompetitorsFromIdentifiersResp:
-        """Sample response:
-
-        {
-            "results": {
-                "SPGI": {
-                    {'company_id': "C_35352", 'company_name': 'The Descartes Systems Group Inc.'},
-                    {'company_id': "C_4003514", 'company_name': 'London Stock Exchange Group plc'}
-                }
-            },
-            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
-        }
-        """
-
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-
-        tasks = [
-            Task(
-                func=api_client.fetch_competitors,
-                kwargs=dict(company_id=id_triple.company_id, competitor_source=competitor_source),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-
-        competitor_responses: dict[str, CompetitorResponse] = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
+        """"""
+        return await get_competitors_from_identifiers(
+            identifiers=identifiers,
+            competitor_source=competitor_source,
+            httpx_client=self.kfinance_client.httpx_client,
         )
-        return GetCompetitorsFromIdentifiersResp(
-            results=competitor_responses, errors=list(id_triple_resp.errors.values())
+
+
+async def get_competitors_from_identifiers(
+    identifiers: list[str],
+    competitor_source: CompetitorSource,
+    httpx_client: httpx.AsyncClient,
+) -> GetCompetitorsFromIdentifiersResp:
+    """Fetch competitors for all identifiers.
+
+    Sample response:
+
+    {
+        "results": {
+            "SPGI": {
+                {'company_id': "C_35352", 'company_name': 'The Descartes Systems Group Inc.'},
+                {'company_id': "C_4003514", 'company_name': 'London Stock Exchange Group plc'}
+            }
+        },
+        'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
+    }
+    """
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_competitors_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                competitor_source=competitor_source,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
         )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, CompetitorResponse] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    resp_model = GetCompetitorsFromIdentifiersResp(results=results, errors=errors)
+    return resp_model
+
+
+async def fetch_competitors_from_company_id(
+    company_id: int,
+    competitor_source: CompetitorSource,
+    httpx_client: httpx.AsyncClient,
+) -> CompetitorResponse:
+    """Fetch and return competitors for one identifier."""
+    url = f"/competitors/{company_id}"
+    if competitor_source is not CompetitorSource.all:
+        url = url + f"/{competitor_source}"
+    resp = await httpx_client.get(url=url)
+    return CompetitorResponse.model_validate(resp.json())

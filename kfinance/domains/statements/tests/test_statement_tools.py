@@ -1,16 +1,22 @@
-from requests_mock import Mocker
+import httpx
+import pytest
+from pytest_httpx import HTTPXMock
 
-from kfinance.client.kfinance import Client
+from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
-from kfinance.domains.statements.statement_models import StatementType
+from kfinance.domains.line_items.response_notes import (
+    FISCAL_PERIOD_WARNING,
+    FISCAL_YEAR_TERMINOLOGY_WARNING,
+)
+from kfinance.domains.statements.statement_models import StatementsResp, StatementType
 from kfinance.domains.statements.statement_tools import (
-    GetFinancialStatementFromIdentifiers,
-    GetFinancialStatementFromIdentifiersArgs,
     GetFinancialStatementFromIdentifiersResp,
+    fetch_statements_from_company_ids,
+    get_financial_statement_from_identifiers,
 )
 
 
-class TestGetFinancialStatementFromIdentifiers:
+class TestStatements:
     statement_resp = {
         "currency": "USD",
         "periods": {
@@ -43,262 +49,114 @@ class TestGetFinancialStatementFromIdentifiers:
         },
     }
 
-    def test_get_financial_statement_from_identifiers(
-        self, mock_client: Client, requests_mock: Mocker
-    ):
-        """
-        GIVEN the GetFinancialLineItemFromIdentifiers tool
-        WHEN we request the income statement for SPGI and a non-existent company
-        THEN we get back the SPGI income statement and an error for the non-existent company.
-        """
-
-        # Mock the unified_fetch_id_triples response
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/ids",
-            json={
-                "identifiers_to_id_triples": {
-                    "SPGI": {
-                        "company_id": 21719,
-                        "security_id": 2629107,
-                        "trading_item_id": 2629108,
-                    }
-                },
-                "errors": {
-                    "NON-EXISTENT": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                },
-            },
-        )
-
-        # Mock the fetch_statement response
-        requests_mock.post(
+    @pytest.fixture
+    def add_spgi_statements_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+        """Add mock response for SPGI statements."""
+        httpx_mock.add_response(
+            method="POST",
             url="https://kfinance.kensho.com/api/v1/statements/",
-            json={"results": {"21719": self.statement_resp}, "errors": {}},
-        )
-        expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
-            {
-                "results": {
-                    "SPGI": {
-                        "currency": "USD",
-                        "periods": {
-                            "CY2020": {
-                                "period_end_date": "2020-12-31",
-                                "num_months": 12,
-                                "statements": [
-                                    {
-                                        "name": "Income Statement",
-                                        "line_items": [
-                                            {
-                                                "name": "Revenues",
-                                                "value": "7442000000.000000",
-                                                "sources": [],
-                                            },
-                                            {
-                                                "name": "Total Revenues",
-                                                "value": "7442000000.000000",
-                                                "sources": [],
-                                            },
-                                        ],
-                                    }
-                                ],
-                            },
-                            "CY2021": {
-                                "period_end_date": "2021-12-31",
-                                "num_months": 12,
-                                "statements": [
-                                    {
-                                        "name": "Income Statement",
-                                        "line_items": [
-                                            {
-                                                "name": "Revenues",
-                                                "value": "8243000000.000000",
-                                                "sources": [],
-                                            },
-                                            {
-                                                "name": "Total Revenues",
-                                                "value": "8243000000.000000",
-                                                "sources": [],
-                                            },
-                                        ],
-                                    }
-                                ],
-                            },
-                        },
-                    }
-                },
-                "errors": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                ],
-            }
+            json={"results": {str(SPGI_ID_TRIPLE.company_id): self.statement_resp}, "errors": {}},
+            is_optional=True,
         )
 
-        tool = GetFinancialStatementFromIdentifiers(kfinance_client=mock_client)
-        args = GetFinancialStatementFromIdentifiersArgs(
-            identifiers=["SPGI", "NON-EXISTENT"], statement=StatementType.income_statement
-        )
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
-
-    def test_most_recent_request(self, requests_mock: Mocker, mock_client: Client) -> None:
+    @pytest.mark.asyncio
+    async def test_fetch_statements_from_company_ids(
+        self,
+        httpx_client: httpx.AsyncClient,
+        add_spgi_statements_mock_resp: None,
+    ) -> None:
         """
-        GIVEN the GetFinancialStatementFromIdentifiers tool
-        WHEN we request most recent statement for multiple companies
+        WHEN we request SPGI's statements (using SPGI's company id)
+        THEN we get back SPGI's statements
+        """
+
+        resp = await fetch_statements_from_company_ids(
+            company_ids=[SPGI_ID_TRIPLE.company_id],
+            statement_type=StatementType.income_statement.value,
+            httpx_client=httpx_client,
+        )
+
+        expected_resp_data = {
+            "results": {str(SPGI_ID_TRIPLE.company_id): self.statement_resp},
+            "errors": {},
+        }
+        # Import here to avoid circular imports
+        from kfinance.domains.statements.statement_models import StatementsBatchResp
+
+        expected_resp = StatementsBatchResp.model_validate(expected_resp_data)
+
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_get_financial_statement_from_identifiers(
+        self,
+        httpx_client: httpx.AsyncClient,
+        add_spgi_statements_mock_resp: None,
+    ) -> None:
+        """
+        WHEN we request statements for SPGI and a non-existent company
+        THEN we get back statements for SPGI and an error for the non-existent company
+        """
+
+        expected_resp = GetFinancialStatementFromIdentifiersResp(
+            results={"SPGI": StatementsResp.model_validate(self.statement_resp)},
+            errors=[
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+        )
+
+        resp = await get_financial_statement_from_identifiers(
+            identifiers=["SPGI", "non-existent"],
+            statement=StatementType.income_statement,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_most_recent_request(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN we request most recent statements for multiple companies
         THEN we only get back the most recent statement for each company
         """
 
         company_ids = [1, 2]
-        expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
-            {
-                "results": {
-                    "C_1": {
-                        "currency": "USD",
-                        "periods": {
-                            "CY2021": {
-                                "period_end_date": "2021-12-31",
-                                "num_months": 12,
-                                "statements": [
-                                    {
-                                        "name": "Income Statement",
-                                        "line_items": [
-                                            {
-                                                "name": "Revenues",
-                                                "value": "8243000000.000000",
-                                                "sources": [],
-                                            },
-                                            {
-                                                "name": "Total Revenues",
-                                                "value": "8243000000.000000",
-                                                "sources": [],
-                                            },
-                                        ],
-                                    }
-                                ],
-                            }
-                        },
-                    },
-                    "C_2": {
-                        "currency": "USD",
-                        "periods": {
-                            "CY2021": {
-                                "period_end_date": "2021-12-31",
-                                "num_months": 12,
-                                "statements": [
-                                    {
-                                        "name": "Income Statement",
-                                        "line_items": [
-                                            {
-                                                "name": "Revenues",
-                                                "value": "8243000000.000000",
-                                                "sources": [],
-                                            },
-                                            {
-                                                "name": "Total Revenues",
-                                                "value": "8243000000.000000",
-                                                "sources": [],
-                                            },
-                                        ],
-                                    }
-                                ],
-                            }
-                        },
-                    },
-                }
-            }
-        )
 
-        # Mock the unified_fetch_id_triples response
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/ids",
-            json={
-                "identifiers_to_id_triples": {
-                    "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
-                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202},
-                },
-                "errors": {},
-            },
-        )
-
-        # Mock the fetch_statement response
-        requests_mock.post(
+        # Mock the statements response for both companies
+        httpx_mock.add_response(
+            method="POST",
             url="https://kfinance.kensho.com/api/v1/statements/",
             json={"results": {"1": self.statement_resp, "2": self.statement_resp}, "errors": {}},
         )
 
-        tool = GetFinancialStatementFromIdentifiers(kfinance_client=mock_client)
-        args = GetFinancialStatementFromIdentifiersArgs(
-            identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
-            statement=StatementType.income_statement,
-        )
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
-
-    def test_empty_most_recent_request(self, requests_mock: Mocker, mock_client: Client) -> None:
-        """
-        GIVEN the GetFinancialStatementFromIdentifiers tool
-        WHEN we request most recent statement for multiple companies
-        THEN we only get back the most recent statement for each company
-        UNLESS no statements exist
-        """
-
-        company_ids = [1, 2]
-        expected_response = GetFinancialStatementFromIdentifiersResp.model_validate(
+        expected_single_company_response = StatementsResp.model_validate(
             {
-                "results": {
-                    "C_1": {"currency": "USD", "periods": {}},
-                    "C_2": {
-                        "currency": "USD",
-                        "periods": {
-                            "CY2021": {
-                                "period_end_date": "2021-12-31",
-                                "num_months": 12,
-                                "statements": [
-                                    {
-                                        "name": "Income Statement",
-                                        "line_items": [
-                                            {
-                                                "name": "Revenues",
-                                                "value": "8243000000.000000",
-                                                "sources": [],
-                                            },
-                                            {
-                                                "name": "Total Revenues",
-                                                "value": "8243000000.000000",
-                                                "sources": [],
-                                            },
-                                        ],
-                                    }
-                                ],
-                            }
-                        },
-                    },
-                }
+                "currency": "USD",
+                "periods": {
+                    "CY2021": {
+                        "period_end_date": "2021-12-31",
+                        "num_months": 12,
+                        "statements": self.statement_resp["periods"]["CY2021"]["statements"],
+                    }
+                },
             }
         )
 
-        # Mock the unified_fetch_id_triples response
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/ids",
-            json={
-                "identifiers_to_id_triples": {
-                    "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
-                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202},
-                },
-                "errors": {},
+        expected_response = GetFinancialStatementFromIdentifiersResp(
+            results={
+                "C_1": expected_single_company_response,
+                "C_2": expected_single_company_response,
             },
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
 
-        # Mock the fetch_statement response with different data for different companies
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/statements/",
-            json={
-                "results": {"1": {"currency": "USD", "periods": {}}, "2": self.statement_resp},
-                "errors": {},
-            },
-        )
-
-        tool = GetFinancialStatementFromIdentifiers(kfinance_client=mock_client)
-        args = GetFinancialStatementFromIdentifiersArgs(
+        resp = await get_financial_statement_from_identifiers(
             identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
             statement=StatementType.income_statement,
+            httpx_client=httpx_client,
         )
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
+
+        assert resp == expected_response

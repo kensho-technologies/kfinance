@@ -2,9 +2,11 @@ from datetime import date
 from textwrap import dedent
 from typing import Literal, Type
 
+import httpx
 from pydantic import BaseModel, Field
 
-from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
+from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
+from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
     AdvisorsResp,
@@ -122,7 +124,7 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = GetRoundsofFundingFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    def _run(
+    async def _arun(
         self,
         identifiers: list[str],
         role: RoundsOfFundingRole,
@@ -131,58 +133,15 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
         limit: int | None = None,
         sort_order: Literal["asc", "desc"] = "desc",
     ) -> GetRoundsOfFundingFromIdentifiersResp:
-        """Sample Response:
-
-        {
-            'results': {
-                'SPGI': {
-                    "rounds_of_funding": [
-                        {
-                            "transaction_id": 334220,
-                            "funding_round_notes": "Kensho Technologies Inc. announced that it has received funding from new investor, Impresa Management LLC in 2013.",
-                            "closed_date": "2013-12-31",
-                            "funding_type": "Series A",
-                        },
-                        {
-                            "transaction_id": 242311,
-                            "funding_round_notes": "Kensho Technologies Inc. announced that it will receive $740,000 in funding on January 29, 2014. The company will issue convertible debt securities in the transaction. The company will issue securities pursuant to exemption provided under Regulation D.",
-                            "closed_date": "2014-02-13",
-                            "funding_type": "Convertible Note",
-                        },
-                    ],
-                }
-            },
-            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
-        }
-
-        """
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-        tasks = [
-            Task(
-                func=api_client.fetch_rounds_of_funding_for_company
-                if role is RoundsOfFundingRole.company_raising_funds
-                else api_client.fetch_rounds_of_funding_for_investing_company,
-                kwargs=dict(company_id=id_triple.company_id),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-
-        rounds_of_funding_responses: dict[str, RoundsOfFundingResp] = (
-            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
-        )
-
-        filtered_responses = filter_rounds_of_funding_responses_by_date_range(
-            rounds_of_funding_responses, start_date, end_date
-        )
-
-        sorted_responses = sort_and_limit_rounds_of_funding_responses(
-            filtered_responses, sort_order, limit
-        )
-
-        return GetRoundsOfFundingFromIdentifiersResp(
-            results=sorted_responses, errors=list(id_triple_resp.errors.values())
+        """"""
+        return await get_rounds_of_funding_from_identifiers(
+            identifiers=identifiers,
+            role=role,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
+            sort_order=sort_order,
+            httpx_client=self.kfinance_client.httpx_client,
         )
 
 
@@ -251,130 +210,13 @@ class GetRoundsOfFundingInfoFromTransactionIds(KfinanceTool):
     args_schema: Type[BaseModel] = GetRoundsOfFundingInfoFromTransactionIdsArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    def _run(self, transaction_ids: list[int]) -> GetRoundsOfFundingInfoFromTransactionIdsResp:
-        """Sample Response:
-
-        {
-            'results': {
-                334220: {
-                    "timeline": {
-                        "announced_date": "2013-12-01",
-                        "closed_date": "2013-12-31"
-                    },
-                    "participants": {
-                        "target": {
-                            "company_id": "C_12345",
-                            "company_name": "Kensho Technologies Inc.",
-                            "advisors": [
-                                {
-                                    "advisor_company_id": "C_286743412",
-                                    "advisor_company_name": "PJT Partners Inc.",
-                                    "advisor_type_name": "Financial Adviser",
-                                    "advisor_fee_amount": "2500000.0000",
-                                    "advisor_fee_currency": "USD",
-                                    "is_lead": true
-                                },
-                            ],
-                        },
-                        "investors": [
-                            {
-                                "company_id": "C_67890",
-                                "company_name": "Impresa Management LLC",
-                                "lead_investor": True,
-                                "investment_value": 5000000.00,
-                                "currency": "USD",
-                                "ownership_percentage_pre": 0.0000
-                                "ownership_percentage_post": 25.0000
-                                "board_seat_granted": True,
-                                "advisors": [
-                                    {
-                                        "advisor_company_id": "C_22439",
-                                        "advisor_company_name": "DLA Piper LLP (US)",
-                                        "advisor_type_name": "Legal Counsel",
-                                        "advisor_fee_amount": "3750000.0000",
-                                        "advisor_fee_currency": "USD",
-                                        "is_lead": true
-                                    },
-                                ]
-                            }
-                        ]
-                    },
-                    "transaction": {
-                        "funding_type": "Series A",
-                        "amount_offered": 5000000.00,
-                        "currency_name": "USD",
-                        "legal_fees": 150000.00,
-                        "other_fees": 75000.00,
-                        "pre_money_valuation": 15000000.00,
-                        "post_money_valuation": 20000000.00
-                    },
-                    "security": {...}
-                },
-                242311: { ... }
-            },
-            'errors': []
-        }
-        """
-        api_client = self.kfinance_client.kfinance_api_client
-
-        round_of_info_tasks = [
-            Task(
-                func=api_client.fetch_round_of_funding_info,
-                kwargs=dict(transaction_id=transaction_id),
-                result_key=transaction_id,
-            )
-            for transaction_id in transaction_ids
-        ]
-        round_of_info_responses: dict[int, RoundOfFundingInfo] = (
-            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=round_of_info_tasks)
-        )
-
-        advisor_tasks = []
-
-        for transaction_id, round_of_info in round_of_info_responses.items():
-            target_key = AdvisorTaskKey(
-                transaction_id=transaction_id,
-                role=RoundsOfFundingRole.company_raising_funds,
-                company_id=round_of_info.participants.target.company_id,
-            )
-            advisor_tasks.append(
-                Task(
-                    func=api_client.fetch_advisors_for_company_raising_round_of_funding,
-                    kwargs=dict(
-                        transaction_id=transaction_id,
-                    ),
-                    result_key=target_key,
-                )
-            )
-
-            for investor in round_of_info.participants.investors:
-                investor_key = AdvisorTaskKey(
-                    transaction_id=transaction_id,
-                    role=RoundsOfFundingRole.company_investing_in_round_of_funding,
-                    company_id=investor.company_id,
-                )
-                advisor_tasks.append(
-                    Task(
-                        func=api_client.fetch_advisors_for_company_investing_in_round_of_funding,
-                        kwargs=dict(
-                            transaction_id=transaction_id,
-                            advised_company_id=investor_key.company_id,
-                        ),
-                        result_key=investor_key,
-                    )
-                )
-
-        advisor_responses = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=advisor_tasks
-        )
-
-        round_of_info_with_advisors = merge_round_of_info_reponses_with_advisors_responses(
-            round_of_info_responses, advisor_responses
-        )
-
-        return GetRoundsOfFundingInfoFromTransactionIdsResp(
-            results=round_of_info_with_advisors,
-            errors=[],  # Individual API failures would be captured in process_tasks_in_thread_pool_executor
+    async def _arun(
+        self, transaction_ids: list[int]
+    ) -> GetRoundsOfFundingInfoFromTransactionIdsResp:
+        """"""
+        return await get_rounds_of_funding_info_from_transaction_ids(
+            transaction_ids=transaction_ids,
+            httpx_client=self.kfinance_client.httpx_client,
         )
 
 
@@ -467,47 +309,257 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = GetFundingSummaryFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    def _run(self, identifiers: list[str]) -> GetFundingSummaryFromIdentifiersResp:
-        """Get funding summary for companies by aggregating their rounds of funding data."""
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
+    async def _arun(self, identifiers: list[str]) -> GetFundingSummaryFromIdentifiersResp:
+        """"""
+        return await get_funding_summary_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
+        )
 
-        tasks = [
-            Task(
-                func=api_client.fetch_rounds_of_funding_for_company,
-                kwargs=dict(company_id=id_triple.company_id),
-                result_key=identifier,
+
+async def get_rounds_of_funding_from_identifiers(
+    identifiers: list[str],
+    role: RoundsOfFundingRole,
+    httpx_client: httpx.AsyncClient,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    limit: int | None = None,
+    sort_order: Literal["asc", "desc"] = "desc",
+) -> GetRoundsOfFundingFromIdentifiersResp:
+    """Fetch rounds of funding for all identifiers."""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_rounds_of_funding_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                role=role,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
+        )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, RoundsOfFundingResp] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    filtered_responses = filter_rounds_of_funding_responses_by_date_range(
+        results, start_date, end_date
+    )
+
+    sorted_responses = sort_and_limit_rounds_of_funding_responses(
+        filtered_responses, sort_order, limit
+    )
+
+    return GetRoundsOfFundingFromIdentifiersResp(results=sorted_responses, errors=errors)
+
+
+async def fetch_rounds_of_funding_from_company_id(
+    company_id: int,
+    role: RoundsOfFundingRole,
+    httpx_client: httpx.AsyncClient,
+) -> RoundsOfFundingResp:
+    """Fetch rounds of funding for one company_id."""
+    if role is RoundsOfFundingRole.company_raising_funds:
+        url = f"/fundingrounds/target/{company_id}"
+    else:
+        url = f"/fundingrounds/investor/{company_id}"
+
+    resp = await httpx_client.get(url=url)
+    return RoundsOfFundingResp.model_validate(resp.json())
+
+
+async def get_rounds_of_funding_info_from_transaction_ids(
+    transaction_ids: list[int],
+    httpx_client: httpx.AsyncClient,
+) -> GetRoundsOfFundingInfoFromTransactionIdsResp:
+    """Fetch detailed round of funding info for transaction IDs."""
+
+    tasks: list[AsyncTask[int]] = [
+        AsyncTask(
+            func=fetch_rounds_of_funding_info_from_transaction_id,
+            kwargs=dict(
+                transaction_id=transaction_id,
+                httpx_client=httpx_client,
+            ),
+            result_key=transaction_id,
+        )
+        for transaction_id in transaction_ids
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    round_of_info_responses: dict[int, RoundOfFundingInfo] = dict()
+    for task in tasks:
+        if task.error:
+            # For now, skip errors in individual round info fetches
+            continue
+        else:
+            round_of_info_responses[task.result_key] = task.result
+
+    # Fetch advisor info for all companies in all transactions
+    advisor_tasks: list[AsyncTask[AdvisorTaskKey]] = []
+
+    for transaction_id, round_of_info in round_of_info_responses.items():
+        target_key = AdvisorTaskKey(
+            transaction_id=transaction_id,
+            role=RoundsOfFundingRole.company_raising_funds,
+            company_id=round_of_info.participants.target.company_id,
+        )
+        advisor_tasks.append(
+            AsyncTask(
+                func=fetch_advisors_for_company_raising_round_of_funding,
+                kwargs=dict(
+                    transaction_id=transaction_id,
+                    httpx_client=httpx_client,
+                ),
+                result_key=target_key,
             )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-
-        rounds_of_funding_responses: dict[str, RoundsOfFundingResp] = (
-            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
         )
 
-        all_transaction_ids = []
-
-        for response in rounds_of_funding_responses.values():
-            transaction_ids = [r.transaction_id for r in response.rounds_of_funding]
-            all_transaction_ids.extend(transaction_ids)
-
-        detail_tasks = [
-            Task(
-                func=api_client.fetch_round_of_funding_info,
-                kwargs=dict(transaction_id=transaction_id),
-                result_key=transaction_id,
+        for investor in round_of_info.participants.investors:
+            investor_key = AdvisorTaskKey(
+                transaction_id=transaction_id,
+                role=RoundsOfFundingRole.company_investing_in_round_of_funding,
+                company_id=investor.company_id,
             )
-            for transaction_id in all_transaction_ids
-        ]
+            advisor_tasks.append(
+                AsyncTask(
+                    func=fetch_advisors_for_company_investing_in_round_of_funding,
+                    kwargs=dict(
+                        transaction_id=transaction_id,
+                        advised_company_id=investor_key.company_id,
+                        httpx_client=httpx_client,
+                    ),
+                    result_key=investor_key,
+                )
+            )
 
-        detailed_round_info_responses: dict[int, RoundOfFundingInfo] = (
-            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=detail_tasks)
-        )
+    await batch_execute_async_tasks(tasks=advisor_tasks)
 
-        summaries = build_funding_summaries_from_rof_responses(
-            rounds_of_funding_responses, detailed_round_info_responses
-        )
+    advisor_responses: dict[AdvisorTaskKey, AdvisorsResp] = dict()
+    for task in advisor_tasks:  # type: ignore[assignment]
+        if task.error:
+            # Skip errors in advisor fetches
+            continue
+        else:
+            advisor_responses[task.result_key] = task.result  # type: ignore[index]
 
-        return GetFundingSummaryFromIdentifiersResp(
-            results=summaries, errors=list(id_triple_resp.errors.values())
+    round_of_info_with_advisors = merge_round_of_info_reponses_with_advisors_responses(
+        round_of_info_responses, advisor_responses
+    )
+
+    return GetRoundsOfFundingInfoFromTransactionIdsResp(
+        results=round_of_info_with_advisors,
+        errors=[],  # Individual API failures would be captured in batch execution
+    )
+
+
+async def fetch_rounds_of_funding_info_from_transaction_id(
+    transaction_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> RoundOfFundingInfo:
+    """Fetch detailed round of funding info for one transaction_id."""
+    url = f"/fundinground/info/{transaction_id}"
+    resp = await httpx_client.get(url=url)
+    return RoundOfFundingInfo.model_validate(resp.json())
+
+
+async def fetch_advisors_for_company_raising_round_of_funding(
+    transaction_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> AdvisorsResp:
+    """Fetch advisors for the target company raising funds in a round."""
+    url = f"/fundinground/info/{transaction_id}/advisors/target"
+    resp = await httpx_client.get(url=url)
+    return AdvisorsResp.model_validate(resp.json())
+
+
+async def fetch_advisors_for_company_investing_in_round_of_funding(
+    transaction_id: int,
+    advised_company_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> AdvisorsResp:
+    """Fetch advisors for an investing company in a round of funding."""
+    url = f"/fundinground/info/{transaction_id}/advisors/investor/{advised_company_id}"
+    resp = await httpx_client.get(url=url)
+    return AdvisorsResp.model_validate(resp.json())
+
+
+async def get_funding_summary_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+) -> GetFundingSummaryFromIdentifiersResp:
+    """Fetch funding summaries for all identifiers."""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks: list[AsyncTask[str]] = [
+        AsyncTask(
+            func=fetch_rounds_of_funding_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                role=RoundsOfFundingRole.company_raising_funds,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
         )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    rounds_of_funding_responses: dict[str, RoundsOfFundingResp] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            rounds_of_funding_responses[task.result_key] = task.result
+
+    all_transaction_ids = []
+    for response in rounds_of_funding_responses.values():
+        transaction_ids = [r.transaction_id for r in response.rounds_of_funding]
+        all_transaction_ids.extend(transaction_ids)
+
+    detail_tasks: list[AsyncTask[int]] = [
+        AsyncTask(
+            func=fetch_rounds_of_funding_info_from_transaction_id,
+            kwargs=dict(
+                transaction_id=transaction_id,
+                httpx_client=httpx_client,
+            ),
+            result_key=transaction_id,
+        )
+        for transaction_id in all_transaction_ids
+    ]
+
+    await batch_execute_async_tasks(tasks=detail_tasks)
+
+    detailed_round_info_responses: dict[int, RoundOfFundingInfo] = dict()
+    for task in detail_tasks:  # type: ignore[assignment]
+        if task.error:
+            # Skip errors in individual detail fetches
+            continue
+        else:
+            detailed_round_info_responses[task.result_key] = task.result  # type: ignore[index]
+
+    summaries = build_funding_summaries_from_rof_responses(
+        rounds_of_funding_responses, detailed_round_info_responses
+    )
+
+    return GetFundingSummaryFromIdentifiersResp(results=summaries, errors=errors)

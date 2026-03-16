@@ -50,6 +50,7 @@ from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
     RoundOfFundingInfo,
     RoundOfFundingInfoTimeline,
 )
+from kfinance.httpx_utils import KfinanceHttpxClient
 
 
 if TYPE_CHECKING:
@@ -1785,6 +1786,7 @@ class Client:
             )
             stdout.write("Login credentials received.\n")
 
+        self.httpx_client = KfinanceHttpxClient(api_client=self.kfinance_api_client)
         self._tools: list[KfinanceTool] | None = None
 
     @property
@@ -1821,7 +1823,7 @@ class Client:
     @property
     def grounding_tools(self) -> dict[str, Callable]:
         """Return a mapping of tool calling function names to the corresponding functions for the grounding agent."""
-        return {t.name: t.run_with_grounding for t in self.langchain_tools}
+        return {t.name: t.run_with_endpoint_tracking for t in self.langchain_tools}
 
     @property
     def anthropic_tool_descriptions(self) -> list[dict[str, Any]]:

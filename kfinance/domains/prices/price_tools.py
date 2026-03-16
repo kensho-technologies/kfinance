@@ -2,9 +2,11 @@ from datetime import date
 from textwrap import dedent
 from typing import Type
 
+import httpx
 from pydantic import BaseModel, Field
 
-from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
+from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
+from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import Periodicity
 from kfinance.client.permission_models import Permission
 from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
@@ -59,7 +61,7 @@ class GetPricesFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = GetPricesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.PricingPermission}
 
-    def _run(
+    async def _arun(
         self,
         identifiers: list[str],
         start_date: date | None = None,
@@ -67,63 +69,14 @@ class GetPricesFromIdentifiers(KfinanceTool):
         periodicity: Periodicity = Periodicity.day,
         adjusted: bool = True,
     ) -> GetPricesFromIdentifiersResp:
-        """Sample Response:
-
-        {
-            "SPGI": {
-                'prices': [
-                    {
-                        'date': '2024-04-11',
-                        'open': {'value': '424.26', 'unit': 'USD'},
-                        'high': {'value': '425.99', 'unit': 'USD'},
-                        'low': {'value': '422.04', 'unit': 'USD'},
-                        'close': {'value': '422.92', 'unit': 'USD'},
-                        'volume': {'value': '1129158', 'unit': 'Shares'}
-                    },
-                    {
-                        'date': '2024-04-12',
-                        'open': {'value': '419.23', 'unit': 'USD'},
-                        'high': {'value': '421.94', 'unit': 'USD'},
-                        'low': {'value': '416.45', 'unit': 'USD'},
-                        'close': {'value': '417.81', 'unit': 'USD'},
-                        'volume': {'value': '1182229', 'unit': 'Shares'}
-                    }
-                ]
-            },
-            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
-        }
-        """
-
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-        id_triple_resp.filter_out_companies_without_trading_item_ids()
-
-        tasks = [
-            Task(
-                func=api_client.fetch_history,
-                kwargs=dict(
-                    trading_item_id=id_triple.trading_item_id,
-                    start_date=start_date,
-                    end_date=end_date,
-                    periodicity=periodicity,
-                    is_adjusted=adjusted,
-                ),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-
-        price_responses: dict[str, PriceHistory] = process_tasks_in_thread_pool_executor(
-            api_client=api_client, tasks=tasks
-        )
-        # If we return results for more than one company and the start and end dates are unset,
-        # truncate data to only return the most recent datapoint.
-        if len(price_responses) > 1 and start_date is None and end_date is None:
-            for price_response in price_responses.values():
-                price_response.prices = price_response.prices[-1:]
-
-        return GetPricesFromIdentifiersResp(
-            results=price_responses, errors=list(id_triple_resp.errors.values())
+        """"""
+        return await get_prices_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
+            start_date=start_date,
+            end_date=end_date,
+            periodicity=periodicity,
+            adjusted=adjusted,
         )
 
 
@@ -146,39 +99,123 @@ class GetHistoryMetadataFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = None
 
-    def _run(self, identifiers: list[str]) -> GetHistoryMetadataFromIdentifiersResp:
-        """Sample response:
-
-        {
-            'results': {
-                'SPGI': {
-                    'currency': 'USD',
-                    'exchange_name': 'NYSE',
-                    'first_trade_date': '1968-01-02',
-                    'instrument_type': 'Equity',
-                    'symbol': 'SPGI'
-                }
-            },
-            'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
-        }
-        """
-
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-        id_triple_resp.filter_out_companies_without_trading_item_ids()
-
-        tasks = [
-            Task(
-                func=api_client.fetch_history_metadata,
-                kwargs=dict(trading_item_id=id_triple.trading_item_id),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-
-        history_metadata_responses: dict[str, HistoryMetadataResp] = (
-            process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
+    async def _arun(self, identifiers: list[str]) -> GetHistoryMetadataFromIdentifiersResp:
+        """"""
+        return await get_history_metadata_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
         )
-        return GetHistoryMetadataFromIdentifiersResp(
-            results=history_metadata_responses, errors=list(id_triple_resp.errors.values())
+
+
+async def get_prices_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    periodicity: Periodicity = Periodicity.day,
+    adjusted: bool = True,
+) -> GetPricesFromIdentifiersResp:
+    """Fetch price history for all identifiers."""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    id_triple_resp.filter_out_companies_without_trading_item_ids()
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_price_history_from_trading_item_id,
+            kwargs=dict(
+                trading_item_id=id_triple.trading_item_id,
+                httpx_client=httpx_client,
+                start_date=start_date,
+                end_date=end_date,
+                periodicity=periodicity,
+                adjusted=adjusted,
+            ),
+            result_key=identifier,
         )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, PriceHistory] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    # If we return results for more than one company and the start and end dates are unset,
+    # truncate data to only return the most recent datapoint.
+    if len(results) > 1 and start_date is None and end_date is None:
+        for price_response in results.values():
+            price_response.prices = price_response.prices[-1:]
+
+    return GetPricesFromIdentifiersResp(results=results, errors=errors)
+
+
+async def fetch_price_history_from_trading_item_id(
+    trading_item_id: int,
+    httpx_client: httpx.AsyncClient,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    periodicity: Periodicity = Periodicity.day,
+    adjusted: bool = True,
+) -> PriceHistory:
+    """Fetch price history for one trading_item_id."""
+    start_date_str = start_date.isoformat() if start_date else "none"
+    end_date_str = end_date.isoformat() if end_date else "none"
+    adjusted_str = "adjusted" if adjusted else "unadjusted"
+
+    url = f"/pricing/{trading_item_id}/{start_date_str}/{end_date_str}/{periodicity.value}/{adjusted_str}"
+    resp = await httpx_client.get(url=url)
+    return PriceHistory.model_validate(resp.json())
+
+
+async def get_history_metadata_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+) -> GetHistoryMetadataFromIdentifiersResp:
+    """Fetch history metadata for all identifiers."""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    id_triple_resp.filter_out_companies_without_trading_item_ids()
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_history_metadata_from_trading_item_id,
+            kwargs=dict(
+                trading_item_id=id_triple.trading_item_id,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
+        )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, HistoryMetadataResp] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    return GetHistoryMetadataFromIdentifiersResp(results=results, errors=errors)
+
+
+async def fetch_history_metadata_from_trading_item_id(
+    trading_item_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> HistoryMetadataResp:
+    """Fetch history metadata for one trading_item_id."""
+    url = f"/pricing/{trading_item_id}/metadata"
+    resp = await httpx_client.get(url=url)
+    return HistoryMetadataResp.model_validate(resp.json())

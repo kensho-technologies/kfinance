@@ -28,3 +28,10 @@ class StatementPeriodData(BaseModel):
 class StatementsResp(BasePeriodsResp):
     currency: str | None
     periods: dict[str, StatementPeriodData]  # period -> statement and period data
+
+
+class StatementsBatchResp(BaseModel):
+    """Response model for batch statements API call."""
+
+    results: dict[str, StatementsResp]  # company_id -> statements response
+    errors: dict[str, str]  # company_id -> error message

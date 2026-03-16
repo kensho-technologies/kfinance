@@ -1,20 +1,27 @@
-from decimal import Decimal
-
+import httpx
 from langchain_core.utils.function_calling import convert_to_openai_tool
-from requests_mock import Mocker
+import pytest
+from pytest_httpx import HTTPXMock
 
 from kfinance.client.kfinance import Client
+from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
-from kfinance.domains.line_items.line_item_models import LineItemResp, LineItemScore
+from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp, LineItemScore
 from kfinance.domains.line_items.line_item_tools import (
     GetFinancialLineItemFromIdentifiers,
-    GetFinancialLineItemFromIdentifiersArgs,
     GetFinancialLineItemFromIdentifiersResp,
     _find_similar_line_items,
+    fetch_line_item_from_company_ids,
+    get_financial_line_item_from_identifiers,
+)
+from kfinance.domains.line_items.response_notes import (
+    FISCAL_PERIOD_WARNING,
+    FISCAL_YEAR_TERMINOLOGY_WARNING,
+    SOURCE_LINK_NOTE,
 )
 
 
-class TestGetFinancialLineItemFromCompanyIds:
+class TestGetFinancialLineItemFromIdentifiers:
     line_item_resp = {
         "currency": "USD",
         "periods": {
@@ -36,191 +43,129 @@ class TestGetFinancialLineItemFromCompanyIds:
         },
     }
 
-    def test_get_financial_line_item_from_identifiers(
-        self, mock_client: Client, requests_mock: Mocker
-    ):
+    @pytest.fixture
+    def add_spgi_line_item_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+        """Add mock response for SPGI line items."""
+        httpx_mock.add_response(
+            method="POST",
+            url="https://kfinance.kensho.com/api/v1/line_item/",
+            json={"results": {str(SPGI_ID_TRIPLE.company_id): self.line_item_resp}, "errors": {}},
+            is_optional=True,
+        )
+
+    @pytest.mark.asyncio
+    async def test_fetch_line_item_from_company_ids(
+        self,
+        httpx_client: httpx.AsyncClient,
+        add_spgi_line_item_mock_resp: None,
+    ) -> None:
         """
-        GIVEN the GetFinancialLineItemFromCompanyId tool
+        WHEN we request SPGI's line items (using SPGI's company id)
+        THEN we get back SPGI's line items
+        """
+
+        resp = await fetch_line_item_from_company_ids(
+            company_ids=[SPGI_ID_TRIPLE.company_id],
+            line_item="revenue",
+            httpx_client=httpx_client,
+        )
+
+        expected_resp = {
+            str(SPGI_ID_TRIPLE.company_id): LineItemResp.model_validate(self.line_item_resp)
+        }
+        assert resp == expected_resp
+
+    @pytest.mark.parametrize(
+        "calendar_type, expected_notes",
+        [
+            (CalendarType.calendar, [SOURCE_LINK_NOTE]),
+            (
+                CalendarType.fiscal,
+                [SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            ),
+            (
+                None,  # None defaults to fiscal
+                [SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            ),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_get_financial_line_item_from_identifiers(
+        self,
+        calendar_type: CalendarType | None,
+        expected_notes: list[str],
+        httpx_client: httpx.AsyncClient,
+        add_spgi_line_item_mock_resp: None,
+    ) -> None:
+        """
         WHEN we request revenue for SPGI and a non-existent company
-        THEN we get back the SPGI revenue and an error for the non-existent company
+        THEN we get back the SPGI revenue, an error for the non-existent company,
+            and notes appropriate for the calendar type.
         """
 
         expected_response = GetFinancialLineItemFromIdentifiersResp(
-            results={
-                "SPGI": LineItemResp(
-                    currency="USD",
-                    periods={
-                        "CY2022": {
-                            "period_end_date": "2022-12-31",
-                            "num_months": 12,
-                            "line_item": {
-                                "name": "Revenue",
-                                "value": Decimal(11181000000),
-                                "sources": [],
-                            },
-                        },
-                        "CY2023": {
-                            "period_end_date": "2023-12-31",
-                            "num_months": 12,
-                            "line_item": {
-                                "name": "Revenue",
-                                "value": Decimal(12497000000),
-                                "sources": [],
-                            },
-                        },
-                        "CY2024": {
-                            "period_end_date": "2024-12-31",
-                            "num_months": 12,
-                            "line_item": {
-                                "name": "Revenue",
-                                "value": Decimal(14208000000),
-                                "sources": [],
-                            },
-                        },
-                    },
-                )
-            },
+            results={"SPGI": LineItemResp.model_validate(self.line_item_resp)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
+            notes=expected_notes,
         )
 
-        # Mock the unified_fetch_id_triples response
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/ids",
-            json={
-                "identifiers_to_id_triples": {
-                    "SPGI": {
-                        "company_id": 21719,
-                        "security_id": 2629107,
-                        "trading_item_id": 2629108,
-                    }
-                },
-                "errors": {
-                    "NON-EXISTENT": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                },
-            },
+        resp = await get_financial_line_item_from_identifiers(
+            identifiers=["SPGI", "non-existent"],
+            line_item="revenue",
+            httpx_client=httpx_client,
+            calendar_type=calendar_type,
         )
 
-        # Mock the fetch_line_item response
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/line_item/",
-            json={"results": {"21719": self.line_item_resp}, "errors": {}},
-        )
+        assert resp == expected_response
 
-        tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
-        args = GetFinancialLineItemFromIdentifiersArgs(
-            identifiers=["SPGI", "NON-EXISTENT"], line_item="revenue"
-        )
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
-
-    def test_most_recent_request(self, requests_mock: Mocker, mock_client: Client) -> None:
+    @pytest.mark.asyncio
+    async def test_most_recent_request(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
         """
-        GIVEN the GetFinancialLineItemFromIdentifiers tool
         WHEN we request most recent line items for multiple companies
         THEN we only get back the most recent line item for each company
         """
 
         company_ids = [1, 2]
 
-        line_item_resp = LineItemResp(
-            currency="USD",
-            periods={
-                "CY2024": {
-                    "period_end_date": "2024-12-31",
-                    "num_months": 12,
-                    "line_item": {"name": "Revenue", "value": Decimal(14208000000), "sources": []},
-                }
-            },
-        )
-        expected_response = GetFinancialLineItemFromIdentifiersResp(
-            results={"C_1": line_item_resp, "C_2": line_item_resp},
-        )
-
-        # Mock the unified_fetch_id_triples response
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/ids",
-            json={
-                "identifiers_to_id_triples": {
-                    "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
-                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202},
-                },
-                "errors": {},
-            },
-        )
-
-        # Mock the fetch_line_item response
-        requests_mock.post(
+        # Mock the line_item response for both companies
+        httpx_mock.add_response(
+            method="POST",
             url="https://kfinance.kensho.com/api/v1/line_item/",
             json={"results": {"1": self.line_item_resp, "2": self.line_item_resp}, "errors": {}},
         )
 
-        tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
-        args = GetFinancialLineItemFromIdentifiersArgs(
-            identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
-            line_item="revenue",
-        )
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
-
-    def test_empty_most_recent_request(self, requests_mock: Mocker, mock_client: Client) -> None:
-        """
-        GIVEN the GetFinancialLineItemFromIdentifiers tool
-        WHEN we request most recent line items for multiple companies
-        THEN we only get back the most recent line item for each company
-        UNLESS no line items exist
-        """
-
-        company_ids = [1, 2]
-
-        c_1_line_item_resp = LineItemResp(currency="USD", periods={})
-        c_2_line_item_resp = LineItemResp(
-            currency="USD",
-            periods={
-                "CY2024": {
-                    "period_end_date": "2024-12-31",
-                    "num_months": 12,
-                    "line_item": {"name": "Revenue", "value": Decimal(14208000000), "sources": []},
-                }
-            },
+        line_item_resp = LineItemResp.model_validate(
+            {
+                "currency": "USD",
+                "periods": {
+                    "CY2024": {
+                        "period_end_date": "2024-12-31",
+                        "num_months": 12,
+                        "line_item": {"name": "Revenue", "value": "14208000000.0", "sources": []},
+                    }
+                },
+            }
         )
         expected_response = GetFinancialLineItemFromIdentifiersResp(
-            results={"C_1": c_1_line_item_resp, "C_2": c_2_line_item_resp},
+            results={"C_1": line_item_resp, "C_2": line_item_resp},
+            notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
 
-        # Mock the unified_fetch_id_triples response
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/ids",
-            json={
-                "identifiers_to_id_triples": {
-                    "C_1": {"company_id": 1, "security_id": 101, "trading_item_id": 201},
-                    "C_2": {"company_id": 2, "security_id": 102, "trading_item_id": 202},
-                },
-                "errors": {},
-            },
-        )
-
-        # Mock the fetch_line_item response with different data for different companies
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/line_item/",
-            json={
-                "results": {"1": {"currency": "USD", "periods": {}}, "2": self.line_item_resp},
-                "errors": {},
-            },
-        )
-
-        tool = GetFinancialLineItemFromIdentifiers(kfinance_client=mock_client)
-        args = GetFinancialLineItemFromIdentifiersArgs(
+        resp = await get_financial_line_item_from_identifiers(
             identifiers=[f"{COMPANY_ID_PREFIX}{company_id}" for company_id in company_ids],
             line_item="revenue",
+            httpx_client=httpx_client,
         )
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
+
+        assert resp == expected_response
 
     def test_line_items_and_aliases_included_in_schema(self, mock_client: Client):
         """
-        GIVEN a GetFinancialLineItemFromCompanyIds tool
+        GIVEN a GetFinancialLineItemFromIdentifiers tool
         WHEN we generate an openai schema from the tool
         THEN all line items and aliases are included in the line item enum
         """

@@ -26,3 +26,6 @@ class GetNQuartersAgo(KfinanceTool):
 
     def _run(self, n: int) -> YearAndQuarter:
         return self.kfinance_client.get_n_quarters_ago(n)
+
+    async def _arun(self, n: int) -> YearAndQuarter:
+        return self._run(n=n)

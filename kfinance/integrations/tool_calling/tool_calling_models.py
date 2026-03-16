@@ -1,6 +1,7 @@
 import abc
-from typing import Annotated, Any, Callable, Dict, Literal, Type
+from typing import Annotated, Any, Callable, Coroutine, Dict, Literal, Type
 
+from asyncer import syncify
 from langchain_core.tools import BaseTool
 from pydantic import (
     BaseModel,
@@ -12,6 +13,7 @@ from pydantic import (
 
 from kfinance.client.kfinance import Client
 from kfinance.client.permission_models import Permission
+from kfinance.httpx_utils import KfinanceHttpxClient
 
 
 class KfinanceTool(BaseTool):
@@ -30,12 +32,14 @@ class KfinanceTool(BaseTool):
     model_config = ConfigDict(extra="forbid")
 
     def run_without_langchain(self, *args: Any, **kwargs: Any) -> dict:
-        """Execute a Kfinance tool without langchain.
+        """Execute a Kfinance tool without langchain (sync version).
 
         Langchain converts json input params into the pydantic args_schema, which means that
         strings get turned into enums, dates, or datetimes where necessary.
         When executing a tool without langchain, we have to handle this
         conversion ourselves.
+
+        Note: FastMCP uses arun_without_langchain (async version) to avoid event loop conflicts.
         """
         args_model = self.args_schema.model_validate(kwargs)
         args_dict = args_model.model_dump()
@@ -48,19 +52,33 @@ class KfinanceTool(BaseTool):
         result_model = self._run(**args_dict)
         return result_model.model_dump(mode="json", exclude_none=True)
 
-    def run_with_grounding(self, *args: Any, **kwargs: Any) -> Any:
-        """Execute a Kfinance tool with grounding support.
+    async def arun_without_langchain(self, *args: Any, **kwargs: Any) -> dict:
+        """Execute a Kfinance tool without langchain (async version).
 
-        This is a wrapper around the `run_without_langchain` method that adds grounding
-        support, for returning the endpoint urls along with the data as citation info for the LRA Data Agent.
+        This is the async equivalent of run_without_langchain, designed for use
+        with async frameworks like FastMCP.
         """
-        with self.kfinance_client.kfinance_api_client.endpoint_tracker() as endpoint_tracker_queue:
+        args_model = self.args_schema.model_validate(kwargs)
+        args_dict = args_model.model_dump()
+        # Only pass params included in the LLM generated kwargs.
+        args_dict = {k: v for k, v in args_dict.items() if k in kwargs}
+        result_model = await self._arun(**args_dict)
+        return result_model.model_dump(mode="json", exclude_none=True)
+
+    async def run_with_endpoint_tracking(self, *args: Any, **kwargs: Any) -> Any:
+        """Execute a Kfinance tool with endpoint tracking.
+
+        This is a wrapper around the `_arun` method that adds grounding support
+        for returning the endpoint urls along with the data as citation info for the LRA Data Agent.
+        """
+        with self.kfinance_client.httpx_client.endpoint_tracker() as endpoint_tracker_queue:
             args_model = self.args_schema.model_validate(kwargs)
             args_dict = args_model.model_dump()
             args_dict = {k: v for k, v in args_dict.items() if k in kwargs}
-            result_model = self._run(**args_dict)
+            result_model = await self._arun(**args_dict)
 
-            # After completion of tool data fetching and within the endpoint_tracker context manager scope, dequeue the endpoint_tracker_queue
+            # After completion of tool data fetching and within the endpoint_tracker context manager scope,
+            # dequeue the endpoint_tracker_queue
             endpoint_urls = []
             while not endpoint_tracker_queue.empty():
                 endpoint_urls.append(endpoint_tracker_queue.get())
@@ -70,26 +88,29 @@ class KfinanceTool(BaseTool):
                 "endpoint_urls": endpoint_urls,
             }
 
-    @abc.abstractmethod
     def _run(self, *args: Any, **kwargs: Any) -> BaseModel:
-        """The code to execute the tool.
+        """Run a tool sync with syncify
 
-        Where feasible and useful, tools should use batch processing to parallelize
-        requests, usually by allowing callers to pass in multiple identifiers.
-        The usual processing order for functions with multiple identifiers is:
-        - batch fetch id triples via unified_fetch_id_triples
-        - batch fetch the required info based on the ids via process_tasks_in_thread_pool_executor
-        - format results for output
-
-        Any company_ids in the response should be prefixed with the COMPANY_ID_PREFIX ("C_").
-        This allows us to circumvent overlaps between tickers (which can be purely numerical)
-        and company_ids. Company_ids with prefixes can be used like normal identifiers.
-        For example:
-        Request: get_business_relationship_from_identifiers(identifiers=["SPGI"], business_relationship="supplier")
-        Response: {"SPGI": {"current": [{"company_id": "C_883103", "company_name": "A Corp"}]...
-        Request: get_prices_from_identifiers(identifiers=["C_883103"])
+        `syncify` closes the current event loop after the call. That loop was tied
+        to the httpx client. So once the loop gets closed, the httpx can't be
+        used anymore and has to be recreated.
         """
-        ...
+        try:
+            return syncify(self._arun, raise_sync_error=False)(*args, **kwargs)
+        except RuntimeError as e:
+            if str(e).lower() == "event loop is closed":
+                # Create a new httpx client and retry
+                self.kfinance_client.httpx_client = KfinanceHttpxClient(
+                    api_client=self.kfinance_client.kfinance_api_client
+                )
+                return syncify(self._arun, raise_sync_error=False)(*args, **kwargs)
+            else:
+                # Re-raise if it doesn't look like an event loop issue
+                raise
+
+    @abc.abstractmethod
+    def _arun(self, *args: Any, **kwargs: Any) -> Coroutine[Any, Any, BaseModel]:
+        """Run tool asynchronously"""
 
 
 class ToolArgsWithIdentifier(BaseModel):
@@ -145,8 +166,6 @@ class ToolRespWithErrors(BaseModel):
         """Make `errors` the last response field and only include if there is at least one error."""
         data = handler(self)
         errors = data.pop("errors")
-        # data = copy(data)
-        # data.keys()
         if errors:
             data["errors"] = errors
         return data

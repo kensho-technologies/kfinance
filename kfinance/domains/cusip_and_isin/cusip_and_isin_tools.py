@@ -1,9 +1,11 @@
 from textwrap import dedent
-from typing import Type
+from typing import Literal, Type
 
+import httpx
 from pydantic import BaseModel
 
-from kfinance.client.batch_request_handling import Task, process_tasks_in_thread_pool_executor
+from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
+from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -35,34 +37,12 @@ class GetCusipFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.IDPermission}
 
-    def _run(self, identifiers: list[str]) -> GetCusipOrIsinFromIdentifiersResp:
-        """Sample response:
-
-        {
-            'results': {'SPGI': '78409V104'},
-            'errors': ['Kensho is a private company without a security_id.']
-        }
-        """
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-        id_triple_resp.filter_out_companies_without_security_ids()
-
-        tasks = [
-            Task(
-                func=api_client.fetch_cusip,
-                kwargs=dict(security_id=id_triple.security_id),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
-
-        cusip_responses = process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
-        return GetCusipOrIsinFromIdentifiersResp(
-            results={
-                identifier: cusip_resp["cusip"]
-                for identifier, cusip_resp in cusip_responses.items()
-            },
-            errors=list(id_triple_resp.errors.values()),
+    async def _arun(self, identifiers: list[str]) -> GetCusipOrIsinFromIdentifiersResp:
+        """"""
+        return await get_cusip_or_isin_from_identifiers(
+            identifiers=identifiers,
+            cusip_or_isin="cusip",
+            httpx_client=self.kfinance_client.httpx_client,
         )
 
 
@@ -83,31 +63,67 @@ class GetIsinFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.IDPermission}
 
-    def _run(self, identifiers: list[str]) -> GetCusipOrIsinFromIdentifiersResp:
-        """Sample response:
+    async def _arun(self, identifiers: list[str]) -> GetCusipOrIsinFromIdentifiersResp:
+        """"""
+        return await get_cusip_or_isin_from_identifiers(
+            identifiers=identifiers,
+            cusip_or_isin="isin",
+            httpx_client=self.kfinance_client.httpx_client,
+        )
+
+
+async def get_cusip_or_isin_from_identifiers(
+    identifiers: list[str],
+    cusip_or_isin: Literal["cusip", "isin"],
+    httpx_client: httpx.AsyncClient,
+) -> GetCusipOrIsinFromIdentifiersResp:
+    """Fetch cusips or isins for identifiers
+
+    Sample response:
 
         {
-            'results': {'SPGI': 'US78409V104'},
+            'results': {'SPGI': '78409V104'},
             'errors': ['Kensho is a private company without a security_id.']
         }
-        """
-        api_client = self.kfinance_client.kfinance_api_client
-        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
-        id_triple_resp.filter_out_companies_without_security_ids()
+    """
 
-        tasks = [
-            Task(
-                func=api_client.fetch_isin,
-                kwargs=dict(security_id=id_triple.security_id),
-                result_key=identifier,
-            )
-            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-        ]
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    id_triple_resp.filter_out_companies_without_security_ids()
+    errors: list[str] = list(id_triple_resp.errors.values())
 
-        isin_responses = process_tasks_in_thread_pool_executor(api_client=api_client, tasks=tasks)
-        return GetCusipOrIsinFromIdentifiersResp(
-            results={
-                identifier: isin_resp["isin"] for identifier, isin_resp in isin_responses.items()
-            },
-            errors=list(id_triple_resp.errors.values()),
+    tasks = [
+        AsyncTask(
+            func=fetch_cusip_or_isin_from_security_id,
+            kwargs=dict(
+                security_id=id_triple.security_id,
+                cusip_or_isin=cusip_or_isin,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
         )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, str] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    return GetCusipOrIsinFromIdentifiersResp(results=results, errors=errors)
+
+
+async def fetch_cusip_or_isin_from_security_id(
+    security_id: int,
+    cusip_or_isin: Literal["cusip", "isin"],
+    httpx_client: httpx.AsyncClient,
+) -> str:
+    """Fetch and return the cusip or isin for a security id."""
+    url = f"/{cusip_or_isin}/{security_id}"
+    resp = await httpx_client.get(url=url)
+    return resp.json()[cusip_or_isin]
