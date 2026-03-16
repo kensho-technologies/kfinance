@@ -124,6 +124,7 @@ def httpx_client(httpx_mock: HTTPXMock) -> httpx.AsyncClient:
         match_json={"identifiers": ["SPGI"]},
         json={"data": {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")}},
         is_optional=True,
+        is_reusable=True,
     )
     # Fetch non-existent company (only includes an error)
     httpx_mock.add_response(
@@ -178,3 +179,20 @@ def httpx_client(httpx_mock: HTTPXMock) -> httpx.AsyncClient:
     )
 
     return httpx.AsyncClient(base_url="https://kfinance.kensho.com/api/v1")
+
+
+@pytest.fixture
+def add_spgi_supplier_mock_resp(httpx_mock: HTTPXMock) -> None:
+    """Add mock response for SPGI supplier relationship."""
+    httpx_mock.add_response(
+        method="GET",
+        url=f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/supplier",
+        json={
+            "current": [{"company_id": 883103, "company_name": "CRISIL Limited"}],
+            "previous": [
+                {"company_id": 472898, "company_name": "Morgan Stanley"},
+                {"company_id": 8182358, "company_name": "Eloqua, Inc."},
+            ],
+        },
+        is_reusable=True,
+    )

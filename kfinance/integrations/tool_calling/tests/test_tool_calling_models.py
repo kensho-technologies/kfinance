@@ -1,5 +1,8 @@
+import asyncio
 import contextlib
 from contextlib import nullcontext as does_not_raise
+from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ValidationError
 import pytest
@@ -7,6 +10,13 @@ from pytest_httpx import HTTPXMock
 
 from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
+from kfinance.domains.business_relationships.business_relationship_models import (
+    BusinessRelationshipType,
+)
+from kfinance.domains.business_relationships.business_relationship_tools import (
+    GetBusinessRelationshipFromIdentifiers,
+    GetBusinessRelationshipFromIdentifiersArgs,
+)
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.companies.company_tools import (
     GetInfoFromIdentifiers,
@@ -90,3 +100,51 @@ class TestValidQuarter:
         with expectation:
             res = self.QuarterModel.model_validate(dict(quarter=input_quarter))
             assert res.quarter == expected_quarter
+
+
+class TestRunSyncAndAsync:
+    def test_run_sync_and_async(self, add_spgi_supplier_mock_resp: None, httpx_client: Any):
+        """
+        GIVEN a sync environment with sync and async clients (via asyncio.run)
+        WHEN requests are made with both sync and async clients in a sync
+        THEN all calls return the same results without erroring out.
+        """
+
+        args = GetBusinessRelationshipFromIdentifiersArgs(
+            identifiers=["SPGI"],
+            business_relationship=BusinessRelationshipType.supplier,
+        )
+
+        sync_client = Client(refresh_token="foo")
+        # Set access token so that the client doesn't try to fetch it.
+        sync_client.kfinance_api_client._access_token = "foo"  # noqa: SLF001
+        sync_client.kfinance_api_client._access_token_expiry = int(datetime(2100, 1, 1).timestamp())  # noqa: SLF001
+        async_client = Client(refresh_token="foo")
+        async_client.kfinance_api_client._access_token = "foo"  # noqa: SLF001
+        async_client.kfinance_api_client._access_token_expiry = int(  # noqa: SLF001
+            datetime(2100, 1, 1).timestamp()
+        )
+
+        def run_sync():
+            tool = GetBusinessRelationshipFromIdentifiers(kfinance_client=sync_client)
+            sync_resp = tool.run(args.model_dump(mode="json"))
+            return sync_resp
+
+        async def run_async_twice():
+            tool = GetBusinessRelationshipFromIdentifiers(kfinance_client=async_client)
+            async_resp1 = await tool.ainvoke(args.model_dump(mode="json"))
+            async_resp2 = await tool.ainvoke(args.model_dump(mode="json"))
+            return async_resp1, async_resp2
+
+        # Sync calls can be run multiple times (no async loop issues)
+        sync_res1 = run_sync()
+        sync_res2 = run_sync()
+
+        # Event loop gets closed after asyncio.run, so we run the tool twice in the function
+        async_res1, async_res2 = asyncio.run(run_async_twice())
+
+        # Sync calls can still be run after async calls
+        sync_res3 = run_sync()
+        sync_res4 = run_sync()
+
+        assert sync_res1 == sync_res2 == sync_res3 == sync_res4 == async_res1 == async_res2

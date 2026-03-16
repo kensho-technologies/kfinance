@@ -1,5 +1,4 @@
 import abc
-import asyncio
 from typing import Annotated, Any, Callable, Coroutine, Dict, Literal, Type
 
 from asyncer import syncify
@@ -96,21 +95,18 @@ class KfinanceTool(BaseTool):
         to the httpx client. So once the loop gets closed, the httpx can't be
         used anymore and has to be recreated.
         """
-
-        # If the client has a non-closed event loop, use it and the associated
-        # httpx client.
         try:
-            loop = asyncio.get_event_loop()
-            if not loop.is_closed():
+            return syncify(self._arun, raise_sync_error=False)(*args, **kwargs)
+        except RuntimeError as e:
+            if str(e).lower() == "event loop is closed":
+                # Create a new httpx client and retry
+                self.kfinance_client.httpx_client = KfinanceHttpxClient(
+                    api_client=self.kfinance_client.kfinance_api_client
+                )
                 return syncify(self._arun, raise_sync_error=False)(*args, **kwargs)
-        except RuntimeError:
-            pass
-
-        # If not, create a new httpx client and then execute the tool.
-        self.kfinance_client.httpx_client = KfinanceHttpxClient(
-            api_client=self.kfinance_client.kfinance_api_client
-        )
-        return syncify(self._arun, raise_sync_error=False)(*args, **kwargs)
+            else:
+                # Re-raise if it doesn't look like an event loop issue
+                raise
 
     @abc.abstractmethod
     def _arun(self, *args: Any, **kwargs: Any) -> Coroutine[Any, Any, BaseModel]:

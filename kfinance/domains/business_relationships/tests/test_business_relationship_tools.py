@@ -1,8 +1,7 @@
 import httpx
 import pytest
-from pytest_httpx import HTTPXMock
 
-from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
+from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
     RelationshipResponse,
@@ -13,22 +12,6 @@ from kfinance.domains.business_relationships.business_relationship_tools import 
     get_business_relationship_from_identifiers,
 )
 from kfinance.domains.companies.company_models import CompanyIdAndName
-
-
-@pytest.fixture
-def add_spgi_supplier_mock_resp(httpx_mock: HTTPXMock) -> None:
-    """Add mock response for SPGI supplier relationship."""
-    httpx_mock.add_response(
-        method="GET",
-        url=f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/supplier",
-        json={
-            "current": [{"company_id": 883103, "company_name": "CRISIL Limited"}],
-            "previous": [
-                {"company_id": 472898, "company_name": "Morgan Stanley"},
-                {"company_id": 8182358, "company_name": "Eloqua, Inc."},
-            ],
-        },
-    )
 
 
 class TestBusinessRelationships:

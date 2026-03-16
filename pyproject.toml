@@ -155,6 +155,3 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_unreachable = true
 exclude = "tests"
-
-[tool.poetry]
-version = "0.1.0"
