@@ -92,6 +92,5 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetConsensusEstimatesFromIdentifiers,
     GetGuidanceFromIdentifiers,
     GetConsensusTargetPriceFromIdentifiers,
-    GetAnalystRecommendationsFromIdentifiers
-
+    GetAnalystRecommendationsFromIdentifiers,
 ]
