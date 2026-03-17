@@ -1,6 +1,6 @@
 # Changelog
 
-## v5.0.1
+## v5.1.0
 - Add target price and analyst recommendation tools
 
 ## v5.0.0
