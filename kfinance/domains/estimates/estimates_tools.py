@@ -19,10 +19,13 @@ from kfinance.domains.estimates.estimates_models import (
     ConsensusTargetPriceResp,
     EstimatesResp,
 )
+<<<<<<< HEAD
 from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
 )
+=======
+>>>>>>> ce95634ce5920964f0e337672b24d11e0c3e2c55
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
@@ -86,6 +89,7 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
     ) -> GetEstimatesFromIdentifiersResp:
+<<<<<<< HEAD
         """"""
         return await get_estimates_from_identifiers(
             identifiers=identifiers,
@@ -99,6 +103,71 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
             num_periods_forward=num_periods_forward,
             num_periods_backward=num_periods_backward,
         )
+=======
+        """Sample response:
+
+        "SPGI": {
+            "estimate_type": "consensus",
+            "currency": "USD",
+            "period_type": "quarterly",
+            "periods": {
+                "FY2025Q4": {
+                    "period_end_date": "2025-12-31",
+                    "estimates": [
+                        {
+                            "name": "Revenue Consensus High",
+                            "value": "3955000000.000000",
+                        },
+                        {
+                            "name": "Revenue Consensus Low",
+                            "value": "3806400000.000000",
+                        },
+                        {
+                            "name": "Revenue Consensus Mean",
+                            "value": "3881725460.000000",
+                        },
+                        {
+                            "name": "Revenue Consensus Median",
+                            "value": "3883000000.000000",
+                        },
+                    ],
+                }
+            },
+        }
+        """
+
+        api_client = self.kfinance_client.kfinance_api_client
+        ids_response = api_client.unified_fetch_id_triples(identifiers)
+        company_id_to_identifier = {
+            id_triple.company_id: identifier
+            for identifier, id_triple in ids_response.identifiers_to_id_triples.items()
+        }
+        company_ids = [
+            id_triple.company_id for id_triple in ids_response.identifiers_to_id_triples.values()
+        ]
+        identifiers_to_results = {}
+        all_errors: list[str] = []
+        for company_id in company_ids:
+            response = api_client.fetch_estimates(
+                company_id=company_id,
+                estimate_type=self.estimate_type,
+                period_type=period_type,
+                start_year=fiscal_start_year,
+                end_year=fiscal_end_year,
+                start_quarter=fiscal_start_quarter,
+                end_quarter=fiscal_end_quarter,
+                num_periods_forward=num_periods_forward,
+                num_periods_backward=num_periods_backward,
+            )
+            original_identifier = company_id_to_identifier[company_id]
+            identifiers_to_results[original_identifier] = response.results[str(company_id)]
+            if response.errors and "errors" in response.errors:
+                all_errors.append(response.errors["errors"])
+
+        all_errors = list(ids_response.errors.values()) + all_errors
+
+        return GetEstimatesFromIdentifiersResp(results=identifiers_to_results, errors=all_errors)
+>>>>>>> ce95634ce5920964f0e337672b24d11e0c3e2c55
 
 
 class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
@@ -142,6 +211,7 @@ class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
 
+<<<<<<< HEAD
     async def _arun(
         self,
         identifiers: list[str],
@@ -149,6 +219,30 @@ class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
         return await get_consensus_target_price_from_identifiers(
             identifiers=identifiers,
             httpx_client=self.kfinance_client.httpx_client,
+=======
+    def _run(
+        self,
+        identifiers: list[str],
+    ) -> GetConsensusTargetPriceFromIdentifiersResp:
+        api_client = self.kfinance_client.kfinance_api_client
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
+        company_id_to_identifier = {
+            id_triple.company_id: identifier
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+        }
+        identifiers_to_results = {}
+        all_errors: list[str] = []
+        for company_id, identifier in company_id_to_identifier.items():
+            response = api_client.fetch_consensus_target_price(company_id=company_id)
+            identifiers_to_results[identifier] = response.results[str(company_id)]
+            if response.errors and "errors" in response.errors:
+                all_errors.append(response.errors["errors"])
+
+        all_errors = list(id_triple_resp.errors.values()) + all_errors
+
+        return GetConsensusTargetPriceFromIdentifiersResp(
+            results=identifiers_to_results, errors=all_errors
+>>>>>>> ce95634ce5920964f0e337672b24d11e0c3e2c55
         )
 
 
@@ -164,6 +258,7 @@ class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
 
+<<<<<<< HEAD
     async def _arun(
         self,
         identifiers: list[str],
@@ -366,3 +461,28 @@ async def fetch_analyst_recommendations_from_company_id(
     response_data = resp.json()
     company_result = response_data["results"][str(company_id)]
     return AnalystRecommendationsResp.model_validate(company_result)
+=======
+    def _run(
+        self,
+        identifiers: list[str],
+    ) -> GetAnalystRecommendationsFromIdentifiersResp:
+        api_client = self.kfinance_client.kfinance_api_client
+        id_triple_resp = api_client.unified_fetch_id_triples(identifiers=identifiers)
+        company_id_to_identifier = {
+            id_triple.company_id: identifier
+            for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+        }
+        identifiers_to_results = {}
+        all_errors: list[str] = []
+        for company_id, identifier in company_id_to_identifier.items():
+            response = api_client.fetch_analyst_recommendations(company_id=company_id)
+            identifiers_to_results[identifier] = response.results[str(company_id)]
+            if response.errors and "errors" in response.errors:
+                all_errors.append(response.errors["errors"])
+
+        all_errors = list(id_triple_resp.errors.values()) + all_errors
+
+        return GetAnalystRecommendationsFromIdentifiersResp(
+            results=identifiers_to_results, errors=all_errors
+        )
+>>>>>>> ce95634ce5920964f0e337672b24d11e0c3e2c55
