@@ -4,23 +4,26 @@ from pytest_httpx import HTTPXMock
 
 from kfinance.client.models.date_and_period_models import EstimateType
 from kfinance.conftest import SPGI_ID_TRIPLE
-from kfinance.domains.estimates.estimates_models import EstimatesResp
+from kfinance.domains.estimates.estimates_models import (
+    AnalystRecommendationsResp,
+    ConsensusTargetPriceResp,
+    EstimatesResp,
+)
 from kfinance.domains.estimates.estimates_tools import (
-    GetAnalystRecommendationsFromIdentifiers,
     GetAnalystRecommendationsFromIdentifiersResp,
-    GetConsensusEstimatesFromIdentifiers,
-    GetConsensusTargetPriceFromIdentifiers,
     GetConsensusTargetPriceFromIdentifiersResp,
-    GetEstimatesFromIdentifiersArgs,
     GetEstimatesFromIdentifiersResp,
+    fetch_analyst_recommendations_from_company_id,
+    fetch_consensus_target_price_from_company_id,
     fetch_estimates_from_company_id,
+    get_analyst_recommendations_from_identifiers,
+    get_consensus_target_price_from_identifiers,
     get_estimates_from_identifiers,
 )
 from kfinance.domains.line_items.response_notes import (
     FISCAL_PERIOD_WARNING,
     FISCAL_YEAR_TERMINOLOGY_WARNING,
 )
-from kfinance.integrations.tool_calling.tool_calling_models import ToolArgsWithIdentifiers
 
 
 class TestEstimates:
@@ -90,14 +93,77 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        tool = GetConsensusEstimatesFromIdentifiers(kfinance_client=mock_client)
-        args = GetEstimatesFromIdentifiersArgs(identifiers=["SPGI", "NON-EXISTENT"])
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
+        expected_resp = EstimatesResp.model_validate(self.estimates_response)
+        assert resp == expected_resp
 
-    def test_get_consensus_target_price_from_identifiers(
-        self, mock_client: Client, requests_mock: Mocker
-    ):
+    @pytest.mark.asyncio
+    async def test_get_estimates_from_identifiers(
+        self,
+        httpx_client: httpx.AsyncClient,
+        add_spgi_estimates_mock_resp: None,
+    ) -> None:
+        """
+        WHEN we request estimates for SPGI and a non-existent company
+        THEN we get back SPGI's estimates and an error for the non-existent company
+        """
+
+        expected_resp = GetEstimatesFromIdentifiersResp(
+            results={"SPGI": EstimatesResp.model_validate(self.estimates_response)},
+            errors=[
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+        )
+
+        resp = await get_estimates_from_identifiers(
+            identifiers=["SPGI", "non-existent"],
+            estimate_type=EstimateType.consensus,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_get_estimates_with_guidance_type(
+        self,
+        httpx_client: httpx.AsyncClient,
+        httpx_mock: HTTPXMock,
+    ) -> None:
+        """
+        WHEN we request guidance estimates
+        THEN we get back guidance estimates with the correct estimate_type
+        """
+        guidance_response = {
+            **self.estimates_response,
+            "estimate_type": "guidance",
+        }
+
+        httpx_mock.add_response(
+            method="POST",
+            url="https://kfinance.kensho.com/api/v1/estimates/",
+            json={"results": {str(SPGI_ID_TRIPLE.company_id): guidance_response}, "errors": {}},
+        )
+
+        resp = await fetch_estimates_from_company_id(
+            company_id=SPGI_ID_TRIPLE.company_id,
+            estimate_type=EstimateType.guidance,
+            httpx_client=httpx_client,
+        )
+
+        expected_resp = EstimatesResp.model_validate(guidance_response)
+        assert resp == expected_resp
+        assert resp.estimate_type == EstimateType.guidance
+
+    @pytest.mark.asyncio
+    async def test_fetch_consensus_target_price_from_company_id(
+        self,
+        httpx_client: httpx.AsyncClient,
+        httpx_mock: HTTPXMock,
+    ) -> None:
+        """
+        WHEN we request SPGI's consensus target price
+        THEN we get back the target price data
+        """
         consensus_target_price_response = {
             "currency": "USD",
             "effective_date": "2025-06-01",
@@ -109,44 +175,78 @@ class TestEstimates:
             ],
         }
 
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/ids",
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}",
             json={
-                "identifiers_to_id_triples": {
-                    "SPGI": {
-                        "company_id": 21719,
-                        "security_id": 2629107,
-                        "trading_item_id": 2629108,
-                    }
-                },
-                "errors": {
-                    "NON-EXISTENT": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                },
+                "results": {str(SPGI_ID_TRIPLE.company_id): consensus_target_price_response},
+                "errors": {},
             },
         )
 
-        requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/21719",
-            json={"results": {"21719": consensus_target_price_response}, "errors": {}},
+        resp = await fetch_consensus_target_price_from_company_id(
+            company_id=SPGI_ID_TRIPLE.company_id,
+            httpx_client=httpx_client,
         )
 
-        expected_response = GetConsensusTargetPriceFromIdentifiersResp.model_validate(
-            {
-                "results": {"SPGI": consensus_target_price_response},
-                "errors": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                ],
-            }
+        expected_resp = ConsensusTargetPriceResp.model_validate(consensus_target_price_response)
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_get_consensus_target_price_from_identifiers(
+        self,
+        httpx_client: httpx.AsyncClient,
+        httpx_mock: HTTPXMock,
+    ) -> None:
+        """
+        WHEN we request consensus target price for SPGI and a non-existent company
+        THEN we get back SPGI's target price and an error for the non-existent company
+        """
+        consensus_target_price_response = {
+            "currency": "USD",
+            "effective_date": "2025-06-01",
+            "estimates": [
+                {"name": "Target Price Consensus High", "value": "600.000000"},
+                {"name": "Target Price Consensus Low", "value": "400.000000"},
+                {"name": "Target Price Consensus Mean", "value": "520.000000"},
+                {"name": "Target Price Consensus Median", "value": "525.000000"},
+            ],
+        }
+
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}",
+            json={
+                "results": {str(SPGI_ID_TRIPLE.company_id): consensus_target_price_response},
+                "errors": {},
+            },
         )
 
-        tool = GetConsensusTargetPriceFromIdentifiers(kfinance_client=mock_client)
-        args = ToolArgsWithIdentifiers(identifiers=["SPGI", "NON-EXISTENT"])
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
+        resp = await get_consensus_target_price_from_identifiers(
+            identifiers=["SPGI", "non-existent"],
+            httpx_client=httpx_client,
+        )
 
-    def test_get_analyst_recommendations_from_identifiers(
-        self, mock_client: Client, requests_mock: Mocker
-    ):
+        expected_resp = GetConsensusTargetPriceFromIdentifiersResp(
+            results={
+                "SPGI": ConsensusTargetPriceResp.model_validate(consensus_target_price_response)
+            },
+            errors=[
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+        )
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_fetch_analyst_recommendations_from_company_id(
+        self,
+        httpx_client: httpx.AsyncClient,
+        httpx_mock: HTTPXMock,
+    ) -> None:
+        """
+        WHEN we request SPGI's analyst recommendations
+        THEN we get back the analyst recommendations data
+        """
         analyst_recommendations_response = {
             "effective_date": "2025-06-01",
             "estimates": [
@@ -156,37 +256,62 @@ class TestEstimates:
             ],
         }
 
-        requests_mock.post(
-            url="https://kfinance.kensho.com/api/v1/ids",
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}",
             json={
-                "identifiers_to_id_triples": {
-                    "SPGI": {
-                        "company_id": 21719,
-                        "security_id": 2629107,
-                        "trading_item_id": 2629108,
-                    }
-                },
-                "errors": {
-                    "NON-EXISTENT": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                },
+                "results": {str(SPGI_ID_TRIPLE.company_id): analyst_recommendations_response},
+                "errors": {},
             },
         )
 
-        requests_mock.get(
-            url="https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/21719",
-            json={"results": {"21719": analyst_recommendations_response}, "errors": {}},
+        resp = await fetch_analyst_recommendations_from_company_id(
+            company_id=SPGI_ID_TRIPLE.company_id,
+            httpx_client=httpx_client,
         )
 
-        expected_response = GetAnalystRecommendationsFromIdentifiersResp.model_validate(
-            {
-                "results": {"SPGI": analyst_recommendations_response},
-                "errors": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                ],
-            }
+        expected_resp = AnalystRecommendationsResp.model_validate(analyst_recommendations_response)
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_get_analyst_recommendations_from_identifiers(
+        self,
+        httpx_client: httpx.AsyncClient,
+        httpx_mock: HTTPXMock,
+    ) -> None:
+        """
+        WHEN we request analyst recommendations for SPGI and a non-existent company
+        THEN we get back SPGI's recommendations and an error for the non-existent company
+        """
+        analyst_recommendations_response = {
+            "effective_date": "2025-06-01",
+            "estimates": [
+                {"name": "# of Analyst Recommendations - Buy", "value": "12"},
+                {"name": "# of Analyst Recommendations - Hold", "value": "5"},
+                {"name": "# of Analyst Recommendations - Sell", "value": "1"},
+            ],
+        }
+
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}",
+            json={
+                "results": {str(SPGI_ID_TRIPLE.company_id): analyst_recommendations_response},
+                "errors": {},
+            },
         )
 
-        tool = GetAnalystRecommendationsFromIdentifiers(kfinance_client=mock_client)
-        args = ToolArgsWithIdentifiers(identifiers=["SPGI", "NON-EXISTENT"])
-        response = tool.run(args.model_dump(mode="json"))
-        assert response == expected_response
+        resp = await get_analyst_recommendations_from_identifiers(
+            identifiers=["SPGI", "non-existent"],
+            httpx_client=httpx_client,
+        )
+
+        expected_resp = GetAnalystRecommendationsFromIdentifiersResp(
+            results={
+                "SPGI": AnalystRecommendationsResp.model_validate(analyst_recommendations_response)
+            },
+            errors=[
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+        )
+        assert resp == expected_resp

@@ -1,7 +1,17 @@
 # Changelog
 
-## v4.1.5
+## v5.0.1
 - Add target price and analyst recommendation tools
+
+## v5.0.0
+- Add async versions for all tool calls and use them as defaults
+- Sync versions call async versions via the `asyncer` library
+- Breaking changes:
+  - If you work in an async framework, ensure that you use `Tool._arun` (async)
+  instead of `Tool._run` (sync). Trying to call multiple tools in a row will
+  otherwise result in async loop related errors.
+  - The `endpoint_tracker` has been moved from the `KfinanceApiClient` to
+  the `KfinanceHttpxClient`.
 
 ## v4.1.4
 - Add estimates tools
