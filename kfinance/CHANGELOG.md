@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.1.1
+- Update estimates tools to gracefully handle errors
+
+## v5.1.0
+- Add target price and analyst recommendation tools
+
 ## v5.0.0
 - Add async versions for all tool calls and use them as defaults
 - Sync versions call async versions via the `asyncer` library
