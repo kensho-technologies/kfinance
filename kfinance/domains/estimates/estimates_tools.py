@@ -14,7 +14,11 @@ from kfinance.client.models.date_and_period_models import (
     NumPeriodsForward,
 )
 from kfinance.client.permission_models import Permission
-from kfinance.domains.estimates.estimates_models import EstimatesResp
+from kfinance.domains.estimates.estimates_models import (
+    AnalystRecommendationsResp,
+    ConsensusTargetPriceResp,
+    EstimatesResp,
+)
 from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
@@ -126,6 +130,50 @@ class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
         return EstimateType.guidance
 
 
+class GetConsensusTargetPriceFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, ConsensusTargetPriceResp]
+
+
+class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
+    name: str = "get_consensus_target_price_from_identifiers"
+    description: str = dedent("""
+        Get consensus target price estimates for a given company. Returns the current consensus analyst target price including high, low, mean, and median values.
+    """).strip()
+    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
+    accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
+
+    async def _arun(
+        self,
+        identifiers: list[str],
+    ) -> GetConsensusTargetPriceFromIdentifiersResp:
+        return await get_consensus_target_price_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
+        )
+
+
+class GetAnalystRecommendationsFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, AnalystRecommendationsResp]
+
+
+class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
+    name: str = "get_analyst_recommendations_from_identifiers"
+    description: str = dedent("""
+        Get analyst recommendations for a given company. Returns the current consensus analyst recommendation breakdown including buy, hold, sell counts and overall rating.
+    """).strip()
+    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
+    accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
+
+    async def _arun(
+        self,
+        identifiers: list[str],
+    ) -> GetAnalystRecommendationsFromIdentifiersResp:
+        return await get_analyst_recommendations_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
+        )
+
+
 async def get_estimates_from_identifiers(
     identifiers: list[str],
     estimate_type: EstimateType,
@@ -226,3 +274,95 @@ async def fetch_estimates_from_company_id(
     # Extract the result for this specific company_id
     company_result = response_data["results"][str(company_id)]
     return EstimatesResp.model_validate(company_result)
+
+
+async def get_consensus_target_price_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+) -> GetConsensusTargetPriceFromIdentifiersResp:
+    """Fetch consensus target price for all identifiers."""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_consensus_target_price_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
+        )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, ConsensusTargetPriceResp] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    return GetConsensusTargetPriceFromIdentifiersResp(results=results, errors=errors)
+
+
+async def fetch_consensus_target_price_from_company_id(
+    company_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> ConsensusTargetPriceResp:
+    """Fetch consensus target price for one company_id."""
+    resp = await httpx_client.get(url=f"/estimates/consensus_target_price/{company_id}")
+    response_data = resp.json()
+    company_result = response_data["results"][str(company_id)]
+    return ConsensusTargetPriceResp.model_validate(company_result)
+
+
+async def get_analyst_recommendations_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+) -> GetAnalystRecommendationsFromIdentifiersResp:
+    """Fetch analyst recommendations for all identifiers."""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_analyst_recommendations_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                httpx_client=httpx_client,
+            ),
+            result_key=identifier,
+        )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, AnalystRecommendationsResp] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    return GetAnalystRecommendationsFromIdentifiersResp(results=results, errors=errors)
+
+
+async def fetch_analyst_recommendations_from_company_id(
+    company_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> AnalystRecommendationsResp:
+    """Fetch analyst recommendations for one company_id."""
+    resp = await httpx_client.get(url=f"/estimates/analyst_recommendations/{company_id}")
+    response_data = resp.json()
+    company_result = response_data["results"][str(company_id)]
+    return AnalystRecommendationsResp.model_validate(company_result)

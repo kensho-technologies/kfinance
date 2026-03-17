@@ -623,6 +623,51 @@ class CompanyFunctionsMetaClass:
             period_type=period_type,
         )
 
+    def consensus_target_price(
+        self,
+    ) -> pd.DataFrame:
+        """Get consensus target price estimates"""
+
+        response = self.kfinance_api_client.fetch_consensus_target_price(
+            company_id=self.company_id,
+        )
+
+        if not response.results:
+            return pd.DataFrame()
+
+        result = response.results[str(self.company_id)]
+
+        if not result.estimates:
+            return pd.DataFrame()
+
+        data = {estimate.name: estimate.value for estimate in result.estimates}
+        df = pd.DataFrame([data])
+        df.insert(0, "effective_date", result.effective_date)
+        df.insert(1, "currency", result.currency)
+        return df
+
+    def analyst_recommendations(
+        self,
+    ) -> pd.DataFrame:
+        """Get analyst recommendations"""
+
+        response = self.kfinance_api_client.fetch_analyst_recommendations(
+            company_id=self.company_id,
+        )
+
+        if not response.results:
+            return pd.DataFrame()
+
+        result = response.results[str(self.company_id)]
+
+        if not result.estimates:
+            return pd.DataFrame()
+
+        data = {estimate.name: estimate.value for estimate in result.estimates}
+        df = pd.DataFrame([data])
+        df.insert(0, "effective_date", result.effective_date)
+        return df
+
 
 for line_item in LINE_ITEMS:
     line_item_name = line_item["name"]

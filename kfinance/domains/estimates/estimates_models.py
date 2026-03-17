@@ -21,3 +21,24 @@ class EstimatesResp(BaseModel):
     currency: str | None
     period_type: EstimatePeriodType
     periods: dict[str, EstimatesPeriodData]
+
+
+class ConsensusTargetPriceItem(BaseModel):
+    name: str
+    value: Decimal | None
+
+
+class ConsensusTargetPriceResp(BaseModel):
+    currency: str | None
+    effective_date: date
+    estimates: list[ConsensusTargetPriceItem]
+
+
+class AnalystRecommendationsItem(BaseModel):
+    name: str
+    value: Decimal | None
+
+
+class AnalystRecommendationsResp(BaseModel):
+    effective_date: date | None
+    estimates: list[AnalystRecommendationsItem]
