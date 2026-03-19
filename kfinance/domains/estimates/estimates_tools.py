@@ -13,14 +13,12 @@ from kfinance.client.models.date_and_period_models import (
     NumPeriodsBackward,
     NumPeriodsForward,
 )
+from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
-    AnalystRecommendationsResp,
     ConsensusTargetPrice,
-    ConsensusTargetPriceResp,
     Estimates,
-    EstimatesResp,
 )
 from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.line_items.response_notes import (
@@ -223,10 +221,11 @@ async def get_estimates_from_identifiers(
         if task.error:
             errors.append(task.error)
         else:
-            resp: EstimatesResp = task.result
-            if resp.result:
-                results[task.result_key] = resp.result
-            errors.extend(resp.errors)
+            resp: PostResponse[Estimates] = task.result
+            results.update(
+                {task.result_key: v for v in resp.results.values() if v is not None}
+            )
+            errors.extend(resp.errors.values())
 
     resp_model = GetEstimatesFromIdentifiersResp(results=results, errors=errors)
 
@@ -251,7 +250,7 @@ async def fetch_estimates_from_company_id(
     fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
     num_periods_forward: int | None = None,
     num_periods_backward: int | None = None,
-) -> EstimatesResp:
+) -> PostResponse[Estimates]:
     """Fetch estimates for one company_id."""
     # Build query parameters
     params = {
@@ -275,7 +274,7 @@ async def fetch_estimates_from_company_id(
         params["num_periods_backward"] = num_periods_backward
 
     resp = await httpx_client.post(url="/estimates/", json=params)
-    return EstimatesResp.model_validate(resp.json())
+    return PostResponse[Estimates].model_validate(resp.json())
 
 
 async def get_consensus_target_price_from_identifiers(
@@ -308,10 +307,11 @@ async def get_consensus_target_price_from_identifiers(
         if task.error:
             errors.append(task.error)
         else:
-            resp: ConsensusTargetPriceResp = task.result
-            if resp.result:
-                results[task.result_key] = resp.result
-            errors.extend(resp.errors)
+            resp: PostResponse[ConsensusTargetPrice] = task.result
+            results.update(
+                {task.result_key: v for v in resp.results.values() if v is not None}
+            )
+            errors.extend(resp.errors.values())
 
     return GetConsensusTargetPriceFromIdentifiersResp(results=results, errors=errors)
 
@@ -319,10 +319,10 @@ async def get_consensus_target_price_from_identifiers(
 async def fetch_consensus_target_price_from_company_id(
     company_id: int,
     httpx_client: httpx.AsyncClient,
-) -> ConsensusTargetPriceResp:
+) -> PostResponse[ConsensusTargetPrice]:
     """Fetch consensus target price for one company_id."""
     resp = await httpx_client.get(url=f"/estimates/consensus_target_price/{company_id}")
-    return ConsensusTargetPriceResp.model_validate(resp.json())
+    return PostResponse[ConsensusTargetPrice].model_validate(resp.json())
 
 
 async def get_analyst_recommendations_from_identifiers(
@@ -355,10 +355,11 @@ async def get_analyst_recommendations_from_identifiers(
         if task.error:
             errors.append(task.error)
         else:
-            resp: AnalystRecommendationsResp = task.result
-            if resp.result:
-                results[task.result_key] = resp.result
-            errors.extend(resp.errors)
+            resp: PostResponse[AnalystRecommendations] = task.result
+            results.update(
+                {task.result_key: v for v in resp.results.values() if v is not None}
+            )
+            errors.extend(resp.errors.values())
 
     return GetAnalystRecommendationsFromIdentifiersResp(results=results, errors=errors)
 
@@ -366,7 +367,7 @@ async def get_analyst_recommendations_from_identifiers(
 async def fetch_analyst_recommendations_from_company_id(
     company_id: int,
     httpx_client: httpx.AsyncClient,
-) -> AnalystRecommendationsResp:
+) -> PostResponse[AnalystRecommendations]:
     """Fetch analyst recommendations for one company_id."""
     resp = await httpx_client.get(url=f"/estimates/analyst_recommendations/{company_id}")
-    return AnalystRecommendationsResp.model_validate(resp.json())
+    return PostResponse[AnalystRecommendations].model_validate(resp.json())

@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, model_validator
 
 from kfinance.client.models.date_and_period_models import EstimatePeriodType, EstimateType
 
@@ -25,25 +25,20 @@ class Estimates(BaseModel):
 
 
 class EstimatesResp(BaseModel):
-    """Response from the /estimates/ endpoint for a single company.
-
-    The API returns {"results": {company_id: ...}, "errors": {company_id: ...}}.
-    The model_validator extracts the single result (if any) and collects errors.
-    """
+    """Wraps a PostResponse[Estimates] for the sync client, extracting the single result."""
 
     result: Estimates | None = None
-    errors: list[str] = Field(default_factory=list)
+    errors: list[str] = []
 
     @model_validator(mode="before")
     @classmethod
-    def extract_single_result(cls, data: Any) -> Any:
+    def from_post_response(cls, data: Any) -> Any:
+        """Convert PostResponse format {results: {id: ...}, errors: {id: ...}} to single result."""
         if isinstance(data, dict) and "results" in data:
-            results = data.get("results", {})
-            errors = data.get("errors", {})
-            return {
-                "result": next(iter(results.values()), None),
-                "errors": list(errors.values()),
-            }
+            results = data["results"]
+            result = list(results.values())[0] if results else None
+            errors = list(data.get("errors", {}).values())
+            return {"result": result, "errors": errors}
         return data
 
 
@@ -59,25 +54,20 @@ class ConsensusTargetPrice(BaseModel):
 
 
 class ConsensusTargetPriceResp(BaseModel):
-    """Response from the /estimates/consensus_target_price/ endpoint for a single company.
-
-    The API returns {"results": {company_id: ...}, "errors": {company_id: ...}}.
-    The model_validator extracts the single result (if any) and collects errors.
-    """
+    """Wraps a PostResponse[ConsensusTargetPrice] for the sync client, extracting the single result."""
 
     result: ConsensusTargetPrice | None = None
-    errors: list[str] = Field(default_factory=list)
+    errors: list[str] = []
 
     @model_validator(mode="before")
     @classmethod
-    def extract_single_result(cls, data: Any) -> Any:
+    def from_post_response(cls, data: Any) -> Any:
+        """Convert PostResponse format to single result."""
         if isinstance(data, dict) and "results" in data:
-            results = data.get("results", {})
-            errors = data.get("errors", {})
-            return {
-                "result": next(iter(results.values()), None),
-                "errors": list(errors.values()),
-            }
+            results = data["results"]
+            result = list(results.values())[0] if results else None
+            errors = list(data.get("errors", {}).values())
+            return {"result": result, "errors": errors}
         return data
 
 
@@ -92,23 +82,18 @@ class AnalystRecommendations(BaseModel):
 
 
 class AnalystRecommendationsResp(BaseModel):
-    """Response from the /estimates/analyst_recommendations/ endpoint for a single company.
-
-    The API returns {"results": {company_id: ...}, "errors": {company_id: ...}}.
-    The model_validator extracts the single result (if any) and collects errors.
-    """
+    """Wraps a PostResponse[AnalystRecommendations] for the sync client, extracting the single result."""
 
     result: AnalystRecommendations | None = None
-    errors: list[str] = Field(default_factory=list)
+    errors: list[str] = []
 
     @model_validator(mode="before")
     @classmethod
-    def extract_single_result(cls, data: Any) -> Any:
+    def from_post_response(cls, data: Any) -> Any:
+        """Convert PostResponse format to single result."""
         if isinstance(data, dict) and "results" in data:
-            results = data.get("results", {})
-            errors = data.get("errors", {})
-            return {
-                "result": next(iter(results.values()), None),
-                "errors": list(errors.values()),
-            }
+            results = data["results"]
+            result = list(results.values())[0] if results else None
+            errors = list(data.get("errors", {}).values())
+            return {"result": result, "errors": errors}
         return data

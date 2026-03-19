@@ -3,14 +3,12 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from kfinance.client.models.date_and_period_models import EstimateType
+from kfinance.client.models.response_models import PostResponse
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
-    AnalystRecommendationsResp,
     ConsensusTargetPrice,
-    ConsensusTargetPriceResp,
     Estimates,
-    EstimatesResp,
 )
 from kfinance.domains.estimates.estimates_tools import (
     GetAnalystRecommendationsFromIdentifiersResp,
@@ -96,8 +94,9 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = EstimatesResp(
-            result=Estimates.model_validate(self.estimates_response), errors=[]
+        expected_resp = PostResponse[Estimates](
+            results={str(SPGI_ID_TRIPLE.company_id): Estimates.model_validate(self.estimates_response)},
+            errors={},
         )
         assert resp == expected_resp
 
@@ -155,11 +154,13 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = EstimatesResp(
-            result=Estimates.model_validate(guidance_response), errors=[]
+        expected_resp = PostResponse[Estimates](
+            results={str(SPGI_ID_TRIPLE.company_id): Estimates.model_validate(guidance_response)},
+            errors={},
         )
         assert resp == expected_resp
-        assert resp.result.estimate_type == EstimateType.guidance
+        result = list(resp.results.values())[0]
+        assert result.estimate_type == EstimateType.guidance
 
     @pytest.mark.asyncio
     async def test_fetch_consensus_target_price_from_company_id(
@@ -196,9 +197,9 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = ConsensusTargetPriceResp(
-            result=ConsensusTargetPrice.model_validate(consensus_target_price_response),
-            errors=[],
+        expected_resp = PostResponse[ConsensusTargetPrice](
+            results={str(SPGI_ID_TRIPLE.company_id): ConsensusTargetPrice.model_validate(consensus_target_price_response)},
+            errors={},
         )
         assert resp == expected_resp
 
@@ -280,9 +281,9 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = AnalystRecommendationsResp(
-            result=AnalystRecommendations.model_validate(analyst_recommendations_response),
-            errors=[],
+        expected_resp = PostResponse[AnalystRecommendations](
+            results={str(SPGI_ID_TRIPLE.company_id): AnalystRecommendations.model_validate(analyst_recommendations_response)},
+            errors={},
         )
         assert resp == expected_resp
 

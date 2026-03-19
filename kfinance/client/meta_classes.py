@@ -634,13 +634,15 @@ class CompanyFunctionsMetaClass:
         if not response.result:
             return pd.DataFrame()
 
-        if not response.result.estimates:
+        result = response.result
+
+        if not result.estimates:
             return pd.DataFrame()
 
-        data = {estimate.name: estimate.value for estimate in response.result.estimates}
+        data = {estimate.name: estimate.value for estimate in result.estimates}
         df = pd.DataFrame([data])
-        df.insert(0, "effective_date", response.result.effective_date)
-        df.insert(1, "currency", response.result.currency)
+        df.insert(0, "effective_date", result.effective_date)
+        df.insert(1, "currency", result.currency)
         return df
 
     def analyst_recommendations(
@@ -655,12 +657,14 @@ class CompanyFunctionsMetaClass:
         if not response.result:
             return pd.DataFrame()
 
-        if not response.result.estimates:
+        result = response.result
+
+        if not result.estimates:
             return pd.DataFrame()
 
-        data = {estimate.name: estimate.value for estimate in response.result.estimates}
+        data = {estimate.name: estimate.value for estimate in result.estimates}
         df = pd.DataFrame([data])
-        df.insert(0, "effective_date", response.result.effective_date)
+        df.insert(0, "effective_date", result.effective_date)
         return df
 
 
