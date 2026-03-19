@@ -2,6 +2,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
+from kfinance.client.models.response_models import PostResponse
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.line_items.response_notes import (
@@ -89,8 +90,6 @@ class TestSegments:
             "results": {str(SPGI_ID_TRIPLE.company_id): self.segments_response},
             "errors": {},
         }
-        from kfinance.client.models.response_models import PostResponse
-
         expected_resp = PostResponse[SegmentsResp].model_validate(expected_resp_data)
 
         assert resp == expected_resp
