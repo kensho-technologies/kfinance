@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from decimal import Decimal
 from typing import Any
@@ -6,6 +7,8 @@ from pydantic import BaseModel, model_validator
 
 from kfinance.client.models.date_and_period_models import EstimatePeriodType, EstimateType
 from kfinance.client.models.response_models import RespWithErrors
+
+logger = logging.getLogger(__name__)
 
 
 class LineItem(BaseModel):
@@ -33,9 +36,11 @@ class EstimatesResp(RespWithErrors):
     @model_validator(mode="before")
     @classmethod
     def from_post_response(cls, data: Any) -> Any:
-        """Convert PostResponse format {results: {id: ...}, errors: {id: ...}} to single result."""
+        """Extract the single result from API response format {results: {id: ...}, errors: {}}."""
         if isinstance(data, dict) and "results" in data:
             results = data["results"]
+            if len(results) > 1:
+                logger.warning("Expected at most one result, got %d", len(results))
             result = next(iter(results.values()), None)
             return {"result": result, "errors": data.get("errors", {})}
         return data
@@ -60,9 +65,11 @@ class ConsensusTargetPriceResp(RespWithErrors):
     @model_validator(mode="before")
     @classmethod
     def from_post_response(cls, data: Any) -> Any:
-        """Convert PostResponse format to single result."""
+        """Extract the single result from API response format {results: {id: ...}, errors: {}}."""
         if isinstance(data, dict) and "results" in data:
             results = data["results"]
+            if len(results) > 1:
+                logger.warning("Expected at most one result, got %d", len(results))
             result = next(iter(results.values()), None)
             return {"result": result, "errors": data.get("errors", {})}
         return data
@@ -86,9 +93,11 @@ class AnalystRecommendationsResp(RespWithErrors):
     @model_validator(mode="before")
     @classmethod
     def from_post_response(cls, data: Any) -> Any:
-        """Convert PostResponse format to single result."""
+        """Extract the single result from API response format {results: {id: ...}, errors: {}}."""
         if isinstance(data, dict) and "results" in data:
             results = data["results"]
+            if len(results) > 1:
+                logger.warning("Expected at most one result, got %d", len(results))
             result = next(iter(results.values()), None)
             return {"result": result, "errors": data.get("errors", {})}
         return data
