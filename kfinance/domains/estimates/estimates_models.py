@@ -26,7 +26,7 @@ class Estimates(BaseModel):
 
 
 class EstimatesResp(RespWithErrors):
-    """Wraps a PostResponse[Estimates], extracting the single result."""
+    """Response model for a single company's estimates."""
 
     result: Estimates | None = None
 
@@ -53,7 +53,7 @@ class ConsensusTargetPrice(BaseModel):
 
 
 class ConsensusTargetPriceResp(RespWithErrors):
-    """Wraps a PostResponse[ConsensusTargetPrice], extracting the single result."""
+    """Response model for a single company's consensus target price."""
 
     result: ConsensusTargetPrice | None = None
 
@@ -79,7 +79,7 @@ class AnalystRecommendations(BaseModel):
 
 
 class AnalystRecommendationsResp(RespWithErrors):
-    """Wraps a PostResponse[AnalystRecommendations], extracting the single result."""
+    """Response model for a single company's analyst recommendations."""
 
     result: AnalystRecommendations | None = None
 
