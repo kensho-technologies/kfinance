@@ -8,7 +8,6 @@ from requests_mock import Mocker
 from kfinance.client.fetch import KFinanceApiClient
 from kfinance.client.kfinance import Client
 from kfinance.client.models.date_and_period_models import EstimateType, Periodicity, PeriodType
-from kfinance.client.models.response_models import PostResponse
 from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
