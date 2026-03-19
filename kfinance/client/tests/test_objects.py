@@ -498,18 +498,18 @@ class MockKFinanceApiClient:
         num_periods_backward,
         period_type,
     ):
-        estimates_resp = MOCK_COMPANY_DB[company_id]["estimates"]
-        return EstimatesResp(result=estimates_resp, errors={})
+        estimates = MOCK_COMPANY_DB[company_id]["estimates"]
+        return EstimatesResp(result=estimates, errors={})
 
     def fetch_consensus_target_price(self, company_id):
         """Get consensus target price estimates"""
-        consensus_target_price_resp = MOCK_COMPANY_DB[company_id]["consensus_target_price"]
-        return ConsensusTargetPriceResp(result=consensus_target_price_resp, errors={})
+        consensus_target_price = MOCK_COMPANY_DB[company_id]["consensus_target_price"]
+        return ConsensusTargetPriceResp(result=consensus_target_price, errors={})
 
     def fetch_analyst_recommendations(self, company_id):
         """Get analyst recommendations"""
-        analyst_recommendations_resp = MOCK_COMPANY_DB[company_id]["analyst_recommendations"]
-        return AnalystRecommendationsResp(result=analyst_recommendations_resp, errors={})
+        analyst_recommendations = MOCK_COMPANY_DB[company_id]["analyst_recommendations"]
+        return AnalystRecommendationsResp(result=analyst_recommendations, errors={})
 
     def fetch_line_item(
         self,
@@ -709,10 +709,10 @@ class TestCompany(TestCase):
         pd.testing.assert_frame_equal(expected_income_statement, income_statement)
 
     def test_estimate(self) -> None:
-        estimates_response: Estimates = MOCK_COMPANY_DB[msft_company_id]["estimates"]
+        estimates: Estimates = MOCK_COMPANY_DB[msft_company_id]["estimates"]
 
         estimates_data = {}
-        for period_key, period_data in estimates_response.periods.items():
+        for period_key, period_data in estimates.periods.items():
             period_estimates = {}
             for estimate in period_data.estimates:
                 period_estimates[estimate.name] = estimate.value
@@ -724,27 +724,27 @@ class TestCompany(TestCase):
 
     def test_consensus_target_price(self) -> None:
         """test consensus target price"""
-        target_price_resp: ConsensusTargetPrice = MOCK_COMPANY_DB[msft_company_id][
+        target_price: ConsensusTargetPrice = MOCK_COMPANY_DB[msft_company_id][
             "consensus_target_price"
         ]
 
-        data = {estimate.name: estimate.value for estimate in target_price_resp.estimates}
+        data = {estimate.name: estimate.value for estimate in target_price.estimates}
         expected_df = pd.DataFrame([data])
-        expected_df.insert(0, "effective_date", target_price_resp.effective_date)
-        expected_df.insert(1, "currency", target_price_resp.currency)
+        expected_df.insert(0, "effective_date", target_price.effective_date)
+        expected_df.insert(1, "currency", target_price.currency)
 
         result = self.msft_company.company.consensus_target_price()
         pd.testing.assert_frame_equal(expected_df, result)
 
     def test_analyst_recommendations(self) -> None:
         """test analyst recommendations"""
-        analyst_recs_resp: AnalystRecommendations = MOCK_COMPANY_DB[msft_company_id][
+        analyst_recs: AnalystRecommendations = MOCK_COMPANY_DB[msft_company_id][
             "analyst_recommendations"
         ]
 
-        data = {estimate.name: estimate.value for estimate in analyst_recs_resp.estimates}
+        data = {estimate.name: estimate.value for estimate in analyst_recs.estimates}
         expected_df = pd.DataFrame([data])
-        expected_df.insert(0, "effective_date", analyst_recs_resp.effective_date)
+        expected_df.insert(0, "effective_date", analyst_recs.effective_date)
 
         result = self.msft_company.company.analyst_recommendations()
         pd.testing.assert_frame_equal(expected_df, result)

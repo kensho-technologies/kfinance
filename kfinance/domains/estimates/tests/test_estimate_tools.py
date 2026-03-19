@@ -30,7 +30,7 @@ from kfinance.domains.line_items.response_notes import (
 
 
 class TestEstimates:
-    estimates_response = {
+    estimates_data = {
         "estimate_type": "consensus",
         "currency": "USD",
         "period_type": "quarterly",
@@ -73,7 +73,7 @@ class TestEstimates:
             method="POST",
             url="https://kfinance.kensho.com/api/v1/estimates/",
             json={
-                "results": {str(SPGI_ID_TRIPLE.company_id): self.estimates_response},
+                "results": {str(SPGI_ID_TRIPLE.company_id): self.estimates_data},
                 "errors": {},
             },
             is_optional=True,
@@ -97,7 +97,7 @@ class TestEstimates:
         )
 
         expected_resp = EstimatesResp(
-            result=Estimates.model_validate(self.estimates_response),
+            result=Estimates.model_validate(self.estimates_data),
             errors={},
         )
         assert resp == expected_resp
@@ -114,7 +114,7 @@ class TestEstimates:
         """
 
         expected_resp = GetEstimatesFromIdentifiersResp(
-            results={"SPGI": Estimates.model_validate(self.estimates_response)},
+            results={"SPGI": Estimates.model_validate(self.estimates_data)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -139,15 +139,15 @@ class TestEstimates:
         WHEN we request guidance estimates
         THEN we get back guidance estimates with the correct estimate_type
         """
-        guidance_response = {
-            **self.estimates_response,
+        guidance_data = {
+            **self.estimates_data,
             "estimate_type": "guidance",
         }
 
         httpx_mock.add_response(
             method="POST",
             url="https://kfinance.kensho.com/api/v1/estimates/",
-            json={"results": {str(SPGI_ID_TRIPLE.company_id): guidance_response}, "errors": {}},
+            json={"results": {str(SPGI_ID_TRIPLE.company_id): guidance_data}, "errors": {}},
         )
 
         resp = await fetch_estimates_from_company_id(
@@ -157,7 +157,7 @@ class TestEstimates:
         )
 
         expected_resp = EstimatesResp(
-            result=Estimates.model_validate(guidance_response),
+            result=Estimates.model_validate(guidance_data),
             errors={},
         )
         assert resp == expected_resp
@@ -173,7 +173,7 @@ class TestEstimates:
         WHEN we request SPGI's consensus target price
         THEN we get back the target price data
         """
-        consensus_target_price_response = {
+        consensus_target_price_data = {
             "currency": "USD",
             "effective_date": "2025-06-01",
             "estimates": [
@@ -188,7 +188,7 @@ class TestEstimates:
             method="GET",
             url=f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}",
             json={
-                "results": {str(SPGI_ID_TRIPLE.company_id): consensus_target_price_response},
+                "results": {str(SPGI_ID_TRIPLE.company_id): consensus_target_price_data},
                 "errors": {},
             },
         )
@@ -199,7 +199,7 @@ class TestEstimates:
         )
 
         expected_resp = ConsensusTargetPriceResp(
-            result=ConsensusTargetPrice.model_validate(consensus_target_price_response),
+            result=ConsensusTargetPrice.model_validate(consensus_target_price_data),
             errors={},
         )
         assert resp == expected_resp
@@ -214,7 +214,7 @@ class TestEstimates:
         WHEN we request consensus target price for SPGI and a non-existent company
         THEN we get back SPGI's target price and an error for the non-existent company
         """
-        consensus_target_price_response = {
+        consensus_target_price_data = {
             "currency": "USD",
             "effective_date": "2025-06-01",
             "estimates": [
@@ -229,7 +229,7 @@ class TestEstimates:
             method="GET",
             url=f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}",
             json={
-                "results": {str(SPGI_ID_TRIPLE.company_id): consensus_target_price_response},
+                "results": {str(SPGI_ID_TRIPLE.company_id): consensus_target_price_data},
                 "errors": {},
             },
         )
@@ -241,7 +241,7 @@ class TestEstimates:
 
         expected_resp = GetConsensusTargetPriceFromIdentifiersResp(
             results={
-                "SPGI": ConsensusTargetPrice.model_validate(consensus_target_price_response)
+                "SPGI": ConsensusTargetPrice.model_validate(consensus_target_price_data)
             },
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
@@ -259,7 +259,7 @@ class TestEstimates:
         WHEN we request SPGI's analyst recommendations
         THEN we get back the analyst recommendations data
         """
-        analyst_recommendations_response = {
+        analyst_recommendations_data = {
             "effective_date": "2025-06-01",
             "estimates": [
                 {"name": "# of Analyst Recommendations - Buy", "value": "12"},
@@ -272,7 +272,7 @@ class TestEstimates:
             method="GET",
             url=f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}",
             json={
-                "results": {str(SPGI_ID_TRIPLE.company_id): analyst_recommendations_response},
+                "results": {str(SPGI_ID_TRIPLE.company_id): analyst_recommendations_data},
                 "errors": {},
             },
         )
@@ -283,7 +283,7 @@ class TestEstimates:
         )
 
         expected_resp = AnalystRecommendationsResp(
-            result=AnalystRecommendations.model_validate(analyst_recommendations_response),
+            result=AnalystRecommendations.model_validate(analyst_recommendations_data),
             errors={},
         )
         assert resp == expected_resp
@@ -298,7 +298,7 @@ class TestEstimates:
         WHEN we request analyst recommendations for SPGI and a non-existent company
         THEN we get back SPGI's recommendations and an error for the non-existent company
         """
-        analyst_recommendations_response = {
+        analyst_recommendations_data = {
             "effective_date": "2025-06-01",
             "estimates": [
                 {"name": "# of Analyst Recommendations - Buy", "value": "12"},
@@ -311,7 +311,7 @@ class TestEstimates:
             method="GET",
             url=f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}",
             json={
-                "results": {str(SPGI_ID_TRIPLE.company_id): analyst_recommendations_response},
+                "results": {str(SPGI_ID_TRIPLE.company_id): analyst_recommendations_data},
                 "errors": {},
             },
         )
@@ -323,7 +323,7 @@ class TestEstimates:
 
         expected_resp = GetAnalystRecommendationsFromIdentifiersResp(
             results={
-                "SPGI": AnalystRecommendations.model_validate(analyst_recommendations_response)
+                "SPGI": AnalystRecommendations.model_validate(analyst_recommendations_data)
             },
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
