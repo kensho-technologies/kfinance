@@ -1,12 +1,13 @@
-import logging
 from datetime import date
 from decimal import Decimal
+import logging
 from typing import Any
 
 from pydantic import BaseModel, model_validator
 
 from kfinance.client.models.date_and_period_models import EstimatePeriodType, EstimateType
 from kfinance.client.models.response_models import RespWithErrors
+
 
 logger = logging.getLogger(__name__)
 

@@ -28,4 +28,3 @@ class StatementPeriodData(BaseModel):
 class StatementsResp(BasePeriodsResp):
     currency: str | None
     periods: dict[str, StatementPeriodData]  # period -> statement and period data
-

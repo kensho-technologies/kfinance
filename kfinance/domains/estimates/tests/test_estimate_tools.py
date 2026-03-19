@@ -240,9 +240,7 @@ class TestEstimates:
         )
 
         expected_resp = GetConsensusTargetPriceFromIdentifiersResp(
-            results={
-                "SPGI": ConsensusTargetPrice.model_validate(consensus_target_price_data)
-            },
+            results={"SPGI": ConsensusTargetPrice.model_validate(consensus_target_price_data)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -322,9 +320,7 @@ class TestEstimates:
         )
 
         expected_resp = GetAnalystRecommendationsFromIdentifiersResp(
-            results={
-                "SPGI": AnalystRecommendations.model_validate(analyst_recommendations_data)
-            },
+            results={"SPGI": AnalystRecommendations.model_validate(analyst_recommendations_data)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],

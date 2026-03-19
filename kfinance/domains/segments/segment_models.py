@@ -27,4 +27,3 @@ class SegmentPeriodData(BaseModel):
 class SegmentsResp(BasePeriodsResp):
     currency: str | None
     periods: dict[str, SegmentPeriodData]  # period -> segment and period data
-
