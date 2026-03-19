@@ -36,15 +36,7 @@ class EstimatesResp(RespWithErrors):
     @model_validator(mode="before")
     @classmethod
     def from_post_response(cls, data: Any) -> Any:
-        """Extract the single result from the API response.
-
-        Can be populated in two ways:
-        1. From the API response format (via model_validate):
-            {"results": {"12345": {...}}, "errors": {}}
-            -> {"result": {...}, "errors": {}}
-        2. Directly (e.g. in tests):
-            {"result": Estimates(...), "errors": {}}
-        """
+        """Extract the single result from the API response."""
         if isinstance(data, dict) and "results" in data:
             results = data["results"]
             if len(results) > 1:
@@ -73,15 +65,7 @@ class ConsensusTargetPriceResp(RespWithErrors):
     @model_validator(mode="before")
     @classmethod
     def from_post_response(cls, data: Any) -> Any:
-        """Extract the single result from the API response.
-
-        Can be populated in two ways:
-        1. From the API response format (via model_validate):
-            {"results": {"12345": {...}}, "errors": {}}
-            -> {"result": {...}, "errors": {}}
-        2. Directly (e.g. in tests):
-            {"result": ConsensusTargetPrice(...), "errors": {}}
-        """
+        """Extract the single result from the API response."""
         if isinstance(data, dict) and "results" in data:
             results = data["results"]
             if len(results) > 1:
@@ -109,15 +93,7 @@ class AnalystRecommendationsResp(RespWithErrors):
     @model_validator(mode="before")
     @classmethod
     def from_post_response(cls, data: Any) -> Any:
-        """Extract the single result from the API response.
-
-        Can be populated in two ways:
-        1. From the API response format (via model_validate):
-            {"results": {"12345": {...}}, "errors": {}}
-            -> {"result": {...}, "errors": {}}
-        2. Directly (e.g. in tests):
-            {"result": AnalystRecommendations(...), "errors": {}}
-        """
+        """Extract the single result from the API response."""
         if isinstance(data, dict) and "results" in data:
             results = data["results"]
             if len(results) > 1:
