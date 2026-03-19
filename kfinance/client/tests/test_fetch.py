@@ -8,6 +8,7 @@ from requests_mock import Mocker
 from kfinance.client.fetch import KFinanceApiClient
 from kfinance.client.kfinance import Client
 from kfinance.client.models.date_and_period_models import EstimateType, Periodicity, PeriodType
+from kfinance.client.models.response_models import PostResponse
 from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
@@ -21,11 +22,8 @@ from kfinance.domains.companies.company_models import (
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
     AnalystRecommendationsItem,
-    AnalystRecommendationsResp,
     ConsensusTargetPrice,
     ConsensusTargetPriceItem,
-    ConsensusTargetPriceResp,
-    EstimatesResp,
 )
 from kfinance.domains.segments.segment_models import SegmentType
 
@@ -423,9 +421,9 @@ class TestFetchItem(TestCase):
         self.kfinance_api_client.fetch.assert_called_with(
             expected_url, method="POST", request_body=expected_request_body
         )
-        assert isinstance(result, EstimatesResp)
-        assert result.result is None
-        assert result.errors == []
+        assert isinstance(result, PostResponse)
+        assert result.results == {}
+        assert result.errors == {}
 
     def test_fetch_consensus_target_price(self) -> None:
         company_id = 21719
@@ -446,17 +444,19 @@ class TestFetchItem(TestCase):
             "errors": {},
         }
 
-        expected_result = ConsensusTargetPriceResp(
-            result=ConsensusTargetPrice(
-                currency="USD",
-                effective_date="2025-06-01",
-                estimates=[
-                    ConsensusTargetPriceItem(
-                        name="Target Price Consensus Mean", value="520.000000"
-                    ),
-                ],
-            ),
-            errors=[],
+        expected_result = PostResponse[ConsensusTargetPrice](
+            results={
+                str(company_id): ConsensusTargetPrice(
+                    currency="USD",
+                    effective_date="2025-06-01",
+                    estimates=[
+                        ConsensusTargetPriceItem(
+                            name="Target Price Consensus Mean", value="520.000000"
+                        ),
+                    ],
+                ),
+            },
+            errors={},
         )
 
         result = self.kfinance_api_client.fetch_consensus_target_price(
@@ -483,16 +483,18 @@ class TestFetchItem(TestCase):
             "errors": {},
         }
 
-        expected_result = AnalystRecommendationsResp(
-            result=AnalystRecommendations(
-                effective_date="2025-06-01",
-                estimates=[
-                    AnalystRecommendationsItem(
-                        name="# of Analyst Recommendations - Buy", value="12"
-                    ),
-                ],
-            ),
-            errors=[],
+        expected_result = PostResponse[AnalystRecommendations](
+            results={
+                str(company_id): AnalystRecommendations(
+                    effective_date="2025-06-01",
+                    estimates=[
+                        AnalystRecommendationsItem(
+                            name="# of Analyst Recommendations - Buy", value="12"
+                        ),
+                    ],
+                ),
+            },
+            errors={},
         )
 
         result = self.kfinance_api_client.fetch_analyst_recommendations(
