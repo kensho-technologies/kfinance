@@ -31,9 +31,9 @@ from kfinance.domains.companies.company_models import (
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.estimates.estimates_models import (
-    AnalystRecommendations,
-    ConsensusTargetPrice,
-    Estimates,
+    AnalystRecommendationsResp,
+    ConsensusTargetPriceResp,
+    EstimatesResp,
 )
 from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
@@ -828,7 +828,7 @@ class KFinanceApiClient:
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
         period_type: EstimatePeriodType | None = None,
-    ) -> PostResponse[Estimates]:
+    ) -> EstimatesResp:
         """Get estimates or guidance for a specified duration."""
 
         url = f"{self.url_base}estimates/"
@@ -856,22 +856,22 @@ class KFinanceApiClient:
 
         response_data = self.fetch(url, method="POST", request_body=request_body)
 
-        return PostResponse[Estimates].model_validate(response_data)
+        return EstimatesResp.model_validate(response_data)
 
     def fetch_consensus_target_price(
         self,
         company_id: int,
-    ) -> PostResponse[ConsensusTargetPrice]:
+    ) -> ConsensusTargetPriceResp:
         """Get consensus target price estimates"""
         url = f"{self.url_base}estimates/consensus_target_price/{company_id}"
         response_data = self.fetch(url)
-        return PostResponse[ConsensusTargetPrice].model_validate(response_data)
+        return ConsensusTargetPriceResp.model_validate(response_data)
 
     def fetch_analyst_recommendations(
         self,
         company_id: int,
-    ) -> PostResponse[AnalystRecommendations]:
+    ) -> AnalystRecommendationsResp:
         """Get analyst recommendations"""
         url = f"{self.url_base}estimates/analyst_recommendations/{company_id}"
         response_data = self.fetch(url)
-        return PostResponse[AnalystRecommendations].model_validate(response_data)
+        return AnalystRecommendationsResp.model_validate(response_data)
