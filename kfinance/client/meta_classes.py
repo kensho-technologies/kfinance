@@ -562,11 +562,10 @@ class CompanyFunctionsMetaClass:
             num_periods_backward=num_periods_backward,
         )
 
-        if not estimate_response.results:
+        if not estimate_response.result:
             return pd.DataFrame()
 
-        estimate_resp = list(estimate_response.results.values())[0]
-        periods = estimate_resp.model_dump(mode="json")["periods"]
+        periods = estimate_response.result.model_dump(mode="json")["periods"]
 
         estimates_data = {}
         for period_key, period_data in periods.items():
@@ -632,18 +631,16 @@ class CompanyFunctionsMetaClass:
             company_id=self.company_id,
         )
 
-        if not response.results:
+        if not response.result:
             return pd.DataFrame()
 
-        result = response.results[str(self.company_id)]
-
-        if not result.estimates:
+        if not response.result.estimates:
             return pd.DataFrame()
 
-        data = {estimate.name: estimate.value for estimate in result.estimates}
+        data = {estimate.name: estimate.value for estimate in response.result.estimates}
         df = pd.DataFrame([data])
-        df.insert(0, "effective_date", result.effective_date)
-        df.insert(1, "currency", result.currency)
+        df.insert(0, "effective_date", response.result.effective_date)
+        df.insert(1, "currency", response.result.currency)
         return df
 
     def analyst_recommendations(
@@ -655,17 +652,15 @@ class CompanyFunctionsMetaClass:
             company_id=self.company_id,
         )
 
-        if not response.results:
+        if not response.result:
             return pd.DataFrame()
 
-        result = response.results[str(self.company_id)]
-
-        if not result.estimates:
+        if not response.result.estimates:
             return pd.DataFrame()
 
-        data = {estimate.name: estimate.value for estimate in result.estimates}
+        data = {estimate.name: estimate.value for estimate in response.result.estimates}
         df = pd.DataFrame([data])
-        df.insert(0, "effective_date", result.effective_date)
+        df.insert(0, "effective_date", response.result.effective_date)
         return df
 
 

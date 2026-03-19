@@ -28,9 +28,3 @@ class SegmentsResp(BasePeriodsResp):
     currency: str | None
     periods: dict[str, SegmentPeriodData]  # period -> segment and period data
 
-
-class SegmentsBatchResp(BaseModel):
-    """Response model for batch segments API call."""
-
-    results: dict[str, SegmentsResp]  # company_id -> segments response
-    errors: dict[str, str]  # company_id -> error message

@@ -89,10 +89,9 @@ class TestSegments:
             "results": {str(SPGI_ID_TRIPLE.company_id): self.segments_response},
             "errors": {},
         }
-        # Import here to avoid circular imports
-        from kfinance.domains.segments.segment_models import SegmentsBatchResp
+        from kfinance.client.models.response_models import PostResponse
 
-        expected_resp = SegmentsBatchResp.model_validate(expected_resp_data)
+        expected_resp = PostResponse[SegmentsResp].model_validate(expected_resp_data)
 
         assert resp == expected_resp
 

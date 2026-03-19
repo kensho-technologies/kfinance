@@ -11,7 +11,8 @@ from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
 )
-from kfinance.domains.segments.segment_models import SegmentsBatchResp, SegmentsResp, SegmentType
+from kfinance.client.models.response_models import PostResponse
+from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
@@ -136,7 +137,7 @@ async def get_segments_from_identifiers(
     )
 
     # Add any errors from the segments API
-    errors.extend(segments_resp.errors)
+    errors.extend(segments_resp.errors.values())
 
     # Map results back to original identifiers
     identifier_to_results = {}
@@ -184,7 +185,7 @@ async def fetch_segments_from_company_ids(
     calendar_type: CalendarType | None = None,
     num_periods: int | None = None,
     num_periods_back: int | None = None,
-) -> SegmentsBatchResp:
+) -> PostResponse[SegmentsResp]:
     """Fetch segments data from the API for multiple company IDs."""
 
     # Prepare the request payload
@@ -214,4 +215,4 @@ async def fetch_segments_from_company_ids(
     url = "/segments/"
     resp = await httpx_client.post(url=url, json=payload)
 
-    return SegmentsBatchResp.model_validate(resp.json())
+    return PostResponse[SegmentsResp].model_validate(resp.json())

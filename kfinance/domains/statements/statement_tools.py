@@ -11,8 +11,8 @@ from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
 )
+from kfinance.client.models.response_models import PostResponse
 from kfinance.domains.statements.statement_models import (
-    StatementsBatchResp,
     StatementsResp,
     StatementType,
 )
@@ -161,7 +161,7 @@ async def get_financial_statement_from_identifiers(
     )
 
     # Add any errors from the statements API
-    errors.extend(statements_resp.errors)
+    errors.extend(statements_resp.errors.values())
 
     # Map results back to original identifiers
     identifier_to_results = {}
@@ -210,7 +210,7 @@ async def fetch_statements_from_company_ids(
     calendar_type: CalendarType | None = None,
     num_periods: int | None = None,
     num_periods_back: int | None = None,
-) -> StatementsBatchResp:
+) -> PostResponse[StatementsResp]:
     """Fetch statements data from the API for multiple company IDs."""
 
     # Prepare the request payload
@@ -240,4 +240,4 @@ async def fetch_statements_from_company_ids(
     url = "/statements/"
     resp = await httpx_client.post(url=url, json=payload)
 
-    return StatementsBatchResp.model_validate(resp.json())
+    return PostResponse[StatementsResp].model_validate(resp.json())

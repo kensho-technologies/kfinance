@@ -31,9 +31,12 @@ from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
     AnalystRecommendationsItem,
+    AnalystRecommendationsResp,
     ConsensusTargetPrice,
     ConsensusTargetPriceItem,
+    ConsensusTargetPriceResp,
     Estimates,
+    EstimatesResp,
 )
 from kfinance.domains.line_items.line_item_models import LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
@@ -496,21 +499,17 @@ class MockKFinanceApiClient:
         period_type,
     ):
         estimates_resp = MOCK_COMPANY_DB[company_id]["estimates"]
-        return PostResponse[Estimates](results={str(company_id): estimates_resp}, errors={})
+        return EstimatesResp(result=estimates_resp, errors=[])
 
     def fetch_consensus_target_price(self, company_id):
         """Get consensus target price estimates"""
         consensus_target_price_resp = MOCK_COMPANY_DB[company_id]["consensus_target_price"]
-        return PostResponse[ConsensusTargetPrice](
-            results={str(company_id): consensus_target_price_resp}, errors={}
-        )
+        return ConsensusTargetPriceResp(result=consensus_target_price_resp, errors=[])
 
     def fetch_analyst_recommendations(self, company_id):
         """Get analyst recommendations"""
         analyst_recommendations_resp = MOCK_COMPANY_DB[company_id]["analyst_recommendations"]
-        return PostResponse[AnalystRecommendations](
-            results={str(company_id): analyst_recommendations_resp}, errors={}
-        )
+        return AnalystRecommendationsResp(result=analyst_recommendations_resp, errors=[])
 
     def fetch_line_item(
         self,
