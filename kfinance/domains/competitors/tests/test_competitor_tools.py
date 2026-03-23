@@ -77,3 +77,28 @@ class TestCompetitors:
         )
 
         assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_fetch_competitors_http_404(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN the server returns a 404 for a competitors request (e.g. invalid enum in URL)
+        THEN the error is caught by the batch executor and returned as a user-friendly error
+        """
+
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/competitors/{SPGI_COMPANY_ID}/invalid_source",
+            status_code=404,
+        )
+
+        resp = await get_competitors_from_identifiers(
+            identifiers=["SPGI"],
+            competitor_source="invalid_source",
+            httpx_client=httpx_client,
+        )
+
+        assert resp.results == {}
+        assert len(resp.errors) == 1
+        assert "No result found" in resp.errors[0]

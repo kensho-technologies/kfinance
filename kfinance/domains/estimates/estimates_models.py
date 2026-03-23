@@ -1,12 +1,11 @@
 from datetime import date
 from decimal import Decimal
 import logging
-from typing import Any
+from typing import Any, Callable, Dict
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_serializer, model_validator
 
 from kfinance.client.models.date_and_period_models import EstimatePeriodType, EstimateType
-from kfinance.client.models.response_models import RespWithErrors
 
 
 logger = logging.getLogger(__name__)
@@ -29,10 +28,20 @@ class Estimates(BaseModel):
     periods: dict[str, EstimatesPeriodData]
 
 
-class EstimatesResp(RespWithErrors):
+class EstimatesResp(BaseModel):
     """Response model for a single company's estimates."""
 
     result: Estimates | None = None
+    error: str | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, handler: Callable) -> Dict[str, Any]:
+        """Make `error` the last response field and only include if there is at least one error."""
+        data = handler(self)
+        error = data.pop("error")
+        if error:
+            data["error"] = error
+        return data
 
     @model_validator(mode="before")
     @classmethod
@@ -43,7 +52,11 @@ class EstimatesResp(RespWithErrors):
             if len(results) > 1:
                 logger.warning("Expected at most one result, got %d", len(results))
             result = next(iter(results.values()), None)
-            return {"result": result, "errors": data.get("errors", {})}
+            errors = data.get("errors", {})
+            if len(errors) > 1:
+                logger.warning("Expected at most one error, got %d", len(errors))
+            error = next(iter(errors.values()), None)
+            return {"result": result, "error": error}
         return data
 
 
@@ -58,10 +71,20 @@ class ConsensusTargetPrice(BaseModel):
     estimates: list[ConsensusTargetPriceItem]
 
 
-class ConsensusTargetPriceResp(RespWithErrors):
+class ConsensusTargetPriceResp(BaseModel):
     """Response model for a single company's consensus target price."""
 
     result: ConsensusTargetPrice | None = None
+    error: str | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, handler: Callable) -> Dict[str, Any]:
+        """Make `error` the last response field and only include if there is at least one error."""
+        data = handler(self)
+        error = data.pop("error")
+        if error:
+            data["error"] = error
+        return data
 
     @model_validator(mode="before")
     @classmethod
@@ -72,7 +95,11 @@ class ConsensusTargetPriceResp(RespWithErrors):
             if len(results) > 1:
                 logger.warning("Expected at most one result, got %d", len(results))
             result = next(iter(results.values()), None)
-            return {"result": result, "errors": data.get("errors", {})}
+            errors = data.get("errors", {})
+            if len(errors) > 1:
+                logger.warning("Expected at most one error, got %d", len(errors))
+            error = next(iter(errors.values()), None)
+            return {"result": result, "error": error}
         return data
 
 
@@ -86,10 +113,20 @@ class AnalystRecommendations(BaseModel):
     estimates: list[AnalystRecommendationsItem]
 
 
-class AnalystRecommendationsResp(RespWithErrors):
+class AnalystRecommendationsResp(BaseModel):
     """Response model for a single company's analyst recommendations."""
 
     result: AnalystRecommendations | None = None
+    error: str | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, handler: Callable) -> Dict[str, Any]:
+        """Make `error` the last response field and only include if there is at least one error."""
+        data = handler(self)
+        error = data.pop("error")
+        if error:
+            data["error"] = error
+        return data
 
     @model_validator(mode="before")
     @classmethod
@@ -100,5 +137,9 @@ class AnalystRecommendationsResp(RespWithErrors):
             if len(results) > 1:
                 logger.warning("Expected at most one result, got %d", len(results))
             result = next(iter(results.values()), None)
-            return {"result": result, "errors": data.get("errors", {})}
+            errors = data.get("errors", {})
+            if len(errors) > 1:
+                logger.warning("Expected at most one error, got %d", len(errors))
+            error = next(iter(errors.values()), None)
+            return {"result": result, "error": error}
         return data

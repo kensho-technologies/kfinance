@@ -98,7 +98,6 @@ class TestEstimates:
 
         expected_resp = EstimatesResp(
             result=Estimates.model_validate(self.estimates_data),
-            errors={},
         )
         assert resp == expected_resp
 
@@ -158,7 +157,6 @@ class TestEstimates:
 
         expected_resp = EstimatesResp(
             result=Estimates.model_validate(guidance_data),
-            errors={},
         )
         assert resp == expected_resp
         assert resp.result.estimate_type == EstimateType.guidance
@@ -200,7 +198,6 @@ class TestEstimates:
 
         expected_resp = ConsensusTargetPriceResp(
             result=ConsensusTargetPrice.model_validate(consensus_target_price_data),
-            errors={},
         )
         assert resp == expected_resp
 
@@ -282,7 +279,6 @@ class TestEstimates:
 
         expected_resp = AnalystRecommendationsResp(
             result=AnalystRecommendations.model_validate(analyst_recommendations_data),
-            errors={},
         )
         assert resp == expected_resp
 

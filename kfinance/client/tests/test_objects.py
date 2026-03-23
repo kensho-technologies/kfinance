@@ -499,17 +499,17 @@ class MockKFinanceApiClient:
         period_type,
     ):
         estimates = MOCK_COMPANY_DB[company_id]["estimates"]
-        return EstimatesResp(result=estimates, errors={})
+        return EstimatesResp(result=estimates)
 
     def fetch_consensus_target_price(self, company_id):
         """Get consensus target price estimates"""
         consensus_target_price = MOCK_COMPANY_DB[company_id]["consensus_target_price"]
-        return ConsensusTargetPriceResp(result=consensus_target_price, errors={})
+        return ConsensusTargetPriceResp(result=consensus_target_price)
 
     def fetch_analyst_recommendations(self, company_id):
         """Get analyst recommendations"""
         analyst_recommendations = MOCK_COMPANY_DB[company_id]["analyst_recommendations"]
-        return AnalystRecommendationsResp(result=analyst_recommendations, errors={})
+        return AnalystRecommendationsResp(result=analyst_recommendations)
 
     def fetch_line_item(
         self,

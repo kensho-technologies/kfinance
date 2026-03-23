@@ -1,7 +1,8 @@
 import httpx
 import pytest
+from pytest_httpx import HTTPXMock
 
-from kfinance.conftest import SPGI_ID_TRIPLE
+from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
     RelationshipResponse,
@@ -63,3 +64,28 @@ class TestBusinessRelationships:
         )
 
         assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_fetch_business_relationship_http_404(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN the server returns a 404 for a business relationship request
+        THEN the error is caught by the batch executor and returned as a user-friendly error
+        """
+
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/supplier",
+            status_code=404,
+        )
+
+        resp = await get_business_relationship_from_identifiers(
+            identifiers=["SPGI"],
+            business_relationship=BusinessRelationshipType.supplier,
+            httpx_client=httpx_client,
+        )
+
+        assert resp.results == {}
+        assert len(resp.errors) == 1
+        assert "No result found" in resp.errors[0]

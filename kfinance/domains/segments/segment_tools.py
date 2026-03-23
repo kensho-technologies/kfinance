@@ -121,30 +121,35 @@ async def get_segments_from_identifiers(
     )
     errors: list[str] = list(id_triple_resp.errors.values())
 
-    # Call the segments API with company IDs
-    segments_resp = await fetch_segments_from_company_ids(
-        company_ids=id_triple_resp.company_ids,
-        segment_type=segment_type,
-        period_type=period_type,
-        start_year=start_year,
-        end_year=end_year,
-        start_quarter=start_quarter,
-        end_quarter=end_quarter,
-        calendar_type=calendar_type,
-        num_periods=num_periods,
-        num_periods_back=num_periods_back,
-        httpx_client=httpx_client,
-    )
+    # Fetch segments for all resolved company IDs
+    if id_triple_resp.company_ids:
+        segments_resp = await fetch_segments_from_company_ids(
+            company_ids=id_triple_resp.company_ids,
+            segment_type=segment_type,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            calendar_type=calendar_type,
+            num_periods=num_periods,
+            num_periods_back=num_periods_back,
+            httpx_client=httpx_client,
+        )
 
-    # Add any errors from the segments API
-    errors.extend(segments_resp.errors.values())
+        # Add any errors from the segments API, mapping company_id keys back to identifiers
+        for company_id_str, error in segments_resp.errors.items():
+            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            errors.append(f"{original_identifier}: {error}")
 
-    # Map results back to original identifiers
-    identifier_to_results = {}
-    for company_id_str, segments_data in segments_resp.results.items():
-        company_id = int(company_id_str)
-        original_identifier = id_triple_resp.get_identifier_from_company_id(company_id)
-        identifier_to_results[original_identifier] = segments_data
+        # Map results back to original identifiers
+        identifier_to_results = {}
+        for company_id_str, segments_data in segments_resp.results.items():
+            company_id = int(company_id_str)
+            original_identifier = id_triple_resp.get_identifier_from_company_id(company_id)
+            identifier_to_results[original_identifier] = segments_data
+    else:
+        identifier_to_results = {}
 
     # If no date and multiple companies, only return the most recent value.
     # By default, we return 5 years of data, which can be too much when

@@ -226,7 +226,9 @@ async def get_estimates_from_identifiers(
             resp: EstimatesResp = task.result
             if resp.result is not None:
                 results[task.result_key] = resp.result
-            errors.extend(resp.errors.values())
+            if resp.error is not None:
+                error_msg = f"{task.result_key}: {resp.error}"
+                errors.append(error_msg)
 
     resp_model = GetEstimatesFromIdentifiersResp(results=results, errors=errors)
 
@@ -311,7 +313,9 @@ async def get_consensus_target_price_from_identifiers(
             resp: ConsensusTargetPriceResp = task.result
             if resp.result is not None:
                 results[task.result_key] = resp.result
-            errors.extend(resp.errors.values())
+            if resp.error is not None:
+                error_msg = f"{task.result_key}: {resp.error}"
+                errors.append(error_msg)
 
     return GetConsensusTargetPriceFromIdentifiersResp(results=results, errors=errors)
 
@@ -358,7 +362,9 @@ async def get_analyst_recommendations_from_identifiers(
             resp: AnalystRecommendationsResp = task.result
             if resp.result is not None:
                 results[task.result_key] = resp.result
-            errors.extend(resp.errors.values())
+            if resp.error is not None:
+                error_msg = f"{task.result_key}: {resp.error}"
+                errors.append(error_msg)
 
     return GetAnalystRecommendationsFromIdentifiersResp(results=results, errors=errors)
 

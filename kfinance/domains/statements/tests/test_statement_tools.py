@@ -158,3 +158,30 @@ class TestStatements:
         )
 
         assert resp == expected_response
+
+    @pytest.mark.asyncio
+    async def test_all_identifiers_fail_resolution(
+        self,
+        httpx_client: httpx.AsyncClient,
+    ) -> None:
+        """
+        WHEN all identifiers fail resolution
+        THEN we get back an empty results dict and errors without calling the statements API
+        """
+
+        expected_resp = GetFinancialStatementFromIdentifiersResp(
+            results={},
+            errors=[
+                "No identification triple found for the provided identifier:"
+                " NON-EXISTENT of type: ticker"
+            ],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+        )
+
+        resp = await get_financial_statement_from_identifiers(
+            identifiers=["non-existent"],
+            statement=StatementType.income_statement,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp

@@ -170,3 +170,30 @@ class TestSegments:
         )
 
         assert resp == expected_response
+
+    @pytest.mark.asyncio
+    async def test_all_identifiers_fail_resolution(
+        self,
+        httpx_client: httpx.AsyncClient,
+    ) -> None:
+        """
+        WHEN all identifiers fail resolution
+        THEN we get back an empty results dict and errors without calling the segments API
+        """
+
+        expected_resp = GetSegmentsFromIdentifiersResp(
+            results={},
+            errors=[
+                "No identification triple found for the provided identifier:"
+                " NON-EXISTENT of type: ticker"
+            ],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+        )
+
+        resp = await get_segments_from_identifiers(
+            identifiers=["non-existent"],
+            segment_type=SegmentType.business,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp

@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 import httpx
+from httpx import HTTPStatusError
 import pytest
 from pytest_httpx import HTTPXMock
 
@@ -478,3 +479,25 @@ class TestRoundsOfFunding:
         )
 
         assert resp == expected_response
+
+    @pytest.mark.asyncio
+    async def test_get_rounds_of_funding_info_http_400(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN the server returns a 400 for a non-existent transaction_id
+        THEN raise_for_status raises HTTPStatusError
+        """
+        transaction_id = 99999999
+
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}",
+            status_code=400,
+        )
+
+        with pytest.raises(HTTPStatusError, match="400"):
+            await get_rounds_of_funding_info_from_transaction_ids(
+                transaction_ids=[transaction_id],
+                httpx_client=httpx_client,
+            )

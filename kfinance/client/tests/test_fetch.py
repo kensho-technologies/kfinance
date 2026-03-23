@@ -25,7 +25,6 @@ from kfinance.domains.estimates.estimates_models import (
     ConsensusTargetPrice,
     ConsensusTargetPriceItem,
     ConsensusTargetPriceResp,
-    EstimatesResp,
 )
 from kfinance.domains.segments.segment_models import SegmentType
 
@@ -423,9 +422,9 @@ class TestFetchItem(TestCase):
         self.kfinance_api_client.fetch.assert_called_with(
             expected_url, method="POST", request_body=expected_request_body
         )
-        assert isinstance(result, EstimatesResp)
-        assert result.result is None
-        assert result.errors == {}
+        # Verify the result is an EstimatesResp
+        expected_result_dict = {"result": None}
+        assert result.model_dump() == expected_result_dict
 
     def test_fetch_consensus_target_price(self) -> None:
         company_id = 21719
@@ -456,7 +455,6 @@ class TestFetchItem(TestCase):
                     ),
                 ],
             ),
-            errors={},
         )
 
         result = self.kfinance_api_client.fetch_consensus_target_price(
@@ -492,7 +490,6 @@ class TestFetchItem(TestCase):
                     ),
                 ],
             ),
-            errors={},
         )
 
         result = self.kfinance_api_client.fetch_analyst_recommendations(

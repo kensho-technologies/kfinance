@@ -70,10 +70,11 @@ class TestGetFinancialLineItemFromIdentifiers:
             httpx_client=httpx_client,
         )
 
-        expected_resp = {
+        expected_results = {
             str(SPGI_ID_TRIPLE.company_id): LineItemResp.model_validate(self.line_item_resp)
         }
-        assert resp == expected_resp
+        assert resp.results == expected_results
+        assert resp.errors == {}
 
     @pytest.mark.parametrize(
         "calendar_type, expected_notes",
