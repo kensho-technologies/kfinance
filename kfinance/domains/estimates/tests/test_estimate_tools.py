@@ -129,6 +129,36 @@ class TestEstimates:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
+    async def test_fetch_estimates_api_returns_error(
+        self,
+        httpx_client: httpx.AsyncClient,
+        httpx_mock: HTTPXMock,
+    ) -> None:
+        """
+        WHEN the estimates API returns an error for a company (e.g. no data available)
+        THEN the error is extracted and surfaced in the response
+        """
+        httpx_mock.add_response(
+            method="POST",
+            url="https://kfinance.kensho.com/api/v1/estimates/",
+            json={"results": {}, "errors": {"errors": "No results found."}},
+        )
+
+        expected_resp = GetEstimatesFromIdentifiersResp(
+            results={},
+            errors=["SPGI: No results found."],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+        )
+
+        resp = await get_estimates_from_identifiers(
+            identifiers=["SPGI"],
+            estimate_type=EstimateType.consensus,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
     async def test_get_estimates_with_guidance_type(
         self,
         httpx_client: httpx.AsyncClient,
@@ -199,6 +229,37 @@ class TestEstimates:
         expected_resp = ConsensusTargetPriceResp(
             result=ConsensusTargetPrice.model_validate(consensus_target_price_data),
         )
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_fetch_consensus_target_price_api_returns_error(
+        self,
+        httpx_client: httpx.AsyncClient,
+        httpx_mock: HTTPXMock,
+    ) -> None:
+        """
+        WHEN the consensus target price API returns an error (no data available)
+        THEN the error is extracted and surfaced in the response
+        """
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}",
+            json={
+                "results": {},
+                "errors": {"errors": "No consensus target price found."},
+            },
+        )
+
+        expected_resp = GetConsensusTargetPriceFromIdentifiersResp(
+            results={},
+            errors=["SPGI: No consensus target price found."],
+        )
+
+        resp = await get_consensus_target_price_from_identifiers(
+            identifiers=["SPGI"],
+            httpx_client=httpx_client,
+        )
+
         assert resp == expected_resp
 
     @pytest.mark.asyncio
@@ -280,6 +341,37 @@ class TestEstimates:
         expected_resp = AnalystRecommendationsResp(
             result=AnalystRecommendations.model_validate(analyst_recommendations_data),
         )
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_fetch_analyst_recommendations_api_returns_error(
+        self,
+        httpx_client: httpx.AsyncClient,
+        httpx_mock: HTTPXMock,
+    ) -> None:
+        """
+        WHEN the analyst recommendations API returns an error (no data available)
+        THEN the error is extracted and surfaced in the response
+        """
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}",
+            json={
+                "results": {},
+                "errors": {"errors": "No analyst recommendations found."},
+            },
+        )
+
+        expected_resp = GetAnalystRecommendationsFromIdentifiersResp(
+            results={},
+            errors=["SPGI: No analyst recommendations found."],
+        )
+
+        resp = await get_analyst_recommendations_from_identifiers(
+            identifiers=["SPGI"],
+            httpx_client=httpx_client,
+        )
+
         assert resp == expected_resp
 
     @pytest.mark.asyncio

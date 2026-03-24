@@ -113,6 +113,37 @@ class TestStatements:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
+    async def test_api_returns_error_for_company(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN the API returns an error in the errors dict for a company_id
+        THEN the error is mapped back to the identifier and included in the response
+        """
+        httpx_mock.add_response(
+            method="POST",
+            url="https://kfinance.kensho.com/api/v1/statements/",
+            json={
+                "results": {},
+                "errors": {str(SPGI_ID_TRIPLE.company_id): "No results found."},
+            },
+        )
+
+        expected_resp = GetFinancialStatementFromIdentifiersResp(
+            results={},
+            errors=["SPGI: No results found."],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+        )
+
+        resp = await get_financial_statement_from_identifiers(
+            identifiers=["SPGI"],
+            statement=StatementType.income_statement,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
     async def test_most_recent_request(
         self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
     ) -> None:
@@ -166,7 +197,7 @@ class TestStatements:
     ) -> None:
         """
         WHEN all identifiers fail resolution
-        THEN we get back an empty results dict and errors without calling the statements API
+        THEN we get back an empty results dict and errors
         """
 
         expected_resp = GetFinancialStatementFromIdentifiersResp(

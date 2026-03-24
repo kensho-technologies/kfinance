@@ -178,7 +178,7 @@ class TestSegments:
     ) -> None:
         """
         WHEN all identifiers fail resolution
-        THEN we get back an empty results dict and errors without calling the segments API
+        THEN we get back an empty results dict and errors
         """
 
         expected_resp = GetSegmentsFromIdentifiersResp(

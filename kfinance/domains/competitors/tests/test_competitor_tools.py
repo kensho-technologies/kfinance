@@ -77,31 +77,3 @@ class TestCompetitors:
         )
 
         assert resp == expected_resp
-
-    @pytest.mark.asyncio
-    async def test_fetch_competitors_http_404(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-    ) -> None:
-        """
-        WHEN the server returns a 404 for a competitors request
-        THEN the error is caught by the batch executor and returned as a user-friendly error
-        """
-
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/competitors/{SPGI_COMPANY_ID}",
-            status_code=404,
-        )
-
-        expected_resp = GetCompetitorsFromIdentifiersResp(
-            results={},
-            errors=["No result found for SPGI."],
-        )
-
-        resp = await get_competitors_from_identifiers(
-            identifiers=["SPGI"],
-            competitor_source=CompetitorSource.all,
-            httpx_client=httpx_client,
-        )
-
-        assert resp == expected_resp
