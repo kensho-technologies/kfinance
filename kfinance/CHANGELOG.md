@@ -1,7 +1,7 @@
 # Changelog
 
 ## v5.1.1
-- Update estimates, line item, statements, and segments tools to more gracefully handle errors
+- Update tools to more gracefully handle errors
 
 ## v5.1.0
 - Add target price and analyst recommendation tools
