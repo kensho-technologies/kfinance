@@ -80,12 +80,16 @@ class TestBusinessRelationships:
             status_code=404,
         )
 
+        expected_resp = GetBusinessRelationshipFromIdentifiersResp(
+            business_relationship=BusinessRelationshipType.supplier,
+            results={},
+            errors=["No result found for SPGI."],
+        )
+
         resp = await get_business_relationship_from_identifiers(
             identifiers=["SPGI"],
             business_relationship=BusinessRelationshipType.supplier,
             httpx_client=httpx_client,
         )
 
-        assert resp.results == {}
-        assert len(resp.errors) == 1
-        assert "No result found" in resp.errors[0]
+        assert resp == expected_resp

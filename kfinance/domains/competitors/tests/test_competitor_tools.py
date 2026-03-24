@@ -83,22 +83,25 @@ class TestCompetitors:
         self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
     ) -> None:
         """
-        WHEN the server returns a 404 for a competitors request (e.g. invalid enum in URL)
+        WHEN the server returns a 404 for a competitors request
         THEN the error is caught by the batch executor and returned as a user-friendly error
         """
 
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/competitors/{SPGI_COMPANY_ID}/invalid_source",
+            url=f"https://kfinance.kensho.com/api/v1/competitors/{SPGI_COMPANY_ID}",
             status_code=404,
+        )
+
+        expected_resp = GetCompetitorsFromIdentifiersResp(
+            results={},
+            errors=["No result found for SPGI."],
         )
 
         resp = await get_competitors_from_identifiers(
             identifiers=["SPGI"],
-            competitor_source="invalid_source",
+            competitor_source=CompetitorSource.all,
             httpx_client=httpx_client,
         )
 
-        assert resp.results == {}
-        assert len(resp.errors) == 1
-        assert "No result found" in resp.errors[0]
+        assert resp == expected_resp
