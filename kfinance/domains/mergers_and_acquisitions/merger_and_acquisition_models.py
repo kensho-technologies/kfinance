@@ -54,4 +54,4 @@ class MergerConsideration(BaseModel):
 class MergerInfo(BaseModel):
     timeline: list[MergerTimelineElement]
     participants: MergerParticipants
-    consideration: MergerConsideration
+    consideration: MergerConsideration | None = None
