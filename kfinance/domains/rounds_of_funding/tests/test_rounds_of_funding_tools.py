@@ -1,7 +1,6 @@
 from decimal import Decimal
 
 import httpx
-from httpx import HTTPStatusError
 import pytest
 from pytest_httpx import HTTPXMock
 
@@ -481,26 +480,33 @@ class TestRoundsOfFunding:
         assert resp == expected_response
 
     @pytest.mark.asyncio
-    async def test_get_rounds_of_funding_info_http_400(
+    async def test_get_rounds_of_funding_info_http_404(
         self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
     ) -> None:
         """
-        WHEN the server returns a 400 for a non-existent transaction_id
-        THEN raise_for_status raises HTTPStatusError
+        WHEN the server returns a 404 for a non-existent transaction_id
+        THEN the result contains no data for that transaction and no errors are raised
+        note: task errors are purposely ignored in get_rounds_of_funding_info_from_transaction_ids
         """
-        transaction_id = 99999999
+        transaction_id = 999999
 
         httpx_mock.add_response(
             method="GET",
             url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}",
-            status_code=400,
+            status_code=404,
         )
 
-        with pytest.raises(HTTPStatusError, match="400"):
-            await get_rounds_of_funding_info_from_transaction_ids(
-                transaction_ids=[transaction_id],
-                httpx_client=httpx_client,
-            )
+        expected_result = GetRoundsOfFundingInfoFromTransactionIdsResp(
+            results={},
+            errors=[],
+        )
+
+        result = await get_rounds_of_funding_info_from_transaction_ids(
+            transaction_ids=[transaction_id],
+            httpx_client=httpx_client,
+        )
+
+        assert result == expected_result
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_advisor_endpoints_404(
