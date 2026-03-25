@@ -478,3 +478,128 @@ class TestRoundsOfFunding:
         )
 
         assert resp == expected_response
+
+    @pytest.mark.asyncio
+    async def test_get_rounds_of_funding_info_http_404(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN the server returns a 404 for a non-existent transaction_id
+        THEN the result contains no data for that transaction and no errors are raised
+        note: task errors are purposely ignored in get_rounds_of_funding_info_from_transaction_ids
+        """
+        transaction_id = 999999
+
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}",
+            status_code=404,
+        )
+
+        expected_result = GetRoundsOfFundingInfoFromTransactionIdsResp(
+            results={},
+            errors=[],
+        )
+
+        result = await get_rounds_of_funding_info_from_transaction_ids(
+            transaction_ids=[transaction_id],
+            httpx_client=httpx_client,
+        )
+
+        assert result == expected_result
+
+    @pytest.mark.asyncio
+    async def test_get_rounds_of_funding_info_advisor_endpoints_404(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN the advisor endpoints return 404
+        THEN the round of funding info is returned with empty advisor lists
+        """
+        transaction_id = 111111
+
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}",
+            json=self.funding_round_response,
+        )
+        # Target advisors returns 404
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/target",
+            status_code=404,
+        )
+        # Investor advisors return 404
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{67890}",
+            status_code=404,
+        )
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{98765}",
+            status_code=404,
+        )
+
+        expected_result = GetRoundsOfFundingInfoFromTransactionIdsResp(
+            results={
+                111111: RoundOfFundingInfoWithAdvisors(
+                    timeline=RoundOfFundingInfoTimeline(
+                        announced_date="2023-01-15",
+                        closed_date="2023-02-15",
+                    ),
+                    participants=RoundOfFundingParticipantsWithAdvisors(
+                        target=CompanyIdAndNameWithAdvisors(
+                            company_id=12345,
+                            company_name="Target Company Inc.",
+                            advisors=[],
+                        ),
+                        investors=[
+                            InvestorInRoundOfFundingWithAdvisors(
+                                company_id=67890,
+                                company_name="Investor LLC",
+                                lead_investor=True,
+                                investment_value=Decimal("2500000.00000000"),
+                                currency="USD",
+                                ownership_percentage_pre=Decimal("0.0000"),
+                                ownership_percentage_post=Decimal("15.5000"),
+                                board_seat_granted=True,
+                                advisors=[],
+                            ),
+                            InvestorInRoundOfFundingWithAdvisors(
+                                company_id=98765,
+                                company_name="Secondary Investor Corp",
+                                lead_investor=False,
+                                investment_value=Decimal("1000000.00000000"),
+                                currency="USD",
+                                ownership_percentage_pre=Decimal("0.0000"),
+                                ownership_percentage_post=Decimal("6.2000"),
+                                board_seat_granted=False,
+                                advisors=[],
+                            ),
+                        ],
+                    ),
+                    transaction=RoundOfFundingInfoTransaction(
+                        funding_type="Series A",
+                        amount_offered=Decimal("5000000.00000000"),
+                        currency="USD",
+                        pre_money_valuation=Decimal("25000000.00000000"),
+                        post_money_valuation=Decimal("30000000.00000000"),
+                        use_of_proceeds="Product development and market expansion",
+                        aggregate_amount_raised=Decimal("5000000.00000000"),
+                    ),
+                    security=RoundOfFundingInfoSecurity(
+                        security_description="Series A Preferred Stock",
+                        seniority_level="Senior",
+                    ),
+                )
+            },
+            errors=[],
+        )
+
+        result = await get_rounds_of_funding_info_from_transaction_ids(
+            transaction_ids=[transaction_id],
+            httpx_client=httpx_client,
+        )
+
+        assert result == expected_result

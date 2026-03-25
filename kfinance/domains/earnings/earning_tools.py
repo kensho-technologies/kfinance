@@ -235,6 +235,7 @@ async def fetch_earnings_from_company_id(
     """Fetch earnings for one company_id."""
     url = f"/earnings/{company_id}"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return EarningsCallResp.model_validate(resp.json())
 
 

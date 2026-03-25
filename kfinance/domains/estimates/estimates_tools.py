@@ -15,8 +15,11 @@ from kfinance.client.models.date_and_period_models import (
 )
 from kfinance.client.permission_models import Permission
 from kfinance.domains.estimates.estimates_models import (
+    AnalystRecommendations,
     AnalystRecommendationsResp,
+    ConsensusTargetPrice,
     ConsensusTargetPriceResp,
+    Estimates,
     EstimatesResp,
 )
 from kfinance.domains.line_items.line_item_models import CalendarType
@@ -61,7 +64,7 @@ class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 
 class GetEstimatesFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, EstimatesResp]  # identifier -> response
+    results: dict[str, Estimates]  # identifier -> response
     notes: list[str] = Field(default_factory=list)
 
 
@@ -131,7 +134,7 @@ class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
 
 
 class GetConsensusTargetPriceFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, ConsensusTargetPriceResp]
+    results: dict[str, ConsensusTargetPrice]
 
 
 class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
@@ -153,7 +156,7 @@ class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
 
 
 class GetAnalystRecommendationsFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, AnalystRecommendationsResp]
+    results: dict[str, AnalystRecommendations]
 
 
 class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
@@ -215,12 +218,17 @@ async def get_estimates_from_identifiers(
 
     await batch_execute_async_tasks(tasks=tasks)
 
-    results: dict[str, EstimatesResp] = dict()
+    results: dict[str, Estimates] = dict()
     for task in tasks:
         if task.error:
             errors.append(task.error)
         else:
-            results[task.result_key] = task.result
+            resp: EstimatesResp = task.result
+            if resp.result is not None:
+                results[task.result_key] = resp.result
+            if resp.error is not None:
+                error_msg = f"{task.result_key}: {resp.error}"
+                errors.append(error_msg)
 
     resp_model = GetEstimatesFromIdentifiersResp(results=results, errors=errors)
 
@@ -269,11 +277,7 @@ async def fetch_estimates_from_company_id(
         params["num_periods_backward"] = num_periods_backward
 
     resp = await httpx_client.post(url="/estimates/", json=params)
-    response_data = resp.json()
-
-    # Extract the result for this specific company_id
-    company_result = response_data["results"][str(company_id)]
-    return EstimatesResp.model_validate(company_result)
+    return EstimatesResp.model_validate(resp.json())
 
 
 async def get_consensus_target_price_from_identifiers(
@@ -301,12 +305,17 @@ async def get_consensus_target_price_from_identifiers(
 
     await batch_execute_async_tasks(tasks=tasks)
 
-    results: dict[str, ConsensusTargetPriceResp] = dict()
+    results: dict[str, ConsensusTargetPrice] = dict()
     for task in tasks:
         if task.error:
             errors.append(task.error)
         else:
-            results[task.result_key] = task.result
+            resp: ConsensusTargetPriceResp = task.result
+            if resp.result is not None:
+                results[task.result_key] = resp.result
+            if resp.error is not None:
+                error_msg = f"{task.result_key}: {resp.error}"
+                errors.append(error_msg)
 
     return GetConsensusTargetPriceFromIdentifiersResp(results=results, errors=errors)
 
@@ -317,9 +326,7 @@ async def fetch_consensus_target_price_from_company_id(
 ) -> ConsensusTargetPriceResp:
     """Fetch consensus target price for one company_id."""
     resp = await httpx_client.get(url=f"/estimates/consensus_target_price/{company_id}")
-    response_data = resp.json()
-    company_result = response_data["results"][str(company_id)]
-    return ConsensusTargetPriceResp.model_validate(company_result)
+    return ConsensusTargetPriceResp.model_validate(resp.json())
 
 
 async def get_analyst_recommendations_from_identifiers(
@@ -347,12 +354,17 @@ async def get_analyst_recommendations_from_identifiers(
 
     await batch_execute_async_tasks(tasks=tasks)
 
-    results: dict[str, AnalystRecommendationsResp] = dict()
+    results: dict[str, AnalystRecommendations] = dict()
     for task in tasks:
         if task.error:
             errors.append(task.error)
         else:
-            results[task.result_key] = task.result
+            resp: AnalystRecommendationsResp = task.result
+            if resp.result is not None:
+                results[task.result_key] = resp.result
+            if resp.error is not None:
+                error_msg = f"{task.result_key}: {resp.error}"
+                errors.append(error_msg)
 
     return GetAnalystRecommendationsFromIdentifiersResp(results=results, errors=errors)
 
@@ -363,6 +375,4 @@ async def fetch_analyst_recommendations_from_company_id(
 ) -> AnalystRecommendationsResp:
     """Fetch analyst recommendations for one company_id."""
     resp = await httpx_client.get(url=f"/estimates/analyst_recommendations/{company_id}")
-    response_data = resp.json()
-    company_result = response_data["results"][str(company_id)]
-    return AnalystRecommendationsResp.model_validate(company_result)
+    return AnalystRecommendationsResp.model_validate(resp.json())

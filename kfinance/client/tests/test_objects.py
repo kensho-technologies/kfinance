@@ -29,10 +29,13 @@ from kfinance.domains.capitalizations.capitalization_models import Capitalizatio
 from kfinance.domains.companies.company_models import CompanyIdAndName, IdentificationTriple
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.estimates.estimates_models import (
+    AnalystRecommendations,
     AnalystRecommendationsItem,
     AnalystRecommendationsResp,
+    ConsensusTargetPrice,
     ConsensusTargetPriceItem,
     ConsensusTargetPriceResp,
+    Estimates,
     EstimatesResp,
 )
 from kfinance.domains.line_items.line_item_models import LineItemResp
@@ -112,7 +115,7 @@ MOCK_COMPANY_DB = {
                 ]
             }
         ),
-        "estimates": EstimatesResp.model_validate(
+        "estimates": Estimates.model_validate(
             {
                 "estimate_type": "consensus",
                 "currency": "USD",
@@ -130,7 +133,7 @@ MOCK_COMPANY_DB = {
                 },
             }
         ),
-        "consensus_target_price": ConsensusTargetPriceResp(
+        "consensus_target_price": ConsensusTargetPrice(
             currency="USD",
             effective_date="2025-06-01",
             estimates=[
@@ -140,7 +143,7 @@ MOCK_COMPANY_DB = {
                 ConsensusTargetPriceItem(name="Target Price Consensus Median", value="525.000000"),
             ],
         ),
-        "analyst_recommendations": AnalystRecommendationsResp(
+        "analyst_recommendations": AnalystRecommendations(
             effective_date="2025-06-01",
             estimates=[
                 AnalystRecommendationsItem(name="# of Analyst Recommendations - Buy", value="12"),
@@ -495,22 +498,18 @@ class MockKFinanceApiClient:
         num_periods_backward,
         period_type,
     ):
-        estimates_resp = MOCK_COMPANY_DB[company_id]["estimates"]
-        return PostResponse[EstimatesResp](results={str(company_id): estimates_resp}, errors={})
+        estimates = MOCK_COMPANY_DB[company_id]["estimates"]
+        return EstimatesResp(result=estimates)
 
     def fetch_consensus_target_price(self, company_id):
         """Get consensus target price estimates"""
-        consensus_target_price_resp = MOCK_COMPANY_DB[company_id]["consensus_target_price"]
-        return PostResponse[ConsensusTargetPriceResp](
-            results={str(company_id): consensus_target_price_resp}, errors={}
-        )
+        consensus_target_price = MOCK_COMPANY_DB[company_id]["consensus_target_price"]
+        return ConsensusTargetPriceResp(result=consensus_target_price)
 
     def fetch_analyst_recommendations(self, company_id):
         """Get analyst recommendations"""
-        analyst_recommendations_resp = MOCK_COMPANY_DB[company_id]["analyst_recommendations"]
-        return PostResponse[AnalystRecommendationsResp](
-            results={str(company_id): analyst_recommendations_resp}, errors={}
-        )
+        analyst_recommendations = MOCK_COMPANY_DB[company_id]["analyst_recommendations"]
+        return AnalystRecommendationsResp(result=analyst_recommendations)
 
     def fetch_line_item(
         self,
@@ -710,10 +709,10 @@ class TestCompany(TestCase):
         pd.testing.assert_frame_equal(expected_income_statement, income_statement)
 
     def test_estimate(self) -> None:
-        estimates_response: EstimatesResp = MOCK_COMPANY_DB[msft_company_id]["estimates"]
+        estimates: Estimates = MOCK_COMPANY_DB[msft_company_id]["estimates"]
 
         estimates_data = {}
-        for period_key, period_data in estimates_response.periods.items():
+        for period_key, period_data in estimates.periods.items():
             period_estimates = {}
             for estimate in period_data.estimates:
                 period_estimates[estimate.name] = estimate.value
@@ -725,27 +724,27 @@ class TestCompany(TestCase):
 
     def test_consensus_target_price(self) -> None:
         """test consensus target price"""
-        target_price_resp: ConsensusTargetPriceResp = MOCK_COMPANY_DB[msft_company_id][
+        target_price: ConsensusTargetPrice = MOCK_COMPANY_DB[msft_company_id][
             "consensus_target_price"
         ]
 
-        data = {estimate.name: estimate.value for estimate in target_price_resp.estimates}
+        data = {estimate.name: estimate.value for estimate in target_price.estimates}
         expected_df = pd.DataFrame([data])
-        expected_df.insert(0, "effective_date", target_price_resp.effective_date)
-        expected_df.insert(1, "currency", target_price_resp.currency)
+        expected_df.insert(0, "effective_date", target_price.effective_date)
+        expected_df.insert(1, "currency", target_price.currency)
 
         result = self.msft_company.company.consensus_target_price()
         pd.testing.assert_frame_equal(expected_df, result)
 
     def test_analyst_recommendations(self) -> None:
         """test analyst recommendations"""
-        analyst_recs_resp: AnalystRecommendationsResp = MOCK_COMPANY_DB[msft_company_id][
+        analyst_recs: AnalystRecommendations = MOCK_COMPANY_DB[msft_company_id][
             "analyst_recommendations"
         ]
 
-        data = {estimate.name: estimate.value for estimate in analyst_recs_resp.estimates}
+        data = {estimate.name: estimate.value for estimate in analyst_recs.estimates}
         expected_df = pd.DataFrame([data])
-        expected_df.insert(0, "effective_date", analyst_recs_resp.effective_date)
+        expected_df.insert(0, "effective_date", analyst_recs.effective_date)
 
         result = self.msft_company.company.analyst_recommendations()
         pd.testing.assert_frame_equal(expected_df, result)

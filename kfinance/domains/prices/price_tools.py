@@ -218,4 +218,5 @@ async def fetch_history_metadata_from_trading_item_id(
     """Fetch history metadata for one trading_item_id."""
     url = f"/pricing/{trading_item_id}/metadata"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return HistoryMetadataResp.model_validate(resp.json())

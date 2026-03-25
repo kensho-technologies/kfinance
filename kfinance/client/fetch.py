@@ -828,7 +828,7 @@ class KFinanceApiClient:
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
         period_type: EstimatePeriodType | None = None,
-    ) -> PostResponse[EstimatesResp]:
+    ) -> EstimatesResp:
         """Get estimates or guidance for a specified duration."""
 
         url = f"{self.url_base}estimates/"
@@ -856,22 +856,22 @@ class KFinanceApiClient:
 
         response_data = self.fetch(url, method="POST", request_body=request_body)
 
-        return PostResponse[EstimatesResp].model_validate(response_data)
+        return EstimatesResp.model_validate(response_data)
 
     def fetch_consensus_target_price(
         self,
         company_id: int,
-    ) -> PostResponse[ConsensusTargetPriceResp]:
+    ) -> ConsensusTargetPriceResp:
         """Get consensus target price estimates"""
         url = f"{self.url_base}estimates/consensus_target_price/{company_id}"
         response_data = self.fetch(url)
-        return PostResponse[ConsensusTargetPriceResp].model_validate(response_data)
+        return ConsensusTargetPriceResp.model_validate(response_data)
 
     def fetch_analyst_recommendations(
         self,
         company_id: int,
-    ) -> PostResponse[AnalystRecommendationsResp]:
+    ) -> AnalystRecommendationsResp:
         """Get analyst recommendations"""
         url = f"{self.url_base}estimates/analyst_recommendations/{company_id}"
         response_data = self.fetch(url)
-        return PostResponse[AnalystRecommendationsResp].model_validate(response_data)
+        return AnalystRecommendationsResp.model_validate(response_data)
