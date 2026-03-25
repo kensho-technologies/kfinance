@@ -1481,7 +1481,7 @@ class MergerOrAcquisition:
         }
 
     @property
-    def get_consideration(self) -> MergerConsideration:
+    def get_consideration(self) -> MergerConsideration | None:
         """A merger's consideration is the assets exchanged for the target company.
 
         Properties in the consideration include:
