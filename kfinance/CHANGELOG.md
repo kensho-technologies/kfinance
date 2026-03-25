@@ -1,5 +1,8 @@
 # Changelog
 
+## v5.1.1
+- Change MergerInfo consideration to Optional
+
 ## v5.1.0
 - Add target price and analyst recommendation tools
 
