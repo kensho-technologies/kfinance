@@ -39,7 +39,7 @@ class PostResponse(RespWithErrors, Generic[T]):
 
 class SingleResultResp(BaseModel, Generic[T]):
     """Generic response class that unwraps a single result from the API's multi-result format.
-    
+
     - `error` is always the last field in the response.
     - `error` is only included if there is an error.
     """
