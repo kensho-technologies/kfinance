@@ -6,13 +6,13 @@ from pydantic import BaseModel, Field
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
+from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
 )
 from kfinance.domains.statements.statement_models import (
-    StatementsBatchResp,
     StatementsResp,
     StatementType,
 )
@@ -145,29 +145,34 @@ async def get_financial_statement_from_identifiers(
     )
     errors: list[str] = list(id_triple_resp.errors.values())
 
-    # Call the statements API with company IDs
-    statements_resp = await fetch_statements_from_company_ids(
-        company_ids=id_triple_resp.company_ids,
-        statement_type=statement.value,
-        period_type=period_type,
-        start_year=start_year,
-        end_year=end_year,
-        start_quarter=start_quarter,
-        end_quarter=end_quarter,
-        calendar_type=calendar_type,
-        num_periods=num_periods,
-        num_periods_back=num_periods_back,
-        httpx_client=httpx_client,
-    )
+    # Fetch statements for all resolved company IDs
+    if id_triple_resp.company_ids:
+        statements_resp = await fetch_statements_from_company_ids(
+            company_ids=id_triple_resp.company_ids,
+            statement_type=statement.value,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            calendar_type=calendar_type,
+            num_periods=num_periods,
+            num_periods_back=num_periods_back,
+            httpx_client=httpx_client,
+        )
 
-    # Add any errors from the statements API
-    errors.extend(statements_resp.errors)
+        # Add any errors from the statements API, mapping company_id keys back to identifiers
+        for company_id_str, error in statements_resp.errors.items():
+            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            errors.append(f"{original_identifier}: {error}")
 
-    # Map results back to original identifiers
-    identifier_to_results = {}
-    for company_id_str, statement_data in statements_resp.results.items():
-        original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
-        identifier_to_results[original_identifier] = statement_data
+        # Map results back to original identifiers
+        identifier_to_results = {}
+        for company_id_str, statement_data in statements_resp.results.items():
+            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            identifier_to_results[original_identifier] = statement_data
+    else:
+        identifier_to_results = {}
 
     # If no date and multiple companies, only return the most recent value.
     # By default, we return 5 years of data, which can be too much when
@@ -210,7 +215,7 @@ async def fetch_statements_from_company_ids(
     calendar_type: CalendarType | None = None,
     num_periods: int | None = None,
     num_periods_back: int | None = None,
-) -> StatementsBatchResp:
+) -> PostResponse[StatementsResp]:
     """Fetch statements data from the API for multiple company IDs."""
 
     # Prepare the request payload
@@ -240,4 +245,4 @@ async def fetch_statements_from_company_ids(
     url = "/statements/"
     resp = await httpx_client.post(url=url, json=payload)
 
-    return StatementsBatchResp.model_validate(resp.json())
+    return PostResponse[StatementsResp].model_validate(resp.json())

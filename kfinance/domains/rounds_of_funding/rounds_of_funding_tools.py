@@ -378,6 +378,7 @@ async def fetch_rounds_of_funding_from_company_id(
         url = f"/fundingrounds/investor/{company_id}"
 
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return RoundsOfFundingResp.model_validate(resp.json())
 
 
@@ -474,6 +475,7 @@ async def fetch_rounds_of_funding_info_from_transaction_id(
     """Fetch detailed round of funding info for one transaction_id."""
     url = f"/fundinground/info/{transaction_id}"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return RoundOfFundingInfo.model_validate(resp.json())
 
 
@@ -484,6 +486,7 @@ async def fetch_advisors_for_company_raising_round_of_funding(
     """Fetch advisors for the target company raising funds in a round."""
     url = f"/fundinground/info/{transaction_id}/advisors/target"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return AdvisorsResp.model_validate(resp.json())
 
 
@@ -495,6 +498,7 @@ async def fetch_advisors_for_company_investing_in_round_of_funding(
     """Fetch advisors for an investing company in a round of funding."""
     url = f"/fundinground/info/{transaction_id}/advisors/investor/{advised_company_id}"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return AdvisorsResp.model_validate(resp.json())
 
 

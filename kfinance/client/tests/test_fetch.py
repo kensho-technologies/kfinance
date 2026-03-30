@@ -8,7 +8,7 @@ from requests_mock import Mocker
 from kfinance.client.fetch import KFinanceApiClient
 from kfinance.client.kfinance import Client
 from kfinance.client.models.date_and_period_models import EstimateType, Periodicity, PeriodType
-from kfinance.client.models.response_models import PostResponse
+from kfinance.client.models.response_models import SingleResultResp
 from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
@@ -20,10 +20,10 @@ from kfinance.domains.companies.company_models import (
     CompanyOtherNames,
 )
 from kfinance.domains.estimates.estimates_models import (
+    AnalystRecommendations,
     AnalystRecommendationsItem,
-    AnalystRecommendationsResp,
+    ConsensusTargetPrice,
     ConsensusTargetPriceItem,
-    ConsensusTargetPriceResp,
 )
 from kfinance.domains.segments.segment_models import SegmentType
 
@@ -414,7 +414,6 @@ class TestFetchItem(TestCase):
             "company_id": company_id,
             "estimate_type": estimate_type,
         }
-        # Mock the response to have the expected PostResponse structure
         self.kfinance_api_client.fetch.return_value = {"results": {}, "errors": {}}
         result = self.kfinance_api_client.fetch_estimates(
             company_id=company_id, estimate_type=EstimateType(estimate_type)
@@ -422,9 +421,9 @@ class TestFetchItem(TestCase):
         self.kfinance_api_client.fetch.assert_called_with(
             expected_url, method="POST", request_body=expected_request_body
         )
-        # Verify the result is a PostResponse
-        assert "results" in result.model_dump()
-        # errors field is excluded when empty
+        # Verify the result is a SingleResultResp
+        expected_result_dict = {"result": None}
+        assert result.model_dump() == expected_result_dict
 
     def test_fetch_consensus_target_price(self) -> None:
         company_id = 21719
@@ -445,19 +444,16 @@ class TestFetchItem(TestCase):
             "errors": {},
         }
 
-        expected_result = PostResponse[ConsensusTargetPriceResp](
-            results={
-                str(company_id): ConsensusTargetPriceResp(
-                    currency="USD",
-                    effective_date="2025-06-01",
-                    estimates=[
-                        ConsensusTargetPriceItem(
-                            name="Target Price Consensus Mean", value="520.000000"
-                        ),
-                    ],
-                )
-            },
-            errors={},
+        expected_result = SingleResultResp[ConsensusTargetPrice](
+            result=ConsensusTargetPrice(
+                currency="USD",
+                effective_date="2025-06-01",
+                estimates=[
+                    ConsensusTargetPriceItem(
+                        name="Target Price Consensus Mean", value="520.000000"
+                    ),
+                ],
+            ),
         )
 
         result = self.kfinance_api_client.fetch_consensus_target_price(
@@ -484,18 +480,15 @@ class TestFetchItem(TestCase):
             "errors": {},
         }
 
-        expected_result = PostResponse[AnalystRecommendationsResp](
-            results={
-                str(company_id): AnalystRecommendationsResp(
-                    effective_date="2025-06-01",
-                    estimates=[
-                        AnalystRecommendationsItem(
-                            name="# of Analyst Recommendations - Buy", value="12"
-                        ),
-                    ],
-                )
-            },
-            errors={},
+        expected_result = SingleResultResp[AnalystRecommendations](
+            result=AnalystRecommendations(
+                effective_date="2025-06-01",
+                estimates=[
+                    AnalystRecommendationsItem(
+                        name="# of Analyst Recommendations - Buy", value="12"
+                    ),
+                ],
+            ),
         )
 
         result = self.kfinance_api_client.fetch_analyst_recommendations(

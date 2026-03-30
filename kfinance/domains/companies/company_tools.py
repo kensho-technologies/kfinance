@@ -261,6 +261,7 @@ async def fetch_company_other_names_from_company_id(
     """Fetch and return other names for one company_id."""
     url = f"/info/{company_id}/names"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return CompanyOtherNames.model_validate(resp.json())
 
 
@@ -330,4 +331,5 @@ async def fetch_company_summary_and_description_from_company_id(
     """Fetch the short company summary and long description for a company id."""
     url = f"/info/{company_id}/descriptions"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return CompanyDescriptions.model_validate(resp.json())

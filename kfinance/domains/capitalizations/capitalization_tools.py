@@ -165,4 +165,5 @@ async def fetch_capitalizations_from_company_id(
         f"{end_date.isoformat() if end_date is not None else 'none'}"
     )
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return Capitalizations.model_validate(resp.json())

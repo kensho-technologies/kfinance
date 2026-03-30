@@ -1,5 +1,8 @@
 # Changelog
 
+## v5.1.2
+- Update tools to more gracefully handle errors
+
 ## v5.1.1
 - Change MergerInfo consideration to Optional
 

@@ -123,4 +123,5 @@ async def fetch_business_relationship_from_company_id(
 ) -> RelationshipResponse:
     """Fetch and return business relationship for one identifier."""
     resp = await httpx_client.get(url=f"/relationship/{company_id}/{business_relationship}")
+    resp.raise_for_status()
     return RelationshipResponse.model_validate(resp.json())
