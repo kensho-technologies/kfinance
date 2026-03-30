@@ -1,7 +1,10 @@
 # Changelog
 
-## v5.1.1
+## v5.1.2
 - Update tools to more gracefully handle errors
+
+## v5.1.1
+- Change MergerInfo consideration to Optional
 
 ## v5.1.0
 - Add target price and analyst recommendation tools
