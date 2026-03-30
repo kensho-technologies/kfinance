@@ -562,11 +562,10 @@ class CompanyFunctionsMetaClass:
             num_periods_backward=num_periods_backward,
         )
 
-        if not estimate_response.results:
+        if not estimate_response.result:
             return pd.DataFrame()
 
-        estimate_resp = list(estimate_response.results.values())[0]
-        periods = estimate_resp.model_dump(mode="json")["periods"]
+        periods = estimate_response.result.model_dump(mode="json")["periods"]
 
         estimates_data = {}
         for period_key, period_data in periods.items():
@@ -632,10 +631,10 @@ class CompanyFunctionsMetaClass:
             company_id=self.company_id,
         )
 
-        if not response.results:
+        if not response.result:
             return pd.DataFrame()
 
-        result = response.results[str(self.company_id)]
+        result = response.result
 
         if not result.estimates:
             return pd.DataFrame()
@@ -655,10 +654,10 @@ class CompanyFunctionsMetaClass:
             company_id=self.company_id,
         )
 
-        if not response.results:
+        if not response.result:
             return pd.DataFrame()
 
-        result = response.results[str(self.company_id)]
+        result = response.result
 
         if not result.estimates:
             return pd.DataFrame()

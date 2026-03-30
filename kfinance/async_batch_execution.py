@@ -55,7 +55,9 @@ async def execute_task_with_throttle(
             error_code = http_err.response.status_code
             if error_code == 404:
                 task.error = f"No result found for {task.result_key}."
-            # Non-404 errors are likely indicative of a substantial error and
+            elif error_code == 400:
+                task.error = http_err.response.text
+            # Non-400/404 errors are likely indicative of a substantial error and
             # should be raised.
             else:
                 raise http_err

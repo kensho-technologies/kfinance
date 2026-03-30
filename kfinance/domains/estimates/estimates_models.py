@@ -1,9 +1,13 @@
 from datetime import date
 from decimal import Decimal
+import logging
 
 from pydantic import BaseModel
 
 from kfinance.client.models.date_and_period_models import EstimatePeriodType, EstimateType
+
+
+logger = logging.getLogger(__name__)
 
 
 class LineItem(BaseModel):
@@ -16,7 +20,7 @@ class EstimatesPeriodData(BaseModel):
     estimates: list[LineItem]
 
 
-class EstimatesResp(BaseModel):
+class Estimates(BaseModel):
     estimate_type: EstimateType
     currency: str | None
     period_type: EstimatePeriodType
@@ -28,7 +32,7 @@ class ConsensusTargetPriceItem(BaseModel):
     value: Decimal | None
 
 
-class ConsensusTargetPriceResp(BaseModel):
+class ConsensusTargetPrice(BaseModel):
     currency: str | None
     effective_date: date
     estimates: list[ConsensusTargetPriceItem]
@@ -39,6 +43,6 @@ class AnalystRecommendationsItem(BaseModel):
     value: Decimal | None
 
 
-class AnalystRecommendationsResp(BaseModel):
+class AnalystRecommendations(BaseModel):
     effective_date: date | None
     estimates: list[AnalystRecommendationsItem]

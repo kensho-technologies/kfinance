@@ -4,6 +4,7 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from kfinance.client.kfinance import Client
+from kfinance.client.models.response_models import PostResponse
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp, LineItemScore
@@ -64,15 +65,20 @@ class TestGetFinancialLineItemFromIdentifiers:
         THEN we get back SPGI's line items
         """
 
+        expected_resp_data = {
+            "results": {
+                str(SPGI_ID_TRIPLE.company_id): LineItemResp.model_validate(self.line_item_resp)
+            },
+            "errors": {},
+        }
+        expected_resp = PostResponse[LineItemResp].model_validate(expected_resp_data)
+
         resp = await fetch_line_item_from_company_ids(
             company_ids=[SPGI_ID_TRIPLE.company_id],
             line_item="revenue",
             httpx_client=httpx_client,
         )
 
-        expected_resp = {
-            str(SPGI_ID_TRIPLE.company_id): LineItemResp.model_validate(self.line_item_resp)
-        }
         assert resp == expected_resp
 
     @pytest.mark.parametrize(
@@ -119,6 +125,37 @@ class TestGetFinancialLineItemFromIdentifiers:
         )
 
         assert resp == expected_response
+
+    @pytest.mark.asyncio
+    async def test_api_returns_error_for_company(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN the API returns an error in the errors dict for a company_id
+        THEN the error is mapped back to the identifier and included in the response
+        """
+        httpx_mock.add_response(
+            method="POST",
+            url="https://kfinance.kensho.com/api/v1/line_item/",
+            json={
+                "results": {},
+                "errors": {str(SPGI_ID_TRIPLE.company_id): "No results found."},
+            },
+        )
+
+        expected_resp = GetFinancialLineItemFromIdentifiersResp(
+            results={},
+            errors=["SPGI: No results found."],
+            notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+        )
+
+        resp = await get_financial_line_item_from_identifiers(
+            identifiers=["SPGI"],
+            line_item="revenue",
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp
 
     @pytest.mark.asyncio
     async def test_most_recent_request(

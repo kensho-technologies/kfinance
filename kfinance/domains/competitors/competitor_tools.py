@@ -115,4 +115,5 @@ async def fetch_competitors_from_company_id(
     if competitor_source is not CompetitorSource.all:
         url = url + f"/{competitor_source}"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return CompetitorResponse.model_validate(resp.json())

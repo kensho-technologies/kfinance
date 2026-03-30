@@ -2,6 +2,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
+from kfinance.client.models.response_models import PostResponse
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.line_items.response_notes import (
@@ -80,10 +81,7 @@ class TestStatements:
             "results": {str(SPGI_ID_TRIPLE.company_id): self.statement_resp},
             "errors": {},
         }
-        # Import here to avoid circular imports
-        from kfinance.domains.statements.statement_models import StatementsBatchResp
-
-        expected_resp = StatementsBatchResp.model_validate(expected_resp_data)
+        expected_resp = PostResponse[StatementsResp].model_validate(expected_resp_data)
 
         assert resp == expected_resp
 
@@ -108,6 +106,37 @@ class TestStatements:
 
         resp = await get_financial_statement_from_identifiers(
             identifiers=["SPGI", "non-existent"],
+            statement=StatementType.income_statement,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_api_returns_error_for_company(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN the API returns an error in the errors dict for a company_id
+        THEN the error is mapped back to the identifier and included in the response
+        """
+        httpx_mock.add_response(
+            method="POST",
+            url="https://kfinance.kensho.com/api/v1/statements/",
+            json={
+                "results": {},
+                "errors": {str(SPGI_ID_TRIPLE.company_id): "No results found."},
+            },
+        )
+
+        expected_resp = GetFinancialStatementFromIdentifiersResp(
+            results={},
+            errors=["SPGI: No results found."],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+        )
+
+        resp = await get_financial_statement_from_identifiers(
+            identifiers=["SPGI"],
             statement=StatementType.income_statement,
             httpx_client=httpx_client,
         )
@@ -160,3 +189,30 @@ class TestStatements:
         )
 
         assert resp == expected_response
+
+    @pytest.mark.asyncio
+    async def test_all_identifiers_fail_resolution(
+        self,
+        httpx_client: httpx.AsyncClient,
+    ) -> None:
+        """
+        WHEN all identifiers fail resolution
+        THEN we get back an empty results dict and errors
+        """
+
+        expected_resp = GetFinancialStatementFromIdentifiersResp(
+            results={},
+            errors=[
+                "No identification triple found for the provided identifier:"
+                " NON-EXISTENT of type: ticker"
+            ],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+        )
+
+        resp = await get_financial_statement_from_identifiers(
+            identifiers=["non-existent"],
+            statement=StatementType.income_statement,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp

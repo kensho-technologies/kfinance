@@ -2,6 +2,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
+from kfinance.client.models.response_models import PostResponse
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.line_items.response_notes import (
@@ -89,10 +90,7 @@ class TestSegments:
             "results": {str(SPGI_ID_TRIPLE.company_id): self.segments_response},
             "errors": {},
         }
-        # Import here to avoid circular imports
-        from kfinance.domains.segments.segment_models import SegmentsBatchResp
-
-        expected_resp = SegmentsBatchResp.model_validate(expected_resp_data)
+        expected_resp = PostResponse[SegmentsResp].model_validate(expected_resp_data)
 
         assert resp == expected_resp
 
@@ -172,3 +170,30 @@ class TestSegments:
         )
 
         assert resp == expected_response
+
+    @pytest.mark.asyncio
+    async def test_all_identifiers_fail_resolution(
+        self,
+        httpx_client: httpx.AsyncClient,
+    ) -> None:
+        """
+        WHEN all identifiers fail resolution
+        THEN we get back an empty results dict and errors
+        """
+
+        expected_resp = GetSegmentsFromIdentifiersResp(
+            results={},
+            errors=[
+                "No identification triple found for the provided identifier:"
+                " NON-EXISTENT of type: ticker"
+            ],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+        )
+
+        resp = await get_segments_from_identifiers(
+            identifiers=["non-existent"],
+            segment_type=SegmentType.business,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp

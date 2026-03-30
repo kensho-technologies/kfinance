@@ -165,6 +165,7 @@ async def fetch_mergers_from_company_id(
     """Fetch mergers for one company_id."""
     url = f"/mergers/{company_id}"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return MergersResp.model_validate(resp.json())
 
 
@@ -175,6 +176,7 @@ async def get_merger_info_from_transaction_id(
     """Fetch detailed merger info for a transaction ID."""
     url = f"/merger/info/{transaction_id}"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return MergerInfo.model_validate(resp.json())
 
 

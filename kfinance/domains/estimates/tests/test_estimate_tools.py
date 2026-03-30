@@ -3,11 +3,12 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from kfinance.client.models.date_and_period_models import EstimateType
+from kfinance.client.models.response_models import SingleResultResp
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.estimates.estimates_models import (
-    AnalystRecommendationsResp,
-    ConsensusTargetPriceResp,
-    EstimatesResp,
+    AnalystRecommendations,
+    ConsensusTargetPrice,
+    Estimates,
 )
 from kfinance.domains.estimates.estimates_tools import (
     GetAnalystRecommendationsFromIdentifiersResp,
@@ -27,7 +28,7 @@ from kfinance.domains.line_items.response_notes import (
 
 
 class TestEstimates:
-    estimates_response = {
+    estimates_data = {
         "estimate_type": "consensus",
         "currency": "USD",
         "period_type": "quarterly",
@@ -70,7 +71,7 @@ class TestEstimates:
             method="POST",
             url="https://kfinance.kensho.com/api/v1/estimates/",
             json={
-                "results": {str(SPGI_ID_TRIPLE.company_id): self.estimates_response},
+                "results": {str(SPGI_ID_TRIPLE.company_id): self.estimates_data},
                 "errors": {},
             },
             is_optional=True,
@@ -93,7 +94,9 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = EstimatesResp.model_validate(self.estimates_response)
+        expected_resp = SingleResultResp[Estimates](
+            result=Estimates.model_validate(self.estimates_data),
+        )
         assert resp == expected_resp
 
     @pytest.mark.asyncio
@@ -108,7 +111,7 @@ class TestEstimates:
         """
 
         expected_resp = GetEstimatesFromIdentifiersResp(
-            results={"SPGI": EstimatesResp.model_validate(self.estimates_response)},
+            results={"SPGI": Estimates.model_validate(self.estimates_data)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -117,6 +120,36 @@ class TestEstimates:
 
         resp = await get_estimates_from_identifiers(
             identifiers=["SPGI", "non-existent"],
+            estimate_type=EstimateType.consensus,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_fetch_estimates_api_returns_error(
+        self,
+        httpx_client: httpx.AsyncClient,
+        httpx_mock: HTTPXMock,
+    ) -> None:
+        """
+        WHEN the estimates API returns an error for a company (e.g. no data available)
+        THEN the error is extracted and surfaced in the response
+        """
+        httpx_mock.add_response(
+            method="POST",
+            url="https://kfinance.kensho.com/api/v1/estimates/",
+            json={"results": {}, "errors": {"errors": "No results found."}},
+        )
+
+        expected_resp = GetEstimatesFromIdentifiersResp(
+            results={},
+            errors=["SPGI: No results found."],
+            notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+        )
+
+        resp = await get_estimates_from_identifiers(
+            identifiers=["SPGI"],
             estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
@@ -133,15 +166,15 @@ class TestEstimates:
         WHEN we request guidance estimates
         THEN we get back guidance estimates with the correct estimate_type
         """
-        guidance_response = {
-            **self.estimates_response,
+        guidance_data = {
+            **self.estimates_data,
             "estimate_type": "guidance",
         }
 
         httpx_mock.add_response(
             method="POST",
             url="https://kfinance.kensho.com/api/v1/estimates/",
-            json={"results": {str(SPGI_ID_TRIPLE.company_id): guidance_response}, "errors": {}},
+            json={"results": {str(SPGI_ID_TRIPLE.company_id): guidance_data}, "errors": {}},
         )
 
         resp = await fetch_estimates_from_company_id(
@@ -150,9 +183,11 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = EstimatesResp.model_validate(guidance_response)
+        expected_resp = SingleResultResp[Estimates](
+            result=Estimates.model_validate(guidance_data),
+        )
         assert resp == expected_resp
-        assert resp.estimate_type == EstimateType.guidance
+        assert resp.result.estimate_type == EstimateType.guidance
 
     @pytest.mark.asyncio
     async def test_fetch_consensus_target_price_from_company_id(
@@ -164,7 +199,7 @@ class TestEstimates:
         WHEN we request SPGI's consensus target price
         THEN we get back the target price data
         """
-        consensus_target_price_response = {
+        consensus_target_price_data = {
             "currency": "USD",
             "effective_date": "2025-06-01",
             "estimates": [
@@ -179,7 +214,7 @@ class TestEstimates:
             method="GET",
             url=f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}",
             json={
-                "results": {str(SPGI_ID_TRIPLE.company_id): consensus_target_price_response},
+                "results": {str(SPGI_ID_TRIPLE.company_id): consensus_target_price_data},
                 "errors": {},
             },
         )
@@ -189,7 +224,40 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = ConsensusTargetPriceResp.model_validate(consensus_target_price_response)
+        expected_resp = SingleResultResp[ConsensusTargetPrice](
+            result=ConsensusTargetPrice.model_validate(consensus_target_price_data),
+        )
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_fetch_consensus_target_price_api_returns_error(
+        self,
+        httpx_client: httpx.AsyncClient,
+        httpx_mock: HTTPXMock,
+    ) -> None:
+        """
+        WHEN the consensus target price API returns an error (no data available)
+        THEN the error is extracted and surfaced in the response
+        """
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}",
+            json={
+                "results": {},
+                "errors": {"errors": "No consensus target price found."},
+            },
+        )
+
+        expected_resp = GetConsensusTargetPriceFromIdentifiersResp(
+            results={},
+            errors=["SPGI: No consensus target price found."],
+        )
+
+        resp = await get_consensus_target_price_from_identifiers(
+            identifiers=["SPGI"],
+            httpx_client=httpx_client,
+        )
+
         assert resp == expected_resp
 
     @pytest.mark.asyncio
@@ -202,7 +270,7 @@ class TestEstimates:
         WHEN we request consensus target price for SPGI and a non-existent company
         THEN we get back SPGI's target price and an error for the non-existent company
         """
-        consensus_target_price_response = {
+        consensus_target_price_data = {
             "currency": "USD",
             "effective_date": "2025-06-01",
             "estimates": [
@@ -217,7 +285,7 @@ class TestEstimates:
             method="GET",
             url=f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}",
             json={
-                "results": {str(SPGI_ID_TRIPLE.company_id): consensus_target_price_response},
+                "results": {str(SPGI_ID_TRIPLE.company_id): consensus_target_price_data},
                 "errors": {},
             },
         )
@@ -228,9 +296,7 @@ class TestEstimates:
         )
 
         expected_resp = GetConsensusTargetPriceFromIdentifiersResp(
-            results={
-                "SPGI": ConsensusTargetPriceResp.model_validate(consensus_target_price_response)
-            },
+            results={"SPGI": ConsensusTargetPrice.model_validate(consensus_target_price_data)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -247,7 +313,7 @@ class TestEstimates:
         WHEN we request SPGI's analyst recommendations
         THEN we get back the analyst recommendations data
         """
-        analyst_recommendations_response = {
+        analyst_recommendations_data = {
             "effective_date": "2025-06-01",
             "estimates": [
                 {"name": "# of Analyst Recommendations - Buy", "value": "12"},
@@ -260,7 +326,7 @@ class TestEstimates:
             method="GET",
             url=f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}",
             json={
-                "results": {str(SPGI_ID_TRIPLE.company_id): analyst_recommendations_response},
+                "results": {str(SPGI_ID_TRIPLE.company_id): analyst_recommendations_data},
                 "errors": {},
             },
         )
@@ -270,7 +336,40 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = AnalystRecommendationsResp.model_validate(analyst_recommendations_response)
+        expected_resp = SingleResultResp[AnalystRecommendations](
+            result=AnalystRecommendations.model_validate(analyst_recommendations_data),
+        )
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_fetch_analyst_recommendations_api_returns_error(
+        self,
+        httpx_client: httpx.AsyncClient,
+        httpx_mock: HTTPXMock,
+    ) -> None:
+        """
+        WHEN the analyst recommendations API returns an error (no data available)
+        THEN the error is extracted and surfaced in the response
+        """
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}",
+            json={
+                "results": {},
+                "errors": {"errors": "No analyst recommendations found."},
+            },
+        )
+
+        expected_resp = GetAnalystRecommendationsFromIdentifiersResp(
+            results={},
+            errors=["SPGI: No analyst recommendations found."],
+        )
+
+        resp = await get_analyst_recommendations_from_identifiers(
+            identifiers=["SPGI"],
+            httpx_client=httpx_client,
+        )
+
         assert resp == expected_resp
 
     @pytest.mark.asyncio
@@ -283,7 +382,7 @@ class TestEstimates:
         WHEN we request analyst recommendations for SPGI and a non-existent company
         THEN we get back SPGI's recommendations and an error for the non-existent company
         """
-        analyst_recommendations_response = {
+        analyst_recommendations_data = {
             "effective_date": "2025-06-01",
             "estimates": [
                 {"name": "# of Analyst Recommendations - Buy", "value": "12"},
@@ -296,7 +395,7 @@ class TestEstimates:
             method="GET",
             url=f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}",
             json={
-                "results": {str(SPGI_ID_TRIPLE.company_id): analyst_recommendations_response},
+                "results": {str(SPGI_ID_TRIPLE.company_id): analyst_recommendations_data},
                 "errors": {},
             },
         )
@@ -307,9 +406,7 @@ class TestEstimates:
         )
 
         expected_resp = GetAnalystRecommendationsFromIdentifiersResp(
-            results={
-                "SPGI": AnalystRecommendationsResp.model_validate(analyst_recommendations_response)
-            },
+            results={"SPGI": AnalystRecommendations.model_validate(analyst_recommendations_data)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],

@@ -1,7 +1,7 @@
 # Changelog
 
 ## v5.1.2
-- Bump fastmcp and langchain dependencies
+- Update tools to more gracefully handle errors
 
 ## v5.1.1
 - Change MergerInfo consideration to Optional

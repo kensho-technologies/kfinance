@@ -5,9 +5,9 @@ from typing import Any, Literal, Type
 import httpx
 from pydantic import BaseModel, Field, model_validator
 
-from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
+from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
     LINE_ITEM_NAMES_AND_ALIASES,
@@ -236,45 +236,34 @@ async def get_financial_line_item_from_identifiers(
     )
     errors: list[str] = list(id_triple_resp.errors.values())
 
-    # Get the company IDs from the id triples
-    company_ids = [
-        id_triple.company_id for id_triple in id_triple_resp.identifiers_to_id_triples.values()
-    ]
-
-    # Create a single task to fetch line items for all company IDs at once
-    if company_ids:
-        task = AsyncTask(
-            func=fetch_line_item_from_company_ids,
-            kwargs=dict(
-                company_ids=company_ids,
-                line_item=line_item,
-                httpx_client=httpx_client,
-                period_type=period_type,
-                start_year=start_year,
-                end_year=end_year,
-                start_quarter=start_quarter,
-                end_quarter=end_quarter,
-                calendar_type=calendar_type,
-                num_periods=num_periods,
-                num_periods_back=num_periods_back,
-            ),
-            result_key="line_items",
+    # Fetch line items for all resolved company IDs
+    if id_triple_resp.company_ids:
+        line_item_resp = await fetch_line_item_from_company_ids(
+            company_ids=id_triple_resp.company_ids,
+            line_item=line_item,
+            httpx_client=httpx_client,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            calendar_type=calendar_type,
+            num_periods=num_periods,
+            num_periods_back=num_periods_back,
         )
 
-        await batch_execute_async_tasks(tasks=[task])
+        # Add any errors from the line item API, mapping company_id keys back to identifiers
+        for company_id_str, error in line_item_resp.errors.items():
+            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            errors.append(f"{original_identifier}: {error}")
 
-        if task.error:
-            errors.append(task.error)
-            results = {}
-        else:
-            # Map company IDs back to original identifiers
-            identifier_to_results = {}
-            for company_id_str, line_item_resp in task.result.items():
-                original_identifier = id_triple_resp.get_identifier_from_company_id(
-                    int(company_id_str)
-                )
-                identifier_to_results[original_identifier] = line_item_resp
-            results = identifier_to_results
+        # Map results back to original identifiers
+        identifier_to_results = {}
+        for company_id_str, line_item_data in line_item_resp.results.items():
+            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            identifier_to_results[original_identifier] = line_item_data
+
+        results = identifier_to_results
     else:
         results = {}
 
@@ -316,7 +305,7 @@ async def fetch_line_item_from_company_ids(
     calendar_type: CalendarType | None = None,
     num_periods: int | None = None,
     num_periods_back: int | None = None,
-) -> dict[str, LineItemResp]:
+) -> PostResponse[LineItemResp]:
     """Fetch line items for a list of company IDs."""
     # Build the request payload
     params: dict[str, Any] = {
@@ -342,11 +331,5 @@ async def fetch_line_item_from_company_ids(
         params["num_periods_back"] = num_periods_back
 
     resp = await httpx_client.post(url="/line_item/", json=params)
-    response_data = resp.json()
 
-    # Convert the response data to LineItemResp objects
-    results = {}
-    for company_id_str, line_item_data in response_data["results"].items():
-        results[company_id_str] = LineItemResp.model_validate(line_item_data)
-
-    return results
+    return PostResponse[LineItemResp].model_validate(resp.json())
