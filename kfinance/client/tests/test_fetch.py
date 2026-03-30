@@ -8,6 +8,7 @@ from requests_mock import Mocker
 from kfinance.client.fetch import KFinanceApiClient
 from kfinance.client.kfinance import Client
 from kfinance.client.models.date_and_period_models import EstimateType, Periodicity, PeriodType
+from kfinance.client.models.response_models import SingleResultResp
 from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
@@ -21,10 +22,8 @@ from kfinance.domains.companies.company_models import (
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
     AnalystRecommendationsItem,
-    AnalystRecommendationsResp,
     ConsensusTargetPrice,
     ConsensusTargetPriceItem,
-    ConsensusTargetPriceResp,
 )
 from kfinance.domains.segments.segment_models import SegmentType
 
@@ -422,7 +421,7 @@ class TestFetchItem(TestCase):
         self.kfinance_api_client.fetch.assert_called_with(
             expected_url, method="POST", request_body=expected_request_body
         )
-        # Verify the result is an EstimatesResp
+        # Verify the result is a SingleResultResp
         expected_result_dict = {"result": None}
         assert result.model_dump() == expected_result_dict
 
@@ -445,7 +444,7 @@ class TestFetchItem(TestCase):
             "errors": {},
         }
 
-        expected_result = ConsensusTargetPriceResp(
+        expected_result = SingleResultResp[ConsensusTargetPrice](
             result=ConsensusTargetPrice(
                 currency="USD",
                 effective_date="2025-06-01",
@@ -481,7 +480,7 @@ class TestFetchItem(TestCase):
             "errors": {},
         }
 
-        expected_result = AnalystRecommendationsResp(
+        expected_result = SingleResultResp[AnalystRecommendations](
             result=AnalystRecommendations(
                 effective_date="2025-06-01",
                 estimates=[

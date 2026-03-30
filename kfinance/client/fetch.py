@@ -15,7 +15,7 @@ from kfinance.client.models.date_and_period_models import (
     Periodicity,
     PeriodType,
 )
-from kfinance.client.models.response_models import PostResponse
+from kfinance.client.models.response_models import PostResponse, SingleResultResp
 from kfinance.client.permission_models import Permission
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
@@ -31,9 +31,9 @@ from kfinance.domains.companies.company_models import (
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.estimates.estimates_models import (
-    AnalystRecommendationsResp,
-    ConsensusTargetPriceResp,
-    EstimatesResp,
+    AnalystRecommendations,
+    ConsensusTargetPrice,
+    Estimates,
 )
 from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
@@ -828,7 +828,7 @@ class KFinanceApiClient:
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
         period_type: EstimatePeriodType | None = None,
-    ) -> EstimatesResp:
+    ) -> SingleResultResp[Estimates]:
         """Get estimates or guidance for a specified duration."""
 
         url = f"{self.url_base}estimates/"
@@ -856,22 +856,22 @@ class KFinanceApiClient:
 
         response_data = self.fetch(url, method="POST", request_body=request_body)
 
-        return EstimatesResp.model_validate(response_data)
+        return SingleResultResp[Estimates].model_validate(response_data)
 
     def fetch_consensus_target_price(
         self,
         company_id: int,
-    ) -> ConsensusTargetPriceResp:
+    ) -> SingleResultResp[ConsensusTargetPrice]:
         """Get consensus target price estimates"""
         url = f"{self.url_base}estimates/consensus_target_price/{company_id}"
         response_data = self.fetch(url)
-        return ConsensusTargetPriceResp.model_validate(response_data)
+        return SingleResultResp[ConsensusTargetPrice].model_validate(response_data)
 
     def fetch_analyst_recommendations(
         self,
         company_id: int,
-    ) -> AnalystRecommendationsResp:
+    ) -> SingleResultResp[AnalystRecommendations]:
         """Get analyst recommendations"""
         url = f"{self.url_base}estimates/analyst_recommendations/{company_id}"
         response_data = self.fetch(url)
-        return AnalystRecommendationsResp.model_validate(response_data)
+        return SingleResultResp[AnalystRecommendations].model_validate(response_data)

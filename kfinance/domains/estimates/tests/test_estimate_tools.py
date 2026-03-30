@@ -3,14 +3,12 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from kfinance.client.models.date_and_period_models import EstimateType
+from kfinance.client.models.response_models import SingleResultResp
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
-    AnalystRecommendationsResp,
     ConsensusTargetPrice,
-    ConsensusTargetPriceResp,
     Estimates,
-    EstimatesResp,
 )
 from kfinance.domains.estimates.estimates_tools import (
     GetAnalystRecommendationsFromIdentifiersResp,
@@ -96,7 +94,7 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = EstimatesResp(
+        expected_resp = SingleResultResp[Estimates](
             result=Estimates.model_validate(self.estimates_data),
         )
         assert resp == expected_resp
@@ -185,7 +183,7 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = EstimatesResp(
+        expected_resp = SingleResultResp[Estimates](
             result=Estimates.model_validate(guidance_data),
         )
         assert resp == expected_resp
@@ -226,7 +224,7 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = ConsensusTargetPriceResp(
+        expected_resp = SingleResultResp[ConsensusTargetPrice](
             result=ConsensusTargetPrice.model_validate(consensus_target_price_data),
         )
         assert resp == expected_resp
@@ -338,7 +336,7 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = AnalystRecommendationsResp(
+        expected_resp = SingleResultResp[AnalystRecommendations](
             result=AnalystRecommendations.model_validate(analyst_recommendations_data),
         )
         assert resp == expected_resp

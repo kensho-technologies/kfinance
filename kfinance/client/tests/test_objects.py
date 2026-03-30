@@ -20,7 +20,7 @@ from kfinance.client.kfinance import (
     TradingItem,
     Transcript,
 )
-from kfinance.client.models.response_models import PostResponse
+from kfinance.client.models.response_models import PostResponse, SingleResultResp
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
     RelationshipResponse,
@@ -31,12 +31,9 @@ from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
     AnalystRecommendationsItem,
-    AnalystRecommendationsResp,
     ConsensusTargetPrice,
     ConsensusTargetPriceItem,
-    ConsensusTargetPriceResp,
     Estimates,
-    EstimatesResp,
 )
 from kfinance.domains.line_items.line_item_models import LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
@@ -499,17 +496,17 @@ class MockKFinanceApiClient:
         period_type,
     ):
         estimates = MOCK_COMPANY_DB[company_id]["estimates"]
-        return EstimatesResp(result=estimates)
+        return SingleResultResp[Estimates](result=estimates)
 
     def fetch_consensus_target_price(self, company_id):
         """Get consensus target price estimates"""
         consensus_target_price = MOCK_COMPANY_DB[company_id]["consensus_target_price"]
-        return ConsensusTargetPriceResp(result=consensus_target_price)
+        return SingleResultResp[ConsensusTargetPrice](result=consensus_target_price)
 
     def fetch_analyst_recommendations(self, company_id):
         """Get analyst recommendations"""
         analyst_recommendations = MOCK_COMPANY_DB[company_id]["analyst_recommendations"]
-        return AnalystRecommendationsResp(result=analyst_recommendations)
+        return SingleResultResp[AnalystRecommendations](result=analyst_recommendations)
 
     def fetch_line_item(
         self,
