@@ -1,5 +1,8 @@
 # Changelog
 
+## v5.1.3
+- Bump fastmcp and langchain dependencies
+
 ## v5.1.2
 - Update tools to more gracefully handle errors
 
