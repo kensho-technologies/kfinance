@@ -148,25 +148,19 @@ async def get_financial_statement_from_identifiers(
 
     # Fetch statements for all resolved company IDs
     if id_triple_resp.company_ids:
-        try:
-            statements_resp = await fetch_statements_from_company_ids(
-                company_ids=id_triple_resp.company_ids,
-                statement_type=statement.value,
-                period_type=period_type,
-                start_year=start_year,
-                end_year=end_year,
-                start_quarter=start_quarter,
-                end_quarter=end_quarter,
-                calendar_type=calendar_type,
-                num_periods=num_periods,
-                num_periods_back=num_periods_back,
-                httpx_client=httpx_client,
-            )
-        except HTTPStatusError as e:
-            if e.response.status_code in (400, 404, 500):
-                errors.append(f"Failed to fetch statements data: {e.response.text}")
-                return GetFinancialStatementFromIdentifiersResp(results={}, errors=errors)
-            raise
+        statements_resp = await fetch_statements_from_company_ids(
+            company_ids=id_triple_resp.company_ids,
+            statement_type=statement.value,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            calendar_type=calendar_type,
+            num_periods=num_periods,
+            num_periods_back=num_periods_back,
+            httpx_client=httpx_client,
+        )
 
         # Add any errors from the statements API, mapping company_id keys back to identifiers
         for company_id_str, error in statements_resp.errors.items():
