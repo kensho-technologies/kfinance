@@ -402,11 +402,11 @@ async def get_rounds_of_funding_info_from_transaction_ids(
 
     await batch_execute_async_tasks(tasks=tasks)
 
+    errors: list[str] = []
     round_of_info_responses: dict[int, RoundOfFundingInfo] = dict()
     for task in tasks:
         if task.error:
-            # For now, skip errors in individual round info fetches
-            continue
+            errors.append(f"transaction_id {task.result_key}: {task.error}")
         else:
             round_of_info_responses[task.result_key] = task.result
 
@@ -464,7 +464,7 @@ async def get_rounds_of_funding_info_from_transaction_ids(
 
     return GetRoundsOfFundingInfoFromTransactionIdsResp(
         results=round_of_info_with_advisors,
-        errors=[],  # Individual API failures would be captured in batch execution
+        errors=errors,
     )
 
 

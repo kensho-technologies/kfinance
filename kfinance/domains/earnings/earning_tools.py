@@ -22,7 +22,8 @@ class GetTranscriptFromKeyDevIdArgs(BaseModel):
 
 
 class GetTranscriptFromKeyDevIdResp(BaseModel):
-    transcript: str
+    transcript: str | None = None
+    error: str | None = None
 
 
 class GetTranscriptFromKeyDevId(KfinanceTool):
@@ -246,6 +247,7 @@ async def get_transcript_from_key_dev_id(
     """Fetch raw transcript text for a key_dev_id."""
     url = f"/transcript/{key_dev_id}"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     transcript_data = resp.json()
 
     # Convert transcript components to raw text format (same as sync version)

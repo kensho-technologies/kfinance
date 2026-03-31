@@ -3,6 +3,7 @@ from textwrap import dedent
 from typing import Any, Literal, Type
 
 import httpx
+from httpx import HTTPStatusError
 from pydantic import BaseModel, Field, model_validator
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
@@ -238,19 +239,25 @@ async def get_financial_line_item_from_identifiers(
 
     # Fetch line items for all resolved company IDs
     if id_triple_resp.company_ids:
-        line_item_resp = await fetch_line_item_from_company_ids(
-            company_ids=id_triple_resp.company_ids,
-            line_item=line_item,
-            httpx_client=httpx_client,
-            period_type=period_type,
-            start_year=start_year,
-            end_year=end_year,
-            start_quarter=start_quarter,
-            end_quarter=end_quarter,
-            calendar_type=calendar_type,
-            num_periods=num_periods,
-            num_periods_back=num_periods_back,
-        )
+        try:
+            line_item_resp = await fetch_line_item_from_company_ids(
+                company_ids=id_triple_resp.company_ids,
+                line_item=line_item,
+                httpx_client=httpx_client,
+                period_type=period_type,
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+                calendar_type=calendar_type,
+                num_periods=num_periods,
+                num_periods_back=num_periods_back,
+            )
+        except HTTPStatusError as e:
+            if e.response.status_code in (400, 404, 500):
+                errors.append(f"Failed to fetch line item data: {e.response.text}")
+                return GetFinancialLineItemFromIdentifiersResp(results={}, errors=errors)
+            raise
 
         # Add any errors from the line item API, mapping company_id keys back to identifiers
         for company_id_str, error in line_item_resp.errors.items():
@@ -331,5 +338,6 @@ async def fetch_line_item_from_company_ids(
         params["num_periods_back"] = num_periods_back
 
     resp = await httpx_client.post(url="/line_item/", json=params)
+    resp.raise_for_status()
 
     return PostResponse[LineItemResp].model_validate(resp.json())

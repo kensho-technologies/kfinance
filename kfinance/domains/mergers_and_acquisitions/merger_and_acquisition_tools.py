@@ -53,7 +53,11 @@ class GetMergersFromIdentifiers(KfinanceTool):
 
 
 class GetMergerInfoFromTransactionIdArgs(BaseModel):
-    transaction_id: int | None = Field(description="The ID of the transaction.")
+    transaction_id: int = Field(description="The ID of the transaction.")
+
+
+class GetMergerInfoFromTransactionIdResp(ToolRespWithErrors):
+    result: MergerInfo | None = None
 
 
 class GetMergerInfoFromTransactionId(KfinanceTool):
@@ -79,7 +83,7 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
     args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIdArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    async def _arun(self, transaction_id: int) -> MergerInfo:
+    async def _arun(self, transaction_id: int) -> GetMergerInfoFromTransactionIdResp:
         """"""
         return await get_merger_info_from_transaction_id(
             transaction_id=transaction_id,
@@ -88,7 +92,7 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
 
 
 class GetAdvisorsForCompanyInTransactionFromIdentifierArgs(ToolArgsWithIdentifier):
-    transaction_id: int | None = Field(description="The ID of the merger.")
+    transaction_id: int = Field(description="The ID of the merger.")
 
 
 class GetAdvisorsForCompanyInTransactionFromIdentifierResp(ToolRespWithErrors):
@@ -172,12 +176,14 @@ async def fetch_mergers_from_company_id(
 async def get_merger_info_from_transaction_id(
     transaction_id: int,
     httpx_client: httpx.AsyncClient,
-) -> MergerInfo:
+) -> GetMergerInfoFromTransactionIdResp:
     """Fetch detailed merger info for a transaction ID."""
     url = f"/merger/info/{transaction_id}"
     resp = await httpx_client.get(url=url)
     resp.raise_for_status()
-    return MergerInfo.model_validate(resp.json())
+    return GetMergerInfoFromTransactionIdResp(
+        result=MergerInfo.model_validate(resp.json())
+    )
 
 
 async def get_advisors_for_company_in_transaction_from_identifier(
@@ -204,6 +210,7 @@ async def get_advisors_for_company_in_transaction_from_identifier(
     # Fetch advisors for this company in the transaction
     url = f"/merger/info/{transaction_id}/advisors/{company_id}"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     response_data = resp.json()
 
     advisors_response: list[AdvisorResp] = []

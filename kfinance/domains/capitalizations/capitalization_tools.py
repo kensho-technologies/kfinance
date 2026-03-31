@@ -101,6 +101,7 @@ async def get_capitalizations_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
+    id_triple_resp.filter_out_companies_without_trading_item_ids()
     errors: list[str] = list(id_triple_resp.errors.values())
 
     tasks = [

@@ -316,7 +316,10 @@ async def get_company_summary_or_description_from_identifiers(
                 result = task.result.summary
             else:
                 result = task.result.description
-            results[task.result_key] = result
+            if not result:
+                errors.append(f"No {summary_or_description} found for {task.result_key}.")
+            else:
+                results[task.result_key] = result
 
     if summary_or_description == "summary":
         return GetCompanySummaryFromIdentifiersResp(results=results, errors=errors)
