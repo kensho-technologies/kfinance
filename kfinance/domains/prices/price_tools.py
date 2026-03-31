@@ -172,6 +172,7 @@ async def fetch_price_history_from_trading_item_id(
 
     url = f"/pricing/{trading_item_id}/{start_date_str}/{end_date_str}/{periodicity.value}/{adjusted_str}"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return PriceHistory.model_validate(resp.json())
 
 

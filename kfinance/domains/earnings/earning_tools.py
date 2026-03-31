@@ -22,8 +22,7 @@ class GetTranscriptFromKeyDevIdArgs(BaseModel):
 
 
 class GetTranscriptFromKeyDevIdResp(BaseModel):
-    transcript: str | None = None
-    error: str | None = None
+    transcript: str
 
 
 class GetTranscriptFromKeyDevId(KfinanceTool):
