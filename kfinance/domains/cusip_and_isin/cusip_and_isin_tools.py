@@ -126,4 +126,5 @@ async def fetch_cusip_or_isin_from_security_id(
     """Fetch and return the cusip or isin for a security id."""
     url = f"/{cusip_or_isin}/{security_id}"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return resp.json()[cusip_or_isin]

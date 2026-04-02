@@ -216,6 +216,7 @@ async def fetch_info_from_company_id(
     """Fetch and return company info for one company_id."""
     url = f"/info/{company_id}"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     return resp.json()
 
 
@@ -316,7 +317,10 @@ async def get_company_summary_or_description_from_identifiers(
                 result = task.result.summary
             else:
                 result = task.result.description
-            results[task.result_key] = result
+            if not result:
+                errors.append(f"No {summary_or_description} found for {task.result_key}.")
+            else:
+                results[task.result_key] = result
 
     if summary_or_description == "summary":
         return GetCompanySummaryFromIdentifiersResp(results=results, errors=errors)

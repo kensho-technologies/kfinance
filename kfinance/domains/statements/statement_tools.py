@@ -244,5 +244,6 @@ async def fetch_statements_from_company_ids(
 
     url = "/statements/"
     resp = await httpx_client.post(url=url, json=payload)
+    resp.raise_for_status()
 
     return PostResponse[StatementsResp].model_validate(resp.json())

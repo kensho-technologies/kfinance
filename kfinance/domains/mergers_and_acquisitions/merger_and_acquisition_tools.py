@@ -53,7 +53,7 @@ class GetMergersFromIdentifiers(KfinanceTool):
 
 
 class GetMergerInfoFromTransactionIdArgs(BaseModel):
-    transaction_id: int | None = Field(description="The ID of the transaction.")
+    transaction_id: int = Field(description="The ID of the transaction.")
 
 
 class GetMergerInfoFromTransactionId(KfinanceTool):
@@ -88,7 +88,7 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
 
 
 class GetAdvisorsForCompanyInTransactionFromIdentifierArgs(ToolArgsWithIdentifier):
-    transaction_id: int | None = Field(description="The ID of the merger.")
+    transaction_id: int = Field(description="The ID of the merger.")
 
 
 class GetAdvisorsForCompanyInTransactionFromIdentifierResp(ToolRespWithErrors):
@@ -204,6 +204,7 @@ async def get_advisors_for_company_in_transaction_from_identifier(
     # Fetch advisors for this company in the transaction
     url = f"/merger/info/{transaction_id}/advisors/{company_id}"
     resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
     response_data = resp.json()
 
     advisors_response: list[AdvisorResp] = []

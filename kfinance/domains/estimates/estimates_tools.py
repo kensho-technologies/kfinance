@@ -275,6 +275,7 @@ async def fetch_estimates_from_company_id(
         params["num_periods_backward"] = num_periods_backward
 
     resp = await httpx_client.post(url="/estimates/", json=params)
+    resp.raise_for_status()
     return SingleResultResp[Estimates].model_validate(resp.json())
 
 
@@ -324,6 +325,7 @@ async def fetch_consensus_target_price_from_company_id(
 ) -> SingleResultResp[ConsensusTargetPrice]:
     """Fetch consensus target price for one company_id."""
     resp = await httpx_client.get(url=f"/estimates/consensus_target_price/{company_id}")
+    resp.raise_for_status()
     return SingleResultResp[ConsensusTargetPrice].model_validate(resp.json())
 
 
@@ -373,4 +375,5 @@ async def fetch_analyst_recommendations_from_company_id(
 ) -> SingleResultResp[AnalystRecommendations]:
     """Fetch analyst recommendations for one company_id."""
     resp = await httpx_client.get(url=f"/estimates/analyst_recommendations/{company_id}")
+    resp.raise_for_status()
     return SingleResultResp[AnalystRecommendations].model_validate(resp.json())

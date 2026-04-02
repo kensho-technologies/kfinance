@@ -2,6 +2,7 @@ import abc
 from typing import Annotated, Any, Callable, Coroutine, Dict, Literal, Type
 
 from asyncer import syncify
+from httpx import HTTPStatusError
 from langchain_core.tools import BaseTool
 from pydantic import (
     BaseModel,
@@ -14,6 +15,11 @@ from pydantic import (
 from kfinance.client.kfinance import Client
 from kfinance.client.permission_models import Permission
 from kfinance.httpx_utils import KfinanceHttpxClient
+
+
+def _sanitize_http_error(e: HTTPStatusError) -> str:
+    """Return the response body from an HTTPStatusError."""
+    return f"{e.response.status_code}: {e.response.text}"
 
 
 class KfinanceTool(BaseTool):
@@ -62,7 +68,10 @@ class KfinanceTool(BaseTool):
         args_dict = args_model.model_dump()
         # Only pass params included in the LLM generated kwargs.
         args_dict = {k: v for k, v in args_dict.items() if k in kwargs}
-        result_model = await self._arun(**args_dict)
+        try:
+            result_model = await self._arun(**args_dict)
+        except HTTPStatusError as e:
+            raise Exception(_sanitize_http_error(e)) from None
         return result_model.model_dump(mode="json", exclude_none=True)
 
     async def run_with_endpoint_tracking(self, *args: Any, **kwargs: Any) -> Any:
@@ -75,7 +84,10 @@ class KfinanceTool(BaseTool):
             args_model = self.args_schema.model_validate(kwargs)
             args_dict = args_model.model_dump()
             args_dict = {k: v for k, v in args_dict.items() if k in kwargs}
-            result_model = await self._arun(**args_dict)
+            try:
+                result_model = await self._arun(**args_dict)
+            except HTTPStatusError as e:
+                raise Exception(_sanitize_http_error(e)) from None
 
             # After completion of tool data fetching and within the endpoint_tracker context manager scope,
             # dequeue the endpoint_tracker_queue
@@ -133,7 +145,8 @@ class ToolArgsWithIdentifiers(BaseModel):
     """
 
     identifiers: list[str] = Field(
-        description="The identifiers, which can be a list of ticker symbols, ISINs, or CUSIPs, or company_ids"
+        min_length=1,
+        description="The identifiers, which can be a list of ticker symbols, ISINs, or CUSIPs, or company_ids",
     )
 
 

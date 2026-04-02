@@ -331,5 +331,6 @@ async def fetch_line_item_from_company_ids(
         params["num_periods_back"] = num_periods_back
 
     resp = await httpx_client.post(url="/line_item/", json=params)
+    resp.raise_for_status()
 
     return PostResponse[LineItemResp].model_validate(resp.json())
