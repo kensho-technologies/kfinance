@@ -485,8 +485,7 @@ class TestRoundsOfFunding:
     ) -> None:
         """
         WHEN the server returns a 404 for a non-existent transaction_id
-        THEN the result contains no data for that transaction and no errors are raised
-        note: task errors are purposely ignored in get_rounds_of_funding_info_from_transaction_ids
+        THEN the result contains no data for that transaction and an error is reported
         """
         transaction_id = 999999
 
@@ -498,7 +497,7 @@ class TestRoundsOfFunding:
 
         expected_result = GetRoundsOfFundingInfoFromTransactionIdsResp(
             results={},
-            errors=[],
+            errors=[f"transaction_id {transaction_id}: No result found for {transaction_id}."],
         )
 
         result = await get_rounds_of_funding_info_from_transaction_ids(
