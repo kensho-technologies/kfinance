@@ -56,10 +56,6 @@ class GetMergerInfoFromTransactionIdArgs(BaseModel):
     transaction_id: int = Field(description="The ID of the transaction.")
 
 
-class GetMergerInfoFromTransactionIdResp(BaseModel):
-    result: MergerInfo
-
-
 class GetMergerInfoFromTransactionId(KfinanceTool):
     name: str = "get_merger_info_from_transaction_id"
     description: str = dedent("""
@@ -83,7 +79,7 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
     args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIdArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    async def _arun(self, transaction_id: int) -> GetMergerInfoFromTransactionIdResp:
+    async def _arun(self, transaction_id: int) -> MergerInfo:
         """"""
         return await get_merger_info_from_transaction_id(
             transaction_id=transaction_id,
@@ -176,14 +172,12 @@ async def fetch_mergers_from_company_id(
 async def get_merger_info_from_transaction_id(
     transaction_id: int,
     httpx_client: httpx.AsyncClient,
-) -> GetMergerInfoFromTransactionIdResp:
+) -> MergerInfo:
     """Fetch detailed merger info for a transaction ID."""
     url = f"/merger/info/{transaction_id}"
     resp = await httpx_client.get(url=url)
     resp.raise_for_status()
-    return GetMergerInfoFromTransactionIdResp(
-        result=MergerInfo.model_validate(resp.json())
-    )
+    return MergerInfo.model_validate(resp.json())
 
 
 async def get_advisors_for_company_in_transaction_from_identifier(
