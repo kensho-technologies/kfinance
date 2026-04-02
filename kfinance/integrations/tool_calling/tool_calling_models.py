@@ -18,15 +18,8 @@ from kfinance.httpx_utils import KfinanceHttpxClient
 
 
 def _sanitize_http_error(e: HTTPStatusError) -> str:
-    """Convert an HTTPStatusError to a user-facing message without leaking internal hostnames."""
-    status_code = e.response.status_code
-    response_text = e.response.text
-    if status_code == 400:
-        return response_text
-    elif status_code == 404:
-        return response_text
-    else:
-        return f"Server error ({status_code})."
+    """Return the response body from an HTTPStatusError."""
+    return f"{e.response.status_code}: {e.response.text}"
 
 
 class KfinanceTool(BaseTool):
