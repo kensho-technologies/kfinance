@@ -24,7 +24,7 @@ def _sanitize_http_error(e: HTTPStatusError) -> str:
     if status_code == 400:
         return response_text
     elif status_code == 404:
-        return response_text or "Not found."
+        return response_text
     else:
         return f"Server error ({status_code})."
 
@@ -78,7 +78,7 @@ class KfinanceTool(BaseTool):
         try:
             result_model = await self._arun(**args_dict)
         except HTTPStatusError as e:
-            raise ValueError(_sanitize_http_error(e)) from None
+            raise Exception(_sanitize_http_error(e)) from None
         return result_model.model_dump(mode="json", exclude_none=True)
 
     async def run_with_endpoint_tracking(self, *args: Any, **kwargs: Any) -> Any:
@@ -94,7 +94,7 @@ class KfinanceTool(BaseTool):
             try:
                 result_model = await self._arun(**args_dict)
             except HTTPStatusError as e:
-                raise ValueError(_sanitize_http_error(e)) from None
+                raise Exception(_sanitize_http_error(e)) from None
 
             # After completion of tool data fetching and within the endpoint_tracker context manager scope,
             # dequeue the endpoint_tracker_queue
@@ -153,7 +153,7 @@ class ToolArgsWithIdentifiers(BaseModel):
 
     identifiers: list[str] = Field(
         min_length=1,
-        description="The identifiers, which can be a list of ticker symbols, ISINs, or CUSIPs, or company_ids"
+        description="The identifiers, which can be a list of ticker symbols, ISINs, or CUSIPs, or company_ids",
     )
 
 

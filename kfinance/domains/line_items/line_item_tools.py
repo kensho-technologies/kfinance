@@ -3,7 +3,6 @@ from textwrap import dedent
 from typing import Any, Literal, Type
 
 import httpx
-from httpx import HTTPStatusError
 from pydantic import BaseModel, Field, model_validator
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
