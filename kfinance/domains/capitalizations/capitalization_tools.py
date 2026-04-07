@@ -12,7 +12,7 @@ from kfinance.domains.capitalizations.capitalization_models import Capitalizatio
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
 )
 
 
@@ -29,9 +29,8 @@ class GetCapitalizationFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
 
 
-class GetCapitalizationFromIdentifiersResp(ToolRespWithErrors):
+class GetCapitalizationFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Capitalizations]):
     capitalization: Capitalization
-    results: dict[str, Capitalizations]
 
 
 class GetCapitalizationFromIdentifiers(KfinanceTool):
@@ -148,7 +147,10 @@ async def get_capitalizations_from_identifiers(
             results[task.result_key] = capitalization_response
 
     return GetCapitalizationFromIdentifiersResp(
-        capitalization=capitalization, results=results, errors=errors
+        capitalization=capitalization,
+        identifier_results=results,
+        identifier_info=id_triple_resp,
+        errors=errors,
     )
 
 

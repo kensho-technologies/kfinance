@@ -73,7 +73,7 @@ class TestCusipAndIsin:
         """
 
         expected_resp = GetCusipOrIsinFromIdentifiersResp(
-            results={"SPGI": expected_response},
+            identifier_results={"SPGI": expected_response},
             errors=["private_company is a private company without a security_id."],
         )
 

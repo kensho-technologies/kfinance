@@ -17,11 +17,12 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolArgsWithIdentifier,
     ToolArgsWithIdentifiers,
     ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
 )
 
 
-class GetMergersFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, MergersResp]
+class GetMergersFromIdentifiersResp(ToolRespWithIdInfoAndErrors[MergersResp]):
+    pass
 
 
 class GetMergersFromIdentifiers(KfinanceTool):
@@ -155,7 +156,9 @@ async def get_mergers_from_identifiers(
         else:
             results[task.result_key] = task.result
 
-    return GetMergersFromIdentifiersResp(results=results, errors=errors)
+    return GetMergersFromIdentifiersResp(
+        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+    )
 
 
 async def fetch_mergers_from_company_id(

@@ -226,7 +226,7 @@ class TestHistoryMetadata:
         """
 
         expected_resp = GetHistoryMetadataFromIdentifiersResp(
-            results={"SPGI": HistoryMetadataResp.model_validate(self.metadata_resp)},
+            identifier_results={"SPGI": HistoryMetadataResp.model_validate(self.metadata_resp)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],

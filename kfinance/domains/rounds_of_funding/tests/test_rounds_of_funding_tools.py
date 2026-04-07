@@ -466,7 +466,7 @@ class TestRoundsOfFunding:
         )
 
         expected_response = GetFundingSummaryFromIdentifiersResp(
-            results={
+            identifier_results={
                 "C_1": expected_summary,
                 "C_2": expected_summary.model_copy(update={"company_id": "C_2"}),
             },

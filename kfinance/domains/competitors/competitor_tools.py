@@ -10,7 +10,7 @@ from kfinance.domains.competitors.competitor_models import CompetitorResponse, C
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
 )
 
 
@@ -19,8 +19,8 @@ class GetCompetitorsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     competitor_source: CompetitorSource
 
 
-class GetCompetitorsFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, CompetitorResponse]
+class GetCompetitorsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CompetitorResponse]):
+    pass
 
 
 class GetCompetitorsFromIdentifiers(KfinanceTool):
@@ -101,7 +101,9 @@ async def get_competitors_from_identifiers(
         else:
             results[task.result_key] = task.result
 
-    resp_model = GetCompetitorsFromIdentifiersResp(results=results, errors=errors)
+    resp_model = GetCompetitorsFromIdentifiersResp(
+        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+    )
     return resp_model
 
 

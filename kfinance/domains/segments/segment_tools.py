@@ -16,7 +16,7 @@ from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
     ValidQuarter,
 )
 
@@ -41,8 +41,7 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
 
 
-class GetSegmentsFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, SegmentsResp]  # identifier -> response
+class GetSegmentsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):
     notes: list[str] = Field(default_factory=list)
 
 
@@ -166,7 +165,9 @@ async def get_segments_from_identifiers(
         for segments_response in identifier_to_results.values():
             segments_response.remove_all_periods_other_than_the_most_recent_one()
 
-    resp_model = GetSegmentsFromIdentifiersResp(results=identifier_to_results, errors=errors)
+    resp_model = GetSegmentsFromIdentifiersResp(
+        identifier_results=identifier_to_results, identifier_info=id_triple_resp, errors=errors
+    )
 
     # Add explanatory notes
     insert_fiscal_period_notes(

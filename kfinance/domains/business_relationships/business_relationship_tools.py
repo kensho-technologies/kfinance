@@ -14,6 +14,7 @@ from kfinance.domains.business_relationships.business_relationship_models import
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
+    ToolRespWithIdInfoAndErrors,
 )
 
 
@@ -22,10 +23,8 @@ class GetBusinessRelationshipFromIdentifiersArgs(ToolArgsWithIdentifiers):
     business_relationship: BusinessRelationshipType
 
 
-class GetBusinessRelationshipFromIdentifiersResp(BaseModel):
+class GetBusinessRelationshipFromIdentifiersResp(ToolRespWithIdInfoAndErrors[RelationshipResponse]):
     business_relationship: BusinessRelationshipType
-    results: dict[str, RelationshipResponse]
-    errors: list[str]
 
 
 class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
@@ -112,7 +111,10 @@ async def get_business_relationship_from_identifiers(
             results[task.result_key] = task.result
 
     return GetBusinessRelationshipFromIdentifiersResp(
-        business_relationship=business_relationship, results=results, errors=errors
+        business_relationship=business_relationship,
+        identifier_results=results,
+        identifier_info=id_triple_resp,
+        errors=errors,
     )
 
 

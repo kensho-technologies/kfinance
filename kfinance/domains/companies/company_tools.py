@@ -15,12 +15,12 @@ from kfinance.domains.companies.company_models import (
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
 )
 
 
-class GetInfoFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, dict]
+class GetInfoFromIdentifiersResp(ToolRespWithIdInfoAndErrors[dict]):
+    pass
 
 
 class GetInfoFromIdentifiers(KfinanceTool):
@@ -48,8 +48,8 @@ class GetInfoFromIdentifiers(KfinanceTool):
         )
 
 
-class GetCompanyOtherNamesFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, CompanyOtherNames]
+class GetCompanyOtherNamesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CompanyOtherNames]):
+    pass
 
 
 class GetCompanyOtherNamesFromIdentifiers(KfinanceTool):
@@ -80,8 +80,8 @@ class GetCompanyOtherNamesFromIdentifiers(KfinanceTool):
         )
 
 
-class GetCompanySummaryFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, str]
+class GetCompanySummaryFromIdentifiersResp(ToolRespWithIdInfoAndErrors[str]):
+    pass
 
 
 class GetCompanySummaryFromIdentifiers(KfinanceTool):
@@ -113,8 +113,8 @@ class GetCompanySummaryFromIdentifiers(KfinanceTool):
         )
 
 
-class GetCompanyDescriptionFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, str]
+class GetCompanyDescriptionFromIdentifiersResp(ToolRespWithIdInfoAndErrors[str]):
+    pass
 
 
 class GetCompanyDescriptionFromIdentifiers(KfinanceTool):
@@ -205,7 +205,9 @@ async def get_info_from_identifiers(
     for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items():
         results[identifier]["company_id"] = prefix_company_id(id_triple.company_id)
 
-    resp_model = GetInfoFromIdentifiersResp(results=results, errors=errors)
+    resp_model = GetInfoFromIdentifiersResp(
+        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+    )
     return resp_model
 
 
@@ -252,7 +254,9 @@ async def get_company_other_names_from_identifiers(
         else:
             results[task.result_key] = task.result
 
-    return GetCompanyOtherNamesFromIdentifiersResp(results=results, errors=errors)
+    return GetCompanyOtherNamesFromIdentifiersResp(
+        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+    )
 
 
 async def fetch_company_other_names_from_company_id(
@@ -323,9 +327,13 @@ async def get_company_summary_or_description_from_identifiers(
                 results[task.result_key] = result
 
     if summary_or_description == "summary":
-        return GetCompanySummaryFromIdentifiersResp(results=results, errors=errors)
+        return GetCompanySummaryFromIdentifiersResp(
+            identifier_results=results, identifier_info=id_triple_resp, errors=errors
+        )
     else:
-        return GetCompanyDescriptionFromIdentifiersResp(results=results, errors=errors)
+        return GetCompanyDescriptionFromIdentifiersResp(
+            identifier_results=results, identifier_info=id_triple_resp, errors=errors
+        )
 
 
 async def fetch_company_summary_and_description_from_company_id(

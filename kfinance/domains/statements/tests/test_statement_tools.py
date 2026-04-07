@@ -97,7 +97,7 @@ class TestStatements:
         """
 
         expected_resp = GetFinancialStatementFromIdentifiersResp(
-            results={"SPGI": StatementsResp.model_validate(self.statement_resp)},
+            identifier_results={"SPGI": StatementsResp.model_validate(self.statement_resp)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -130,7 +130,7 @@ class TestStatements:
         )
 
         expected_resp = GetFinancialStatementFromIdentifiersResp(
-            results={},
+            identifier_results={},
             errors=["SPGI: No results found."],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
@@ -175,7 +175,7 @@ class TestStatements:
         )
 
         expected_response = GetFinancialStatementFromIdentifiersResp(
-            results={
+            identifier_results={
                 "C_1": expected_single_company_response,
                 "C_2": expected_single_company_response,
             },
@@ -201,7 +201,7 @@ class TestStatements:
         """
 
         expected_resp = GetFinancialStatementFromIdentifiersResp(
-            results={},
+            identifier_results={},
             errors=[
                 "No identification triple found for the provided identifier:"
                 " NON-EXISTENT of type: ticker"

@@ -64,7 +64,7 @@ class TestCompetitors:
         """
 
         expected_resp = GetCompetitorsFromIdentifiersResp(
-            results={"SPGI": self.expected_spgi_competitors_response},
+            identifier_results={"SPGI": self.expected_spgi_competitors_response},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],

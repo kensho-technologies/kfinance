@@ -98,7 +98,7 @@ class TestCapitalizations:
             capitalization.shares_outstanding = None
         expected_resp = GetCapitalizationFromIdentifiersResp(
             capitalization=Capitalization.market_cap,
-            results={"SPGI": expected_spgi_resp},
+            identifier_results={"SPGI": expected_spgi_resp},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -138,7 +138,7 @@ class TestCapitalizations:
 
         expected_resp = GetCapitalizationFromIdentifiersResp(
             capitalization=Capitalization.market_cap,
-            results={"C_1": expected_company_resp, "C_2": expected_company_resp},
+            identifier_results={"C_1": expected_company_resp, "C_2": expected_company_resp},
         )
         resp = await get_capitalizations_from_identifiers(
             identifiers=["C_1", "C_2"],

@@ -110,7 +110,7 @@ class TestGetFinancialLineItemFromIdentifiers:
         """
 
         expected_response = GetFinancialLineItemFromIdentifiersResp(
-            results={"SPGI": LineItemResp.model_validate(self.line_item_resp)},
+            identifier_results={"SPGI": LineItemResp.model_validate(self.line_item_resp)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -144,7 +144,7 @@ class TestGetFinancialLineItemFromIdentifiers:
         )
 
         expected_resp = GetFinancialLineItemFromIdentifiersResp(
-            results={},
+            identifier_results={},
             errors=["SPGI: No results found."],
             notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
@@ -188,7 +188,7 @@ class TestGetFinancialLineItemFromIdentifiers:
             }
         )
         expected_response = GetFinancialLineItemFromIdentifiersResp(
-            results={"C_1": line_item_resp, "C_2": line_item_resp},
+            identifier_results={"C_1": line_item_resp, "C_2": line_item_resp},
             notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
 

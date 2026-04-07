@@ -10,14 +10,14 @@ from kfinance.client.permission_models import Permission
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
 )
 
 
-class GetCusipOrIsinFromIdentifiersResp(ToolRespWithErrors):
+class GetCusipOrIsinFromIdentifiersResp(ToolRespWithIdInfoAndErrors[str]):
     """Both cusip and isin return a mapping from identifier to str (isin or cusip)."""
 
-    results: dict[str, str]
+    pass
 
 
 class GetCusipFromIdentifiers(KfinanceTool):
@@ -115,7 +115,9 @@ async def get_cusip_or_isin_from_identifiers(
         else:
             results[task.result_key] = task.result
 
-    return GetCusipOrIsinFromIdentifiersResp(results=results, errors=errors)
+    return GetCusipOrIsinFromIdentifiersResp(
+        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+    )
 
 
 async def fetch_cusip_or_isin_from_security_id(

@@ -111,7 +111,7 @@ class TestEstimates:
         """
 
         expected_resp = GetEstimatesFromIdentifiersResp(
-            results={"SPGI": Estimates.model_validate(self.estimates_data)},
+            identifier_results={"SPGI": Estimates.model_validate(self.estimates_data)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -143,7 +143,7 @@ class TestEstimates:
         )
 
         expected_resp = GetEstimatesFromIdentifiersResp(
-            results={},
+            identifier_results={},
             errors=["SPGI: No results found."],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
@@ -249,7 +249,7 @@ class TestEstimates:
         )
 
         expected_resp = GetConsensusTargetPriceFromIdentifiersResp(
-            results={},
+            identifier_results={},
             errors=["SPGI: No consensus target price found."],
         )
 
@@ -296,7 +296,9 @@ class TestEstimates:
         )
 
         expected_resp = GetConsensusTargetPriceFromIdentifiersResp(
-            results={"SPGI": ConsensusTargetPrice.model_validate(consensus_target_price_data)},
+            identifier_results={
+                "SPGI": ConsensusTargetPrice.model_validate(consensus_target_price_data)
+            },
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -361,7 +363,7 @@ class TestEstimates:
         )
 
         expected_resp = GetAnalystRecommendationsFromIdentifiersResp(
-            results={},
+            identifier_results={},
             errors=["SPGI: No analyst recommendations found."],
         )
 
@@ -406,7 +408,9 @@ class TestEstimates:
         )
 
         expected_resp = GetAnalystRecommendationsFromIdentifiersResp(
-            results={"SPGI": AnalystRecommendations.model_validate(analyst_recommendations_data)},
+            identifier_results={
+                "SPGI": AnalystRecommendations.model_validate(analyst_recommendations_data)
+            },
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],

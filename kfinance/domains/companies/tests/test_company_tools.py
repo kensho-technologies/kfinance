@@ -61,12 +61,14 @@ class TestGetCompanyInfo:
         """
 
         expected_resp = GetInfoFromIdentifiersResp(
-            results={"SPGI": self.spgi_info_resp},
+            identifier_results={"SPGI": self.spgi_info_resp},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
         )
-        expected_resp.results["SPGI"]["company_id"] = prefix_company_id(SPGI_ID_TRIPLE.company_id)
+        expected_resp.identifier_results["SPGI"]["company_id"] = prefix_company_id(
+            SPGI_ID_TRIPLE.company_id
+        )
 
         resp = await get_info_from_identifiers(
             identifiers=["SPGI", "non-existent"],

@@ -106,7 +106,7 @@ class TestSegments:
         """
 
         expected_resp = GetSegmentsFromIdentifiersResp(
-            results={"SPGI": SegmentsResp.model_validate(self.segments_response)},
+            identifier_results={"SPGI": SegmentsResp.model_validate(self.segments_response)},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -156,7 +156,7 @@ class TestSegments:
         )
 
         expected_response = GetSegmentsFromIdentifiersResp(
-            results={
+            identifier_results={
                 "C_1": expected_single_company_response,
                 "C_2": expected_single_company_response,
             },
@@ -182,7 +182,7 @@ class TestSegments:
         """
 
         expected_resp = GetSegmentsFromIdentifiersResp(
-            results={},
+            identifier_results={},
             errors=[
                 "No identification triple found for the provided identifier:"
                 " NON-EXISTENT of type: ticker"

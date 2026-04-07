@@ -32,6 +32,11 @@ class IdentificationTriple(BaseModel):
     model_config = ConfigDict(frozen=True)
 
 
+class IdentificationTripleWithCompanyInfo(IdentificationTriple):
+    company_name: str
+    ticker: str | None
+
+
 class IdTripleResolutionError(BaseModel):
     """Error returned when an identifier cannot be resolved."""
 
@@ -45,9 +50,9 @@ class UnifiedIdTripleResponse(BaseModel):
     identifiers_to_id_triples (successful resolution) and errors (resolution failed).
     """
 
-    identifiers_to_id_triples: dict[str, IdentificationTriple] = Field(
+    identifiers_to_id_triples: dict[str, IdentificationTripleWithCompanyInfo] = Field(
         description="A mapping of all identifiers that could successfully be resolved"
-        "to the corresponding identification triples."
+        "to the corresponding identification triples with company info."
     )
     errors: dict[str, str] = Field(
         description="A mapping of all identifiers that could not be resolved or don't have "

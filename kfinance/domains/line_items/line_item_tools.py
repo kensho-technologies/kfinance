@@ -23,7 +23,7 @@ from kfinance.domains.line_items.response_notes import (
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
     ValidQuarter,
 )
 
@@ -143,8 +143,7 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
         return values
 
 
-class GetFinancialLineItemFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, LineItemResp]  # identifier -> response
+class GetFinancialLineItemFromIdentifiersResp(ToolRespWithIdInfoAndErrors[LineItemResp]):
     notes: list[str] = Field(default_factory=list)
 
 
@@ -280,7 +279,9 @@ async def get_financial_line_item_from_identifiers(
         for line_item_response in results.values():
             line_item_response.remove_all_periods_other_than_the_most_recent_one()
 
-    resp_model = GetFinancialLineItemFromIdentifiersResp(results=results, errors=errors)
+    resp_model = GetFinancialLineItemFromIdentifiersResp(
+        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+    )
 
     # Add explanatory notes
     insert_source_link_note(resp_model)
