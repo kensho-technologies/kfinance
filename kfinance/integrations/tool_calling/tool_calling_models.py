@@ -203,9 +203,9 @@ class ToolRespWithIdInfoAndErrors(ToolRespWithErrors, Generic[T]):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def results(self) -> dict[str, IdentifierInfoWithResult]:
+    def results(self) -> dict[str, IdentifierInfoWithResult[T]]:
         """The results field is computed by adding identifier info to the result for each identifier."""
-        output: dict[str, IdentifierInfoWithResult] = {}
+        output: dict[str, IdentifierInfoWithResult[T]] = {}
 
         for identifier, result in self.identifier_results.items():
             id_triple = self.identifier_info.identifiers_to_id_triples[identifier]
