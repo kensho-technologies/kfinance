@@ -192,6 +192,7 @@ T = TypeVar("T")
 class IdentifierInfoWithResult(BaseModel, Generic[T]):
     company_name: str | None
     ticker: str | None
+    country: str | None
     data: T
 
 
@@ -214,6 +215,7 @@ class ToolRespWithIdInfoAndErrors(ToolRespWithErrors, Generic[T]):
                 data=result,
                 company_name=id_triple.company_name,
                 ticker=id_triple.ticker,
+                country=id_triple.country,
             )
 
         return output

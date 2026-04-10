@@ -34,7 +34,8 @@ class IdentificationTriple(BaseModel):
 
 class IdentificationTripleWithCompanyInfo(IdentificationTriple):
     company_name: str
-    ticker: str | None
+    ticker: str | None = Field(description="Private companies do not have a ticker.")
+    country: str | None
 
 
 class IdTripleResolutionError(BaseModel):
