@@ -4,7 +4,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from kfinance.conftest import SPGI_ID_TRIPLE
+from kfinance.conftest import SPGI_ID_TRIPLE, SPGI_SECURITY_ID
 from kfinance.domains.cusip_and_isin.cusip_and_isin_tools import (
     GetCusipOrIsinFromIdentifiersResp,
     fetch_cusip_or_isin_from_security_id,
@@ -50,7 +50,7 @@ class TestCusipAndIsin:
         """
 
         resp = await fetch_cusip_or_isin_from_security_id(
-            security_id=SPGI_ID_TRIPLE.security_id,
+            security_id=SPGI_SECURITY_ID,
             cusip_or_isin=cusip_or_isin,
             httpx_client=httpx_client,
         )
@@ -74,6 +74,7 @@ class TestCusipAndIsin:
 
         expected_resp = GetCusipOrIsinFromIdentifiersResp(
             identifier_results={"SPGI": expected_response},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=["private_company is a private company without a security_id."],
         )
 

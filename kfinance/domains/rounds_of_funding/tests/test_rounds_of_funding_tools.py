@@ -4,7 +4,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from kfinance.conftest import SPGI_ID_TRIPLE
+from kfinance.conftest import FAKE_COMPANY_1_ID_TRIPLE, FAKE_COMPANY_2_ID_TRIPLE, SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
     AdvisorResp,
@@ -178,7 +178,10 @@ class TestRoundsOfFunding:
         """
 
         expected_resp = GetRoundsOfFundingFromIdentifiersResp(
-            results={"SPGI": RoundsOfFundingResp.model_validate(self.rounds_of_funding_response)},
+            identifier_results={
+                "SPGI": RoundsOfFundingResp.model_validate(self.rounds_of_funding_response)
+            },
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -470,6 +473,7 @@ class TestRoundsOfFunding:
                 "C_1": expected_summary,
                 "C_2": expected_summary.model_copy(update={"company_id": "C_2"}),
             },
+            identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
         )
 
         resp = await get_funding_summary_from_identifiers(

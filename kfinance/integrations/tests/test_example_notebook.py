@@ -42,7 +42,7 @@ def jupyter_kernel_name() -> str:
     )
 
 
-def test_run_notebook(jupyter_kernel_name: str):
+def test_run_notebook(jupyter_kernel_name: str) -> None:
     """
     GIVEN the basic_usage.ipynb notebook
     WHEN the notebook gets run with a mock client and mock responses

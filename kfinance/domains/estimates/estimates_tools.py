@@ -230,7 +230,9 @@ async def get_estimates_from_identifiers(
                 errors.append(error_msg)
 
     resp_model = GetEstimatesFromIdentifiersResp(
-        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
 
     # Add explanatory notes
@@ -320,7 +322,9 @@ async def get_consensus_target_price_from_identifiers(
                 errors.append(error_msg)
 
     return GetConsensusTargetPriceFromIdentifiersResp(
-        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
 
 
@@ -372,7 +376,9 @@ async def get_analyst_recommendations_from_identifiers(
                 errors.append(error_msg)
 
     return GetAnalystRecommendationsFromIdentifiersResp(
-        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
 
 

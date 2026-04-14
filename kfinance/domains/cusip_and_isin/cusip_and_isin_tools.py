@@ -116,7 +116,9 @@ async def get_cusip_or_isin_from_identifiers(
             results[task.result_key] = task.result
 
     return GetCusipOrIsinFromIdentifiersResp(
-        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
 
 

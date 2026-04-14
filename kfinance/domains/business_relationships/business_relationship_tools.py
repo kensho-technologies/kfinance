@@ -113,7 +113,7 @@ async def get_business_relationship_from_identifiers(
     return GetBusinessRelationshipFromIdentifiersResp(
         business_relationship=business_relationship,
         identifier_results=results,
-        identifier_info=id_triple_resp,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,
     )
 

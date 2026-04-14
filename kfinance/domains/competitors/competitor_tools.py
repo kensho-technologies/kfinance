@@ -102,7 +102,9 @@ async def get_competitors_from_identifiers(
             results[task.result_key] = task.result
 
     resp_model = GetCompetitorsFromIdentifiersResp(
-        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
     return resp_model
 

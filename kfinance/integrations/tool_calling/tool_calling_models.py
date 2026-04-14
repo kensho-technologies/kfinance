@@ -15,7 +15,7 @@ from pydantic import (
 
 from kfinance.client.kfinance import Client
 from kfinance.client.permission_models import Permission
-from kfinance.domains.companies.company_models import UnifiedIdTripleResponse
+from kfinance.domains.companies.company_models import IdentificationTripleWithCompanyInfo
 from kfinance.httpx_utils import KfinanceHttpxClient
 
 
@@ -200,7 +200,7 @@ class ToolRespWithIdInfoAndErrors(ToolRespWithErrors, Generic[T]):
     """A tool response with an `errors` field and a `results` dictionary."""
 
     identifier_results: dict[str, T] = Field(exclude=True)  # identifier -> response
-    identifier_info: UnifiedIdTripleResponse = Field(exclude=True)
+    identifier_info: dict[str, IdentificationTripleWithCompanyInfo] = Field(exclude=True)
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -209,7 +209,7 @@ class ToolRespWithIdInfoAndErrors(ToolRespWithErrors, Generic[T]):
         output: dict[str, IdentifierInfoWithResult[T]] = {}
 
         for identifier, result in self.identifier_results.items():
-            id_triple = self.identifier_info.identifiers_to_id_triples[identifier]
+            id_triple = self.identifier_info[identifier]
 
             output[identifier] = IdentifierInfoWithResult(
                 data=result,

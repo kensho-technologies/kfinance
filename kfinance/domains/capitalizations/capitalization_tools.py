@@ -149,7 +149,7 @@ async def get_capitalizations_from_identifiers(
     return GetCapitalizationFromIdentifiersResp(
         capitalization=capitalization,
         identifier_results=results,
-        identifier_info=id_triple_resp,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,
     )
 

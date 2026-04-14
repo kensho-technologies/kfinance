@@ -189,7 +189,9 @@ async def get_financial_statement_from_identifiers(
             result.remove_all_periods_other_than_the_most_recent_one()
 
     resp_model = GetFinancialStatementFromIdentifiersResp(
-        identifier_results=identifier_to_results, identifier_info=id_triple_resp, errors=errors
+        identifier_results=identifier_to_results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
 
     # Add explanatory notes

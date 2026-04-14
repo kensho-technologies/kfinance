@@ -52,6 +52,7 @@ class TestBusinessRelationships:
         expected_resp = GetBusinessRelationshipFromIdentifiersResp(
             business_relationship=BusinessRelationshipType.supplier,
             identifier_results={"SPGI": self.expected_spgi_relationship_response},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],

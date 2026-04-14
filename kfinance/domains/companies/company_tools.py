@@ -206,7 +206,9 @@ async def get_info_from_identifiers(
         results[identifier]["company_id"] = prefix_company_id(id_triple.company_id)
 
     resp_model = GetInfoFromIdentifiersResp(
-        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
     return resp_model
 
@@ -255,7 +257,9 @@ async def get_company_other_names_from_identifiers(
             results[task.result_key] = task.result
 
     return GetCompanyOtherNamesFromIdentifiersResp(
-        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
 
 
@@ -328,11 +332,15 @@ async def get_company_summary_or_description_from_identifiers(
 
     if summary_or_description == "summary":
         return GetCompanySummaryFromIdentifiersResp(
-            identifier_results=results, identifier_info=id_triple_resp, errors=errors
+            identifier_results=results,
+            identifier_info=id_triple_resp.identifiers_to_id_triples,
+            errors=errors,
         )
     else:
         return GetCompanyDescriptionFromIdentifiersResp(
-            identifier_results=results, identifier_info=id_triple_resp, errors=errors
+            identifier_results=results,
+            identifier_info=id_triple_resp.identifiers_to_id_triples,
+            errors=errors,
         )
 
 

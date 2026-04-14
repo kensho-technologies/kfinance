@@ -3,7 +3,7 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from kfinance.client.models.response_models import PostResponse
-from kfinance.conftest import SPGI_ID_TRIPLE
+from kfinance.conftest import FAKE_COMPANY_1_ID_TRIPLE, FAKE_COMPANY_2_ID_TRIPLE, SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.line_items.response_notes import (
     FISCAL_PERIOD_WARNING,
@@ -107,6 +107,7 @@ class TestSegments:
 
         expected_resp = GetSegmentsFromIdentifiersResp(
             identifier_results={"SPGI": SegmentsResp.model_validate(self.segments_response)},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -160,6 +161,7 @@ class TestSegments:
                 "C_1": expected_single_company_response,
                 "C_2": expected_single_company_response,
             },
+            identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
 
@@ -183,6 +185,7 @@ class TestSegments:
 
         expected_resp = GetSegmentsFromIdentifiersResp(
             identifier_results={},
+            identifier_info={},
             errors=[
                 "No identification triple found for the provided identifier:"
                 " NON-EXISTENT of type: ticker"

@@ -29,7 +29,7 @@ class TestGetEndpointsFromToolCallsWithGrounding:
     @pytest.mark.asyncio
     async def test_get_info_from_identifier_with_grounding(
         self, mock_client: Client, httpx_mock: HTTPXMock
-    ):
+    ) -> None:
         """
         GIVEN a KfinanceTool tool
         WHEN we run the tool with `run_with_grounding`
@@ -47,7 +47,9 @@ class TestGetEndpointsFromToolCallsWithGrounding:
             "https://kfinance.kensho.com/api/v1/info/21719",
         ]
         expected_resp = {
-            "data": GetInfoFromIdentifiersResp.model_validate({"results": {"SPGI": resp_data}}),
+            "data": GetInfoFromIdentifiersResp(
+                identifier_results={"SPGI": resp_data}, identifier_info={"SPGI": SPGI_ID_TRIPLE}
+            ),
             "endpoint_urls": resp_endpoint,
         }
         del resp_data["company_id"]
@@ -103,7 +105,7 @@ class TestValidQuarter:
 
 
 class TestRunSyncAndAsync:
-    def test_run_sync_and_async(self, add_spgi_supplier_mock_resp: None, httpx_client: Any):
+    def test_run_sync_and_async(self, add_spgi_supplier_mock_resp: None, httpx_client: Any) -> None:
         """
         GIVEN a sync environment with sync and async clients (via asyncio.run)
         WHEN requests are made with both sync and async clients in a sync
@@ -125,12 +127,12 @@ class TestRunSyncAndAsync:
             datetime(2100, 1, 1).timestamp()
         )
 
-        def run_sync():
+        def run_sync() -> Any:
             tool = GetBusinessRelationshipFromIdentifiers(kfinance_client=sync_client)
             sync_resp = tool.run(args.model_dump(mode="json"))
             return sync_resp
 
-        async def run_async_twice():
+        async def run_async_twice() -> Any:
             tool = GetBusinessRelationshipFromIdentifiers(kfinance_client=async_client)
             async_resp1 = await tool.ainvoke(args.model_dump(mode="json"))
             async_resp2 = await tool.ainvoke(args.model_dump(mode="json"))

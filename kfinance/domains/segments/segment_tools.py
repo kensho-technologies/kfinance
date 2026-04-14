@@ -166,7 +166,9 @@ async def get_segments_from_identifiers(
             segments_response.remove_all_periods_other_than_the_most_recent_one()
 
     resp_model = GetSegmentsFromIdentifiersResp(
-        identifier_results=identifier_to_results, identifier_info=id_triple_resp, errors=errors
+        identifier_results=identifier_to_results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
 
     # Add explanatory notes

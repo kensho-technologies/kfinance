@@ -6,15 +6,41 @@ from pytest_httpx import HTTPXMock
 from requests_mock import Mocker
 
 from kfinance.client.kfinance import Client
-from kfinance.domains.companies.company_models import IdentificationTriple
+from kfinance.domains.companies.company_models import IdentificationTripleWithCompanyInfo
 
 
 SPGI_COMPANY_ID = 21719
 SPGI_SECURITY_ID = 2629107
 SPGI_TRADING_ITEM_ID = 2629108
+SPGI_COMPANY_NAME = "S&P Global Inc."
+SPGI_TICKER = "NYSE:SPGI"
+SPGI_COUNTRY = "USA"
 
-SPGI_ID_TRIPLE = IdentificationTriple(
-    company_id=SPGI_COMPANY_ID, security_id=SPGI_SECURITY_ID, trading_item_id=SPGI_TRADING_ITEM_ID
+SPGI_ID_TRIPLE = IdentificationTripleWithCompanyInfo(
+    company_id=SPGI_COMPANY_ID,
+    security_id=SPGI_SECURITY_ID,
+    trading_item_id=SPGI_TRADING_ITEM_ID,
+    company_name=SPGI_COMPANY_NAME,
+    ticker=SPGI_TICKER,
+    country=SPGI_COUNTRY,
+)
+
+FAKE_COMPANY_1_ID_TRIPLE = IdentificationTripleWithCompanyInfo(
+    company_id=1,
+    security_id=1,
+    trading_item_id=1,
+    company_name="Company 1",
+    ticker="EXC:C1",
+    country="USA",
+)
+
+FAKE_COMPANY_2_ID_TRIPLE = IdentificationTripleWithCompanyInfo(
+    company_id=2,
+    security_id=2,
+    trading_item_id=2,
+    company_name="Company 2",
+    ticker="EXC:C2",
+    country="USA",
 )
 
 
@@ -71,7 +97,7 @@ def mock_client(requests_mock: Mocker) -> Client:
         additional_matcher=lambda req: req.json().get("identifiers") == ["C_1"],
         json={
             "data": {
-                "C_1": {"company_id": 1, "security_id": 1, "trading_item_id": 1},
+                "C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json"),
             },
         },
     )
@@ -105,8 +131,8 @@ def mock_client(requests_mock: Mocker) -> Client:
         additional_matcher=lambda req: req.json().get("identifiers") == ["C_1", "C_2"],
         json={
             "data": {
-                "C_1": {"company_id": 1, "security_id": 1, "trading_item_id": 1},
-                "C_2": {"company_id": 2, "security_id": 2, "trading_item_id": 2},
+                "C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json"),
+                "C_2": FAKE_COMPANY_2_ID_TRIPLE.model_dump(mode="json"),
             }
         },
     )
@@ -160,7 +186,14 @@ def httpx_client(httpx_mock: HTTPXMock) -> httpx.AsyncClient:
         json={
             "data": {
                 "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-                "private_company": {"company_id": 1, "security_id": None, "trading_item_id": None},
+                "private_company": {
+                    "company_id": 1,
+                    "security_id": None,
+                    "trading_item_id": None,
+                    "company_name": "Private Company",
+                    "ticker": None,
+                    "country": "USA",
+                },
             }
         },
         is_optional=True,
@@ -171,8 +204,8 @@ def httpx_client(httpx_mock: HTTPXMock) -> httpx.AsyncClient:
         match_json={"identifiers": ["C_1", "C_2"]},
         json={
             "data": {
-                "C_1": {"company_id": 1, "security_id": 1, "trading_item_id": 1},
-                "C_2": {"company_id": 2, "security_id": 2, "trading_item_id": 2},
+                "C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json"),
+                "C_2": FAKE_COMPANY_2_ID_TRIPLE.model_dump(mode="json"),
             }
         },
         is_optional=True,

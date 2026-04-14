@@ -365,7 +365,9 @@ async def get_rounds_of_funding_from_identifiers(
     )
 
     return GetRoundsOfFundingFromIdentifiersResp(
-        identifier_results=sorted_responses, identifier_info=id_triple_resp, errors=errors
+        identifier_results=sorted_responses,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
 
 
@@ -570,5 +572,7 @@ async def get_funding_summary_from_identifiers(
     )
 
     return GetFundingSummaryFromIdentifiersResp(
-        identifier_results=summaries, identifier_info=id_triple_resp, errors=errors
+        identifier_results=summaries,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )

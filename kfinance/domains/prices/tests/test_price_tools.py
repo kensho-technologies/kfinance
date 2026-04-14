@@ -3,7 +3,12 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from kfinance.client.models.date_and_period_models import Periodicity
-from kfinance.conftest import SPGI_ID_TRIPLE
+from kfinance.conftest import (
+    FAKE_COMPANY_1_ID_TRIPLE,
+    FAKE_COMPANY_2_ID_TRIPLE,
+    SPGI_ID_TRIPLE,
+    SPGI_TRADING_ITEM_ID,
+)
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
 from kfinance.domains.prices.price_tools import (
@@ -44,7 +49,7 @@ class TestPrices:
         """Add mock response for SPGI prices."""
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_ID_TRIPLE.trading_item_id}/none/none/day/adjusted",
+            url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/none/none/day/adjusted",
             json=self.prices_resp,
             is_optional=True,
         )
@@ -61,7 +66,7 @@ class TestPrices:
         """
 
         resp = await fetch_price_history_from_trading_item_id(
-            trading_item_id=SPGI_ID_TRIPLE.trading_item_id,
+            trading_item_id=SPGI_TRADING_ITEM_ID,
             httpx_client=httpx_client,
         )
 
@@ -80,7 +85,8 @@ class TestPrices:
         """
 
         expected_resp = GetPricesFromIdentifiersResp(
-            results={"SPGI": PriceHistory.model_validate(self.prices_resp)},
+            identifier_results={"SPGI": PriceHistory.model_validate(self.prices_resp)},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -128,10 +134,11 @@ class TestPrices:
         )
 
         expected_response = GetPricesFromIdentifiersResp(
-            results={
+            identifier_results={
                 "C_1": expected_single_company_response,
                 "C_2": expected_single_company_response,
             },
+            identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
         )
 
         resp = await get_prices_from_identifiers(
@@ -159,12 +166,12 @@ class TestPrices:
 
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_ID_TRIPLE.trading_item_id}/2024-04-01/2024-04-30/week/unadjusted",
+            url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/2024-04-01/2024-04-30/week/unadjusted",
             json=self.prices_resp,
         )
 
         resp = await fetch_price_history_from_trading_item_id(
-            trading_item_id=SPGI_ID_TRIPLE.trading_item_id,
+            trading_item_id=SPGI_TRADING_ITEM_ID,
             httpx_client=httpx_client,
             start_date=start_date,
             end_date=end_date,
@@ -190,7 +197,7 @@ class TestHistoryMetadata:
         """Add mock response for SPGI history metadata."""
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_ID_TRIPLE.trading_item_id}/metadata",
+            url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/metadata",
             json=self.metadata_resp,
             is_optional=True,
         )
@@ -207,7 +214,7 @@ class TestHistoryMetadata:
         """
 
         resp = await fetch_history_metadata_from_trading_item_id(
-            trading_item_id=SPGI_ID_TRIPLE.trading_item_id,
+            trading_item_id=SPGI_TRADING_ITEM_ID,
             httpx_client=httpx_client,
         )
 
@@ -227,6 +234,7 @@ class TestHistoryMetadata:
 
         expected_resp = GetHistoryMetadataFromIdentifiersResp(
             identifier_results={"SPGI": HistoryMetadataResp.model_validate(self.metadata_resp)},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],

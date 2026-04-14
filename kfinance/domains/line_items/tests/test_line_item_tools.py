@@ -5,7 +5,7 @@ from pytest_httpx import HTTPXMock
 
 from kfinance.client.kfinance import Client
 from kfinance.client.models.response_models import PostResponse
-from kfinance.conftest import SPGI_ID_TRIPLE
+from kfinance.conftest import FAKE_COMPANY_1_ID_TRIPLE, FAKE_COMPANY_2_ID_TRIPLE, SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp, LineItemScore
 from kfinance.domains.line_items.line_item_tools import (
@@ -111,6 +111,7 @@ class TestGetFinancialLineItemFromIdentifiers:
 
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             identifier_results={"SPGI": LineItemResp.model_validate(self.line_item_resp)},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -145,6 +146,7 @@ class TestGetFinancialLineItemFromIdentifiers:
 
         expected_resp = GetFinancialLineItemFromIdentifiersResp(
             identifier_results={},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=["SPGI: No results found."],
             notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
@@ -189,6 +191,7 @@ class TestGetFinancialLineItemFromIdentifiers:
         )
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             identifier_results={"C_1": line_item_resp, "C_2": line_item_resp},
+            identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
             notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
         )
 
@@ -200,7 +203,7 @@ class TestGetFinancialLineItemFromIdentifiers:
 
         assert resp == expected_response
 
-    def test_line_items_and_aliases_included_in_schema(self, mock_client: Client):
+    def test_line_items_and_aliases_included_in_schema(self, mock_client: Client) -> None:
         """
         GIVEN a GetFinancialLineItemFromIdentifiers tool
         WHEN we generate an openai schema from the tool
@@ -233,7 +236,7 @@ class TestFindSimilarLineItems:
         "ebitda": "Earnings before interest, taxes, depreciation, and amortization.",
     }
 
-    def test_exact_keyword_match(self):
+    def test_exact_keyword_match(self) -> None:
         """
         GIVEN a preset descriptors dictionary
         WHEN searching for 'revenues' (similar to 'revenue')
@@ -247,7 +250,7 @@ class TestFindSimilarLineItems:
         result_names = [item.name for item in results]
         assert "revenue" in result_names or "total_revenue" in result_names
 
-    def test_acronym_matching(self):
+    def test_acronym_matching(self) -> None:
         """
         GIVEN a preset descriptors dictionary
         WHEN searching for 'R&D' (abbreviation)
@@ -259,7 +262,7 @@ class TestFindSimilarLineItems:
         # Should find r_and_d_expense or research_and_development_expense
         assert any("research" in name or "r_and_d" in name for name in result_names)
 
-    def test_multiple_word_matching(self):
+    def test_multiple_word_matching(self) -> None:
         """
         GIVEN a preset descriptors dictionary
         WHEN searching for 'cost goods'
@@ -270,7 +273,7 @@ class TestFindSimilarLineItems:
         result_names = [item.name for item in results]
         assert "cost_of_goods_sold" in result_names or "cogs" in result_names
 
-    def test_description_matching(self):
+    def test_description_matching(self) -> None:
         """
         GIVEN a preset descriptors dictionary
         WHEN searching for 'profit'
@@ -283,7 +286,7 @@ class TestFindSimilarLineItems:
         result_names = [item.name for item in results]
         assert any("profit" in name or "income" in name for name in result_names)
 
-    def test_empty_descriptors(self):
+    def test_empty_descriptors(self) -> None:
         """
         GIVEN an empty descriptors dictionary
         WHEN searching for any term
@@ -292,7 +295,7 @@ class TestFindSimilarLineItems:
         results = _find_similar_line_items("revenue", {}, max_suggestions=5)
         assert results == []
 
-    def test_no_matches(self):
+    def test_no_matches(self) -> None:
         """
         GIVEN a preset descriptors dictionary
         WHEN searching for completely unrelated term
@@ -302,7 +305,7 @@ class TestFindSimilarLineItems:
         # Should return empty or very few results since threshold is > 0.1
         assert len(results) <= 2  # May have some weak matches but should be minimal
 
-    def test_max_suggestions_respected(self):
+    def test_max_suggestions_respected(self) -> None:
         """
         GIVEN a preset descriptors dictionary
         WHEN searching with max_suggestions=3
@@ -311,7 +314,7 @@ class TestFindSimilarLineItems:
         results = _find_similar_line_items("income", self.TEST_DESCRIPTORS, max_suggestions=3)
         assert len(results) <= 3
 
-    def test_score_ordering(self):
+    def test_score_ordering(self) -> None:
         """
         GIVEN a preset descriptors dictionary
         WHEN searching for a term
@@ -323,7 +326,7 @@ class TestFindSimilarLineItems:
             for i in range(len(results) - 1):
                 assert results[i].score >= results[i + 1].score
 
-    def test_score_threshold(self):
+    def test_score_threshold(self) -> None:
         """
         GIVEN a preset descriptors dictionary
         WHEN searching for a term
@@ -334,7 +337,7 @@ class TestFindSimilarLineItems:
         for item in results:
             assert item.score > 0.1
 
-    def test_lineitemscore_structure(self):
+    def test_lineitemscore_structure(self) -> None:
         """
         GIVEN a preset descriptors dictionary
         WHEN searching for a term

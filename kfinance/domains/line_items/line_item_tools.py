@@ -280,7 +280,9 @@ async def get_financial_line_item_from_identifiers(
             line_item_response.remove_all_periods_other_than_the_most_recent_one()
 
     resp_model = GetFinancialLineItemFromIdentifiersResp(
-        identifier_results=results, identifier_info=id_triple_resp, errors=errors
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
 
     # Add explanatory notes

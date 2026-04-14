@@ -139,6 +139,7 @@ force-sort-within-sections = true
 known-third-party = ["wandb"]
 
 [tool.mypy]
+plugins = ["pydantic.mypy"]
 ignore_missing_imports = true
 # `normal` would emit errors for type issues in imported modules, which is unnecessary
 # since we pass files by name when linting.

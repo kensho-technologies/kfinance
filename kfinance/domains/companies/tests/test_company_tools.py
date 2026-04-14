@@ -62,6 +62,7 @@ class TestGetCompanyInfo:
 
         expected_resp = GetInfoFromIdentifiersResp(
             identifier_results={"SPGI": self.spgi_info_resp},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -138,7 +139,8 @@ class TestGetCompanyOtherNames:
         """
 
         expected_resp = GetCompanyOtherNamesFromIdentifiersResp(
-            results={"SPGI": self.spgi_other_names_model},
+            identifier_results={"SPGI": self.spgi_other_names_model},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -197,7 +199,8 @@ class TestGetCompanySummaryAndDescription:
         """
 
         expected_resp = GetCompanySummaryFromIdentifiersResp(
-            results={"SPGI": self.spgi_descriptions_model.summary},
+            identifier_results={"SPGI": self.spgi_descriptions_model.summary},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -221,7 +224,8 @@ class TestGetCompanySummaryAndDescription:
         """
 
         expected_resp = GetCompanyDescriptionFromIdentifiersResp(
-            results={"SPGI": self.spgi_descriptions_model.description},
+            identifier_results={"SPGI": self.spgi_descriptions_model.description},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
