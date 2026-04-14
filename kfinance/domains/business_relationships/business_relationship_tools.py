@@ -71,13 +71,18 @@ async def get_business_relationship_from_identifiers(
         'business_relationship': 'supplier',
         'results': {
             'SPGI': {
-                'current': [
-                    {'company_id': 'C_883103', 'company_name': 'CRISIL Limited'}
-                ],
-                'previous': [
-                    {'company_id': 'C_472898', 'company_name': 'Morgan Stanley'},
-                    {'company_id': 'C_8182358', 'company_name': 'Eloqua, Inc.'}
-                ]
+                'company_name': 'SP Global Inc.',
+                'ticker': 'NYSE:SPGI',
+                'country': 'USA',
+                'data': {
+                    'current': [
+                        {'company_id': 'C_883103', 'company_name': 'CRISIL Limited'}
+                    ],
+                    'previous': [
+                        {'company_id': 'C_472898', 'company_name': 'Morgan Stanley'},
+                        {'company_id': 'C_8182358', 'company_name': 'Eloqua, Inc.'}
+                    ]
+                }
             }
         },
         'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']}

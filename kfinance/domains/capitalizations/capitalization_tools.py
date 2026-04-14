@@ -88,10 +88,17 @@ async def get_capitalizations_from_identifiers(
     {
         'capitalization': 'market_cap'
         'results': {
-            'SPGI': [
-                {'date': '2024-04-10', 'market_cap': {'value': '132766738270.00', 'unit': 'USD'}},
-                {'date': '2024-04-11', 'market_cap': {'value': '132416066761.00', 'unit': 'USD'}}
-            ]
+            'SPGI': {
+                'company_name': 'SP Global Inc.',
+                'ticker': 'NYSE:SPGI',
+                'country': 'USA',
+                'data': {
+                    'capitalizations': [
+                        {'date': '2024-04-10', 'market_cap': {'value': '132766738270.00', 'unit': 'USD'}},
+                        {'date': '2024-04-11', 'market_cap': {'value': '132416066761.00', 'unit': 'USD'}}
+                    ]
+                }
+            }
         },
         'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
     }

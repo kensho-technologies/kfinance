@@ -82,7 +82,14 @@ async def get_cusip_or_isin_from_identifiers(
     Sample response:
 
         {
-            'results': {'SPGI': '78409V104'},
+            'results': {
+                'SPGI': {
+                    'company_name': 'SP Global Inc.',
+                    'ticker': 'NYSE:SPGI',
+                    'country': 'USA',
+                    'data': '78409V104'
+                }
+            },
             'errors': ['Kensho is a private company without a security_id.']
         }
     """

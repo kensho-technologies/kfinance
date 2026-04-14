@@ -156,20 +156,25 @@ async def get_info_from_identifiers(
 
         {   "results": {
                 "SPGI": {
-                    "name": "S&P Global Inc.",
-                    "status": "Operating",
-                    "type": "Public Company",
-                    "simple_industry": "Capital Markets",
-                    "number_of_employees": "42350.0000",
-                    "founding_date": "1860-01-01",
-                    "webpage": "www.spglobal.com",
-                    "address": "55 Water Street",
-                    "city": "New York",
-                    "zip_code": "10041-0001",
-                    "state": "New York",
-                    "country": "United States",
-                    "iso_country": "USA",
-                    "company_id": "C_21719"
+                    "company_name": "SP Global Inc.",
+                    "ticker": "NYSE:SPGI",
+                    "country": "USA",
+                    "data: {
+                        "name": "S&P Global Inc.",
+                        "status": "Operating",
+                        "type": "Public Company",
+                        "simple_industry": "Capital Markets",
+                        "number_of_employees": "42350.0000",
+                        "founding_date": "1860-01-01",
+                        "webpage": "www.spglobal.com",
+                        "address": "55 Water Street",
+                        "city": "New York",
+                        "zip_code": "10041-0001",
+                        "state": "New York",
+                        "country": "United States",
+                        "iso_country": "USA",
+                        "company_id": "C_21719"
+                    }
                 }
             },
             "errors": [['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']

@@ -66,8 +66,15 @@ async def get_competitors_from_identifiers(
     {
         "results": {
             "SPGI": {
-                {'company_id': "C_35352", 'company_name': 'The Descartes Systems Group Inc.'},
-                {'company_id': "C_4003514", 'company_name': 'London Stock Exchange Group plc'}
+                'company_name': 'SP Global Inc.',
+                'ticker': 'NYSE:SPGI',
+                'country': 'USA',
+                'data': {
+                    'competitors': [
+                        {'company_id': "C_35352", 'company_name': 'The Descartes Systems Group Inc.'},
+                        {'company_id': "C_4003514", 'company_name': 'London Stock Exchange Group plc'}
+                    ]
+                }
             }
         },
         'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
