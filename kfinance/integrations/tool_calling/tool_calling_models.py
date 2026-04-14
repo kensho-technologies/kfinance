@@ -190,7 +190,7 @@ T = TypeVar("T")
 
 
 class IdentifierInfoWithResult(BaseModel, Generic[T]):
-    company_name: str | None
+    company_name: str
     ticker: str | None
     country: str | None
     data: T
