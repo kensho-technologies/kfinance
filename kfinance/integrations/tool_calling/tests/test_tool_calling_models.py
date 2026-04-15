@@ -17,12 +17,19 @@ from kfinance.domains.business_relationships.business_relationship_tools import 
     GetBusinessRelationshipFromIdentifiers,
     GetBusinessRelationshipFromIdentifiersArgs,
 )
-from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
+from kfinance.domains.companies.company_models import (
+    COMPANY_ID_PREFIX,
+    IdentificationTripleWithCompanyInfo,
+)
 from kfinance.domains.companies.company_tools import (
     GetInfoFromIdentifiers,
     GetInfoFromIdentifiersResp,
 )
-from kfinance.integrations.tool_calling.tool_calling_models import ValidQuarter
+from kfinance.integrations.tool_calling.tool_calling_models import (
+    IdentifierInfoWithResult,
+    ToolRespWithIdInfoAndErrors,
+    ValidQuarter,
+)
 
 
 class TestGetEndpointsFromToolCallsWithGrounding:
@@ -150,3 +157,67 @@ class TestRunSyncAndAsync:
         sync_res4 = run_sync()
 
         assert sync_res1 == sync_res2 == sync_res3 == sync_res4 == async_res1 == async_res2
+
+
+class TestToolResp:
+    @pytest.mark.parametrize(
+        "identifier_results,identifier_info,expected_results",
+        [
+            pytest.param({}, {}, {}, id="no ids"),
+            pytest.param(
+                {},
+                {
+                    "COMP": IdentificationTripleWithCompanyInfo(
+                        company_id=10,
+                        security_id=None,
+                        trading_item_id=None,
+                        company_name="Company",
+                        ticker=None,
+                        country=None,
+                    )
+                },
+                {},
+                id="no id results, but some identifier info. there should still be no output results.",
+            ),
+            pytest.param(
+                {"COMP": 5, "OTHER": 7},
+                {
+                    "COMP": IdentificationTripleWithCompanyInfo(
+                        company_id=10,
+                        security_id=None,
+                        trading_item_id=None,
+                        company_name="Company",
+                        ticker=None,
+                        country=None,
+                    ),
+                    "OTHER": IdentificationTripleWithCompanyInfo(
+                        company_id=20,
+                        security_id=1,
+                        trading_item_id=1,
+                        company_name="Other Company",
+                        ticker="EX:OTH",
+                        country="SWE",
+                    ),
+                },
+                {
+                    "COMP": IdentifierInfoWithResult(
+                        company_name="Company", ticker=None, country=None, data=5
+                    ),
+                    "OTHER": IdentifierInfoWithResult(
+                        company_name="Other Company", ticker="EX:OTH", country="SWE", data=7
+                    ),
+                },
+                id="multiple id results",
+            ),
+        ],
+    )
+    def test_tool_resp_with_id_info(
+        self,
+        identifier_results: dict[str, int],
+        identifier_info: dict[str, IdentificationTripleWithCompanyInfo],
+        expected_results: dict[str, IdentifierInfoWithResult[int]],
+    ) -> None:
+        tool_resp = ToolRespWithIdInfoAndErrors[int](
+            identifier_results=identifier_results, identifier_info=identifier_info
+        )
+        assert expected_results == tool_resp.results
