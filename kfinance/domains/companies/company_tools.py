@@ -15,12 +15,16 @@ from kfinance.domains.companies.company_models import (
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
+    ToolRespWithErrors,
     ToolRespWithIdInfoAndErrors,
 )
 
 
-class GetInfoFromIdentifiersResp(ToolRespWithIdInfoAndErrors[dict]):
-    pass
+# We use ToolRespWithErrors here since company information is already
+# included in the results, and we don't want to duplicate it by using
+# ToolRespWithIdInfoAndErrors.
+class GetInfoFromIdentifiersResp(ToolRespWithErrors):
+    results: dict[str, dict]
 
 
 class GetInfoFromIdentifiers(KfinanceTool):
@@ -156,25 +160,21 @@ async def get_info_from_identifiers(
 
         {   "results": {
                 "SPGI": {
-                    "company_name": "SP Global Inc.",
-                    "ticker": "NYSE:SPGI",
-                    "country": "USA",
-                    "data: {
-                        "name": "S&P Global Inc.",
-                        "status": "Operating",
-                        "type": "Public Company",
-                        "simple_industry": "Capital Markets",
-                        "number_of_employees": "42350.0000",
-                        "founding_date": "1860-01-01",
-                        "webpage": "www.spglobal.com",
-                        "address": "55 Water Street",
-                        "city": "New York",
-                        "zip_code": "10041-0001",
-                        "state": "New York",
-                        "country": "United States",
-                        "iso_country": "USA",
-                        "company_id": "C_21719"
-                    }
+                    "name": "S&P Global Inc.",
+                    "status": "Operating",
+                    "type": "Public Company",
+                    "simple_industry": "Capital Markets",
+                    "number_of_employees": "42350.0000",
+                    "founding_date": "1860-01-01",
+                    "webpage": "www.spglobal.com",
+                    "address": "55 Water Street",
+                    "city": "New York",
+                    "zip_code": "10041-0001",
+                    "state": "New York",
+                    "country": "United States",
+                    "iso_country": "USA",
+                    "company_id": "C_21719",
+                    "ticker": "NYSE:SPGI"
                 }
             },
             "errors": [['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
@@ -209,10 +209,11 @@ async def get_info_from_identifiers(
 
     for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items():
         results[identifier]["company_id"] = prefix_company_id(id_triple.company_id)
+        if id_triple.ticker:
+            results[identifier]["ticker"] = id_triple.ticker
 
     resp_model = GetInfoFromIdentifiersResp(
-        identifier_results=results,
-        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        results=results,
         errors=errors,
     )
     return resp_model

@@ -71,7 +71,7 @@ async def get_business_relationship_from_identifiers(
         'business_relationship': 'supplier',
         'results': {
             'SPGI': {
-                'company_name': 'SP Global Inc.',
+                'company_name': 'S&P Global Inc.',
                 'ticker': 'NYSE:SPGI',
                 'country': 'USA',
                 'data': {

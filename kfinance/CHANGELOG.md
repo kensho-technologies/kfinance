@@ -1,7 +1,8 @@
 # Changelog
 
 ## v6.0.0
-- Updated tool call results to include company information
+- Update tool call results to include company information - in particular, 
+  company name, ticker, and country
 - Breaking changes:
   - The result type of identifier-based tool calls has been modified.
 

@@ -84,7 +84,7 @@ async def get_cusip_or_isin_from_identifiers(
         {
             'results': {
                 'SPGI': {
-                    'company_name': 'SP Global Inc.',
+                    'company_name': 'S&P Global Inc.',
                     'ticker': 'NYSE:SPGI',
                     'country': 'USA',
                     'data': '78409V104'

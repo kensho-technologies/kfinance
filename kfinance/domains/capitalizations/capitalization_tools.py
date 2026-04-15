@@ -89,7 +89,7 @@ async def get_capitalizations_from_identifiers(
         'capitalization': 'market_cap'
         'results': {
             'SPGI': {
-                'company_name': 'SP Global Inc.',
+                'company_name': 'S&P Global Inc.',
                 'ticker': 'NYSE:SPGI',
                 'country': 'USA',
                 'data': {
