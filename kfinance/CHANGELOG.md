@@ -1,5 +1,10 @@
 # Changelog
 
+## v6.0.0
+- Updated tool call results to include company information
+- Breaking changes:
+  - The result type of identifier-based tool calls has been modified.
+
 ## v5.1.4
 - Update tools to gracefully handle more errors
 
