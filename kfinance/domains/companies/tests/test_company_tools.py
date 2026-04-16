@@ -2,7 +2,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
+from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE, SPGI_TICKER
 from kfinance.domains.companies.company_models import (
     CompanyDescriptions,
     CompanyOtherNames,
@@ -61,15 +61,13 @@ class TestGetCompanyInfo:
         """
 
         expected_resp = GetInfoFromIdentifiersResp(
-            identifier_results={"SPGI": self.spgi_info_resp},
-            identifier_info={"SPGI": SPGI_ID_TRIPLE},
+            results={"SPGI": self.spgi_info_resp},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
         )
-        expected_resp.identifier_results["SPGI"]["company_id"] = prefix_company_id(
-            SPGI_ID_TRIPLE.company_id
-        )
+        expected_resp.results["SPGI"]["company_id"] = prefix_company_id(SPGI_ID_TRIPLE.company_id)
+        expected_resp.results["SPGI"]["ticker"] = SPGI_TICKER
 
         resp = await get_info_from_identifiers(
             identifiers=["SPGI", "non-existent"],

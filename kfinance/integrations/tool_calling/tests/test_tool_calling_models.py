@@ -9,7 +9,7 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from kfinance.client.kfinance import Client
-from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
+from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE, SPGI_TICKER
 from kfinance.domains.business_relationships.business_relationship_models import (
     BusinessRelationshipType,
 )
@@ -48,18 +48,18 @@ class TestGetEndpointsFromToolCallsWithGrounding:
             "name": "S&P Global Inc.",
             "status": "Operating",
             "company_id": f"{COMPANY_ID_PREFIX}{SPGI_COMPANY_ID}",
+            "ticker": SPGI_TICKER,
         }
         resp_endpoint = [
             "https://kfinance.kensho.com/api/v1/ids",
             "https://kfinance.kensho.com/api/v1/info/21719",
         ]
         expected_resp = {
-            "data": GetInfoFromIdentifiersResp(
-                identifier_results={"SPGI": resp_data}, identifier_info={"SPGI": SPGI_ID_TRIPLE}
-            ),
+            "data": GetInfoFromIdentifiersResp(results={"SPGI": resp_data}),
             "endpoint_urls": resp_endpoint,
         }
         del resp_data["company_id"]
+        del resp_data["ticker"]
 
         # Mock the /ids endpoint
         httpx_mock.add_response(
