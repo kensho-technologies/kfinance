@@ -1,6 +1,8 @@
 from enum import Enum
 import inspect
 from pathlib import Path
+import types
+from typing import Union, get_origin, get_args
 
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from pydantic._internal._repr import display_as_type
@@ -53,9 +55,20 @@ def add_function_to_tools_file(tool: KfinanceTool) -> None:
     signature_str = build_signature_str(tool)
 
     # Use inspect to retrieve the return type and add it to the imports if it's not a builtin.
-    return_annotation = inspect.signature(tool._run).return_annotation
-    if return_annotation.__module__ != "builtins":
-        imports.append(f"from {return_annotation.__module__} import {return_annotation.__name__}")
+    signature = inspect.signature(tool._arun)
+    return_annotation = signature.return_annotation
+    # THIS IMPORT STUFF GETS VERY MESSY - RETHINK IT - WE DON'T ACTUALLY NEED THESE IMPORTS, MAYBE?
+    # if return_annotation.__module__ != "builtins":
+    #     imports.append(f"import {return_annotation.__module__}")
+
+    # param_annotations = [param.annotation for param in signature.parameters.values()]
+    # for param_annotation in param_annotations:
+    #     module = param_annotation.__module__
+    #     if get_origin(param_annotation) is Union or get_origin(param_annotation) is types.UnionType:
+    #         param_args = get_args(param_annotation)
+    #         module = param_args[0].__module__
+    #     if module != "builtins":
+    #         imports.append(f"import {module}")
 
     # Generate sphinx style annotations for each param.
     openai_params = convert_to_openai_tool(tool)["function"]["parameters"]["properties"]
@@ -89,12 +102,13 @@ def build_signature_str(tool: KfinanceTool) -> str:
     As a result, it formats default values as "<Periodicity.day: 'day'>" rather than
     "Periodicity.day".
     """
-    signature = inspect.signature(tool._run)
-
+    signature = inspect.signature(tool._arun)
     for param in signature.parameters.values():
         if isinstance(param.default, Enum):
             # For enums, redirect __repr__ to __str__
             param.default.__class__.__repr__ = param.default.__class__.__str__
+    
+    signature = inspect.Signature.replace(signature, return_annotation=signature.return_annotation.__name__)
     return f"def {tool.name}{signature}:"
 
 
