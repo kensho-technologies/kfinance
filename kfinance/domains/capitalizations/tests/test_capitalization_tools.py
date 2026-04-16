@@ -7,7 +7,12 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from kfinance.client.models.decimal_with_unit import Money, Shares
-from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
+from kfinance.conftest import (
+    FAKE_COMPANY_1_ID_TRIPLE,
+    FAKE_COMPANY_2_ID_TRIPLE,
+    SPGI_COMPANY_ID,
+    SPGI_ID_TRIPLE,
+)
 from kfinance.domains.capitalizations.capitalization_models import (
     Capitalization,
     Capitalizations,
@@ -98,7 +103,8 @@ class TestCapitalizations:
             capitalization.shares_outstanding = None
         expected_resp = GetCapitalizationFromIdentifiersResp(
             capitalization=Capitalization.market_cap,
-            results={"SPGI": expected_spgi_resp},
+            identifier_results={"SPGI": expected_spgi_resp},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -138,7 +144,8 @@ class TestCapitalizations:
 
         expected_resp = GetCapitalizationFromIdentifiersResp(
             capitalization=Capitalization.market_cap,
-            results={"C_1": expected_company_resp, "C_2": expected_company_resp},
+            identifier_results={"C_1": expected_company_resp, "C_2": expected_company_resp},
+            identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
         )
         resp = await get_capitalizations_from_identifiers(
             identifiers=["C_1", "C_2"],

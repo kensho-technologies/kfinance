@@ -13,7 +13,7 @@ from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHisto
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
 )
 
 
@@ -34,8 +34,8 @@ class GetPricesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
 
 
-class GetPricesFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, PriceHistory]
+class GetPricesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[PriceHistory]):
+    pass
 
 
 class GetPricesFromIdentifiers(KfinanceTool):
@@ -80,8 +80,8 @@ class GetPricesFromIdentifiers(KfinanceTool):
         )
 
 
-class GetHistoryMetadataFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, HistoryMetadataResp]
+class GetHistoryMetadataFromIdentifiersResp(ToolRespWithIdInfoAndErrors[HistoryMetadataResp]):
+    pass
 
 
 class GetHistoryMetadataFromIdentifiers(KfinanceTool):
@@ -154,7 +154,11 @@ async def get_prices_from_identifiers(
         for price_response in results.values():
             price_response.prices = price_response.prices[-1:]
 
-    return GetPricesFromIdentifiersResp(results=results, errors=errors)
+    return GetPricesFromIdentifiersResp(
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
+    )
 
 
 async def fetch_price_history_from_trading_item_id(
@@ -209,7 +213,11 @@ async def get_history_metadata_from_identifiers(
         else:
             results[task.result_key] = task.result
 
-    return GetHistoryMetadataFromIdentifiersResp(results=results, errors=errors)
+    return GetHistoryMetadataFromIdentifiersResp(
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
+    )
 
 
 async def fetch_history_metadata_from_trading_item_id(

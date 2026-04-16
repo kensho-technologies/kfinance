@@ -11,7 +11,7 @@ from kfinance.domains.earnings.earning_models import EarningsCall, EarningsCallR
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
 )
 
 
@@ -47,12 +47,12 @@ class GetTranscriptFromKeyDevId(KfinanceTool):
         )
 
 
-class GetEarningsFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, EarningsCallResp]
+class GetEarningsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[EarningsCallResp]):
+    pass
 
 
-class GetNextOrLatestEarningsFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, EarningsCall]
+class GetNextOrLatestEarningsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[EarningsCall]):
+    pass
 
 
 class GetEarningsFromIdentifiers(KfinanceTool):
@@ -183,7 +183,11 @@ async def get_earnings_from_identifiers(
         else:
             results[task.result_key] = task.result
 
-    return GetEarningsFromIdentifiersResp(results=results, errors=errors)
+    return GetEarningsFromIdentifiersResp(
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
+    )
 
 
 async def get_latest_earnings_from_identifiers(
@@ -195,11 +199,13 @@ async def get_latest_earnings_from_identifiers(
         identifiers=identifiers,
         httpx_client=httpx_client,
     )
-    output_model = GetNextOrLatestEarningsFromIdentifiersResp(results=dict(), errors=list())
-    for identifier, earnings in earnings_responses.results.items():
+    output_model = GetNextOrLatestEarningsFromIdentifiersResp(
+        identifier_results=dict(), identifier_info=earnings_responses.identifier_info, errors=list()
+    )
+    for identifier, earnings in earnings_responses.identifier_results.items():
         most_recent_earnings = earnings.most_recent_earnings
         if most_recent_earnings:
-            output_model.results[identifier] = most_recent_earnings
+            output_model.identifier_results[identifier] = most_recent_earnings
         else:
             output_model.errors.append(f"No latest earnings available for {identifier}.")
     # Add errors from the earnings fetch
@@ -216,11 +222,13 @@ async def get_next_earnings_from_identifiers(
         identifiers=identifiers,
         httpx_client=httpx_client,
     )
-    output_model = GetNextOrLatestEarningsFromIdentifiersResp(results=dict(), errors=list())
-    for identifier, earnings in earnings_responses.results.items():
+    output_model = GetNextOrLatestEarningsFromIdentifiersResp(
+        identifier_results=dict(), identifier_info=earnings_responses.identifier_info, errors=list()
+    )
+    for identifier, earnings in earnings_responses.identifier_results.items():
         next_earnings = earnings.next_earnings
         if next_earnings:
-            output_model.results[identifier] = next_earnings
+            output_model.identifier_results[identifier] = next_earnings
         else:
             output_model.errors.append(f"No next earnings available for {identifier}.")
     # Add errors from the earnings fetch

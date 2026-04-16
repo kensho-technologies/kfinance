@@ -21,6 +21,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
     ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
 )
 
 
@@ -44,8 +45,8 @@ class GetRoundsofFundingFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
 
 
-class GetRoundsOfFundingFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, RoundsOfFundingResp]
+class GetRoundsOfFundingFromIdentifiersResp(ToolRespWithIdInfoAndErrors[RoundsOfFundingResp]):
+    pass
 
 
 def filter_rounds_of_funding_responses_by_date_range(
@@ -224,8 +225,8 @@ class GetFundingSummaryFromIdentifiersArgs(ToolArgsWithIdentifiers):
     pass  # Only needs identifiers, no additional args needed
 
 
-class GetFundingSummaryFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, FundingSummary]
+class GetFundingSummaryFromIdentifiersResp(ToolRespWithIdInfoAndErrors[FundingSummary]):
+    pass
 
 
 def build_funding_summaries_from_rof_responses(
@@ -363,7 +364,11 @@ async def get_rounds_of_funding_from_identifiers(
         filtered_responses, sort_order, limit
     )
 
-    return GetRoundsOfFundingFromIdentifiersResp(results=sorted_responses, errors=errors)
+    return GetRoundsOfFundingFromIdentifiersResp(
+        identifier_results=sorted_responses,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
+    )
 
 
 async def fetch_rounds_of_funding_from_company_id(
@@ -566,4 +571,8 @@ async def get_funding_summary_from_identifiers(
         rounds_of_funding_responses, detailed_round_info_responses
     )
 
-    return GetFundingSummaryFromIdentifiersResp(results=summaries, errors=errors)
+    return GetFundingSummaryFromIdentifiersResp(
+        identifier_results=summaries,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
+    )

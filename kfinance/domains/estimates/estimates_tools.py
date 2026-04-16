@@ -27,7 +27,7 @@ from kfinance.domains.line_items.response_notes import (
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
     ValidQuarter,
 )
 
@@ -61,8 +61,7 @@ class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
 
 
-class GetEstimatesFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, Estimates]  # identifier -> response
+class GetEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Estimates]):
     notes: list[str] = Field(default_factory=list)
 
 
@@ -131,8 +130,8 @@ class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
         return EstimateType.guidance
 
 
-class GetConsensusTargetPriceFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, ConsensusTargetPrice]
+class GetConsensusTargetPriceFromIdentifiersResp(ToolRespWithIdInfoAndErrors[ConsensusTargetPrice]):
+    pass
 
 
 class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
@@ -153,8 +152,10 @@ class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
         )
 
 
-class GetAnalystRecommendationsFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, AnalystRecommendations]
+class GetAnalystRecommendationsFromIdentifiersResp(
+    ToolRespWithIdInfoAndErrors[AnalystRecommendations]
+):
+    pass
 
 
 class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
@@ -228,7 +229,11 @@ async def get_estimates_from_identifiers(
                 error_msg = f"{task.result_key}: {resp.error}"
                 errors.append(error_msg)
 
-    resp_model = GetEstimatesFromIdentifiersResp(results=results, errors=errors)
+    resp_model = GetEstimatesFromIdentifiersResp(
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
+    )
 
     # Add explanatory notes
     insert_fiscal_period_notes(
@@ -316,7 +321,11 @@ async def get_consensus_target_price_from_identifiers(
                 error_msg = f"{task.result_key}: {resp.error}"
                 errors.append(error_msg)
 
-    return GetConsensusTargetPriceFromIdentifiersResp(results=results, errors=errors)
+    return GetConsensusTargetPriceFromIdentifiersResp(
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
+    )
 
 
 async def fetch_consensus_target_price_from_company_id(
@@ -366,7 +375,11 @@ async def get_analyst_recommendations_from_identifiers(
                 error_msg = f"{task.result_key}: {resp.error}"
                 errors.append(error_msg)
 
-    return GetAnalystRecommendationsFromIdentifiersResp(results=results, errors=errors)
+    return GetAnalystRecommendationsFromIdentifiersResp(
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
+    )
 
 
 async def fetch_analyst_recommendations_from_company_id(

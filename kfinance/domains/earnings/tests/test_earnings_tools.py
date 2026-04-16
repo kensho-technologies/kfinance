@@ -93,7 +93,7 @@ class TestEarnings:
         """
 
         expected_resp = GetEarningsFromIdentifiersResp(
-            results={
+            identifier_results={
                 "SPGI": EarningsCallResp.model_validate(
                     {
                         "earnings": [
@@ -111,6 +111,7 @@ class TestEarnings:
                     }
                 )
             },
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -141,7 +142,7 @@ class TestEarnings:
         )
 
         # Verify SPGI latest earnings logic
-        spgi_earnings = resp.results["SPGI"]
+        spgi_earnings = resp.identifier_results["SPGI"]
         latest_earnings = spgi_earnings.most_recent_earnings
         assert latest_earnings is not None
         assert latest_earnings.name == "SPGI Q1 2025 Earnings Call"
@@ -165,7 +166,7 @@ class TestEarnings:
         )
 
         # Verify SPGI next earnings logic
-        spgi_earnings = resp.results["SPGI"]
+        spgi_earnings = resp.identifier_results["SPGI"]
         next_earnings = spgi_earnings.next_earnings
         assert next_earnings is not None
         assert next_earnings.name == "SPGI Q1 2025 Earnings Call"

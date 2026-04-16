@@ -2,7 +2,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
+from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE, SPGI_TICKER
 from kfinance.domains.companies.company_models import (
     CompanyDescriptions,
     CompanyOtherNames,
@@ -67,6 +67,7 @@ class TestGetCompanyInfo:
             ],
         )
         expected_resp.results["SPGI"]["company_id"] = prefix_company_id(SPGI_ID_TRIPLE.company_id)
+        expected_resp.results["SPGI"]["ticker"] = SPGI_TICKER
 
         resp = await get_info_from_identifiers(
             identifiers=["SPGI", "non-existent"],
@@ -136,7 +137,8 @@ class TestGetCompanyOtherNames:
         """
 
         expected_resp = GetCompanyOtherNamesFromIdentifiersResp(
-            results={"SPGI": self.spgi_other_names_model},
+            identifier_results={"SPGI": self.spgi_other_names_model},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -195,7 +197,8 @@ class TestGetCompanySummaryAndDescription:
         """
 
         expected_resp = GetCompanySummaryFromIdentifiersResp(
-            results={"SPGI": self.spgi_descriptions_model.summary},
+            identifier_results={"SPGI": self.spgi_descriptions_model.summary},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
@@ -219,7 +222,8 @@ class TestGetCompanySummaryAndDescription:
         """
 
         expected_resp = GetCompanyDescriptionFromIdentifiersResp(
-            results={"SPGI": self.spgi_descriptions_model.description},
+            identifier_results={"SPGI": self.spgi_descriptions_model.description},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],

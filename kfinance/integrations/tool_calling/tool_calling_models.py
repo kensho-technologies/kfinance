@@ -1,5 +1,5 @@
 import abc
-from typing import Annotated, Any, Callable, Coroutine, Dict, Literal, Type
+from typing import Annotated, Any, Callable, Coroutine, Dict, Generic, Literal, Type, TypeVar
 
 from asyncer import syncify
 from httpx import HTTPStatusError
@@ -9,11 +9,13 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    computed_field,
     model_serializer,
 )
 
 from kfinance.client.kfinance import Client
 from kfinance.client.permission_models import Permission
+from kfinance.domains.companies.company_models import IdentificationTripleWithCompanyInfo
 from kfinance.httpx_utils import KfinanceHttpxClient
 
 
@@ -182,3 +184,38 @@ class ToolRespWithErrors(BaseModel):
         if errors:
             data["errors"] = errors
         return data
+
+
+T = TypeVar("T")
+
+
+class IdentifierInfoWithResult(BaseModel, Generic[T]):
+    company_name: str
+    ticker: str | None
+    country: str | None
+    data: T
+
+
+class ToolRespWithIdInfoAndErrors(ToolRespWithErrors, Generic[T]):
+    """A tool response with an `errors` field and a `results` dictionary."""
+
+    identifier_results: dict[str, T] = Field(exclude=True)  # identifier -> response
+    identifier_info: dict[str, IdentificationTripleWithCompanyInfo] = Field(exclude=True)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def results(self) -> dict[str, IdentifierInfoWithResult[T]]:
+        """The results field is computed by adding identifier info to the result for each identifier."""
+        output: dict[str, IdentifierInfoWithResult[T]] = {}
+
+        for identifier, result in self.identifier_results.items():
+            id_triple = self.identifier_info[identifier]
+
+            output[identifier] = IdentifierInfoWithResult(
+                data=result,
+                company_name=id_triple.company_name,
+                ticker=id_triple.ticker,
+                country=id_triple.country,
+            )
+
+        return output

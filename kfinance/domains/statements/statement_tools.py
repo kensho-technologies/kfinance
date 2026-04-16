@@ -19,7 +19,7 @@ from kfinance.domains.statements.statement_models import (
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
     ValidQuarter,
 )
 
@@ -56,8 +56,7 @@ class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
 
 
-class GetFinancialStatementFromIdentifiersResp(ToolRespWithErrors):
-    results: dict[str, StatementsResp]  # identifier -> response
+class GetFinancialStatementFromIdentifiersResp(ToolRespWithIdInfoAndErrors[StatementsResp]):
     notes: list[str] = Field(default_factory=list)
 
 
@@ -190,7 +189,9 @@ async def get_financial_statement_from_identifiers(
             result.remove_all_periods_other_than_the_most_recent_one()
 
     resp_model = GetFinancialStatementFromIdentifiersResp(
-        results=identifier_to_results, errors=errors
+        identifier_results=identifier_to_results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
 
     # Add explanatory notes

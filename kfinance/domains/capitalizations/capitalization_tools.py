@@ -12,7 +12,7 @@ from kfinance.domains.capitalizations.capitalization_models import Capitalizatio
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithErrors,
+    ToolRespWithIdInfoAndErrors,
 )
 
 
@@ -29,9 +29,8 @@ class GetCapitalizationFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
 
 
-class GetCapitalizationFromIdentifiersResp(ToolRespWithErrors):
+class GetCapitalizationFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Capitalizations]):
     capitalization: Capitalization
-    results: dict[str, Capitalizations]
 
 
 class GetCapitalizationFromIdentifiers(KfinanceTool):
@@ -89,10 +88,17 @@ async def get_capitalizations_from_identifiers(
     {
         'capitalization': 'market_cap'
         'results': {
-            'SPGI': [
-                {'date': '2024-04-10', 'market_cap': {'value': '132766738270.00', 'unit': 'USD'}},
-                {'date': '2024-04-11', 'market_cap': {'value': '132416066761.00', 'unit': 'USD'}}
-            ]
+            'SPGI': {
+                'company_name': 'S&P Global Inc.',
+                'ticker': 'NYSE:SPGI',
+                'country': 'USA',
+                'data': {
+                    'capitalizations': [
+                        {'date': '2024-04-10', 'market_cap': {'value': '132766738270.00', 'unit': 'USD'}},
+                        {'date': '2024-04-11', 'market_cap': {'value': '132416066761.00', 'unit': 'USD'}}
+                    ]
+                }
+            }
         },
         'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
     }
@@ -148,7 +154,10 @@ async def get_capitalizations_from_identifiers(
             results[task.result_key] = capitalization_response
 
     return GetCapitalizationFromIdentifiersResp(
-        capitalization=capitalization, results=results, errors=errors
+        capitalization=capitalization,
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
     )
 
 

@@ -66,7 +66,8 @@ class TestMergersAndAcquisitions:
         """
 
         expected_resp = GetMergersFromIdentifiersResp(
-            results={"SPGI": MERGERS_RESP},
+            identifier_results={"SPGI": MERGERS_RESP},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
