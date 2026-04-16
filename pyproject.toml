@@ -21,7 +21,7 @@ dependencies = [
     "asyncer==0.0.14",
     "cachetools>=6,<7",
     "click>=8.2.1,<=9",
-    "fastmcp>=2.14.2,<2.15",
+    "fastmcp>=3.2.0,<4",
     "langchain-core>=1.2.22,<2",
     "langchain-google-genai>=4.2.1,<5",
     "numpy>=1.22.4",

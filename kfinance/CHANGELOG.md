@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.0.1
+- Update fastmcp from 2.x to 3.2
+
 ## v6.0.0
 - Update tool call results to include company information - in particular, 
   company name, ticker, and country
