@@ -49,26 +49,15 @@ def add_function_to_tools_file(tool: KfinanceTool) -> None:
         :rtype: YearAndQuarter'''
 
     """
+    # WARNING: The logic in this file is quite brittle. At the time of writing, the doc
+    # building was broken, and I'm making small changes to get it to a basic working
+    # state based on the current tool call definitions. There's no guarantee that this
+    # logic will work for future tool calls. Working out all the import issues along with 
+    # linking the types correctly to their definitions will take more work.
 
     # The signature built with the inspect module does not include necessary imports.
     imports = ["import kfinance", "import datetime", "from typing import Optional"]
     signature_str = build_signature_str(tool)
-
-    # Use inspect to retrieve the return type and add it to the imports if it's not a builtin.
-    signature = inspect.signature(tool._arun)
-    return_annotation = signature.return_annotation
-    # THIS IMPORT STUFF GETS VERY MESSY - RETHINK IT - WE DON'T ACTUALLY NEED THESE IMPORTS, MAYBE?
-    # if return_annotation.__module__ != "builtins":
-    #     imports.append(f"import {return_annotation.__module__}")
-
-    # param_annotations = [param.annotation for param in signature.parameters.values()]
-    # for param_annotation in param_annotations:
-    #     module = param_annotation.__module__
-    #     if get_origin(param_annotation) is Union or get_origin(param_annotation) is types.UnionType:
-    #         param_args = get_args(param_annotation)
-    #         module = param_args[0].__module__
-    #     if module != "builtins":
-    #         imports.append(f"import {module}")
 
     # Generate sphinx style annotations for each param.
     openai_params = convert_to_openai_tool(tool)["function"]["parameters"]["properties"]
@@ -84,7 +73,7 @@ def add_function_to_tools_file(tool: KfinanceTool) -> None:
     func_str += f'\n    """{tool.description}\n'
     func_str += args
     # Add sphinx style return annotation
-    func_str += f'\n    :rtype: {return_annotation.__name__}"""'
+    func_str += f'\n    :rtype: {inspect.signature(tool._arun).return_annotation.__name__}"""'
 
     # Write definition to tool file
     with open(inspect.getfile(tool.__class__), mode="a") as f:
@@ -105,9 +94,12 @@ def build_signature_str(tool: KfinanceTool) -> str:
     signature = inspect.signature(tool._arun)
     for param in signature.parameters.values():
         if isinstance(param.default, Enum):
-            # For enums, redirect __repr__ to __str__
-            param.default.__class__.__repr__ = param.default.__class__.__str__
-    
+            # For enums, reformat how the default value gets printed.
+            param.default.__class__.__repr__ = lambda self: f"{self.__class__.__name__}.{self.name}"
+
+    # This removes the full module path from the return annotation. This is needed because for our tools
+    # at the time of writing, the return type is declared in the same file as where the tool call definition is.
+    # This means using the full module path creates a circular import and causes sphinx to fail.
     signature = inspect.Signature.replace(signature, return_annotation=signature.return_annotation.__name__)
     return f"def {tool.name}{signature}:"
 
