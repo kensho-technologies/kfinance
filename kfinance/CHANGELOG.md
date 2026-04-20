@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.0.2
+- Add GetFinancialAuditorsFromIdentifiers
+
 ## v6.0.1
 - Update fastmcp from 2.x to 3.2
 

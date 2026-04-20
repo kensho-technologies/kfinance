@@ -6,6 +6,7 @@ from kfinance.domains.companies.company_tools import (
     GetCompanyDescriptionFromIdentifiers,
     GetCompanyOtherNamesFromIdentifiers,
     GetCompanySummaryFromIdentifiers,
+    GetFinancialAuditorsFromIdentifiers,
     GetInfoFromIdentifiers,
 )
 from kfinance.domains.competitors.competitor_tools import GetCompetitorsFromIdentifiers
@@ -58,9 +59,11 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetCapitalizationFromIdentifiers,
     # Companies
     GetInfoFromIdentifiers,
+    # Company Intelligence
     GetCompanyOtherNamesFromIdentifiers,
     GetCompanySummaryFromIdentifiers,
     GetCompanyDescriptionFromIdentifiers,
+    GetFinancialAuditorsFromIdentifiers,
     # Competitors
     GetCompetitorsFromIdentifiers,
     # Cusip and Isin

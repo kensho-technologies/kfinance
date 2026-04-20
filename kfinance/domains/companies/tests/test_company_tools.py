@@ -4,6 +4,8 @@ from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE, SPGI_TICKER
 from kfinance.domains.companies.company_models import (
+    AuditorEntry,
+    Auditors,
     CompanyDescriptions,
     CompanyOtherNames,
     NativeName,
@@ -13,12 +15,15 @@ from kfinance.domains.companies.company_tools import (
     GetCompanyDescriptionFromIdentifiersResp,
     GetCompanyOtherNamesFromIdentifiersResp,
     GetCompanySummaryFromIdentifiersResp,
+    GetFinancialAuditorsFromIdentifiersResp,
     GetInfoFromIdentifiersResp,
     fetch_company_other_names_from_company_id,
     fetch_company_summary_and_description_from_company_id,
+    fetch_financial_auditors_from_company_id,
     fetch_info_from_company_id,
     get_company_other_names_from_identifiers,
     get_company_summary_or_description_from_identifiers,
+    get_financial_auditors_from_identifiers,
     get_info_from_identifiers,
 )
 
@@ -236,3 +241,118 @@ class TestGetCompanySummaryAndDescription:
         )
 
         assert resp == expected_resp
+
+
+class TestGetFinancialAuditors:
+    spgi_auditors_api_resp = {
+        "results": {
+            str(SPGI_COMPANY_ID): {
+                "CY2025/FY2025": [
+                    {"auditor_company_id": "97518", "auditor_name": "Ernst & Young LLP"}
+                ],
+                "CY2024/FY2024": [
+                    {"auditor_company_id": "97518", "auditor_name": "Ernst & Young LLP"}
+                ],
+            }
+        },
+        "errors": {},
+    }
+
+    spgi_auditors_model = Auditors(
+        auditors_by_period={
+            "CY2025/FY2025": [
+                AuditorEntry(auditor_company_id=97518, auditor_name="Ernst & Young LLP")
+            ],
+            "CY2024/FY2024": [
+                AuditorEntry(auditor_company_id=97518, auditor_name="Ernst & Young LLP")
+            ],
+        }
+    )
+
+    @pytest.fixture
+    def add_spgi_auditors_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+        """Add mock response for SPGI financial auditors."""
+        httpx_mock.add_response(
+            method="POST",
+            url="https://kfinance.kensho.com/api/v1/auditors/",
+            json=self.spgi_auditors_api_resp,
+        )
+
+    @pytest.mark.asyncio
+    async def test_fetch_financial_auditors_from_company_id(
+        self, httpx_client: httpx.AsyncClient, add_spgi_auditors_mock_resp: None
+    ) -> None:
+        """
+        WHEN we request SPGI's financial auditors (using SPGI's company id)
+        THEN we get back SPGI's auditors grouped by period
+        """
+
+        resp = await fetch_financial_auditors_from_company_id(
+            company_id=SPGI_ID_TRIPLE.company_id,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == self.spgi_auditors_model
+
+    @pytest.mark.asyncio
+    async def test_fetch_financial_auditors_with_year_range(
+        self, httpx_client: httpx.AsyncClient, add_spgi_auditors_mock_resp: None
+    ) -> None:
+        """
+        WHEN we request SPGI's financial auditors with start_year and end_year
+        THEN we get back SPGI's auditors grouped by period
+        """
+
+        resp = await fetch_financial_auditors_from_company_id(
+            company_id=SPGI_ID_TRIPLE.company_id,
+            httpx_client=httpx_client,
+            start_year=2024,
+            end_year=2025,
+        )
+
+        assert resp == self.spgi_auditors_model
+
+    @pytest.mark.asyncio
+    async def test_get_financial_auditors_from_identifiers(
+        self, httpx_client: httpx.AsyncClient, add_spgi_auditors_mock_resp: None
+    ) -> None:
+        """
+        WHEN we fetch financial auditors for SPGI and a non-existent company
+        THEN we get back SPGI's auditors and an error for the non-existent company
+        """
+
+        expected_resp = GetFinancialAuditorsFromIdentifiersResp(
+            identifier_results={"SPGI": self.spgi_auditors_model},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
+            errors=[
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+            ],
+        )
+
+        resp = await get_financial_auditors_from_identifiers(
+            identifiers=["SPGI", "non-existent"],
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_fetch_financial_auditors_empty_results(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN the API returns empty results for a company
+        THEN we get back an Auditors model with an empty auditors_by_period dict
+        """
+        httpx_mock.add_response(
+            method="POST",
+            url="https://kfinance.kensho.com/api/v1/auditors/",
+            json={"results": {}, "errors": {}},
+        )
+
+        resp = await fetch_financial_auditors_from_company_id(
+            company_id=SPGI_ID_TRIPLE.company_id,
+            httpx_client=httpx_client,
+        )
+
+        assert resp == Auditors(auditors_by_period={})

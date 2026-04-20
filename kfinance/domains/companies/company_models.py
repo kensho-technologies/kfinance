@@ -161,3 +161,16 @@ class CompanyOtherNames(BaseModel):
     alternate_names: list[str]
     historical_names: list[str]
     native_names: list[NativeName]
+
+
+class AuditorEntry(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    auditor_company_id: int = Field(alias="Auditor Company ID")
+    auditor_name: str = Field(alias="Auditor Company Name")
+
+
+class Auditors(BaseModel):
+    """Auditors grouped by period (e.g. "CY2025/FY2025")."""
+
+    auditors_by_period: dict[str, list[AuditorEntry]]
