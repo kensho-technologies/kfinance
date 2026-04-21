@@ -25,6 +25,7 @@ from kfinance.domains.estimates.estimates_tools import (
     GetConsensusTargetPriceFromIdentifiers,
     GetGuidanceFromIdentifiers,
 )
+from kfinance.domains.key_developments.key_devs_tools import GetKeyDevsFromIdentifier
 from kfinance.domains.line_items.line_item_tools import GetFinancialLineItemFromIdentifiers
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools import (
     GetAdvisorsForCompanyInTransactionFromIdentifier,
@@ -71,6 +72,8 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetLatestEarningsFromIdentifiers,
     GetNextEarningsFromIdentifiers,
     GetTranscriptFromKeyDevId,
+    # Key Developments
+    GetKeyDevsFromIdentifier,
     # Line Items
     GetFinancialLineItemFromIdentifiers,
     # Prices

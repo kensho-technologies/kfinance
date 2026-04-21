@@ -23,6 +23,7 @@ from kfinance.domains.companies.company_models import (
     NativeName,
 )
 from kfinance.domains.competitors.competitor_models import CompetitorSource
+from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType
 from kfinance.domains.line_items.line_item_models import LINE_ITEMS
 from kfinance.domains.segments.segment_models import SegmentType
 
@@ -666,6 +667,55 @@ class CompanyFunctionsMetaClass:
         df = pd.DataFrame([data])
         df.insert(0, "effective_date", result.effective_date)
         return df
+
+    def key_developments(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        key_dev_category: Optional[int] = None,
+    ) -> pd.DataFrame:
+        """Get key development events for the company within an optional date range.
+
+        :param start_date: The start date in format "YYYY-MM-DD", defaults to None
+        :type start_date: str, optional
+        :param end_date: The end date in format "YYYY-MM-DD", defaults to None
+        :type end_date: str, optional
+        :param key_dev_category: Optional category filter (see KeyDevCategoryType), defaults to None
+        :type key_dev_category: int, optional
+        :return: A DataFrame of key developments with columns: category, key_dev_id, situation, announced_date_utc, most_important_date_utc, source, and company_role
+        :rtype: pd.DataFrame
+        """
+
+        key_dev_category_enum = None
+        if key_dev_category is not None:
+            key_dev_category_enum = KeyDevCategoryType(key_dev_category)
+
+        response = self.kfinance_api_client.fetch_key_devs(
+            company_id=self.company_id,
+            start_date=start_date,
+            end_date=end_date,
+            key_dev_category=key_dev_category_enum,
+        )
+
+        if not response.results:
+            return pd.DataFrame()
+
+        # flatten the structure: category -> list of events
+        rows = []
+        for category, events in response.results.items():
+            for event in events:
+                row = {
+                    "category": category,
+                    "key_dev_id": event.key_dev_id,
+                    "situation": event.situation,
+                    "announced_date_utc": event.announced_date_utc,
+                    "most_important_date_utc": event.most_important_date_utc,
+                    "source": event.source,
+                    "company_role": event.company_role,
+                }
+                rows.append(row)
+
+        return pd.DataFrame(rows)
 
 
 for line_item in LINE_ITEMS:
