@@ -1,17 +1,20 @@
 from textwrap import dedent
-from typing import Literal, Type, overload
+from typing import Any, Literal, Type, overload
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
 from kfinance.domains.companies.company_models import (
+    AuditorEntry,
+    Auditors,
     CompanyDescriptions,
     CompanyOtherNames,
     prefix_company_id,
 )
+from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
@@ -147,6 +150,66 @@ class GetCompanyDescriptionFromIdentifiers(KfinanceTool):
             identifiers=identifiers,
             httpx_client=self.kfinance_client.httpx_client,
             summary_or_description="description",
+        )
+
+
+class GetFinancialAuditorsFromIdentifiersArgs(ToolArgsWithIdentifiers):
+    calendar_type: CalendarType | None = Field(default=None, description="Fiscal or calendar year")
+    start_year: int | None = Field(
+        default=None,
+        description="The starting year for the data range. Use null for all available data.",
+    )
+    end_year: int | None = Field(
+        default=None,
+        description="The ending year for the data range. Use null for all available data.",
+    )
+
+
+class GetFinancialAuditorsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Auditors]):
+    pass
+
+
+class GetFinancialAuditorsFromIdentifiers(KfinanceTool):
+    name: str = "get_financial_auditors_from_identifiers"
+    description: str = dedent("""
+        Get the financial auditors for a list of companies, grouped by period. Each period lists the auditor company name and auditor company ID.
+
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - To fetch all available auditor history, leave all time parameters as null.
+        - Use start_year and end_year to filter the date range.
+        - Set calendar_type based on how the query references the time period—use "fiscal" for fiscal year references and "calendar" for calendar year references. calendar_type controls which year system start_year and end_year apply to.
+        - When calendar_type=None, it defaults to 'fiscal'.
+
+        Examples:
+        Query: "Who are the auditors for S&P Global?"
+        Function: get_financial_auditors_from_identifiers(identifiers=["S&P Global"])
+
+        Query: "Get the financial auditors for Apple and Microsoft from 2020 to 2023"
+        Function: get_financial_auditors_from_identifiers(identifiers=["Apple", "Microsoft"], start_year=2020, end_year=2023)
+
+        Query: "Who has audited Tesla since fiscal year 2020?"
+        Function: get_financial_auditors_from_identifiers(identifiers=["Tesla"], calendar_type="fiscal", start_year=2020)
+
+        Query: "Get auditors for WMT for calendar years 2019 to 2021"
+        Function: get_financial_auditors_from_identifiers(identifiers=["WMT"], calendar_type="calendar", start_year=2019, end_year=2021)
+    """).strip()
+    args_schema: Type[BaseModel] = GetFinancialAuditorsFromIdentifiersArgs
+    accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
+
+    async def _arun(
+        self,
+        identifiers: list[str],
+        calendar_type: CalendarType | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+    ) -> GetFinancialAuditorsFromIdentifiersResp:
+        """"""
+        return await get_financial_auditors_from_identifiers(
+            identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
+            calendar_type=calendar_type,
+            start_year=start_year,
+            end_year=end_year,
         )
 
 
@@ -359,3 +422,77 @@ async def fetch_company_summary_and_description_from_company_id(
     resp = await httpx_client.get(url=url)
     resp.raise_for_status()
     return CompanyDescriptions.model_validate(resp.json())
+
+
+async def get_financial_auditors_from_identifiers(
+    identifiers: list[str],
+    httpx_client: httpx.AsyncClient,
+    calendar_type: CalendarType | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+) -> GetFinancialAuditorsFromIdentifiersResp:
+    """Fetch financial auditors for all identifiers."""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    tasks = [
+        AsyncTask(
+            func=fetch_financial_auditors_from_company_id,
+            kwargs=dict(
+                company_id=id_triple.company_id,
+                httpx_client=httpx_client,
+                calendar_type=calendar_type,
+                start_year=start_year,
+                end_year=end_year,
+            ),
+            result_key=identifier,
+        )
+        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
+    ]
+
+    await batch_execute_async_tasks(tasks=tasks)
+
+    results: dict[str, Auditors] = dict()
+    for task in tasks:
+        if task.error:
+            errors.append(task.error)
+        else:
+            results[task.result_key] = task.result
+
+    return GetFinancialAuditorsFromIdentifiersResp(
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
+    )
+
+
+async def fetch_financial_auditors_from_company_id(
+    company_id: int,
+    httpx_client: httpx.AsyncClient,
+    calendar_type: CalendarType | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+) -> Auditors:
+    """Fetch financial auditors for one company_id."""
+    payload: dict[str, Any] = {"company_id": company_id}
+    if calendar_type is not None:
+        payload["calendar_type"] = calendar_type.value
+    if start_year is not None:
+        payload["start_year"] = start_year
+    if end_year is not None:
+        payload["end_year"] = end_year
+
+    resp = await httpx_client.post(url="/auditors/", json=payload)
+    resp.raise_for_status()
+    resp_json = resp.json()
+
+    company_data = resp_json.get("results", {}).get(str(company_id), {})
+    return Auditors(
+        auditors_by_period={
+            period: [AuditorEntry.model_validate(a) for a in auditors]
+            for period, auditors in company_data.items()
+        }
+    )
