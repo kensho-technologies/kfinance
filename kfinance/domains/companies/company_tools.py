@@ -155,8 +155,14 @@ class GetCompanyDescriptionFromIdentifiers(KfinanceTool):
 
 class GetFinancialAuditorsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     calendar_type: CalendarType | None = Field(default=None, description="Fiscal or calendar year")
-    start_year: int | None = Field(default=None, description="The starting year for the data range. Use null for all available data.")
-    end_year: int | None = Field(default=None, description="The ending year for the data range. Use null for all available data.")
+    start_year: int | None = Field(
+        default=None,
+        description="The starting year for the data range. Use null for all available data.",
+    )
+    end_year: int | None = Field(
+        default=None,
+        description="The ending year for the data range. Use null for all available data.",
+    )
 
 
 class GetFinancialAuditorsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Auditors]):
