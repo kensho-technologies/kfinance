@@ -1,6 +1,6 @@
 # Changelog
 
-## v6.0.2
+## v6.1.0
 - Add GetFinancialAuditorsFromIdentifiers
 
 ## v6.0.1

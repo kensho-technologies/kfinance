@@ -489,9 +489,7 @@ async def fetch_financial_auditors_from_company_id(
     resp.raise_for_status()
     resp_json = resp.json()
 
-    # API returns {"results": {"<company_id>": {"period": [...]}}, "errors": {...}}
     company_data = resp_json.get("results", {}).get(str(company_id), {})
-    # TODO: Handle API-level errors from resp_json["errors"] if needed
     return Auditors(
         auditors_by_period={
             period: [AuditorEntry.model_validate(a) for a in auditors]
