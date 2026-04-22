@@ -155,8 +155,8 @@ class GetCompanyDescriptionFromIdentifiers(KfinanceTool):
 
 class GetFinancialAuditorsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     calendar_type: CalendarType | None = Field(default=None, description="Fiscal or calendar year")
-    start_year: int | None = Field(default=None, description="The starting year for the data range")
-    end_year: int | None = Field(default=None, description="The ending year for the data range")
+    start_year: int | None = Field(default=None, description="The starting year for the data range. Use null for all available data.")
+    end_year: int | None = Field(default=None, description="The ending year for the data range. Use null for all available data.")
 
 
 class GetFinancialAuditorsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Auditors]):
@@ -166,11 +166,13 @@ class GetFinancialAuditorsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Audito
 class GetFinancialAuditorsFromIdentifiers(KfinanceTool):
     name: str = "get_financial_auditors_from_identifiers"
     description: str = dedent("""
-        Get the financial auditors for a list of companies, grouped by period (e.g. "CY2025/FY2025"). Each period lists the auditor company name and auditor company ID.
+        Get the financial auditors for a list of companies, grouped by period. Each period lists the auditor company name and auditor company ID.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - Use calendar_type to specify fiscal or calendar year. Defaults to fiscal when not specified.
+        - To fetch all available auditor history, leave all time parameters as null.
         - Use start_year and end_year to filter the date range.
+        - Set calendar_type based on how the query references the time period—use "fiscal" for fiscal year references and "calendar" for calendar year references. calendar_type controls which year system start_year and end_year apply to.
+        - When calendar_type=None, it defaults to 'fiscal'.
 
         Examples:
         Query: "Who are the auditors for S&P Global?"
@@ -178,6 +180,12 @@ class GetFinancialAuditorsFromIdentifiers(KfinanceTool):
 
         Query: "Get the financial auditors for Apple and Microsoft from 2020 to 2023"
         Function: get_financial_auditors_from_identifiers(identifiers=["Apple", "Microsoft"], start_year=2020, end_year=2023)
+
+        Query: "Who has audited Tesla since fiscal year 2020?"
+        Function: get_financial_auditors_from_identifiers(identifiers=["Tesla"], calendar_type="fiscal", start_year=2020)
+
+        Query: "Get auditors for WMT for calendar years 2019 to 2021"
+        Function: get_financial_auditors_from_identifiers(identifiers=["WMT"], calendar_type="calendar", start_year=2019, end_year=2021)
     """).strip()
     args_schema: Type[BaseModel] = GetFinancialAuditorsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.CompanyIntelligencePermission}
