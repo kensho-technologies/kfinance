@@ -23,6 +23,8 @@ from kfinance.domains.business_relationships.business_relationship_models import
 )
 from kfinance.domains.capitalizations.capitalization_models import Capitalizations
 from kfinance.domains.companies.company_models import (
+    AuditorEntry,
+    Auditors,
     CompanyDescriptions,
     CompanyOtherNames,
     IdentificationTriple,
@@ -687,6 +689,31 @@ class KFinanceApiClient:
         url = f"{self.url_base}info/{company_id}/names"
         result = self.fetch(url)
         return CompanyOtherNames.model_validate(result)
+
+    def fetch_company_financial_auditors(
+        self,
+        company_id: int,
+        calendar_type: CalendarType | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+    ) -> Auditors:
+        """Get the financial auditors for a company."""
+        url = f"{self.url_base}auditors/"
+        payload: dict[str, Any] = {"company_id": company_id}
+        if calendar_type is not None:
+            payload["calendar_type"] = calendar_type
+        if start_year is not None:
+            payload["start_year"] = start_year
+        if end_year is not None:
+            payload["end_year"] = end_year
+        result = self.fetch(url, method="POST", request_body=payload)
+        company_data = result["results"].get(str(company_id), {})
+        return Auditors(
+            auditors_by_period={
+                period: [AuditorEntry.model_validate(a) for a in auditors]
+                for period, auditors in company_data.items()
+            }
+        )
 
     def fetch_competitors(
         self, company_id: int, competitor_source: CompetitorSource
