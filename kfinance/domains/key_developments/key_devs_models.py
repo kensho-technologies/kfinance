@@ -18,7 +18,6 @@ class KeyDevelopment(BaseModel):
 class KeyDevsResp(BaseModel):
     """Response containing key developments grouped by category.
 
-    # TODO: check structure once server side changes go through.
     The API returns the following structure:
     {
         "results": {
@@ -26,17 +25,20 @@ class KeyDevsResp(BaseModel):
             "Earnings Releases": [...]
         },
         "next_time_band": {"start_date": "...", "end_date": "..."},
-        "notes": "..."
+        "notes": "...",
+        "errors": ["There is no data associated with company id <company_id>"]
     }
 
     - results: Maps category name to a list of KeyDevelopment events
     - next_time_band: Optional pagination info (start_date and end_date for next query)
     - notes: Optional message about truncated results or other information
+    - errors: List of error messages from the API (e.g., no data for company)
     """
 
     results: dict[str, list[KeyDevelopment]]
     next_time_band: dict[str, str] | None = None
     notes: str | None = None
+    errors: list[str] = []
 
 
 class KeyDevCategoryType(IntEnum):

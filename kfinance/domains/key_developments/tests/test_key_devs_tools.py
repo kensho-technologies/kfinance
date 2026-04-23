@@ -192,3 +192,35 @@ class TestKeyDevs:
         )
 
         assert combined_resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_get_key_devs_with_api_error(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN the key devs API returns an error (e.g. no data available)
+        THEN the error is extracted and surfaced in the response
+        """
+        httpx_mock.add_response(
+            method="POST",
+            url="https://kfinance.kensho.com/api/v1/key_devs",
+            json={
+                "results": {},
+                "next_time_band": None,
+                "notes": None,
+                "errors": [f"There is no data associated with company id {SPGI_COMPANY_ID}"],
+            },
+        )
+
+        expected_resp = GetKeyDevsFromIdentifierResp(
+            identifier_results={},
+            identifier_info={"SPGI": SPGI_ID_TRIPLE},
+            errors=[f"SPGI: There is no data associated with company id {SPGI_COMPANY_ID}"],
+        )
+
+        resp = await get_key_devs_from_identifier(
+            identifier="SPGI",
+            httpx_client=httpx_client,
+        )
+
+        assert resp == expected_resp

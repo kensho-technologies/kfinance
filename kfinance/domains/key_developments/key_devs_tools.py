@@ -110,8 +110,14 @@ async def get_key_devs_from_identifier(
         key_dev_category=key_dev_category,
     )
 
+    identifier_results = {}
+    if result.errors:
+        errors.append(f"No result found for {identifier}")
+    else:
+        identifier_results[identifier] = result
+
     return GetKeyDevsFromIdentifierResp(
-        identifier_results={identifier: result},
+        identifier_results=identifier_results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,
     )
