@@ -215,7 +215,7 @@ class TestKeyDevs:
         expected_resp = GetKeyDevsFromIdentifierResp(
             identifier_results={},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[f"SPGI: There is no data associated with company id {SPGI_COMPANY_ID}"],
+            errors=["No result found for SPGI"],
         )
 
         resp = await get_key_devs_from_identifier(
