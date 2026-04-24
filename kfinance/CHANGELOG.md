@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.3.0
+- Add GetProfessionalsFromIdentifiers and GetProfessionalsFromPersonIds tools
+
 ## v6.2.1
 - Add streamable-http option to local mcp server.
 

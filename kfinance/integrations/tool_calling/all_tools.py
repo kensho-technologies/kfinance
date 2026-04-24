@@ -37,6 +37,10 @@ from kfinance.domains.prices.price_tools import (
     GetHistoryMetadataFromIdentifiers,
     GetPricesFromIdentifiers,
 )
+from kfinance.domains.professionals.professionals_tools import (
+    GetProfessionalsFromIdentifiers,
+    GetProfessionalsFromPersonIds,
+)
 from kfinance.domains.rounds_of_funding.rounds_of_funding_tools import (
     GetFundingSummaryFromIdentifiers,
     GetRoundsOfFundingFromIdentifiers,
@@ -82,6 +86,9 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     # Prices
     GetPricesFromIdentifiers,
     GetHistoryMetadataFromIdentifiers,
+    # Professionals
+    GetProfessionalsFromIdentifiers,
+    GetProfessionalsFromPersonIds,
     # Segments
     GetSegmentsFromIdentifiers,
     # Statements
