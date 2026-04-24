@@ -1,7 +1,7 @@
 from datetime import datetime
-from enum import StrEnum
 
 from pydantic import BaseModel
+from strenum import StrEnum
 
 
 class KeyDevelopment(BaseModel):
