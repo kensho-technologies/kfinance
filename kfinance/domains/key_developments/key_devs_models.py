@@ -76,20 +76,3 @@ class KeyDevCategoryType(StrEnum):
     BANKRUPTCY_UPDATES = "bankruptcy_updates"
     INVESTOR_ACTIVISM = "investor_activism"
     TRANSACTION_UPDATES = "transaction_updates"
-
-
-# Mapping from legacy integer values to string enum values
-INT_TO_KEY_DEV_CATEGORY: dict[int, KeyDevCategoryType] = {
-    1: KeyDevCategoryType.COMPANY_FORECASTS_AND_RATINGS,
-    2: KeyDevCategoryType.ANNOUNCED_OR_COMPLETED_TRANSACTIONS,
-    3: KeyDevCategoryType.POTENTIAL_TRANSACTIONS,
-    4: KeyDevCategoryType.LISTING_OR_TRADING_RELATED,
-    5: KeyDevCategoryType.POTENTIAL_RED_FLAGS_OR_DISTRESS_INDICATORS,
-    6: KeyDevCategoryType.RESULTS_ANNOUNCEMENTS_OR_CORPORATE_COMMUNICATIONS,
-    7: KeyDevCategoryType.CUSTOMER_OR_PRODUCT_RELATED,
-    8: KeyDevCategoryType.CORPORATE_STRUCTURE_RELATED,
-    10: KeyDevCategoryType.DIVIDENDS_OR_SPLITS,
-    12: KeyDevCategoryType.BANKRUPTCY_UPDATES,
-    13: KeyDevCategoryType.INVESTOR_ACTIVISM,
-    15: KeyDevCategoryType.TRANSACTION_UPDATES,
-}
