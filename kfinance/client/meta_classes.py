@@ -683,7 +683,7 @@ class CompanyFunctionsMetaClass:
         self,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        key_dev_category: Optional[int] = None,
+        key_dev_category: Optional[str] = None,
     ) -> pd.DataFrame:
         """Get key development events for the company within an optional date range.
 
@@ -692,7 +692,7 @@ class CompanyFunctionsMetaClass:
         :param end_date: The end date in format "YYYY-MM-DD", defaults to None
         :type end_date: str, optional
         :param key_dev_category: Optional category filter (see KeyDevCategoryType), defaults to None
-        :type key_dev_category: int, optional
+        :type key_dev_category: str, optional
         :return: A DataFrame of key developments with columns: category, key_dev_id, situation, announced_date_utc, most_important_date_utc, source, and company_role
         :rtype: pd.DataFrame
         """

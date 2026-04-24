@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import IntEnum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
@@ -41,36 +41,55 @@ class KeyDevsResp(BaseModel):
     errors: list[str] = []
 
 
-class KeyDevCategoryType(IntEnum):
+class KeyDevCategoryType(StrEnum):
     """Key development category types.
 
     Optional filter to retrieve only key developments within a specific category.
     If not specified, all categories are returned.
 
     Available categories:
-    - 1: Company forecasts and ratings
-    - 2: Announced or completed transactions
-    - 3: Potential transactions
-    - 4: Listing or trading related
-    - 5: Potential red flags or distress indicators
-    - 6: Results announcements or corporate communications
-    - 7: Customer or product related
-    - 8: Corporate structure related
-    - 10: Dividends or splits
-    - 12: Bankruptcy updates
-    - 13: Investor activism
-    - 15: Transaction updates
+    - company_forecasts_and_ratings: Company forecasts and ratings
+    - announced_or_completed_transactions: Announced or completed transactions
+    - potential_transactions: Potential transactions
+    - listing_or_trading_related: Listing or trading related
+    - potential_red_flags_or_distress_indicators: Potential red flags or distress indicators
+    - results_announcements_or_corporate_communications: Results announcements or corporate communications
+    - customer_or_product_related: Customer or product related
+    - corporate_structure_related: Corporate structure related
+    - dividends_or_splits: Dividends or splits
+    - bankruptcy_updates: Bankruptcy updates
+    - investor_activism: Investor activism
+    - transaction_updates: Transaction updates
     """
 
-    COMPANY_FORECASTS_AND_RATINGS = 1
-    ANNOUNCED_OR_COMPLETED_TRANSACTIONS = 2
-    POTENTIAL_TRANSACTIONS = 3
-    LISTING_OR_TRADING_RELATED = 4
-    POTENTIAL_RED_FLAGS_OR_DISTRESS_INDICATORS = 5
-    RESULTS_ANNOUNCEMENTS_OR_CORPORATE_COMMUNICATIONS = 6
-    CUSTOMER_OR_PRODUCT_RELATED = 7
-    CORPORATE_STRUCTURE_RELATED = 8
-    DIVIDENDS_OR_SPLITS = 10
-    BANKRUPTCY_UPDATES = 12
-    INVESTOR_ACTIVISM = 13
-    TRANSACTION_UPDATES = 15
+    COMPANY_FORECASTS_AND_RATINGS = "company_forecasts_and_ratings"
+    ANNOUNCED_OR_COMPLETED_TRANSACTIONS = "announced_or_completed_transactions"
+    POTENTIAL_TRANSACTIONS = "potential_transactions"
+    LISTING_OR_TRADING_RELATED = "listing_or_trading_related"
+    POTENTIAL_RED_FLAGS_OR_DISTRESS_INDICATORS = "potential_red_flags_or_distress_indicators"
+    RESULTS_ANNOUNCEMENTS_OR_CORPORATE_COMMUNICATIONS = (
+        "results_announcements_or_corporate_communications"
+    )
+    CUSTOMER_OR_PRODUCT_RELATED = "customer_or_product_related"
+    CORPORATE_STRUCTURE_RELATED = "corporate_structure_related"
+    DIVIDENDS_OR_SPLITS = "dividends_or_splits"
+    BANKRUPTCY_UPDATES = "bankruptcy_updates"
+    INVESTOR_ACTIVISM = "investor_activism"
+    TRANSACTION_UPDATES = "transaction_updates"
+
+
+# Mapping from legacy integer values to string enum values
+INT_TO_KEY_DEV_CATEGORY: dict[int, KeyDevCategoryType] = {
+    1: KeyDevCategoryType.COMPANY_FORECASTS_AND_RATINGS,
+    2: KeyDevCategoryType.ANNOUNCED_OR_COMPLETED_TRANSACTIONS,
+    3: KeyDevCategoryType.POTENTIAL_TRANSACTIONS,
+    4: KeyDevCategoryType.LISTING_OR_TRADING_RELATED,
+    5: KeyDevCategoryType.POTENTIAL_RED_FLAGS_OR_DISTRESS_INDICATORS,
+    6: KeyDevCategoryType.RESULTS_ANNOUNCEMENTS_OR_CORPORATE_COMMUNICATIONS,
+    7: KeyDevCategoryType.CUSTOMER_OR_PRODUCT_RELATED,
+    8: KeyDevCategoryType.CORPORATE_STRUCTURE_RELATED,
+    10: KeyDevCategoryType.DIVIDENDS_OR_SPLITS,
+    12: KeyDevCategoryType.BANKRUPTCY_UPDATES,
+    13: KeyDevCategoryType.INVESTOR_ACTIVISM,
+    15: KeyDevCategoryType.TRANSACTION_UPDATES,
+}

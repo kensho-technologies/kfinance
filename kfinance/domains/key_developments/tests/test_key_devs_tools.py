@@ -154,7 +154,7 @@ class TestKeyDevs:
 
         payload = json.loads(request.content)
         assert payload["company_id"] == SPGI_COMPANY_ID
-        assert payload["key_dev_category"] == 2
+        assert payload["key_dev_category"] == "announced_or_completed_transactions"
 
     @pytest.mark.asyncio
     async def test_get_key_devs_from_identifier(
