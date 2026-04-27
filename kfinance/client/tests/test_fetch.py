@@ -501,7 +501,7 @@ class TestFetchItem(TestCase):
     def test_fetch_key_devs(self) -> None:
 
         company_id = 21719
-        expected_url = f"{self.kfinance_api_client.url_base}key_devs"
+        expected_url = f"{self.kfinance_api_client.url_base}key_devs/"
 
         # test with only required parameter
         expected_request_body = {
