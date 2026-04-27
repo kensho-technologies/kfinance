@@ -924,7 +924,7 @@ class KFinanceApiClient:
         :return: Key developments response containing events grouped by category.
         :rtype: KeyDevsResp
         """
-        url = f"{self.url_base}key_devs"
+        url = f"{self.url_base}key_devs/"
 
         request_body: dict[str, str | int] = {
             "company_id": company_id,
