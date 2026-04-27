@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.2.0
+- Add GetKeyDevsFromIdentifier
+
 ## v6.1.0
 - Add GetFinancialAuditorsFromIdentifiers
 
