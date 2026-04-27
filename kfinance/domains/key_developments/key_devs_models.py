@@ -36,7 +36,7 @@ class KeyDevsResp(BaseModel):
     """
 
     results: dict[str, list[KeyDevelopment]]
-    next_time_band: dict[str, str] | None = None
+    next_time_band: dict[str, str | None] | None = None
     notes: str | None = None
     errors: list[str] = []
 
