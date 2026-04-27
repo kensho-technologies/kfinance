@@ -23,7 +23,7 @@ def add_spgi_key_devs_mock_resp(httpx_mock: HTTPXMock) -> None:
     """Add mock response for SPGI key developments."""
     httpx_mock.add_response(
         method="POST",
-        url="https://kfinance.kensho.com/api/v1/key_devs",
+        url="https://kfinance.kensho.com/api/v1/key_devs/",
         json={
             "results": {
                 "Client Announcements": [
@@ -107,7 +107,7 @@ class TestKeyDevs:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/key_devs",
+            url="https://kfinance.kensho.com/api/v1/key_devs/",
             json={"results": {}, "next_time_band": None, "notes": None},
         )
 
@@ -138,7 +138,7 @@ class TestKeyDevs:
 
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/key_devs",
+            url="https://kfinance.kensho.com/api/v1/key_devs/",
             json={"results": {}, "next_time_band": None, "notes": None},
         )
 
@@ -203,7 +203,7 @@ class TestKeyDevs:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/key_devs",
+            url="https://kfinance.kensho.com/api/v1/key_devs/",
             json={
                 "results": {},
                 "next_time_band": None,

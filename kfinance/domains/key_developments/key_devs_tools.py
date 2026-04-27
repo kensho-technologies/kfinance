@@ -131,7 +131,7 @@ async def fetch_key_devs_from_company_id(
     key_dev_category: KeyDevCategoryType | None = None,
 ) -> KeyDevsResp:
     """Fetch key developments for one company_id."""
-    url = "/key_devs"
+    url = "/key_devs/"
     payload: dict[str, str | int] = {
         "company_id": company_id,
     }
