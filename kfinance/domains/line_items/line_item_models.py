@@ -70,10 +70,10 @@ class LineItemType(TypedDict):
 LINE_ITEMS: list[LineItemType] = [
     {
         "name": "revenue",
-        "aliases": {"normal_revenue", "regular_revenue"},
-        "dataitemid": 112,
-        "spgi_name": "Revenue",
-        "description": "Revenue recognized from primary business activities (excludes non-operating income).",
+        "aliases": {"normal_revenue", "regular_revenue", "total_revenue"},
+        "dataitemid": 28,
+        "spgi_name": "Total Revenue",
+        "description": "Sum of operating and non-operating revenue streams for the period.",
     },
     {
         "name": "finance_division_revenue",
@@ -130,13 +130,6 @@ LINE_ITEMS: list[LineItemType] = [
         "dataitemid": 168,
         "spgi_name": "Fees and Other Income",
         "description": "Fee-based revenue combined with ancillary income streams in one line item.",
-    },
-    {
-        "name": "total_revenue",
-        "aliases": set(),
-        "dataitemid": 28,
-        "spgi_name": "Total Revenue",
-        "description": "Sum of operating and non-operating revenue streams for the period.",
     },
     {
         "name": "cost_of_goods_sold",

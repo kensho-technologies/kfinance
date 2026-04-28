@@ -223,7 +223,7 @@ class TestFindSimilarLineItems:
 
     # Preset test descriptors to ensure consistent results
     TEST_DESCRIPTORS = {
-        "revenue": "Revenue recognized from primary business activities (excludes non-operating income).",
+        "revenue": "Sum of operating and non-operating revenue streams for the period.",
         "total_revenue": "Sum of operating and non-operating revenue streams for the period.",
         "cost_of_goods_sold": "Direct costs attributable to producing goods sold during the period.",
         "cogs": "Direct costs attributable to producing goods sold during the period.",
