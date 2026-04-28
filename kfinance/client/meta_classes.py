@@ -18,6 +18,7 @@ from kfinance.domains.business_relationships.business_relationship_models import
 )
 from kfinance.domains.capitalizations.capitalization_models import Capitalization
 from kfinance.domains.companies.company_models import (
+    Auditors,
     CompanyDescriptions,
     CompanyOtherNames,
     NativeName,
@@ -41,6 +42,7 @@ class CompanyFunctionsMetaClass:
         """Initialize the CompanyFunctionsMetaClass object"""
         self._company_descriptions: CompanyDescriptions | None = None
         self._company_other_names: CompanyOtherNames | None = None
+        self._financial_auditors: Auditors | None = None
 
     @property
     @abstractmethod
@@ -504,6 +506,15 @@ class CompanyFunctionsMetaClass:
                 company_id=self.company_id
             )
         return self._company_other_names.native_names
+
+    @property
+    def financial_auditors(self) -> Auditors:
+        """Lazily fetch and return a company's financial auditors"""
+        if not self._financial_auditors:
+            self._financial_auditors = self.kfinance_api_client.fetch_company_financial_auditors(
+                company_id=self.company_id
+            )
+        return self._financial_auditors
 
     def competitors(
         self, competitor_source: CompetitorSource = CompetitorSource.all

@@ -1,6 +1,8 @@
 from enum import Enum
 import inspect
 from pathlib import Path
+import types
+from typing import Union, get_origin, get_args
 
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from pydantic._internal._repr import display_as_type
@@ -47,15 +49,15 @@ def add_function_to_tools_file(tool: KfinanceTool) -> None:
         :rtype: YearAndQuarter'''
 
     """
+    # WARNING: The logic in this file is quite brittle. At the time of writing, the doc
+    # building was broken, and I'm making small changes to get it to a basic working
+    # state based on the current tool call definitions. There's no guarantee that this
+    # logic will work for future tool calls. Working out all the import issues along with 
+    # linking the types correctly to their definitions will take more work.
 
     # The signature built with the inspect module does not include necessary imports.
     imports = ["import kfinance", "import datetime", "from typing import Optional"]
     signature_str = build_signature_str(tool)
-
-    # Use inspect to retrieve the return type and add it to the imports if it's not a builtin.
-    return_annotation = inspect.signature(tool._run).return_annotation
-    if return_annotation.__module__ != "builtins":
-        imports.append(f"from {return_annotation.__module__} import {return_annotation.__name__}")
 
     # Generate sphinx style annotations for each param.
     openai_params = convert_to_openai_tool(tool)["function"]["parameters"]["properties"]
@@ -71,7 +73,7 @@ def add_function_to_tools_file(tool: KfinanceTool) -> None:
     func_str += f'\n    """{tool.description}\n'
     func_str += args
     # Add sphinx style return annotation
-    func_str += f'\n    :rtype: {return_annotation.__name__}"""'
+    func_str += f'\n    :rtype: {inspect.signature(tool._arun).return_annotation.__name__}"""'
 
     # Write definition to tool file
     with open(inspect.getfile(tool.__class__), mode="a") as f:
@@ -89,12 +91,16 @@ def build_signature_str(tool: KfinanceTool) -> str:
     As a result, it formats default values as "<Periodicity.day: 'day'>" rather than
     "Periodicity.day".
     """
-    signature = inspect.signature(tool._run)
-
+    signature = inspect.signature(tool._arun)
     for param in signature.parameters.values():
         if isinstance(param.default, Enum):
-            # For enums, redirect __repr__ to __str__
-            param.default.__class__.__repr__ = param.default.__class__.__str__
+            # For enums, reformat how the default value gets printed.
+            param.default.__class__.__repr__ = lambda self: f"{self.__class__.__name__}.{self.name}"
+
+    # This removes the full module path from the return annotation. This is needed because for our tools
+    # at the time of writing, the return type is declared in the same file as where the tool call definition is.
+    # This means using the full module path creates a circular import and causes sphinx to fail.
+    signature = inspect.Signature.replace(signature, return_annotation=signature.return_annotation.__name__)
     return f"def {tool.name}{signature}:"
 
 
