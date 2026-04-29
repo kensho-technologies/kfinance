@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.1.1
+- Upgrade cachetools from v6 to v7
+
 ## v6.1.0
 - Add GetFinancialAuditorsFromIdentifiers
 
