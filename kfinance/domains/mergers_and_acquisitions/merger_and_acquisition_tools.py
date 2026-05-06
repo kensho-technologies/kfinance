@@ -1,3 +1,4 @@
+from datetime import date
 from textwrap import dedent
 from typing import Type
 
@@ -21,6 +22,17 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
+class GetMergersFromIdentifiersArgs(ToolArgsWithIdentifiers):
+    start_date: date | None = Field(
+        description="The start date fo",
+        default=None,
+    )
+    end_date: date | None = Field(
+        description="Bababaa",
+        default=None,
+    )
+
+
 class GetMergersFromIdentifiersResp(ToolRespWithIdInfoAndErrors[MergersResp]):
     pass
 
@@ -42,13 +54,17 @@ class GetMergersFromIdentifiers(KfinanceTool):
         Query: "Get acquisitions for AAPL and GOOGL"
         Function: get_mergers_from_identifiers(identifiers=["AAPL", "GOOGL"])
     """).strip()
-    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
+    args_schema: Type[BaseModel] = GetMergersFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    async def _arun(self, identifiers: list[str]) -> GetMergersFromIdentifiersResp:
+    async def _arun(
+        self, identifiers: list[str], start_date: date | None = None, end_date: date | None = None
+    ) -> GetMergersFromIdentifiersResp:
         """"""
         return await get_mergers_from_identifiers(
             identifiers=identifiers,
+            start_date=start_date,
+            end_date=end_date,
             httpx_client=self.kfinance_client.httpx_client,
         )
 
@@ -127,6 +143,8 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
 async def get_mergers_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx.AsyncClient,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> GetMergersFromIdentifiersResp:
     """Fetch mergers for all identifiers."""
 
@@ -140,6 +158,8 @@ async def get_mergers_from_identifiers(
             func=fetch_mergers_from_company_id,
             kwargs=dict(
                 company_id=id_triple.company_id,
+                start_date=start_date,
+                end_date=end_date,
                 httpx_client=httpx_client,
             ),
             result_key=identifier,
@@ -166,9 +186,14 @@ async def get_mergers_from_identifiers(
 async def fetch_mergers_from_company_id(
     company_id: int,
     httpx_client: httpx.AsyncClient,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> MergersResp:
     """Fetch mergers for one company_id."""
-    url = f"/mergers/{company_id}"
+    start_date_str = start_date.isoformat() if start_date else "none"
+    end_date_str = end_date.isoformat() if end_date else "none"
+
+    url = f"/mergers/{company_id}/{start_date_str}/{end_date_str}"
     resp = await httpx_client.get(url=url)
     resp.raise_for_status()
     return MergersResp.model_validate(resp.json())

@@ -30,7 +30,7 @@ class TestMergersAndAcquisitions:
         merger_data = MERGERS_RESP.model_dump(mode="json")
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/mergers/{SPGI_ID_TRIPLE.company_id}",
+            url=f"https://kfinance.kensho.com/api/v1/mergers/{SPGI_ID_TRIPLE.company_id}/none/none",
             json=merger_data,
             is_optional=True,
         )

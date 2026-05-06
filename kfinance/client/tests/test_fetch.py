@@ -383,10 +383,20 @@ class TestFetchItem(TestCase):
 
     def test_fetch_mergers_for_company(self) -> None:
         company_id = 21719
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}mergers/{company_id}"
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}mergers/{company_id}/none/none"
         # Validation error is ok, we only care that the function was called with the correct url
         with pytest.raises(ValidationError):
             self.kfinance_api_client.fetch_mergers_for_company(company_id=company_id)
+        self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
+    
+    def test_fetch_mergers_with_date_range_for_company(self) -> None:
+        company_id = 21719
+        start_date = '2020-01-01'
+        end_date = '2022-09-31'
+        expected_fetch_url = f"{self.kfinance_api_client.url_base}mergers/{company_id}/{start_date}/{end_date}"
+        # Validation error is ok, we only care that the function was called with the correct url
+        with pytest.raises(ValidationError):
+            self.kfinance_api_client.fetch_mergers_for_company(company_id=company_id, start_date=start_date, end_date=end_date)
         self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
 
     def test_fetch_merger_info(self) -> None:

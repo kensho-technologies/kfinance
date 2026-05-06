@@ -644,6 +644,27 @@ class Company(CompanyFunctionsMetaClass):
                 )
             self._mergers_for_company = output
         return self._mergers_for_company
+    
+    def mergers_and_acquisitions_within_dates(self, start_date: date | None, end_date: date | None) -> dict[str, MergersAndAcquisitions]:
+        if start_date is None and end_date is not None:
+            return self.mergers_and_acquisitions
+        
+        # We can't use self.mergers_and_acquisitions here. The date range filter
+        # on the server side checks for any event associated with a merger that
+        # falls within the date range. We only fetch closed_date from the server
+        # so we cannot do this filtering ourselves and need to refetch from the server.
+        mergers = self.kfinance_api_client.fetch_mergers_for_company(
+            company_id=self.company_id,
+            start_date=start_date.isoformat() if start_date else None,
+            end_date=end_date.isoformat() if end_date else None,
+        ).model_dump(mode="json")
+
+        output: dict[str, MergersAndAcquisitions] = {}
+        for literal in ["target", "buyer", "seller"]:
+            output[literal] = MergersAndAcquisitions(
+                self.kfinance_api_client, mergers[literal]
+            )
+        return output
 
     @property
     def rounds_of_funding(self) -> RoundsOfFunding:
