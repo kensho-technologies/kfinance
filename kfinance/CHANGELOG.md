@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.1.2
+- Update revenue aliases
+
 ## v6.1.1
 - Upgrade cachetools from v6 to v7
 
