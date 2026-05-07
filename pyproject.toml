@@ -18,7 +18,7 @@ classifiers = [
 
 
 dependencies = [
-    "asyncer==0.0.14",
+    "asyncer==0.0.17",
     "cachetools>=7,<8",
     "click>=8.2.1,<=9",
     "fastmcp>=3.2.0,<4",

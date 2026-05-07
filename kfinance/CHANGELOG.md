@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.1.3
+- Bump asyncer to 0.0.17
+
 ## v6.1.2
 - Update revenue aliases
 
