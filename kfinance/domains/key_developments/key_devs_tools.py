@@ -56,7 +56,7 @@ class GetKeyDevsFromIdentifier(KfinanceTool):
         Function: get_key_devs_from_identifier(identifier="S&P Global", start_date="2025-10-01", end_date="2025-11-30")
 
         Query: "Get transaction-related key developments for Apple in 2025"
-        Function: get_key_devs_from_identifier(identifier="Apple", start_date="2025-01-01", end_date="2025-12-31", key_dev_category=2)
+        Function: get_key_devs_from_identifier(identifier="Apple", start_date="2025-01-01", end_date="2025-12-31", key_dev_category="ANNOUNCED_OR_COMPLETED_TRANSACTIONS")
     """).strip()
     args_schema: Type[BaseModel] = GetKeyDevsFromIdentifierArgs
     accepted_permissions: set[Permission] | None = {Permission.EarningsPermission}
