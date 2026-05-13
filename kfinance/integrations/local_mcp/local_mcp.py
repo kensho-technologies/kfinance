@@ -36,12 +36,21 @@ def build_mcp_tool_from_kfinance_tool(kfinance_tool: KfinanceTool) -> FunctionTo
 
 
 @click.command()
-@click.option("--stdio/--sse", "-s/ ", default=False)
+@click.option("--stdio", "-s", "transport", flag_value="stdio", help="Use stdio transport")
+@click.option(
+    "--sse", "transport", flag_value="sse", default=True, help="Use SSE transport (default)"
+)
+@click.option(
+    "--streamable-http",
+    "transport",
+    flag_value="streamable-http",
+    help="Use streamable HTTP transport",
+)
 @click.option("--refresh-token", required=False)
 @click.option("--client-id", required=False)
 @click.option("--private-key", required=False)
 def run_mcp(
-    stdio: bool,
+    transport: Literal["stdio", "sse", "streamable-http"],
     refresh_token: Optional[str] = None,
     client_id: Optional[str] = None,
     private_key: Optional[str] = None,
@@ -57,8 +66,8 @@ def run_mcp(
     2. Key Pair: Uses client ID and private key for authentication
     3. Browser: Falls back to browser-based authentication flow
 
-    :param stdio: If True, use STDIO transport; if False, use SSE transport.
-    :type stdio: bool
+    :param transport: Transport protocol (stdio, sse, or streamable-http).
+    :type transport: Literal["stdio", "sse", "streamable-http"]
     :param refresh_token: OAuth refresh token for authentication
     :type refresh_token: str
     :param client_id: Client id for key-pair authentication
@@ -66,8 +75,7 @@ def run_mcp(
     :param private_key: Private key for key-pair authentication.
     :type private_key: str
     """
-    transport: Literal["stdio", "sse"] = "stdio" if stdio else "sse"
-    logger.info("Sever will run with %s transport", transport)
+    logger.info("Server will run with %s transport", transport)
     if refresh_token:
         logger.info("The client will be authenticated using a refresh token")
         kfinance_client = Client(refresh_token=refresh_token)
