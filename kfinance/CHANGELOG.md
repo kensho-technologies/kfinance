@@ -1,5 +1,7 @@
 # Changelog
 
+## v6.1.4
+- Add streamable-http option to local mcp server.
 ## v6.1.3
 - Bump asyncer to 0.0.17
 
