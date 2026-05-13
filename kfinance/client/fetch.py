@@ -724,10 +724,7 @@ class KFinanceApiClient:
         return CompetitorResponse.model_validate(self.fetch(url))
 
     def fetch_mergers_for_company(
-        self,
-        company_id: int,
-        start_date: str | None = None,
-        end_date: str | None = None
+        self, company_id: int, start_date: str | None = None, end_date: str | None = None
     ) -> MergersResp:
         """Fetches the mergers and acquisitions the given company was involved in.
 

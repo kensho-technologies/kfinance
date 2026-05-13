@@ -644,15 +644,34 @@ class Company(CompanyFunctionsMetaClass):
                 )
             self._mergers_for_company = output
         return self._mergers_for_company
-    
-    def mergers_and_acquisitions_within_dates(self, start_date: date | None, end_date: date | None) -> dict[str, MergersAndAcquisitions]:
+
+    def mergers_and_acquisitions_within_dates(
+        self, start_date: date | None, end_date: date | None
+    ) -> dict[str, MergersAndAcquisitions]:
+        """Get the merger and acquisitions this company has been party to, within the specified date range.
+
+        If a start_date and/or end_date is specified, only mergers where the merger
+        timeline intersects with the date range are returned. The merger timeline is
+        considered to be from the earliest event associated with the merger to
+        the latest event. If any date between (and inclusive of) these two event dates
+        falls within the passed-in date range, the merger is returned. If only an
+        announcement date is found for a merger, the merger timeline is taken to be
+        until the earlier of the current date or 10 years after the announcement date.
+
+        :param start_date: The start date for the date range filter.
+        :type start_date: date, optional
+        :param end_date: The end date for the date range filter.
+        :type end_date: date, optional
+        :return: three lists of transactions, one each for 'target', 'buyer', and 'seller'
+        :rtype: dict[str, MergersAndAcquisitions]
+        """
         if start_date is None and end_date is not None:
             return self.mergers_and_acquisitions
-        
+
         # We can't use self.mergers_and_acquisitions here. The date range filter
-        # on the server side checks for any event associated with a merger that
-        # falls within the date range. We only fetch closed_date from the server
-        # so we cannot do this filtering ourselves and need to refetch from the server.
+        # on the server side requires all events associated with a merger.
+        # We only fetch closed_date from the server, so we cannot do this filtering
+        # ourselves.
         mergers = self.kfinance_api_client.fetch_mergers_for_company(
             company_id=self.company_id,
             start_date=start_date.isoformat() if start_date else None,
@@ -661,9 +680,7 @@ class Company(CompanyFunctionsMetaClass):
 
         output: dict[str, MergersAndAcquisitions] = {}
         for literal in ["target", "buyer", "seller"]:
-            output[literal] = MergersAndAcquisitions(
-                self.kfinance_api_client, mergers[literal]
-            )
+            output[literal] = MergersAndAcquisitions(self.kfinance_api_client, mergers[literal])
         return output
 
     @property

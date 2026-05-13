@@ -24,11 +24,11 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 
 class GetMergersFromIdentifiersArgs(ToolArgsWithIdentifiers):
     start_date: date | None = Field(
-        description="The start date fo",
+        description="The start date for merger date-range filtering. Use null for all mergers.",
         default=None,
     )
     end_date: date | None = Field(
-        description="Bababaa",
+        description="The end date for merge date-range filtering. Use null for all mergers.",
         default=None,
     )
 
@@ -42,9 +42,19 @@ class GetMergersFromIdentifiers(KfinanceTool):
     description: str = dedent("""
         Retrieves all merger and acquisition transactions involving the specified company.
 
+        If a start_date and/or end_date is specified, only mergers where the merger
+        timeline intersects with the date range are returned. The merger timeline is
+        considered to be from the earliest event associated with the merger to
+        the latest event. If any date between (and inclusive of) these two event dates
+        falls within the passed-in date range, the merger is returned. If only an
+        announcement date is found for a merger, the merger timeline is taken to be
+        until the earlier of the current date or 10 years after the announcement date.
+
         Results are categorized by the company's role: target (being acquired), buyer (making the acquisition), or seller (divesting an asset).
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - When requesting all mergers, leave start_date and end_date null.
+        - Only specify date ranges when the user explicitly requests mergers and acquisitions during some date range.
         - Provides transaction_id, merger_title, and transaction closed_date.
 
         Examples:
@@ -53,6 +63,9 @@ class GetMergersFromIdentifiers(KfinanceTool):
 
         Query: "Get acquisitions for AAPL and GOOGL"
         Function: get_mergers_from_identifiers(identifiers=["AAPL", "GOOGL"])
+                              
+        Query: "What companies was Apple selling between 2019 and 2022?"
+        Function: get_mergers_from_identifiers(identifiers=["Apple"], start_date="2019-01-01", end_date="2022-12-31")
     """).strip()
     args_schema: Type[BaseModel] = GetMergersFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
