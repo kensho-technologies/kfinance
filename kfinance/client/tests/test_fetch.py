@@ -25,6 +25,7 @@ from kfinance.domains.estimates.estimates_models import (
     ConsensusTargetPrice,
     ConsensusTargetPriceItem,
 )
+from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType
 from kfinance.domains.segments.segment_models import SegmentType
 
 
@@ -496,6 +497,48 @@ class TestFetchItem(TestCase):
         )
         self.kfinance_api_client.fetch.assert_called_with(expected_url)
         assert result == expected_result
+
+    def test_fetch_key_devs(self) -> None:
+
+        company_id = 21719
+        expected_url = f"{self.kfinance_api_client.url_base}key_devs/"
+
+        # test with only required parameter
+        expected_request_body = {
+            "company_id": company_id,
+        }
+        # mock the response to have the expected structure
+        self.kfinance_api_client.fetch.return_value = {"results": {}, "next_time_band": None}
+        result = self.kfinance_api_client.fetch_key_devs(company_id=company_id)
+        self.kfinance_api_client.fetch.assert_called_with(
+            expected_url, method="POST", request_body=expected_request_body
+        )
+        # verify the result is a KeyDevsResp
+        assert "results" in result.model_dump()
+
+        # test with all optional parameters
+        start_date = "2025-01-01"
+        end_date = "2025-12-31"
+        key_dev_category = KeyDevCategoryType.ANNOUNCED_OR_COMPLETED_TRANSACTIONS
+        expected_request_body = {
+            "company_id": company_id,
+            "start_date": start_date,
+            "end_date": end_date,
+            "key_dev_category": key_dev_category.value,
+        }
+        # mock the response
+        self.kfinance_api_client.fetch.return_value = {"results": {}, "next_time_band": None}
+        result = self.kfinance_api_client.fetch_key_devs(
+            company_id=company_id,
+            start_date=start_date,
+            end_date=end_date,
+            key_dev_category=key_dev_category,
+        )
+        self.kfinance_api_client.fetch.assert_called_with(
+            expected_url, method="POST", request_body=expected_request_body
+        )
+        # verify the result is a KeyDevsResp
+        assert "results" in result.model_dump()
 
 
 class TestMarketCap:
