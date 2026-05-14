@@ -8,11 +8,11 @@ class KeyDevelopment(BaseModel):
     """A single key development event."""
 
     key_dev_id: int
-    situation: str
-    announced_date_utc: datetime
-    most_important_date_utc: datetime
-    source: str
-    company_role: str
+    situation: str | None = None
+    announced_date_utc: datetime | None = None
+    most_important_date_utc: datetime | None = None
+    source: str | None = None
+    company_role: str | None = None
 
 
 class KeyDevsResp(BaseModel):

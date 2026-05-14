@@ -224,3 +224,56 @@ class TestKeyDevs:
         )
 
         assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_key_devs_with_optional_fields_none(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN the API returns key developments with optional fields as None
+        THEN the response is parsed correctly without validation errors.
+        """
+        httpx_mock.add_response(
+            method="POST",
+            url="https://kfinance.kensho.com/api/v1/key_devs/",
+            json={
+                "results": {
+                    "Client Announcements": [
+                        {
+                            "key_dev_id": 1003,
+                            "situation": None,
+                            "announced_date_utc": None,
+                            "most_important_date_utc": None,
+                            "source": None,
+                            "company_role": None,
+                        }
+                    ],
+                },
+                "next_time_band": None,
+                "notes": None,
+            },
+        )
+
+        resp = await fetch_key_devs_from_company_id(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+        )
+
+        expected_resp = KeyDevsResp(
+            results={
+                "Client Announcements": [
+                    KeyDevelopment(
+                        key_dev_id=1003,
+                        situation=None,
+                        announced_date_utc=None,
+                        most_important_date_utc=None,
+                        source=None,
+                        company_role=None,
+                    )
+                ],
+            },
+            next_time_band=None,
+            notes=None,
+        )
+
+        assert resp == expected_resp
