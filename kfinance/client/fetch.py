@@ -37,6 +37,7 @@ from kfinance.domains.estimates.estimates_models import (
     ConsensusTargetPrice,
     Estimates,
 )
+from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType, KeyDevsResp
 from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerInfo,
@@ -902,3 +903,40 @@ class KFinanceApiClient:
         url = f"{self.url_base}estimates/analyst_recommendations/{company_id}"
         response_data = self.fetch(url)
         return SingleResultResp[AnalystRecommendations].model_validate(response_data)
+
+    def fetch_key_devs(
+        self,
+        company_id: int,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        key_dev_category: Optional[KeyDevCategoryType] = None,
+    ) -> KeyDevsResp:
+        """Get key development events for a company.
+
+        :param company_id: The company ID to fetch key developments for.
+        :type company_id: int
+        :param start_date: The start date for key developments (ISO format: YYYY-MM-DD). Optional.
+        :type start_date: str, Optional
+        :param end_date: The end date for key developments (ISO format: YYYY-MM-DD). Optional.
+        :type end_date: str, Optional
+        :param key_dev_category: Optional category filter for key developments.
+        :type key_dev_category: KeyDevCategoryType, Optional
+        :return: Key developments response containing events grouped by category.
+        :rtype: KeyDevsResp
+        """
+        url = f"{self.url_base}key_devs/"
+
+        request_body: dict[str, str | int] = {
+            "company_id": company_id,
+        }
+
+        # add optional fields if provided
+        if start_date is not None:
+            request_body["start_date"] = start_date
+        if end_date is not None:
+            request_body["end_date"] = end_date
+        if key_dev_category is not None:
+            request_body["key_dev_category"] = key_dev_category.value
+
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+        return KeyDevsResp.model_validate(response_data)

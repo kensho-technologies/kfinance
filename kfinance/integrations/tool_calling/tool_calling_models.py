@@ -135,7 +135,7 @@ class ToolArgsWithIdentifier(BaseModel):
     """
 
     identifier: str = Field(
-        description="The identifier, which can be a ticker symbol, ISIN, CUSIP, or company_id"
+        description="The identifier, which can be a ticker symbol, ISIN, CUSIP, company name, or company_id"
     )
 
 
@@ -148,7 +148,7 @@ class ToolArgsWithIdentifiers(BaseModel):
 
     identifiers: list[str] = Field(
         min_length=1,
-        description="The identifiers, which can be a list of ticker symbols, ISINs, or CUSIPs, or company_ids",
+        description="The identifiers, which can be a list of ticker symbols, ISINs, CUSIPs, company names, or company_ids",
     )
 
 
