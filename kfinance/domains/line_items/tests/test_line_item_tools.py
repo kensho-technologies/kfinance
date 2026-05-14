@@ -223,7 +223,7 @@ class TestFindSimilarLineItems:
 
     # Preset test descriptors to ensure consistent results
     TEST_DESCRIPTORS = {
-        "revenue": "Revenue recognized from primary business activities (excludes non-operating income).",
+        "regular_revenue": "Revenue recognized from primary business activities (excludes non-operating income).",
         "total_revenue": "Sum of operating and non-operating revenue streams for the period.",
         "cost_of_goods_sold": "Direct costs attributable to producing goods sold during the period.",
         "cogs": "Direct costs attributable to producing goods sold during the period.",
@@ -248,7 +248,7 @@ class TestFindSimilarLineItems:
         assert isinstance(results[0], LineItemScore)
         # Check that revenue or total_revenue is in top results
         result_names = [item.name for item in results]
-        assert "revenue" in result_names or "total_revenue" in result_names
+        assert "regular_revenue" in result_names or "total_revenue" in result_names
 
     def test_acronym_matching(self) -> None:
         """

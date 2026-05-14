@@ -1,7 +1,7 @@
 kfinance
 ========
 
-.. automodule:: kfinance.kfinance
+.. automodule:: kfinance
    :members:
    :undoc-members:
    :inherited-members:
