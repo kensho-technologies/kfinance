@@ -39,7 +39,7 @@ This function initializes and starts an MCP server that exposes the kFinance too
 
 The server's full signature is as follows:
 
-`kfinance.mcp [--stdio,-s]/[--sse, ] --refresh-token <refresh-token> --client-id <client-id> --private-key <private-key>`
+`kfinance.mcp [--stdio|-s|--sse|--streamable-http] --refresh-token <refresh-token> --client-id <client-id> --private-key <private-key>`
 
 Authentication Methods (in order of precedence):
 
@@ -49,8 +49,21 @@ Authentication Methods (in order of precedence):
 
 Transport Layers:
 
-- stdio can be set by passing either `--stdio` or `-s`
-- sse can be set by passing `--sse` or no other transport related flag
+- `--stdio` / `-s`: Standard input/output transport (use with MCP Inspector)
+- `--sse`: Server-Sent Events transport (default)
+- `--streamable-http`: HTTP transport
+
+Examples:
+```bash
+# Using stdio with MCP Inspector
+npx @modelcontextprotocol/inspector python -m kfinance.mcp --stdio --refresh-token <token>
+
+# Using SSE (default)
+python -m kfinance.mcp --refresh-token <token>
+
+# Using streamable-http
+python -m kfinance.mcp --streamable-http --refresh-token <token>
+```
 
 # Development
 

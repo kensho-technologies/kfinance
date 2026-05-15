@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.2.1
+- Add streamable-http option to local mcp server.
+
 ## v6.2.0
 - Add GetKeyDevsFromIdentifier
 
