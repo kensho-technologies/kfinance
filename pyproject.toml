@@ -1,6 +1,7 @@
 [project]
 name = "kensho-kfinance"
 dynamic = ["version"]
+license = {file = "LICENSE"}
 authors = [
   { name="Luke Brown", email="luke.brown@kensho.com" },
   { name="Michelle Keoy", email="michelle.keoy@kensho.com" },
@@ -12,6 +13,7 @@ description = "Python CLI for kFinance"
 readme = "README.md"
 requires-python = ">=3.10,<4"
 classifiers = [
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
