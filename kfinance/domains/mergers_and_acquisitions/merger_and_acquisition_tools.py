@@ -63,7 +63,7 @@ class GetMergersFromIdentifiers(KfinanceTool):
 
         Query: "Get acquisitions for AAPL and GOOGL"
         Function: get_mergers_from_identifiers(identifiers=["AAPL", "GOOGL"])
-                              
+
         Query: "What companies was Apple selling between 2019 and 2022?"
         Function: get_mergers_from_identifiers(identifiers=["Apple"], start_date="2019-01-01", end_date="2022-12-31")
     """).strip()
