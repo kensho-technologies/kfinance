@@ -5,6 +5,7 @@ from asyncer import syncify
 from httpx import HTTPStatusError
 from langchain_core.tools import BaseTool
 from pydantic import (
+    AfterValidator,
     BaseModel,
     BeforeValidator,
     ConfigDict,
@@ -159,12 +160,24 @@ def convert_str_to_int(v: Any) -> Any:
     return v
 
 
-# Valid Quarter is a literal type, which converts strings to int before
-# validating them.
-# Claude seems to often pass strings to int literals, which raise a
-# ValidationError during deserialization unless they have been converted
-# to int.
-ValidQuarter = Annotated[Literal[1, 2, 3, 4], BeforeValidator(convert_str_to_int)]
+def convert_int_to_str(v: Any) -> Any:
+    """Convert integers to strings if possible."""
+    if isinstance(v, int):
+        return str(v)
+    return v
+
+
+# ValidQuarter is a string literal type. Gemini throws 500 internal error on int enum values.
+# Support ticket: https://console.cloud.google.com/support/cases/detail/v2/70990622?project=kensho-groundings-poc
+# Claude seems to often pass integers to enum fields, which raise a ValidationError
+# during deserialization unless they have been converted to str.
+# BeforeValidator: convert possible int to str before Literal validation.
+# AfterValidator: convert str back to int to stay consistent with internal kfinance logic.
+ValidQuarter = Annotated[
+    Literal["1", "2", "3", "4"],
+    BeforeValidator(convert_int_to_str),
+    AfterValidator(convert_str_to_int),
+]
 
 
 class ToolRespWithErrors(BaseModel):

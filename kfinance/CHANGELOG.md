@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.2.2
+- Change ValidQuarter enum from integer to string for Gemini compatibility
+
 ## v6.2.1
 - Add streamable-http option to local mcp server.
 
