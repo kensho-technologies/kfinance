@@ -69,8 +69,8 @@ class LineItemType(TypedDict):
 # all of these values must be lower case keys
 LINE_ITEMS: list[LineItemType] = [
     {
-        "name": "revenue",
-        "aliases": {"normal_revenue", "regular_revenue"},
+        "name": "regular_revenue",
+        "aliases": {"normal_revenue", "operating_revenue"},
         "dataitemid": 112,
         "spgi_name": "Revenue",
         "description": "Revenue recognized from primary business activities (excludes non-operating income).",
@@ -133,7 +133,7 @@ LINE_ITEMS: list[LineItemType] = [
     },
     {
         "name": "total_revenue",
-        "aliases": set(),
+        "aliases": {"revenue", "combined_revenue"},
         "dataitemid": 28,
         "spgi_name": "Total Revenue",
         "description": "Sum of operating and non-operating revenue streams for the period.",

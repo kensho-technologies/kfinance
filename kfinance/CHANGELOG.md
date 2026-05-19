@@ -1,5 +1,17 @@
 # Changelog
 
+## v6.2.1
+- Add streamable-http option to local mcp server.
+
+## v6.2.0
+- Add GetKeyDevsFromIdentifier
+
+## v6.1.3
+- Bump asyncer to 0.0.17
+
+## v6.1.2
+- Update revenue aliases
+
 ## v6.1.1
 - Upgrade cachetools from v6 to v7
 
