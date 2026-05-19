@@ -28,7 +28,7 @@ class GetMergersFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=None,
     )
     end_date: date | None = Field(
-        description="The end date for merge date-range filtering. Use null for all mergers.",
+        description="The end date for merger date-range filtering. Use null for all mergers.",
         default=None,
     )
 
