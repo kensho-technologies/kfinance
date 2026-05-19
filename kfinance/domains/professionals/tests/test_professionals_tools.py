@@ -30,7 +30,6 @@ SPGI_BOARD_MEMBER = CompanyProfessional(
     start_date="2015-01-01",
     end_date=None,
     is_current=True,
-    compensation={},
 )
 
 SPGI_EMPLOYEE = CompanyProfessional(
@@ -230,6 +229,44 @@ class TestGetProfessionalsFromIdentifiers:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
+    async def test_include_compensation_false_strips_compensation(
+        self, httpx_client: httpx.AsyncClient, add_spgi_employee_mock_resp: None
+    ) -> None:
+        """
+        WHEN we fetch employees with include_compensation=False
+        THEN compensation is stripped from all professionals.
+        """
+        resp = await get_professionals_from_identifiers(
+            identifiers=["SPGI"],
+            httpx_client=httpx_client,
+            professional_type=ProfessionalType.employees,
+            timeframe=Timeframe.current,
+            include_compensation=False,
+        )
+        for func_professionals in resp.identifier_results.values():
+            for professionals in func_professionals.values():
+                for professional in professionals:
+                    assert professional.compensation is None
+
+    @pytest.mark.asyncio
+    async def test_include_compensation_true_keeps_compensation(
+        self, httpx_client: httpx.AsyncClient, add_spgi_employee_mock_resp: None
+    ) -> None:
+        """
+        WHEN we fetch employees with include_compensation=True
+        THEN compensation is included in the response.
+        """
+        resp = await get_professionals_from_identifiers(
+            identifiers=["SPGI"],
+            httpx_client=httpx_client,
+            professional_type=ProfessionalType.employees,
+            timeframe=Timeframe.current,
+            include_compensation=True,
+        )
+        ceo = resp.identifier_results["SPGI"]["Chief Executive Officer"][0]
+        assert ceo.compensation == {"2023": {"Annual Base Salary": 1000000.0}}
+
+    @pytest.mark.asyncio
     async def test_get_professionals_with_invalid_identifier(
         self,
         httpx_client: httpx.AsyncClient,
@@ -288,3 +325,72 @@ class TestGetProfessionalsFromPersonIds:
         )
         assert str(SPGI_CEO_PERSON_ID) in resp.results
         assert len(resp.errors) == 1
+
+    @pytest.mark.asyncio
+    async def test_include_biography_false_strips_biography(
+        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+    ) -> None:
+        """
+        WHEN we fetch person professionals with include_biography=False
+        THEN biography is stripped from all results.
+        """
+        resp = await get_professionals_from_person_ids(
+            person_ids=[SPGI_CEO_PERSON_ID],
+            httpx_client=httpx_client,
+            include_biography=False,
+        )
+        assert resp.results[str(SPGI_CEO_PERSON_ID)].biography is None
+
+    @pytest.mark.asyncio
+    async def test_include_biography_true_keeps_biography(
+        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+    ) -> None:
+        """
+        WHEN we fetch person professionals with include_biography=True
+        THEN biography is included in the response.
+        """
+        resp = await get_professionals_from_person_ids(
+            person_ids=[SPGI_CEO_PERSON_ID],
+            httpx_client=httpx_client,
+            include_biography=True,
+        )
+        assert (
+            resp.results[str(SPGI_CEO_PERSON_ID)].biography
+            == "John Smith is the CEO of S&P Global Inc."
+        )
+
+    @pytest.mark.asyncio
+    async def test_include_compensation_false_strips_compensation(
+        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+    ) -> None:
+        """
+        WHEN we fetch person professionals with include_compensation=False
+        THEN compensation is stripped from all roles.
+        """
+        resp = await get_professionals_from_person_ids(
+            person_ids=[SPGI_CEO_PERSON_ID],
+            httpx_client=httpx_client,
+            include_compensation=False,
+        )
+        person = resp.results[str(SPGI_CEO_PERSON_ID)]
+        for func_roles in person.roles.values():
+            for roles in func_roles.values():
+                for role in roles:
+                    assert role.compensation is None
+
+    @pytest.mark.asyncio
+    async def test_include_compensation_true_keeps_compensation(
+        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+    ) -> None:
+        """
+        WHEN we fetch person professionals with include_compensation=True
+        THEN compensation is included in the response.
+        """
+        resp = await get_professionals_from_person_ids(
+            person_ids=[SPGI_CEO_PERSON_ID],
+            httpx_client=httpx_client,
+            include_compensation=True,
+        )
+        person = resp.results[str(SPGI_CEO_PERSON_ID)]
+        ceo_role = person.roles[str(SPGI_COMPANY_ID)]["Chief Executive Officer"][0]
+        assert ceo_role.compensation == {"2023": {"Annual Base Salary": 1000000.0}}

@@ -31,6 +31,10 @@ class GetProfessionalsFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=Timeframe.all,
         description="Filter by timeframe: 'all', 'current', or 'prior'.",
     )
+    include_compensation: bool = Field(
+        default=False,
+        description="Whether to include compensation data in the response. Defaults to False.",
+    )
 
 
 class GetProfessionalsFromIdentifiersResp(
@@ -60,6 +64,9 @@ class GetProfessionalsFromIdentifiers(KfinanceTool):
 
         Query: "Who were the past employees of Netflix?"
         Function: get_professionals_from_identifiers(identifiers=["Netflix"], professional_type="employees", timeframe="prior")
+
+        Query: "Who are the current board members of Apple, including compensation details?"
+        Function: get_professionals_from_identifiers(identifiers=["Apple"], professional_type="board_members", timeframe="current", include_compensation=True)
     """).strip()
     args_schema: Type[BaseModel] = GetProfessionalsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.ProfessionalsPermission}
@@ -69,12 +76,14 @@ class GetProfessionalsFromIdentifiers(KfinanceTool):
         identifiers: list[str],
         professional_type: ProfessionalType,
         timeframe: Timeframe = Timeframe.all,
+        include_compensation: bool = False,
     ) -> GetProfessionalsFromIdentifiersResp:
         return await get_professionals_from_identifiers(
             identifiers=identifiers,
             httpx_client=self.kfinance_client.httpx_client,
             professional_type=professional_type,
             timeframe=timeframe,
+            include_compensation=include_compensation,
         )
 
 
@@ -82,6 +91,14 @@ class GetProfessionalsFromPersonIdsArgs(BaseModel):
     person_ids: list[int] = Field(
         min_length=1,
         description="List of person_ids to look up professional history for.",
+    )
+    include_compensation: bool = Field(
+        default=False,
+        description="Whether to include compensation data in the response. Defaults to False.",
+    )
+    include_biography: bool = Field(
+        default=False,
+        description="Whether to include biography in the response. Defaults to False.",
     )
 
 
@@ -106,6 +123,9 @@ class GetProfessionalsFromPersonIds(KfinanceTool):
 
         Query: "Get career histories for person_ids 169600 and 12345"
         Function: get_professionals_from_person_ids(person_ids=[169600, 12345])
+
+        Query: "Get Tim Cook's career history including biography and compensation"
+        Function: get_professionals_from_person_ids(person_ids=[169600], include_compensation=True, include_biography=True)
     """).strip()
     args_schema: Type[BaseModel] = GetProfessionalsFromPersonIdsArgs
     accepted_permissions: set[Permission] | None = {Permission.ProfessionalsPermission}
@@ -113,10 +133,14 @@ class GetProfessionalsFromPersonIds(KfinanceTool):
     async def _arun(
         self,
         person_ids: list[int],
+        include_compensation: bool = False,
+        include_biography: bool = False,
     ) -> GetProfessionalsFromPersonIdsResp:
         return await get_professionals_from_person_ids(
             person_ids=person_ids,
             httpx_client=self.kfinance_client.httpx_client,
+            include_compensation=include_compensation,
+            include_biography=include_biography,
         )
 
 
@@ -125,6 +149,7 @@ async def get_professionals_from_identifiers(
     httpx_client: httpx.AsyncClient,
     professional_type: ProfessionalType,
     timeframe: Timeframe = Timeframe.all,
+    include_compensation: bool = False,
 ) -> GetProfessionalsFromIdentifiersResp:
     """Fetch company professionals for all identifiers."""
 
@@ -157,6 +182,12 @@ async def get_professionals_from_identifiers(
             company_resp: CompanyProfessionalsResp = task.result
             results[task.result_key] = company_resp.results.get(str(task.kwargs["company_id"]), {})
 
+    if not include_compensation:
+        for func_professionals in results.values():
+            for professionals in func_professionals.values():
+                for professional in professionals:
+                    professional.compensation = None
+
     return GetProfessionalsFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
@@ -167,6 +198,8 @@ async def get_professionals_from_identifiers(
 async def get_professionals_from_person_ids(
     person_ids: list[int],
     httpx_client: httpx.AsyncClient,
+    include_compensation: bool = False,
+    include_biography: bool = False,
 ) -> GetProfessionalsFromPersonIdsResp:
     """Fetch professional history for all person_ids."""
     tasks = [
@@ -188,6 +221,17 @@ async def get_professionals_from_person_ids(
         else:
             person_resp: PersonProfessionalsResp = task.result
             results.update(person_resp.results)
+
+    if not include_biography:
+        for person in results.values():
+            person.biography = None
+
+    if not include_compensation:
+        for person in results.values():
+            for func_roles in person.roles.values():
+                for roles in func_roles.values():
+                    for role in roles:
+                        role.compensation = None
 
     return GetProfessionalsFromPersonIdsResp(results=results, errors=errors)
 

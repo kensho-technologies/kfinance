@@ -29,7 +29,7 @@ class CompanyProfessional(BaseModel):
     professional_types: list[str] = []
     person_id: int
     # keyed by fiscal year (str), then by compensation type name
-    compensation: dict[str, dict[str, Any]] = {}
+    compensation: dict[str, dict[str, Any]] | None = None
 
 
 class CompanyProfessionalsResp(BaseModel):
@@ -46,7 +46,7 @@ class PersonRole(BaseModel):
     is_current: bool | None = None
     professional_types: list[str] = []
     # keyed by fiscal year (str), then by compensation type name
-    compensation: dict[str, dict[str, Any]] = {}
+    compensation: dict[str, dict[str, Any]] | None = None
 
 
 class PersonProfessionalsResult(BaseModel):
