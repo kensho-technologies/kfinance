@@ -119,6 +119,119 @@ def add_spgi_person_mock_resp(httpx_mock: HTTPXMock) -> None:
     )
 
 
+class TestBuildName:
+    def test_first_and_last_name(self) -> None:
+        """
+        WHEN only first and last name are provided
+        THEN name is "{first} {last}".
+        """
+        p = CompanyProfessional(person_id=1, first_name="Jane", last_name="Doe")
+        assert p.name == "Jane Doe"
+
+    def test_first_middle_last(self) -> None:
+        """
+        WHEN first, middle, and last name are provided
+        THEN name includes all three.
+        """
+        p = CompanyProfessional(
+            person_id=1, first_name="Jane", middle_name="Marie", last_name="Doe"
+        )
+        assert p.name == "Jane Marie Doe"
+
+    def test_salutation_is_quoted(self) -> None:
+        """
+        WHEN a salutation is provided
+        THEN it is wrapped in quotes between middle and last name.
+        """
+        p = CompanyProfessional(
+            person_id=1, first_name="Jane", salutation="Jimmy", last_name="Doe"
+        )
+        assert p.name == 'Jane "Jimmy" Doe'
+
+    def test_suffix(self) -> None:
+        """
+        WHEN a suffix is provided
+        THEN it appears at the end of the name.
+        """
+        p = CompanyProfessional(person_id=1, first_name="Jane", last_name="Doe", suffix="Jr.")
+        assert p.name == "Jane Doe Jr."
+
+    def test_all_parts(self) -> None:
+        """
+        WHEN all name parts are provided
+        THEN name follows [First] [Middle] "[Salutation]" [Last] [Suffix] format.
+        """
+        p = CompanyProfessional(
+            person_id=1,
+            first_name="Jane",
+            middle_name="Marie",
+            salutation="Jimmy",
+            last_name="Doe",
+            suffix="Jr.",
+        )
+        assert p.name == 'Jane Marie "Jimmy" Doe Jr.'
+
+    def test_none_parts_are_skipped(self) -> None:
+        """
+        WHEN some name parts are None
+        THEN only present parts appear in name.
+        """
+        p = CompanyProfessional(person_id=1, first_name="Jane", last_name="Doe", suffix=None)
+        assert p.name == "Jane Doe"
+
+    def test_all_parts_none_gives_none_name(self) -> None:
+        """
+        WHEN no name parts are provided
+        THEN name is None.
+        """
+        p = CompanyProfessional(person_id=1)
+        assert p.name is None
+
+    def test_existing_name_not_overwritten(self) -> None:
+        """
+        WHEN name is explicitly provided along with individual parts
+        THEN the explicit name is preserved.
+        """
+        p = CompanyProfessional(
+            person_id=1, name="Custom Name", first_name="Jane", last_name="Doe"
+        )
+        assert p.name == "Custom Name"
+
+    def test_prefix_is_separate_from_name(self) -> None:
+        """
+        WHEN prefix is provided
+        THEN it is stored as a separate field and not included in name.
+        """
+        p = CompanyProfessional(
+            person_id=1, prefix="Dr.", first_name="Jane", last_name="Doe"
+        )
+        assert p.name == "Jane Doe"
+        assert p.prefix == "Dr."
+
+    def test_person_professionals_result_build_name(self) -> None:
+        """
+        WHEN building a PersonProfessionalsResult with individual name parts
+        THEN name is assembled the same way.
+        """
+        p = PersonProfessionalsResult(
+            first_name="John",
+            middle_name="William",
+            salutation="Johnny",
+            last_name="Smith",
+            suffix="III",
+        )
+        assert p.name == 'John William "Johnny" Smith III'
+
+    def test_person_professionals_result_prefix_is_separate(self) -> None:
+        """
+        WHEN a PersonProfessionalsResult has a prefix
+        THEN prefix is stored separately and not part of name.
+        """
+        p = PersonProfessionalsResult(prefix="Dr.", first_name="John", last_name="Smith")
+        assert p.name == "John Smith"
+        assert p.prefix == "Dr."
+
+
 class TestFetchProfessionalsCompany:
     @pytest.mark.asyncio
     async def test_fetch_board_members(
@@ -197,8 +310,7 @@ class TestFetchProfessionalsPerson:
             httpx_client=httpx_client,
         )
         person = resp.results[str(SPGI_CEO_PERSON_ID)]
-        assert person.first_name == "John"
-        assert person.last_name == "Smith"
+        assert person.name == "John Smith"
         company_roles = person.roles[str(SPGI_COMPANY_ID)]
         ceo_roles = company_roles["Chief Executive Officer"]
         assert len(ceo_roles) == 1
@@ -301,7 +413,7 @@ class TestGetProfessionalsFromPersonIds:
         )
         assert resp.errors == []
         assert str(SPGI_CEO_PERSON_ID) in resp.results
-        assert resp.results[str(SPGI_CEO_PERSON_ID)].first_name == "John"
+        assert resp.results[str(SPGI_CEO_PERSON_ID)].name == "John Smith"
 
     @pytest.mark.asyncio
     async def test_get_multiple_persons(

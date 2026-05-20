@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from strenum import StrEnum
 
 
@@ -17,11 +17,7 @@ class Timeframe(StrEnum):
 
 class CompanyProfessional(BaseModel):
     prefix: str | None = None
-    first_name: str | None = None
-    middle_name: str | None = None
-    last_name: str | None = None
-    suffix: str | None = None
-    salutation: str | None = None
+    name: str | None = None
     title: str | None = None
     start_date: str | None = None
     end_date: str | None = None
@@ -30,6 +26,24 @@ class CompanyProfessional(BaseModel):
     person_id: int
     # keyed by fiscal year (str), then by compensation type name
     compensation: dict[str, dict[str, Any]] | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def build_name(cls, data: Any) -> Any:
+        """Build name from individual name parts in the format: First Middle "Salutation" Last Suffix."""
+        if isinstance(data, dict) and not data.get("name"):
+            salutation = data.get("salutation")
+            parts = [
+                data.get("first_name"),
+                data.get("middle_name"),
+                f'"{salutation}"' if salutation else None,
+                data.get("last_name"),
+                data.get("suffix"),
+            ]
+            filtered = [p for p in parts if p]
+            if filtered:
+                data["name"] = " ".join(filtered)
+        return data
 
 
 class CompanyProfessionalsResp(BaseModel):
@@ -51,14 +65,28 @@ class PersonRole(BaseModel):
 
 class PersonProfessionalsResult(BaseModel):
     prefix: str | None = None
-    first_name: str | None = None
-    middle_name: str | None = None
-    last_name: str | None = None
-    suffix: str | None = None
-    salutation: str | None = None
+    name: str | None = None
     biography: str | None = None
     # keyed by company_id (str) -> function name -> list of roles
     roles: dict[str, dict[str, list[PersonRole]]] = {}
+
+    @model_validator(mode="before")
+    @classmethod
+    def build_name(cls, data: Any) -> Any:
+        """Build name from individual name parts in the format: First Middle "Salutation" Last Suffix."""
+        if isinstance(data, dict) and not data.get("name"):
+            salutation = data.get("salutation")
+            parts = [
+                data.get("first_name"),
+                data.get("middle_name"),
+                f'"{salutation}"' if salutation else None,
+                data.get("last_name"),
+                data.get("suffix"),
+            ]
+            filtered = [p for p in parts if p]
+            if filtered:
+                data["name"] = " ".join(filtered)
+        return data
 
 
 class PersonProfessionalsResp(BaseModel):
