@@ -143,9 +143,7 @@ class TestBuildName:
         WHEN a salutation is provided
         THEN it is wrapped in quotes between middle and last name.
         """
-        p = CompanyProfessional(
-            person_id=1, first_name="Jane", salutation="Jimmy", last_name="Doe"
-        )
+        p = CompanyProfessional(person_id=1, first_name="Jane", salutation="Jimmy", last_name="Doe")
         assert p.name == 'Jane "Jimmy" Doe'
 
     def test_suffix(self) -> None:
@@ -192,9 +190,7 @@ class TestBuildName:
         WHEN name is explicitly provided along with individual parts
         THEN the explicit name is preserved.
         """
-        p = CompanyProfessional(
-            person_id=1, name="Custom Name", first_name="Jane", last_name="Doe"
-        )
+        p = CompanyProfessional(person_id=1, name="Custom Name", first_name="Jane", last_name="Doe")
         assert p.name == "Custom Name"
 
     def test_prefix_is_separate_from_name(self) -> None:
@@ -202,9 +198,7 @@ class TestBuildName:
         WHEN prefix is provided
         THEN it is stored as a separate field and not included in name.
         """
-        p = CompanyProfessional(
-            person_id=1, prefix="Dr.", first_name="Jane", last_name="Doe"
-        )
+        p = CompanyProfessional(person_id=1, prefix="Dr.", first_name="Jane", last_name="Doe")
         assert p.name == "Jane Doe"
         assert p.prefix == "Dr."
 
