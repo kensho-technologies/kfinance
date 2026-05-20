@@ -25,15 +25,15 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 
 class GetProfessionalsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     professional_type: ProfessionalType = Field(
-        description="Filter by professional type: 'board_members' or 'employees'.",
+        description="'employees' for non-board roles (executives, officers, investment professionals, department heads, and other job functions), or 'board_members' for directors.",
     )
     timeframe: Timeframe = Field(
         default=Timeframe.all,
-        description="Filter by timeframe: 'all', 'current', or 'prior'.",
+        description="'current' for those currently serving, 'prior' for those who only served in the past, or 'all' for both.",
     )
     include_compensation: bool = Field(
         default=False,
-        description="Whether to include compensation data in the response. Defaults to False.",
+        description="If True, includes the most recent fiscal year's compensation reported for each professional at the given identifier.",
     )
 
 
@@ -46,27 +46,20 @@ class GetProfessionalsFromIdentifiersResp(
 class GetProfessionalsFromIdentifiers(KfinanceTool):
     name: str = "get_professionals_from_identifiers"
     description: str = dedent("""
-        Get the professionals (board members and/or employees) associated with a list of companies.
-
-        Returns professionals grouped by function name for each identifier, including
-        person_id, name, title, professional types, tenure dates, and compensation.
+        Get the professionals (employees or board members) at one or more companies. Returns a roster per identifier grouped by job function with person_id, name, title, professional_types, and tenure dates.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - Use professional_type to restrict to 'board_members' or 'employees'.
-        - Use timeframe to filter by 'current', 'prior', or 'all' professionals.
+        - For per-person details (biography, role history at other companies, or compensation for a specific past fiscal year), follow up with get_professionals_from_person_ids using the person_ids returned here.
 
         Examples:
-        Query: "Who are the current board members of Apple?"
-        Function: get_professionals_from_identifiers(identifiers=["Apple"], professional_type="board_members", timeframe="current")
+        Query: "Current board members of Coca-Cola"
+        Function: get_professionals_from_identifiers(identifiers=["Coca-Cola"], professional_type="board_members", timeframe="current")
 
-        Query: "Get all current employees for S&P Global and Meta"
-        Function: get_professionals_from_identifiers(identifiers=["SPGI", "META"], professional_type="employees", timeframe="current")
+        Query: "Management restructuring at Ford from 2018 to 2024"
+        Function: get_professionals_from_identifiers(identifiers=["Ford"], professional_type="employees", timeframe="all")
 
-        Query: "Who were the past employees of Netflix?"
-        Function: get_professionals_from_identifiers(identifiers=["Netflix"], professional_type="employees", timeframe="prior")
-
-        Query: "Who are the current board members of Apple, including compensation details?"
-        Function: get_professionals_from_identifiers(identifiers=["Apple"], professional_type="board_members", timeframe="current", include_compensation=True)
+        Query: "Most recent compensation for Starbucks executives"
+        Function: get_professionals_from_identifiers(identifiers=["Starbucks"], professional_type="employees", timeframe="current", include_compensation=True)
     """).strip()
     args_schema: Type[BaseModel] = GetProfessionalsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.ProfessionalsPermission}
@@ -88,17 +81,14 @@ class GetProfessionalsFromIdentifiers(KfinanceTool):
 
 
 class GetProfessionalsFromPersonIdsArgs(BaseModel):
-    person_ids: list[int] = Field(
-        min_length=1,
-        description="List of person_ids to look up professional history for.",
-    )
+    person_ids: list[int] = Field(description="List of person_ids.", min_length=1)
     include_compensation: bool = Field(
         default=False,
-        description="Whether to include compensation data in the response. Defaults to False.",
+        description="If True, includes each person's compensation history (keyed by fiscal year) across all companies.",
     )
     include_biography: bool = Field(
         default=False,
-        description="Whether to include biography in the response. Defaults to False.",
+        description="If True, includes each person's biography (career narrative, prior employers, industry experience, and typically education).",
     )
 
 
@@ -109,23 +99,25 @@ class GetProfessionalsFromPersonIdsResp(ToolRespWithErrors):
 class GetProfessionalsFromPersonIds(KfinanceTool):
     name: str = "get_professionals_from_person_ids"
     description: str = dedent("""
-        Get the professional history for one or more people by their person_id.
+        Get per-person profiles for one or more people by person_id, including their full role history across all companies. The person_ids are obtained from get_professionals_from_identifiers.
 
-        Returns each person's name, biography, and full role history across all companies,
-        including title, tenure dates, professional types, and compensation.
-
-        - person_id values can be obtained from get_professionals_from_identifiers results.
         - When possible, pass multiple person_ids in a single call rather than making multiple calls.
 
         Examples:
-        Query: "Tell me about Tim Cook's career history"
-        Function: get_professionals_from_person_ids(person_ids=[169600])
+        Query: "Biography summary for Disney's CEO"
+        Function 1: get_professionals_from_identifiers(identifiers=["Disney"], professional_type="employees", timeframe="current")
+        # Function 1 returns Disney's current employees. Extract the <person_id> for the CEO.
+        Function 2: get_professionals_from_person_ids(person_ids=[<person_id>], include_biography=True)
 
-        Query: "Get career histories for person_ids 169600 and 12345"
-        Function: get_professionals_from_person_ids(person_ids=[169600, 12345])
+        Query: "2023 stock awards for Nike's top executives"
+        Function 1: get_professionals_from_identifiers(identifiers=["Nike"], professional_type="employees", timeframe="all")
+        # Function 1 returns Nike's employees. Extract the <person_ids> for the top executives.
+        Function 2: get_professionals_from_person_ids(person_ids=[<person_ids>], include_compensation=True)
 
-        Query: "Get Tim Cook's career history including biography and compensation"
-        Function: get_professionals_from_person_ids(person_ids=[169600], include_compensation=True, include_biography=True)
+        Query: "Biography summary for IBM's former Chairman, Jane Doe"
+        Function 1: get_professionals_from_identifiers(identifiers=["IBM"], professional_type="board_members", timeframe="all")
+        # Function 1 returns IBM's board members. Extract the <person_id> for Jane Doe.
+        Function 2: get_professionals_from_person_ids(person_ids=[<person_id>], include_biography=True)
     """).strip()
     args_schema: Type[BaseModel] = GetProfessionalsFromPersonIdsArgs
     accepted_permissions: set[Permission] | None = {Permission.ProfessionalsPermission}
