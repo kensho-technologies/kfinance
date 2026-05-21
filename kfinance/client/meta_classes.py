@@ -26,6 +26,12 @@ from kfinance.domains.companies.company_models import (
 from kfinance.domains.competitors.competitor_models import CompetitorSource
 from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType
 from kfinance.domains.line_items.line_item_models import LINE_ITEMS
+from kfinance.domains.professionals.professionals_models import (
+    CompanyProfessional,
+    PersonProfessionalsResult,
+    ProfessionalType,
+    Timeframe,
+)
 from kfinance.domains.segments.segment_models import SegmentType
 
 
@@ -541,6 +547,28 @@ class CompanyFunctionsMetaClass:
             ],
         )
 
+    @cached(cache=LRUCache(maxsize=100))
+    def professionals(
+        self,
+        professional_type: ProfessionalType,
+        timeframe: Timeframe = Timeframe.all,
+    ) -> dict[str, list[CompanyProfessional]]:
+        """Get the professionals for a company, grouped by title.
+
+        :param professional_type: Filter by 'board_members' or 'employees'.
+        :type professional_type: ProfessionalType
+        :param timeframe: Filter by 'all', 'current', or 'past', defaults to 'all'.
+        :type timeframe: Timeframe
+        :return: A dict mapping title to list of CompanyProfessional objects.
+        :rtype: dict[str, list[CompanyProfessional]]
+        """
+        resp = self.kfinance_api_client.fetch_professionals_company(
+            company_id=self.company_id,
+            professional_type=professional_type,
+            timeframe=timeframe,
+        )
+        return resp.results.get(str(self.company_id), {})
+
     def _estimate(
         self,
         estimate_type: EstimateType,
@@ -853,3 +881,23 @@ for relationship in BusinessRelationshipType:
         relationship,
         relationship_property,
     )
+
+
+class PersonFunctionsMetaClass:
+    kfinance_api_client: KFinanceApiClient
+
+    @property
+    @abstractmethod
+    def person_id(self) -> Any:
+        """Set and return the person id for the object"""
+        raise NotImplementedError("child classes must implement person_id property")
+
+    @cached(cache=LRUCache(maxsize=100))
+    def professional_history(self) -> PersonProfessionalsResult | None:
+        """Fetch and return the professional history for this person.
+
+        :return: A PersonProfessionalsResult with name, biography, and role history, or None if not found.
+        :rtype: PersonProfessionalsResult | None
+        """
+        resp = self.kfinance_api_client.fetch_professionals_person(person_id=self.person_id)
+        return resp.results.get(str(self.person_id))

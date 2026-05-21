@@ -28,6 +28,7 @@ from kfinance.client.industry_models import IndustryClassification
 from kfinance.client.meta_classes import (
     CompanyFunctionsMetaClass,
     DelegatedCompanyFunctionsMetaClass,
+    PersonFunctionsMetaClass,
 )
 from kfinance.client.models.date_and_period_models import (
     CurrentPeriod,
@@ -661,6 +662,41 @@ class Company(CompanyFunctionsMetaClass):
                 self.kfinance_api_client, rounds_of_funding["rounds_of_funding"]
             )
         return self._rounds_of_funding
+
+
+class Person(PersonFunctionsMetaClass):
+    """Person class for looking up an individual's professional history.
+
+    :param kfinance_api_client: The KFinanceApiClient used to fetch data
+    :type kfinance_api_client: KFinanceApiClient
+    :param person_id: The S&P Global CIQ Person Id
+    :type person_id: int
+    """
+
+    def __init__(self, kfinance_api_client: KFinanceApiClient, person_id: int):
+        """Initialize the Person object.
+
+        :param kfinance_api_client: The KFinanceApiClient used to fetch data
+        :type kfinance_api_client: KFinanceApiClient
+        :param person_id: The S&P Global CIQ Person Id
+        :type person_id: int
+        """
+        super().__init__()
+        self.kfinance_api_client = kfinance_api_client
+        self._person_id = person_id
+
+    @property
+    def person_id(self) -> int:
+        """Return the person_id.
+
+        :return: the person_id
+        :rtype: int
+        """
+        return self._person_id
+
+    def __str__(self) -> str:
+        """String representation for the Person object."""
+        return f"{type(self).__module__}.{type(self).__qualname__} of {self.person_id}"
 
 
 class ParticipantInMerger:
@@ -1993,6 +2029,16 @@ class Client:
         :rtype: Company
         """
         return Company(kfinance_api_client=self.kfinance_api_client, company_id=company_id)
+
+    def person(self, person_id: int) -> Person:
+        """Generate the Person object from person_id.
+
+        :param person_id: CIQ person id
+        :type person_id: int
+        :return: The Person specified by the person id
+        :rtype: Person
+        """
+        return Person(kfinance_api_client=self.kfinance_api_client, person_id=person_id)
 
     def security(self, security_id: int) -> Security:
         """Generate Security object from security_id
