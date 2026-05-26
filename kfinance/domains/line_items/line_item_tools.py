@@ -1,21 +1,11 @@
-from difflib import SequenceMatcher
 from textwrap import dedent
 from typing import Any, Literal, Type
 
 import httpx
-from pydantic import BaseModel, Field, model_validator
-
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
-from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
-from kfinance.domains.line_items.line_item_models import (
-    LINE_ITEM_NAMES_AND_ALIASES,
-    LINE_ITEM_TO_DESCRIPTIONS_MAP,
-    CalendarType,
-    LineItemResp,
-    LineItemScore,
-)
+from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
     insert_source_link_note,
@@ -26,83 +16,12 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolRespWithIdInfoAndErrors,
     ValidQuarter,
 )
+from pydantic import BaseModel, Field
 
 
-def _find_similar_line_items(
-    invalid_item: str, descriptors: dict[str, str], max_suggestions: int = 8
-) -> list[LineItemScore]:
-    """Find similar line items using keyword matching and string similarity.
-
-    Args:
-        invalid_item: The invalid line item provided by the user
-        descriptors: Dictionary mapping line item names to descriptions
-        max_suggestions: Maximum number of suggestions to return
-
-    Returns:
-        List of LineItemScore objects for the best matches
-    """
-    if not descriptors:
-        return []
-
-    invalid_lower = invalid_item.lower()
-    scores: list[LineItemScore] = []
-
-    for line_item, description in descriptors.items():
-        # Calculate similarity scores
-        name_similarity = SequenceMatcher(None, invalid_lower, line_item.lower()).ratio()
-
-        # Check for keyword matches in the line item name
-        invalid_words = set(invalid_lower.replace("_", " ").split())
-        item_words = set(line_item.lower().replace("_", " ").split())
-        keyword_match_score = len(invalid_words.intersection(item_words)) / max(
-            len(invalid_words), 1
-        )
-
-        # Check for keyword matches in description
-        description_words = set(description.lower().split())
-        description_match_score = len(invalid_words.intersection(description_words)) / max(
-            len(invalid_words), 1
-        )
-
-        # Combined score (weighted)
-        total_score = (
-            name_similarity * 0.5  # Direct name similarity
-            + keyword_match_score * 0.3  # Keyword matches in name
-            + description_match_score * 0.2  # Keyword matches in description
-        )
-
-        scores.append(LineItemScore(name=line_item, description=description, score=total_score))
-
-    # Sort by score (descending) and return top matches
-    scores.sort(reverse=True, key=lambda x: x.score)
-    return [item for item in scores[:max_suggestions] if item.score > 0.1]
-
-
-def _smart_line_item_validator(v: str) -> str:
-    """Custom validator that provides intelligent suggestions for invalid line items."""
-    if v not in LINE_ITEM_NAMES_AND_ALIASES:
-        # Find similar items using pre-computed descriptors
-        suggestions = _find_similar_line_items(v, LINE_ITEM_TO_DESCRIPTIONS_MAP)
-
-        if suggestions:
-            suggestion_text = "\n\nDid you mean one of these?\n"
-            for item in suggestions:
-                suggestion_text += f"  • '{item.name}': {item.description}\n"
-
-            error_msg = f"Invalid line_item '{v}'.{suggestion_text}"
-        else:
-            error_msg = f"Invalid line_item '{v}'. Please refer to the tool documentation for valid options."
-
-        raise ValueError(error_msg)
-    return v
-
-
-class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
-    # Note: mypy will not enforce this literal because of the type: ignore.
-    # But pydantic still uses the literal to check for allowed values and only includes
-    # allowed values in generated schemas.
-    line_item: Literal[tuple(LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore[valid-type]
-        description="The type of financial line_item requested"
+class GetFinancialLineItemFromIdentifiersVaArgs(ToolArgsWithIdentifiers):
+    line_item: str = Field(
+        description="Freeform descriptive phrase for the financial line item. Matched semantically."
     )
     period_type: PeriodType | None = Field(
         default=None, description="The period type (annual or quarterly)"
@@ -132,171 +51,28 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
         description="The end period of the data range expressed as number of periods back relative to the present period (0-99)",
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_line_item_with_suggestions(cls, values: dict) -> dict:
-        """Custom validator that provides intelligent suggestions for invalid line items."""
-        if isinstance(values, dict) and "line_item" in values:
-            line_item = values["line_item"]
-            # Use the helper function to validate and provide suggestions
-            _smart_line_item_validator(line_item)
-        return values
+
+class AlternativeLineItem(BaseModel):
+    parameter_name: str
+    currency: str | None
 
 
-class GetFinancialLineItemFromIdentifiersResp(ToolRespWithIdInfoAndErrors[LineItemResp]):
+class AlternativeLineItemMetadata(BaseModel):
+    top_ranked_alternatives: list[AlternativeLineItem] = Field(default_factory=list)
+
+
+class GetFinancialLineItemFromIdentifiersVaResp(ToolRespWithIdInfoAndErrors[LineItemResp]):
     notes: list[str] = Field(default_factory=list)
+    metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
 
 
-class GetFinancialLineItemFromIdentifiers(KfinanceTool):
-    name: str = "get_financial_line_item_from_identifiers"
-    description: str = dedent("""
-        Get the financial line item associated with a list of identifiers.
-
-        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - To fetch the most recent value, leave all time parameters as null.
-        - Line item names are case-insensitive, use underscores, and support common aliases (e.g., 'revenue' and 'normal_revenue' return the same data).
-        - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods, num_periods_back)—but not both.
-        - Set calendar_type based on how the query references the time period—use "fiscal" for fiscal year references and "calendar" for calendar year references.
-        - When calendar_type=None, it defaults to 'fiscal'.
-        - Exception: with multiple identifiers and absolute time, calendar_type=None defaults to 'calendar' for cross-company comparability; calendar_type='fiscal' returns fiscal data but should not be compared across companies since fiscal years have different end dates.
-
-        Examples:
-        Query: "Get MSFT and AAPL revenue and gross profit quarterly"
-        Function: get_financial_line_item_from_identifiers(line_item="revenue", identifiers=["MSFT", "AAPL"], period_type="quarterly")
-        Function: get_financial_line_item_from_identifiers(line_item="gross_profit", identifiers=["MSFT", "AAPL"], period_type="quarterly")
-
-        Query: "General Electric's ebt excluding unusual items for FY2023"
-        Function: get_financial_line_item_from_identifiers(line_item="ebt_excluding_unusual_items", identifiers=["General Electric"], period_type="annual", calendar_type="fiscal", start_year=2023, end_year=2023)
-
-        Query: "What is the most recent three quarters except one ppe for Exxon and Hasbro?"
-        Function: get_financial_line_item_from_identifiers(line_item="ppe", period_type="quarterly", num_periods=2, num_periods_back=1, identifiers=["Exxon", "Hasbro"])
-
-        Query: "What are the ytd operating income values for Hilton for the calendar year 2022?"
-        Function: get_financial_line_item_from_identifiers(line_item="operating_income", period_type="ytd", calendar_type="calendar", start_year=2022, end_year=2022, identifiers=["Hilton"])
-
-        Query: "Compare AAPL and MSFT revenue for 2023"
-        Function: get_financial_line_item_from_identifiers(line_item="revenue", identifiers=["AAPL", "MSFT"], period_type="annual", calendar_type="calendar", start_year=2023, end_year=2023)
-
-        Note: This tool automatically includes explanatory notes about data sources, fiscal period warnings, and terminology guidelines.
-    """).strip()
-    args_schema: Type[BaseModel] = GetFinancialLineItemFromIdentifiersArgs
-    accepted_permissions: set[Permission] | None = {
-        Permission.StatementsPermission,
-        Permission.PrivateCompanyFinancialsPermission,
-    }
-
-    async def _arun(
-        self,
-        identifiers: list[str],
-        line_item: str,
-        period_type: PeriodType | None = None,
-        start_year: int | None = None,
-        end_year: int | None = None,
-        start_quarter: Literal[1, 2, 3, 4] | None = None,
-        end_quarter: Literal[1, 2, 3, 4] | None = None,
-        calendar_type: CalendarType | None = None,
-        num_periods: int | None = None,
-        num_periods_back: int | None = None,
-    ) -> GetFinancialLineItemFromIdentifiersResp:
-        """"""
-        return await get_financial_line_item_from_identifiers(
-            identifiers=identifiers,
-            line_item=line_item,
-            httpx_client=self.kfinance_client.httpx_client,
-            period_type=period_type,
-            start_year=start_year,
-            end_year=end_year,
-            start_quarter=start_quarter,
-            end_quarter=end_quarter,
-            calendar_type=calendar_type,
-            num_periods=num_periods,
-            num_periods_back=num_periods_back,
-        )
+class PostResponseWithMetadata(BaseModel):
+    results: dict[str, LineItemResp]
+    errors: dict[str, str] = Field(default_factory=dict)
+    metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
 
 
-async def get_financial_line_item_from_identifiers(
-    identifiers: list[str],
-    line_item: str,
-    httpx_client: httpx.AsyncClient,
-    period_type: PeriodType | None = None,
-    start_year: int | None = None,
-    end_year: int | None = None,
-    start_quarter: Literal[1, 2, 3, 4] | None = None,
-    end_quarter: Literal[1, 2, 3, 4] | None = None,
-    calendar_type: CalendarType | None = None,
-    num_periods: int | None = None,
-    num_periods_back: int | None = None,
-) -> GetFinancialLineItemFromIdentifiersResp:
-    """Fetch financial line items for all identifiers."""
-
-    # First resolve identifiers to company IDs
-    id_triple_resp = await unified_fetch_id_triples(
-        identifiers=identifiers, httpx_client=httpx_client
-    )
-    errors: list[str] = list(id_triple_resp.errors.values())
-
-    # Fetch line items for all resolved company IDs
-    if id_triple_resp.company_ids:
-        line_item_resp = await fetch_line_item_from_company_ids(
-            company_ids=id_triple_resp.company_ids,
-            line_item=line_item,
-            httpx_client=httpx_client,
-            period_type=period_type,
-            start_year=start_year,
-            end_year=end_year,
-            start_quarter=start_quarter,
-            end_quarter=end_quarter,
-            calendar_type=calendar_type,
-            num_periods=num_periods,
-            num_periods_back=num_periods_back,
-        )
-
-        # Add any errors from the line item API, mapping company_id keys back to identifiers
-        for company_id_str, error in line_item_resp.errors.items():
-            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
-            errors.append(f"{original_identifier}: {error}")
-
-        # Map results back to original identifiers
-        identifier_to_results = {}
-        for company_id_str, line_item_data in line_item_resp.results.items():
-            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
-            identifier_to_results[original_identifier] = line_item_data
-
-        results = identifier_to_results
-    else:
-        results = {}
-
-    # If no date and multiple companies, only return the most recent value
-    if (
-        start_year is None
-        and end_year is None
-        and start_quarter is None
-        and end_quarter is None
-        and num_periods is None
-        and num_periods_back is None
-        and len(results) > 1
-    ):
-        for line_item_response in results.values():
-            line_item_response.remove_all_periods_other_than_the_most_recent_one()
-
-    resp_model = GetFinancialLineItemFromIdentifiersResp(
-        identifier_results=results,
-        identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
-    )
-
-    # Add explanatory notes
-    insert_source_link_note(resp_model)
-    insert_fiscal_period_notes(
-        calendar_type=calendar_type,
-        period_type=period_type,
-        resp_model=resp_model,
-    )
-
-    return resp_model
-
-
-async def fetch_line_item_from_company_ids(
+async def fetch_line_item_from_company_ids_with_metadata(
     company_ids: list[int],
     line_item: str,
     httpx_client: httpx.AsyncClient,
@@ -308,12 +84,12 @@ async def fetch_line_item_from_company_ids(
     calendar_type: CalendarType | None = None,
     num_periods: int | None = None,
     num_periods_back: int | None = None,
-) -> PostResponse[LineItemResp]:
-    """Fetch line items for a list of company IDs."""
-    # Build the request payload
+) -> PostResponseWithMetadata:
+    """Fetch line items for a list of company IDs, including metadata."""
     params: dict[str, Any] = {
         "company_ids": company_ids,
         "line_item": line_item,
+        "data_source_type": "visible_alpha",
     }
 
     if period_type is not None:
@@ -336,4 +112,157 @@ async def fetch_line_item_from_company_ids(
     resp = await httpx_client.post(url="/line_item/", json=params)
     resp.raise_for_status()
 
-    return PostResponse[LineItemResp].model_validate(resp.json())
+    return PostResponseWithMetadata.model_validate(resp.json())
+
+
+async def get_financial_line_item_from_identifiers_va(
+    identifiers: list[str],
+    line_item: str,
+    httpx_client: httpx.AsyncClient,
+    period_type: PeriodType | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    start_quarter: Literal[1, 2, 3, 4] | None = None,
+    end_quarter: Literal[1, 2, 3, 4] | None = None,
+    calendar_type: CalendarType | None = None,
+    num_periods: int | None = None,
+    num_periods_back: int | None = None,
+) -> GetFinancialLineItemFromIdentifiersVaResp:
+    """Fetch financial line items for all identifiers, including metadata."""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    metadata: dict[str, AlternativeLineItemMetadata] = {}
+    if id_triple_resp.company_ids:
+        line_item_resp = await fetch_line_item_from_company_ids_with_metadata(
+            company_ids=id_triple_resp.company_ids,
+            line_item=line_item,
+            httpx_client=httpx_client,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            calendar_type=calendar_type,
+            num_periods=num_periods,
+            num_periods_back=num_periods_back,
+        )
+
+        for company_id_str, error in line_item_resp.errors.items():
+            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            errors.append(f"{original_identifier}: {error}")
+
+        identifier_to_results = {}
+        for company_id_str, line_item_data in line_item_resp.results.items():
+            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            identifier_to_results[original_identifier] = line_item_data
+
+        # Map metadata keys from company_id to identifier
+        for company_id_str, meta in line_item_resp.metadata.items():
+            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            metadata[original_identifier] = meta
+
+        results = identifier_to_results
+    else:
+        results = {}
+
+    # If no date and multiple companies, only return the most recent value
+    if (
+        start_year is None
+        and end_year is None
+        and start_quarter is None
+        and end_quarter is None
+        and num_periods is None
+        and num_periods_back is None
+        and len(results) > 1
+    ):
+        for line_item_response in results.values():
+            line_item_response.remove_all_periods_other_than_the_most_recent_one()
+
+    resp_model = GetFinancialLineItemFromIdentifiersVaResp(
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
+        metadata=metadata,
+    )
+
+    insert_source_link_note(resp_model)
+    insert_fiscal_period_notes(
+        calendar_type=calendar_type,
+        period_type=period_type,
+        resp_model=resp_model,
+    )
+
+    if metadata:
+        resp_model.notes.append(
+            "If an alternative better matches your intent,"
+            " call the tool again with that line item name as the query."
+        )
+
+    return resp_model
+
+
+class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
+    name: str = "get_financial_line_item_from_identifiers"
+    description: str = dedent("""
+        Get the financial line item associated with a list of identifiers.
+
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - To fetch the most recent value, leave all time parameters as null.
+        - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods, num_periods_back)—but not both.
+        - Set calendar_type based on how the query references the time period—use "fiscal" for fiscal year references and "calendar" for calendar year references.
+        - When calendar_type=None, it defaults to 'fiscal'.
+        - Exception: with multiple identifiers and absolute time, calendar_type=None defaults to 'calendar' for cross-company comparability; calendar_type='fiscal' returns fiscal data but should not be compared across companies since fiscal years have different end dates.
+
+        Examples:
+        Query: "Get MSFT and AAPL revenue and gross profit quarterly"
+        Function: get_financial_line_item_from_identifiers(line_item="revenue", identifiers=["MSFT", "AAPL"], period_type="quarterly")
+        Function: get_financial_line_item_from_identifiers(line_item="gross profit", identifiers=["MSFT", "AAPL"], period_type="quarterly")
+
+        Query: "Tesla automotive gross margin for FY2023"
+        Function: get_financial_line_item_from_identifiers(line_item="automotive gross margin", identifiers=["Tesla"], period_type="annual", calendar_type="fiscal", start_year=2023, end_year=2023)
+
+        Query: "Most recent three quarters except one ppe for Exxon and Hasbro"
+        Function: get_financial_line_item_from_identifiers(line_item="property plant and equipment", period_type="quarterly", num_periods=2, num_periods_back=1, identifiers=["Exxon", "Hasbro"])
+    """).strip()
+    args_schema: Type[BaseModel] = GetFinancialLineItemFromIdentifiersVaArgs
+    accepted_permissions: set[Permission] | None = {
+        Permission.StatementsPermission,
+        Permission.PrivateCompanyFinancialsPermission,
+    }
+
+    async def _arun(
+        self,
+        identifiers: list[str],
+        line_item: str,
+        period_type: PeriodType | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: Literal[1, 2, 3, 4] | None = None,
+        end_quarter: Literal[1, 2, 3, 4] | None = None,
+        calendar_type: CalendarType | None = None,
+        num_periods: int | None = None,
+        num_periods_back: int | None = None,
+    ) -> GetFinancialLineItemFromIdentifiersVaResp:
+        """"""
+        return await get_financial_line_item_from_identifiers_va(
+            identifiers=identifiers,
+            line_item=line_item,
+            httpx_client=self.kfinance_client.httpx_client,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            calendar_type=calendar_type,
+            num_periods=num_periods,
+            num_periods_back=num_periods_back,
+        )
+
+
+# Alias for backwards compatibility with tool registries that import the
+# non-VA name.
+GetFinancialLineItemFromIdentifiers = GetFinancialLineItemFromIdentifiersVa

@@ -5,6 +5,7 @@ from fastmcp.tools import FunctionTool
 from fastmcp.utilities.logging import get_logger
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
+from kfinance.client.fetch import DEFAULT_API_HOST
 from kfinance.client.kfinance import Client
 from kfinance.integrations.local_mcp.kfinance_mcp import KfinanceMcp
 from kfinance.integrations.tool_calling.tool_calling_models import KfinanceTool
@@ -49,11 +50,13 @@ def build_mcp_tool_from_kfinance_tool(kfinance_tool: KfinanceTool) -> FunctionTo
 @click.option("--refresh-token", required=False)
 @click.option("--client-id", required=False)
 @click.option("--private-key", required=False)
+@click.option("--api-host", required=False)
 def run_mcp(
     transport: Literal["stdio", "sse", "streamable-http"],
     refresh_token: Optional[str] = None,
     client_id: Optional[str] = None,
     private_key: Optional[str] = None,
+    api_host: Optional[str] = None,
 ) -> None:
     """Run the Kfinance MCP server with specified configuration.
 
@@ -74,17 +77,22 @@ def run_mcp(
     :type client_id: str
     :param private_key: Private key for key-pair authentication.
     :type private_key: str
+    :param api_host: Optional API host URL passed to every Client instance.
+    :type api_host: str
     """
     logger.info("Server will run with %s transport", transport)
+    resolved_api_host = api_host or DEFAULT_API_HOST
     if refresh_token:
         logger.info("The client will be authenticated using a refresh token")
-        kfinance_client = Client(refresh_token=refresh_token)
+        kfinance_client = Client(refresh_token=refresh_token, api_host=resolved_api_host)
     elif client_id and private_key:
         logger.info("The client will be authenticated using a key pair")
-        kfinance_client = Client(client_id=client_id, private_key=private_key)
+        kfinance_client = Client(
+            client_id=client_id, private_key=private_key, api_host=resolved_api_host
+        )
     else:
         logger.info("The client will be authenticated using a browser")
-        kfinance_client = Client()
+        kfinance_client = Client(api_host=resolved_api_host)
 
     kfinance_mcp: KfinanceMcp = KfinanceMcp("Kfinance")
     for langchain_tool in kfinance_client.langchain_tools:

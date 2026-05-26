@@ -2,16 +2,12 @@ from textwrap import dedent
 from typing import Any, Literal, Type
 
 import httpx
-from pydantic import BaseModel, Field
-
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import CalendarType
-from kfinance.domains.line_items.response_notes import (
-    insert_fiscal_period_notes,
-)
+from kfinance.domains.line_items.response_notes import insert_fiscal_period_notes
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -19,10 +15,10 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolRespWithIdInfoAndErrors,
     ValidQuarter,
 )
+from pydantic import BaseModel, Field
 
 
-class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
-    # no description because the description for enum fields comes from the enum docstring.
+class GetSegmentsFromIdentifiersVaArgs(ToolArgsWithIdentifiers):
     segment_type: SegmentType
     period_type: PeriodType | None = Field(default=None, description="The period type")
     start_year: int | None = Field(default=None, description="The starting year for the data range")
@@ -41,11 +37,129 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
 
 
-class GetSegmentsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):
+class GetSegmentsFromIdentifiersVaResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):
     notes: list[str] = Field(default_factory=list)
 
 
-class GetSegmentsFromIdentifiers(KfinanceTool):
+async def fetch_segments_from_company_ids_va(
+    company_ids: list[int],
+    segment_type: SegmentType,
+    httpx_client: httpx.AsyncClient,
+    period_type: PeriodType | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    start_quarter: Literal[1, 2, 3, 4] | None = None,
+    end_quarter: Literal[1, 2, 3, 4] | None = None,
+    calendar_type: CalendarType | None = None,
+    num_periods: int | None = None,
+    num_periods_back: int | None = None,
+) -> PostResponse[SegmentsResp]:
+    """Fetch segments for a list of company IDs using Visible Alpha as the data source."""
+    payload: dict[str, Any] = {
+        "company_ids": company_ids,
+        "segment_type": segment_type.value,
+        "data_source_type": "visible_alpha",
+    }
+
+    if period_type is not None:
+        payload["period_type"] = period_type.value
+    if start_year is not None:
+        payload["start_year"] = start_year
+    if end_year is not None:
+        payload["end_year"] = end_year
+    if start_quarter is not None:
+        payload["start_quarter"] = start_quarter
+    if end_quarter is not None:
+        payload["end_quarter"] = end_quarter
+    if calendar_type is not None:
+        payload["calendar_type"] = calendar_type.value
+    if num_periods is not None:
+        payload["num_periods"] = num_periods
+    if num_periods_back is not None:
+        payload["num_periods_back"] = num_periods_back
+
+    resp = await httpx_client.post(url="/segments/", json=payload)
+    resp.raise_for_status()
+
+    return PostResponse[SegmentsResp].model_validate(resp.json())
+
+
+async def get_segments_from_identifiers_va(
+    identifiers: list[str],
+    segment_type: SegmentType,
+    httpx_client: httpx.AsyncClient,
+    period_type: PeriodType | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    start_quarter: Literal[1, 2, 3, 4] | None = None,
+    end_quarter: Literal[1, 2, 3, 4] | None = None,
+    calendar_type: CalendarType | None = None,
+    num_periods: int | None = None,
+    num_periods_back: int | None = None,
+) -> GetSegmentsFromIdentifiersVaResp:
+    """Fetch segments for all identifiers using Visible Alpha as the data source."""
+
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers, httpx_client=httpx_client
+    )
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    if id_triple_resp.company_ids:
+        segments_resp = await fetch_segments_from_company_ids_va(
+            company_ids=id_triple_resp.company_ids,
+            segment_type=segment_type,
+            httpx_client=httpx_client,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            calendar_type=calendar_type,
+            num_periods=num_periods,
+            num_periods_back=num_periods_back,
+        )
+
+        for company_id_str, error in segments_resp.errors.items():
+            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            errors.append(f"{original_identifier}: {error}")
+
+        identifier_to_results = {}
+        for company_id_str, segments_data in segments_resp.results.items():
+            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            identifier_to_results[original_identifier] = segments_data
+
+        results = identifier_to_results
+    else:
+        results = {}
+
+    if (
+        start_year is None
+        and end_year is None
+        and start_quarter is None
+        and end_quarter is None
+        and num_periods is None
+        and num_periods_back is None
+        and len(results) > 1
+    ):
+        for segments_response in results.values():
+            segments_response.remove_all_periods_other_than_the_most_recent_one()
+
+    resp_model = GetSegmentsFromIdentifiersVaResp(
+        identifier_results=results,
+        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        errors=errors,
+    )
+
+    insert_fiscal_period_notes(
+        calendar_type=calendar_type,
+        period_type=period_type,
+        resp_model=resp_model,
+    )
+
+    return resp_model
+
+
+class GetSegmentsFromIdentifiersVa(KfinanceTool):
     name: str = "get_segments_from_identifiers"
     description: str = dedent("""
         Get the templated business or geographic segments associated with a list of identifiers.
@@ -67,7 +181,7 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         Query: "What are the ltm business segments for SPGI for the last three calendar quarters but one?"
         Function: get_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=2, num_periods_back=1, identifiers=["SPGI"])
     """).strip()
-    args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersArgs
+    args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersVaArgs
     accepted_permissions: set[Permission] | None = {Permission.SegmentsPermission}
 
     async def _arun(
@@ -82,49 +196,12 @@ class GetSegmentsFromIdentifiers(KfinanceTool):
         calendar_type: CalendarType | None = None,
         num_periods: int | None = None,
         num_periods_back: int | None = None,
-    ) -> GetSegmentsFromIdentifiersResp:
+    ) -> GetSegmentsFromIdentifiersVaResp:
         """"""
-        return await get_segments_from_identifiers(
+        return await get_segments_from_identifiers_va(
             identifiers=identifiers,
             segment_type=segment_type,
-            period_type=period_type,
-            start_year=start_year,
-            end_year=end_year,
-            start_quarter=start_quarter,
-            end_quarter=end_quarter,
-            calendar_type=calendar_type,
-            num_periods=num_periods,
-            num_periods_back=num_periods_back,
             httpx_client=self.kfinance_client.httpx_client,
-        )
-
-
-async def get_segments_from_identifiers(
-    identifiers: list[str],
-    segment_type: SegmentType,
-    httpx_client: httpx.AsyncClient,
-    period_type: PeriodType | None = None,
-    start_year: int | None = None,
-    end_year: int | None = None,
-    start_quarter: Literal[1, 2, 3, 4] | None = None,
-    end_quarter: Literal[1, 2, 3, 4] | None = None,
-    calendar_type: CalendarType | None = None,
-    num_periods: int | None = None,
-    num_periods_back: int | None = None,
-) -> GetSegmentsFromIdentifiersResp:
-    """Fetch segments for all identifiers."""
-
-    # First resolve identifiers to company IDs
-    id_triple_resp = await unified_fetch_id_triples(
-        identifiers=identifiers, httpx_client=httpx_client
-    )
-    errors: list[str] = list(id_triple_resp.errors.values())
-
-    # Fetch segments for all resolved company IDs
-    if id_triple_resp.company_ids:
-        segments_resp = await fetch_segments_from_company_ids(
-            company_ids=id_triple_resp.company_ids,
-            segment_type=segment_type,
             period_type=period_type,
             start_year=start_year,
             end_year=end_year,
@@ -133,95 +210,9 @@ async def get_segments_from_identifiers(
             calendar_type=calendar_type,
             num_periods=num_periods,
             num_periods_back=num_periods_back,
-            httpx_client=httpx_client,
         )
 
-        # Add any errors from the segments API, mapping company_id keys back to identifiers
-        for company_id_str, error in segments_resp.errors.items():
-            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
-            errors.append(f"{original_identifier}: {error}")
 
-        # Map results back to original identifiers
-        identifier_to_results = {}
-        for company_id_str, segments_data in segments_resp.results.items():
-            company_id = int(company_id_str)
-            original_identifier = id_triple_resp.get_identifier_from_company_id(company_id)
-            identifier_to_results[original_identifier] = segments_data
-    else:
-        identifier_to_results = {}
-
-    # If no date and multiple companies, only return the most recent value.
-    # By default, we return 5 years of data, which can be too much when
-    # returning data for many companies.
-    if (
-        start_year is None
-        and end_year is None
-        and start_quarter is None
-        and end_quarter is None
-        and num_periods is None
-        and num_periods_back is None
-        and len(identifier_to_results) > 1
-    ):
-        for segments_response in identifier_to_results.values():
-            segments_response.remove_all_periods_other_than_the_most_recent_one()
-
-    resp_model = GetSegmentsFromIdentifiersResp(
-        identifier_results=identifier_to_results,
-        identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
-    )
-
-    # Add explanatory notes
-    insert_fiscal_period_notes(
-        calendar_type=calendar_type,
-        period_type=period_type,
-        resp_model=resp_model,
-    )
-
-    return resp_model
-
-
-async def fetch_segments_from_company_ids(
-    company_ids: list[int],
-    segment_type: SegmentType,
-    httpx_client: httpx.AsyncClient,
-    period_type: PeriodType | None = None,
-    start_year: int | None = None,
-    end_year: int | None = None,
-    start_quarter: Literal[1, 2, 3, 4] | None = None,
-    end_quarter: Literal[1, 2, 3, 4] | None = None,
-    calendar_type: CalendarType | None = None,
-    num_periods: int | None = None,
-    num_periods_back: int | None = None,
-) -> PostResponse[SegmentsResp]:
-    """Fetch segments data from the API for multiple company IDs."""
-
-    # Prepare the request payload
-    payload: dict[str, Any] = {
-        "company_ids": company_ids,
-        "segment_type": segment_type.value,
-    }
-
-    # Add optional parameters if they are not None
-    if period_type is not None:
-        payload["period_type"] = period_type.value
-    if start_year is not None:
-        payload["start_year"] = start_year
-    if end_year is not None:
-        payload["end_year"] = end_year
-    if start_quarter is not None:
-        payload["start_quarter"] = start_quarter
-    if end_quarter is not None:
-        payload["end_quarter"] = end_quarter
-    if calendar_type is not None:
-        payload["calendar_type"] = calendar_type.value
-    if num_periods is not None:
-        payload["num_periods"] = num_periods
-    if num_periods_back is not None:
-        payload["num_periods_back"] = num_periods_back
-
-    url = "/segments/"
-    resp = await httpx_client.post(url=url, json=payload)
-    resp.raise_for_status()
-
-    return PostResponse[SegmentsResp].model_validate(resp.json())
+# Alias for backwards compatibility with tool registries that import the
+# non-VA name.
+GetSegmentsFromIdentifiers = GetSegmentsFromIdentifiersVa
