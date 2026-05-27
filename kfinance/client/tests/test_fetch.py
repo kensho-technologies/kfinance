@@ -499,7 +499,6 @@ class TestFetchItem(TestCase):
         assert result == expected_result
 
     def test_fetch_key_devs(self) -> None:
-
         company_id = 21719
         expected_url = f"{self.kfinance_api_client.url_base}key_devs/"
 
