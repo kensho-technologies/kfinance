@@ -65,6 +65,22 @@ python -m kfinance.mcp --refresh-token <token>
 python -m kfinance.mcp --streamable-http --refresh-token <token>
 ```
 
+## MCP Proxy
+
+The kFinance MCP proxy is a skeleton server that forwards requests to a remote kfinance MCP backend, injecting authentication tokens into every outgoing request. It is intended as a starting point for building a full production MCP proxy service.
+
+```bash
+# Using a refresh token (for experimentation)
+AUTH_REFRESH_TOKEN=<token> python -m kfinance.proxy_mcp
+
+# Using a key pair (for production)
+AUTH_CLIENT_ID=<client-id> AUTH_PRIVATE_KEY=<private-key> python -m kfinance.proxy_mcp
+```
+
+The server starts on `http://127.0.0.1:8000/mcp` by default. Use `--host` and `--port` to configure binding.
+
+For full documentation including configuration options, authentication methods, and production considerations, see [kfinance/integrations/proxy_mcp/README.md](kfinance/integrations/proxy_mcp/README.md).
+
 # Development
 
 ## Working with Local Package Version

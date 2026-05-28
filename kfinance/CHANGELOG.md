@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.4.0
+- Add MCP proxy integration example
+
 ## v6.3.0
 - Add GetProfessionalsFromIdentifiers and GetProfessionalsFromPersonIds tools
 
