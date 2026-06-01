@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.4.1
+- Change ValidQuarter enum from integer to string for Gemini compatibility
+
 ## v6.4.0
 - Add MCP proxy integration example
 
