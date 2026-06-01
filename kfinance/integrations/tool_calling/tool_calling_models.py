@@ -171,6 +171,8 @@ def convert_int_to_str(v: Any) -> Any:
 # Support ticket: https://console.cloud.google.com/support/cases/detail/v2/70990622?project=kensho-groundings-poc
 # Claude seems to often pass integers to enum fields, which raise a ValidationError
 # during deserialization unless they have been converted to str.
+
+# TODO(LRA-304): Revert following fix after Gemini schema leniency feature is implemented.
 # BeforeValidator: convert possible int to str before Literal validation.
 # AfterValidator: convert str back to int to stay consistent with internal kfinance logic.
 ValidQuarter = Annotated[
