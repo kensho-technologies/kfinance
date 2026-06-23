@@ -44,6 +44,12 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models imp
     MergersResp,
 )
 from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
+from kfinance.domains.professionals.professionals_models import (
+    CompanyProfessionalsResp,
+    PersonProfessionalsResp,
+    ProfessionalType,
+    Timeframe,
+)
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
     AdvisorsResp,
     RoundOfFundingInfo,
@@ -723,6 +729,24 @@ class KFinanceApiClient:
         if competitor_source is not CompetitorSource.all:
             url = url + f"/{competitor_source}"
         return CompetitorResponse.model_validate(self.fetch(url))
+
+    def fetch_professionals_company(
+        self,
+        company_id: int,
+        professional_type: ProfessionalType,
+        timeframe: Timeframe = Timeframe.all,
+    ) -> CompanyProfessionalsResp:
+        """Get the professionals for a company."""
+        url = f"{self.url_base}professionals/company/{company_id}/{professional_type}/{timeframe}"
+        return CompanyProfessionalsResp.model_validate(self.fetch(url))
+
+    def fetch_professionals_person(
+        self,
+        person_id: int,
+    ) -> PersonProfessionalsResp:
+        """Get the professional history for a person."""
+        url = f"{self.url_base}professionals/person/{person_id}"
+        return PersonProfessionalsResp.model_validate(self.fetch(url))
 
     def fetch_mergers_for_company(
         self, company_id: int, start_date: str | None = None, end_date: str | None = None
