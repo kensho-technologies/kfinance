@@ -1,4 +1,5 @@
 from copy import deepcopy
+from datetime import date
 
 import httpx
 import pytest
@@ -12,6 +13,7 @@ from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     AdvisorResp,
     MergerInfo,
+    MergersResp,
 )
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools import (
     GetAdvisorsForCompanyInTransactionFromIdentifierResp,
@@ -30,7 +32,7 @@ class TestMergersAndAcquisitions:
         merger_data = MERGERS_RESP.model_dump(mode="json")
         httpx_mock.add_response(
             method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/mergers/{SPGI_ID_TRIPLE.company_id}",
+            url=f"https://kfinance.kensho.com/api/v1/mergers/{SPGI_ID_TRIPLE.company_id}/none/none",
             json=merger_data,
             is_optional=True,
         )
@@ -52,6 +54,39 @@ class TestMergersAndAcquisitions:
         )
 
         expected_resp = MERGERS_RESP
+        assert resp == expected_resp
+
+    @pytest.mark.asyncio
+    async def test_fetch_mergers_from_company_id_with_date_range(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """
+        WHEN we request SPGI's mergers for a specific date range,
+        THEN we get back only those mergers
+        """
+        start_date = date(2022, 1, 1)
+        end_date = date(2024, 5, 1)
+
+        # We're just using a different response than the previous test here - the actual filtering doesn't matter.
+        expected_resp = MergersResp(
+            target=[MERGERS_RESP.target[0]],
+            buyer=[MERGERS_RESP.buyer[0]],
+            seller=[MERGERS_RESP.seller[0]],
+        )
+
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://kfinance.kensho.com/api/v1/mergers/{SPGI_ID_TRIPLE.company_id}/{start_date.isoformat()}/{end_date.isoformat()}",
+            json=expected_resp.model_dump(mode="json", by_alias=True),
+        )
+
+        resp = await fetch_mergers_from_company_id(
+            company_id=SPGI_ID_TRIPLE.company_id,
+            httpx_client=httpx_client,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
         assert resp == expected_resp
 
     @pytest.mark.asyncio

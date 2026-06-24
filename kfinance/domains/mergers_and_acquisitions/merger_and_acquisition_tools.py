@@ -1,3 +1,4 @@
+from datetime import date
 from textwrap import dedent
 from typing import Type
 
@@ -21,6 +22,17 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
+class GetMergersFromIdentifiersArgs(ToolArgsWithIdentifiers):
+    start_date: date | None = Field(
+        description="The start date for merger date-range filtering. Use null for all mergers.",
+        default=None,
+    )
+    end_date: date | None = Field(
+        description="The end date for merger date-range filtering. Use null for all mergers.",
+        default=None,
+    )
+
+
 class GetMergersFromIdentifiersResp(ToolRespWithIdInfoAndErrors[MergersResp]):
     pass
 
@@ -30,9 +42,19 @@ class GetMergersFromIdentifiers(KfinanceTool):
     description: str = dedent("""
         Retrieves all merger and acquisition transactions involving the specified company.
 
+        If a start_date and/or end_date is specified, only mergers where the merger
+        timeline intersects with the date range are returned. The merger timeline is
+        considered to be from the earliest event associated with the merger to
+        the latest event. If any date between (and inclusive of) these two event dates
+        falls within the passed-in date range, the merger is returned. If only an
+        announcement date is found for a merger, the merger timeline is taken to be
+        until the earlier of the current date or 10 years after the announcement date.
+
         Results are categorized by the company's role: target (being acquired), buyer (making the acquisition), or seller (divesting an asset).
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - When requesting all mergers, leave start_date and end_date null.
+        - Only specify date ranges when the user explicitly requests mergers and acquisitions during some date range.
         - Provides transaction_id, merger_title, and transaction closed_date.
 
         Examples:
@@ -41,14 +63,21 @@ class GetMergersFromIdentifiers(KfinanceTool):
 
         Query: "Get acquisitions for AAPL and GOOGL"
         Function: get_mergers_from_identifiers(identifiers=["AAPL", "GOOGL"])
+
+        Query: "What companies was Apple selling between 2019 and 2022?"
+        Function: get_mergers_from_identifiers(identifiers=["Apple"], start_date="2019-01-01", end_date="2022-12-31")
     """).strip()
-    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
+    args_schema: Type[BaseModel] = GetMergersFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    async def _arun(self, identifiers: list[str]) -> GetMergersFromIdentifiersResp:
+    async def _arun(
+        self, identifiers: list[str], start_date: date | None = None, end_date: date | None = None
+    ) -> GetMergersFromIdentifiersResp:
         """"""
         return await get_mergers_from_identifiers(
             identifiers=identifiers,
+            start_date=start_date,
+            end_date=end_date,
             httpx_client=self.kfinance_client.httpx_client,
         )
 
@@ -127,6 +156,8 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
 async def get_mergers_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx.AsyncClient,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> GetMergersFromIdentifiersResp:
     """Fetch mergers for all identifiers."""
 
@@ -140,6 +171,8 @@ async def get_mergers_from_identifiers(
             func=fetch_mergers_from_company_id,
             kwargs=dict(
                 company_id=id_triple.company_id,
+                start_date=start_date,
+                end_date=end_date,
                 httpx_client=httpx_client,
             ),
             result_key=identifier,
@@ -166,9 +199,14 @@ async def get_mergers_from_identifiers(
 async def fetch_mergers_from_company_id(
     company_id: int,
     httpx_client: httpx.AsyncClient,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> MergersResp:
     """Fetch mergers for one company_id."""
-    url = f"/mergers/{company_id}"
+    start_date_str = start_date.isoformat() if start_date else "none"
+    end_date_str = end_date.isoformat() if end_date else "none"
+
+    url = f"/mergers/{company_id}/{start_date_str}/{end_date_str}"
     resp = await httpx_client.get(url=url)
     resp.raise_for_status()
     return MergersResp.model_validate(resp.json())

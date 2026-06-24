@@ -749,8 +749,7 @@ class KFinanceApiClient:
         return PersonProfessionalsResp.model_validate(self.fetch(url))
 
     def fetch_mergers_for_company(
-        self,
-        company_id: int,
+        self, company_id: int, start_date: str | None = None, end_date: str | None = None
     ) -> MergersResp:
         """Fetches the mergers and acquisitions the given company was involved in.
 
@@ -759,7 +758,9 @@ class KFinanceApiClient:
         :return: A MergersResp, containing transaction IDs, closed_date, and 'merger titles' for each of the three kinds of roles the given company could be party to.
         :rtype: MergersResp
         """
-        url = f"{self.url_base}mergers/{company_id}"
+        start_date_str = start_date if start_date else "none"
+        end_date_str = end_date if end_date else "none"
+        url = f"{self.url_base}mergers/{company_id}/{start_date_str}/{end_date_str}"
         return MergersResp.model_validate(self.fetch(url))
 
     def fetch_merger_info(
