@@ -1,3 +1,4 @@
+from datetime import date
 from textwrap import dedent
 from typing import Type
 
@@ -21,6 +22,17 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
+class GetMergersFromIdentifiersArgs(ToolArgsWithIdentifiers):
+    start_date: date | None = Field(
+        description="The start date for merger date-range filtering. Use null for all mergers.",
+        default=None,
+    )
+    end_date: date | None = Field(
+        description="The end date for merger date-range filtering. Use null for all mergers.",
+        default=None,
+    )
+
+
 class GetMergersFromIdentifiersResp(ToolRespWithIdInfoAndErrors[MergersResp]):
     pass
 
@@ -28,12 +40,24 @@ class GetMergersFromIdentifiersResp(ToolRespWithIdInfoAndErrors[MergersResp]):
 class GetMergersFromIdentifiers(KfinanceTool):
     name: str = "get_mergers_from_identifiers"
     description: str = dedent("""
-        Retrieves all merger and acquisition transactions involving the specified company.
+        Retrieves all merger and acquisition transactions involving the specified company. This is the entry point for ALL M&A questions: it maps a company to its transactions.
+
+        If a start_date and/or end_date is specified, only mergers where the merger
+        timeline intersects with the date range are returned. The merger timeline is
+        considered to be from the earliest event associated with the merger to
+        the latest event. If any date between (and inclusive of) these two event dates
+        falls within the passed-in date range, the merger is returned. If only an
+        announcement date is found for a merger, the merger timeline is taken to be
+        until the earlier of the current date or 10 years after the announcement date.
 
         Results are categorized by the company's role: target (being acquired), buyer (making the acquisition), or seller (divesting an asset).
 
+        This tool returns ONLY transaction_id, merger_title, and closed_date for each transaction. It does NOT return announcement dates, deal/transaction values or amounts paid, completion status, or participant details. To get any of those, take each relevant transaction_id from this response and call get_merger_info_from_transaction_id (call it once per relevant transaction_id).
+
+        - The numeric identifier of a COMPANY is never a transaction_id. Always obtain transaction_id values from this tool's response — never pass a company identifier to get_merger_info_from_transaction_id.
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - Provides transaction_id, merger_title, and transaction closed_date.
+        - When requesting all mergers, leave start_date and end_date null.
+        - Only specify date ranges when the user explicitly requests mergers and acquisitions during some date range.
 
         Examples:
         Query: "Which companies did Microsoft purchase?"
@@ -41,14 +65,21 @@ class GetMergersFromIdentifiers(KfinanceTool):
 
         Query: "Get acquisitions for AAPL and GOOGL"
         Function: get_mergers_from_identifiers(identifiers=["AAPL", "GOOGL"])
+
+        Query: "What companies was Apple selling between 2019 and 2022?"
+        Function: get_mergers_from_identifiers(identifiers=["Apple"], start_date="2019-01-01", end_date="2022-12-31")
     """).strip()
-    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
+    args_schema: Type[BaseModel] = GetMergersFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
-    async def _arun(self, identifiers: list[str]) -> GetMergersFromIdentifiersResp:
+    async def _arun(
+        self, identifiers: list[str], start_date: date | None = None, end_date: date | None = None
+    ) -> GetMergersFromIdentifiersResp:
         """"""
         return await get_mergers_from_identifiers(
             identifiers=identifiers,
+            start_date=start_date,
+            end_date=end_date,
             httpx_client=self.kfinance_client.httpx_client,
         )
 
@@ -62,20 +93,29 @@ class GetMergerInfoFromTransactionId(KfinanceTool):
     description: str = dedent("""
         Provides comprehensive information about a specific merger or acquisition transaction, including its timeline (announced date, closed date), participants' company_name and company_id (target, buyers, sellers), and financial consideration details (including monetary values).
 
-        Use this tool for questions about announcement dates and transaction details.
+        Use this tool for questions about announcement dates, deal/transaction values or amounts paid, completion status, and transaction details.
+
+        The transaction_id argument MUST come from a get_mergers_from_identifiers response. It is NOT a company_id or ticker. If you have not yet called get_mergers_from_identifiers for the company in question, do that first.
+
+        When a question concerns more than one transaction (e.g. "all acquisitions over $5B", "deals since 2020"), call this tool once for EVERY transaction_id from the get_mergers_from_identifiers response that matches the criteria — not just the first one.
 
         Examples:
         Query: "When was the acquisition of Ben & Jerry's announced?"
         Function 1: get_mergers_from_identifiers(identifiers=["Ben & Jerry's"])
-        # Function 1 returns all M&A's that involved Ben & Jerry's. Extract the <key_dev_id> from the response where Ben & Jerry's was the target.
-        Function 2: get_merger_info_from_transaction_id(transaction_id=<key_dev_id>)
+        # Function 1 returns all M&A's that involved Ben & Jerry's. Extract the <transaction_id> from the response where Ben & Jerry's was the target.
+        Function 2: get_merger_info_from_transaction_id(transaction_id=<transaction_id>)
 
         Query: "What was the transaction size of Vodafone's acquisition of Mannesmann?"
         Function 1: get_mergers_from_identifiers(identifiers=["Vodafone"])
-        # Function 1 returns all M&A's that involved Vodafone. Extract the <key_dev_id> from the response where Vodafone was the buyer and Mannesmann was the target.
-        Function 2: get_merger_info_from_transaction_id(transaction_id=<key_dev_id>)
+        # Function 1 returns all M&A's that involved Vodafone. Extract the <transaction_id> from the response where Vodafone was the buyer and Mannesmann was the target.
+        Function 2: get_merger_info_from_transaction_id(transaction_id=<transaction_id>)
 
-
+        Query: "List Microsoft's acquisitions over $5 billion announced since 2020."
+        Function 1: get_mergers_from_identifiers(identifiers=["Microsoft"], start_date="2020-01-01")
+        # Function 1 returns transactions where Microsoft was the buyer, each with a transaction_id. Deal value and announcement date are NOT in that response, so call get_merger_info for EACH candidate transaction_id to check the $5B threshold and the announcement date.
+        Function 2: get_merger_info_from_transaction_id(transaction_id=<transaction_id_1>)
+        Function 3: get_merger_info_from_transaction_id(transaction_id=<transaction_id_2>)
+        Function 4: get_merger_info_from_transaction_id(transaction_id=<transaction_id_3>)
     """).strip()
     args_schema: Type[BaseModel] = GetMergerInfoFromTransactionIdArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
@@ -104,8 +144,8 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
         Examples:
         Query: "Who advised S&P Global during their purchase of Kensho?"
         Function 1: get_mergers_from_identifiers(identifiers=["S&P Global"])
-        # Function 1 returns all M&A's that involved S&P Global. Extract the <key_dev_id> from the response where S&P Global was the buyer and Kensho was the target.
-        Function 2: get_advisors_for_company_in_transaction(identifier="S&P Global", transaction_id=<key_dev_id>)
+        # Function 1 returns all M&A's that involved S&P Global. Extract the <transaction_id> from the response where S&P Global was the buyer and Kensho was the target.
+        Function 2: get_advisors_for_company_in_transaction(identifier="S&P Global", transaction_id=<transaction_id>)
 
         Query: "Which firms advised AAPL in transaction 67890?"
         Function: get_advisors_for_company_in_transaction(identifier="AAPL", transaction_id=67890)
@@ -127,6 +167,8 @@ class GetAdvisorsForCompanyInTransactionFromIdentifier(KfinanceTool):
 async def get_mergers_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx.AsyncClient,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> GetMergersFromIdentifiersResp:
     """Fetch mergers for all identifiers."""
 
@@ -140,6 +182,8 @@ async def get_mergers_from_identifiers(
             func=fetch_mergers_from_company_id,
             kwargs=dict(
                 company_id=id_triple.company_id,
+                start_date=start_date,
+                end_date=end_date,
                 httpx_client=httpx_client,
             ),
             result_key=identifier,
@@ -166,9 +210,14 @@ async def get_mergers_from_identifiers(
 async def fetch_mergers_from_company_id(
     company_id: int,
     httpx_client: httpx.AsyncClient,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> MergersResp:
     """Fetch mergers for one company_id."""
-    url = f"/mergers/{company_id}"
+    start_date_str = start_date.isoformat() if start_date else "none"
+    end_date_str = end_date.isoformat() if end_date else "none"
+
+    url = f"/mergers/{company_id}/{start_date_str}/{end_date_str}"
     resp = await httpx_client.get(url=url)
     resp.raise_for_status()
     return MergersResp.model_validate(resp.json())

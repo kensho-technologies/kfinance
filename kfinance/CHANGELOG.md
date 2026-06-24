@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.4.2
+- Change M&A tool descriptions and prompts.py for M&A performance improvement
+
 ## v6.4.1
 - Change ValidQuarter enum from integer to string for Gemini compatibility
 
