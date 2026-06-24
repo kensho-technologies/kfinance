@@ -1,7 +1,11 @@
 # Changelog
 
-## v6.4.2
+## v6.5.1
 - Change M&A tool descriptions and prompts.py for M&A performance improvement
+
+## v6.5.0
+- Add date range parameter to support filtering when listing company mergers
+
 
 ## v6.4.1
 - Change ValidQuarter enum from integer to string for Gemini compatibility
