@@ -6,7 +6,6 @@
 ## v6.5.0
 - Add date range parameter to support filtering when listing company mergers
 
-
 ## v6.4.1
 - Change ValidQuarter enum from integer to string for Gemini compatibility
 

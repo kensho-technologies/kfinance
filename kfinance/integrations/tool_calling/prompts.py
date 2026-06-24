@@ -60,11 +60,11 @@ User Question:
 Which of <COMPANY>'s acquisitions over $5 billion were announced since 2020?
 
 Correct Tool Calls:
-{ "function": "get_mergers_from_identifiers", "arguments": { "identifiers": ["<COMPANY>"], "start_date": "2020-01-01" } }
+{"function": "get_mergers_from_identifiers", "arguments": {"identifiers": ["<COMPANY>"], "start_date": "2020-01-01" } }
 # Returns buyer transactions, each with a transaction_id, e.g. <transaction_id_1>, <transaction_id_2>, <transaction_id_3>. Deal value and announcement date are NOT in this response — fetch each transaction.
-{ "function": "get_merger_info_from_transaction_id", "arguments": { "transaction_id": <transaction_id_1> } }
-{ "function": "get_merger_info_from_transaction_id", "arguments": { "transaction_id": <transaction_id_2> } }
-{ "function": "get_merger_info_from_transaction_id", "arguments": { "transaction_id": <transaction_id_3> } }
+{"function": "get_merger_info_from_transaction_id", "arguments": {"transaction_id": <transaction_id_1> } }
+{"function": "get_merger_info_from_transaction_id", "arguments": {"transaction_id": <transaction_id_2> } }
+{"function": "get_merger_info_from_transaction_id", "arguments": {"transaction_id": <transaction_id_3> } }
 
 Annotation:
 Never pass the company identifier as a transaction_id. Always fan out get_merger_info_from_transaction_id over every candidate transaction_id from step 1 before answering.
@@ -92,7 +92,7 @@ User Question:
 How has Tesla's R&D expense changed since 2020?
 
 Correct Tool Call:
-{ "function": "get_financial_line_item_from_identifiers", "arguments": { "line_item": "research_and_development_expense", "start_year": 2020, "end_year": 2025, // Use the current year if the question implies "up to now" "identifiers": ["TSLA"] } }
+{"function": "get_financial_line_item_from_identifiers", "arguments": {"line_item": "research_and_development_expense", "start_year": 2020, "end_year": 2025, // Use the current year if the question implies "up to now" "identifiers": ["TSLA"] } }
 
 Annotation:
 When the user asks for data "since" a year, always set end_year to the current year if not otherwise specified.
@@ -102,7 +102,7 @@ User Question:
 What was Apple's capital expenditure in 2022?
 
 Correct Tool Call:
-{ "function": "get_financial_line_item_from_identifiers", "arguments": { "line_item": "capital_expenditure", // Use the canonical singular form "start_year": 2022, "end_year": 2022, "identifiers": ["AAPL"] } }
+{"function": "get_financial_line_item_from_identifiers", "arguments": {"line_item": "capital_expenditure", // Use the canonical singular form "start_year": 2022, "end_year": 2022, "identifiers": ["AAPL"] } }
 
 Annotation:
 Always map synonyms or plural forms (e.g., "capex", "capital expenditures") to the canonical internal key (e.g., "capital_expenditure").
@@ -112,7 +112,7 @@ User Question:
 Compare the net income of Microsoft and Google in 2023.
 
 Correct Tool Call:
-{ "function": "get_financial_line_item_from_identifiers", "arguments": { "line_item": "net_income", "start_year": 2023, "end_year": 2023, "identifiers": ["Microsoft", "Google"] // Include all requested companies } }
+{"function": "get_financial_line_item_from_identifiers", "arguments": {"line_item": "net_income", "start_year": 2023, "end_year": 2023, "identifiers": ["Microsoft", "Google"] // Include all requested companies } }
 
 Annotation:
 Ensure all companies mentioned in the question are included in the identifiers list, and that the correct identifiers are used.
@@ -122,7 +122,7 @@ User Question:
 What was Ford's total revenue in Q2 2024?
 
 Correct Tool Call:
-{ "function": "get_financial_line_item_from_identifiers", "arguments": { "line_item": "total_revenue", "period_type": "quarterly", "start_year": 2024, "end_year": 2024, "start_quarter": 2, "end_quarter": 2, "identifiers": ["F"] } }
+{"function": "get_financial_line_item_from_identifiers", "arguments": {"line_item": "total_revenue", "period_type": "quarterly", "start_year": 2024, "end_year": 2024, "start_quarter": 2, "end_quarter": 2, "identifiers": ["F"] } }
 
 Annotation:
 Match the year and quarter exactly as specified in the question. Do not default to the current period unless the question is ambiguous.
@@ -132,7 +132,7 @@ User Question:
 Show basic EPS for Samsung in 2023.
 
 Correct Tool Call:
-{ "function": "get_financial_line_item_from_identifiers", "arguments": { "line_item": "basic_eps", // Do not substitute with related items like "basic_eps_including_extra_items" "start_year": 2023, "end_year": 2023, "identifiers": ["Samsung"] } }
+{"function": "get_financial_line_item_from_identifiers", "arguments": {"line_item": "basic_eps", // Do not substitute with related items like "basic_eps_including_extra_items" "start_year": 2023, "end_year": 2023, "identifiers": ["Samsung"] } }
 
 Annotation:
 Use the exact line item requested, not a related or broader/narrower variant.
@@ -142,7 +142,7 @@ User Question:
 What was Pfizer's net income in Q4 2023?
 
 Correct Tool Call:
-{ "function": "get_financial_line_item_from_identifiers", "arguments": { "line_item": "net_income", "period_type": "quarterly", "start_year": 2023, "end_year": 2023, "start_quarter": 4, "end_quarter": 4, "identifiers": ["Pfizer"] } }
+{"function": "get_financial_line_item_from_identifiers", "arguments": {"line_item": "net_income", "period_type": "quarterly", "start_year": 2023, "end_year": 2023, "start_quarter": 4, "end_quarter": 4, "identifiers": ["Pfizer"] } }
 
 Annotation:
 When the question specifies a quarter, always include both start_quarter and end_quarter.
@@ -152,7 +152,7 @@ User Question:
 Show Amazon's revenue for the last twelve months.
 
 Correct Tool Call:
-{ "function": "get_financial_line_item_from_identifiers", "arguments": { "line_item": "total_revenue", "period_type": "ltm", "identifiers": ["Amazon"] } }
+{"function": "get_financial_line_item_from_identifiers", "arguments": {"line_item": "total_revenue", "period_type": "ltm", "identifiers": ["Amazon"] } }
 
 Annotation:
 Set period_type to "ltm" for "last twelve months", "ytd" for "year to date", and "quarterly" or "annual" as appropriate for the question.
@@ -162,7 +162,7 @@ User Question:
 Compare the capital expenditures of Apple and Microsoft from 2021 to 2023, by quarter.
 
 Correct Tool Call:
-{ "function": "get_financial_line_item_from_identifiers", "arguments": { "line_item": "capital_expenditure", "period_type": "quarterly", "start_year": 2021, "end_year": 2023, "identifiers": ["Apple", "Microsoft"] } }
+{"function": "get_financial_line_item_from_identifiers", "arguments": {"line_item": "capital_expenditure", "period_type": "quarterly", "start_year": 2021, "end_year": 2023, "identifiers": ["Apple", "Microsoft"] } }
 
 Annotation:
 Handle all parameters correctly: use the canonical line item, include all companies, set the correct period type, and match the year range exactly.
