@@ -50,14 +50,6 @@ class GetMergersFromIdentifiers(KfinanceTool):
         announcement date is found for a merger, the merger timeline is taken to be
         until the earlier of the current date or 10 years after the announcement date.
 
-        If a start_date and/or end_date is specified, only mergers where the merger
-        timeline intersects with the date range are returned. The merger timeline is
-        considered to be from the earliest event associated with the merger to
-        the latest event. If any date between (and inclusive of) these two event dates
-        falls within the passed-in date range, the merger is returned. If only an
-        announcement date is found for a merger, the merger timeline is taken to be
-        until the earlier of the current date or 10 years after the announcement date.
-
         Results are categorized by the company's role: target (being acquired), buyer (making the acquisition), or seller (divesting an asset).
 
         This tool returns ONLY transaction_id, merger_title, and closed_date for each transaction. It does NOT return announcement dates, deal/transaction values or amounts paid, completion status, or participant details. To get any of those, take each relevant transaction_id from this response and call get_merger_info_from_transaction_id (call it once per relevant transaction_id).
