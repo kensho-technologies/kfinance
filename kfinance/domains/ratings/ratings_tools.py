@@ -1,9 +1,8 @@
-from datetime import date
 from textwrap import dedent
 from typing import Type
 
 import httpx
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from kfinance.client.permission_models import Permission
 from kfinance.domains.ratings.id_resolution import resolve_entities
@@ -47,15 +46,14 @@ class GetIssuerRatingsFromIdentifiers(KfinanceTool):
             httpx_client=self.kfinance_client.httpx_client,
         )
 
+
 async def get_issuer_ratings_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx.AsyncClient,
 ) -> GetIssuerRatingsFromIdentifiersResp:
     """Fetch issuer ratings for a list of identifiers."""
 
-    entity_resp = await resolve_entities(
-        identifiers=[identifiers], httpx_client=httpx_client
-    )
+    entity_resp = await resolve_entities(identifiers=identifiers, httpx_client=httpx_client)
     errors: list[str] = list(entity_resp.errors.values())
 
     # check if identifiers were resolved
@@ -65,8 +63,8 @@ async def get_issuer_ratings_from_identifiers(
             identifier_info={},
             errors=errors,
         )
-    
-    entity_ids = [identifier.entitiy_id for identifier in entity_resp.identifiers_resolved]
+
+    entity_ids = [identifier.entity_id for identifier in entity_resp.identifiers_resolved.values()]
 
     result = await fetch_issuer_ratings_from_identifiers(
         entity_ids=entity_ids,
@@ -75,16 +73,17 @@ async def get_issuer_ratings_from_identifiers(
 
     identifier_results = {}
     if result.errors:
-        errors.append(f"No results found for identifier {key}" for key in result.errors.keys())
+        errors.extend(f"No results found for identifier {key}" for key in result.errors.keys())
     else:
-        for key in result.keys():
-            identifier_results[key] = result[key] 
+        for key in result.results.keys():
+            identifier_results[key] = result.results[key]
 
     return GetIssuerRatingsFromIdentifiersResp(
         identifier_results=identifier_results,
         identifier_info=entity_resp.identifiers_resolved,
         errors=errors,
     )
+
 
 async def fetch_issuer_ratings_from_identifiers(
     entity_ids: list[int],
@@ -94,9 +93,7 @@ async def fetch_issuer_ratings_from_identifiers(
 
     # add optional fields if provided
     url = "/ratings/issuer_ratings/"
-    payload: dict[str, list[str | int]] = {
-        "entity_ids": entity_ids
-    }
+    payload: dict[str, str | list[int]] = {"entity_ids": entity_ids}
 
     resp = await httpx_client.post(url=url, json=payload)
     resp.raise_for_status()
