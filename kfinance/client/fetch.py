@@ -40,7 +40,7 @@ from kfinance.domains.estimates.estimates_models import (
 from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType, KeyDevsResp
 from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
-    MergerInfo,
+    MergersInfo,
     MergersResp,
 )
 from kfinance.domains.prices.price_models import HistoryMetadataResp, PriceHistory
@@ -763,10 +763,9 @@ class KFinanceApiClient:
         url = f"{self.url_base}mergers/{company_id}/{start_date_str}/{end_date_str}"
         return MergersResp.model_validate(self.fetch(url))
 
-    def fetch_merger_info(
-        self,
-        transaction_id: int,
-    ) -> MergerInfo:
+    def fetch_mergers_info(
+        self, transaction_ids: list[int], include_advisors: bool = False
+    ) -> MergersInfo:
         """Fetches information about the given merger or acquisition, including the timeline, the participants, and the considerations.
 
         :param transaction_id: The transaction ID to filter on.
@@ -774,8 +773,10 @@ class KFinanceApiClient:
         :return: A dictionary containing the timeline, the participants, and the considerations (eith their details) of the transaction.
         :rtype: MergerInfo
         """
-        url = f"{self.url_base}merger/info/{transaction_id}"
-        return MergerInfo.model_validate(self.fetch(url))
+        url = f"{self.url_base}mergers/info"
+        request_body = {"transaction_ids": transaction_ids, "include_advisors": include_advisors}
+
+        return MergersInfo.model_validate(self.fetch(url, method="POST", request_body=request_body))
 
     def fetch_advisors_for_company_in_merger(
         self,

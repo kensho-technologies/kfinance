@@ -30,8 +30,8 @@ from kfinance.domains.key_developments.key_devs_tools import GetKeyDevsFromIdent
 from kfinance.domains.line_items.line_item_tools import GetFinancialLineItemFromIdentifiers
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools import (
     GetAdvisorsForCompanyInTransactionFromIdentifier,
-    GetMergerInfoFromTransactionId,
     GetMergersFromIdentifiers,
+    GetMergersInfoFromTransactionIds,
 )
 from kfinance.domains.prices.price_tools import (
     GetHistoryMetadataFromIdentifiers,
@@ -95,7 +95,7 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetFinancialStatementFromIdentifiers,
     # Mergers & Acquisitions
     GetAdvisorsForCompanyInTransactionFromIdentifier,
-    GetMergerInfoFromTransactionId,
+    GetMergersInfoFromTransactionIds,
     GetMergersFromIdentifiers,
     # Rounds of Funding
     GetRoundsOfFundingFromIdentifiers,

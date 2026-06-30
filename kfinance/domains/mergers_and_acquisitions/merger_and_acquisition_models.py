@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date as date_type
 from decimal import Decimal
 
 from pydantic import BaseModel
@@ -9,7 +9,11 @@ from kfinance.domains.companies.company_models import CompanyId, CompanyIdAndNam
 class MergerSummary(BaseModel):
     transaction_id: int
     merger_title: str
-    closed_date: date | None
+    status: str
+    start_date: date_type | None
+    closed_date: date_type | None
+    target: str
+    buyers: list[str]
 
 
 class MergersResp(BaseModel):
@@ -26,13 +30,17 @@ class AdvisorResp(BaseModel):
 
 class MergerTimelineElement(BaseModel):
     status: str
-    date: date
+    date: date_type
+
+
+class MergerParticipant(CompanyIdAndName):
+    advisors: list[AdvisorResp] | None
 
 
 class MergerParticipants(BaseModel):
-    target: CompanyIdAndName
-    buyers: list[CompanyIdAndName]
-    sellers: list[CompanyIdAndName]
+    target: MergerParticipant
+    buyers: list[MergerParticipant]
+    sellers: list[MergerParticipant]
 
 
 class MergerConsiderationDetail(BaseModel):
@@ -55,3 +63,11 @@ class MergerInfo(BaseModel):
     timeline: list[MergerTimelineElement]
     participants: MergerParticipants
     consideration: MergerConsideration | None = None
+
+
+class NoMergerFound(BaseModel):
+    error: str
+
+
+class MergersInfo(BaseModel):
+    results: dict[int, MergerInfo | NoMergerFound]

@@ -12,7 +12,7 @@ from kfinance.client.tests.test_objects import (
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     AdvisorResp,
-    MergerInfo,
+    MergersInfo,
     MergersResp,
 )
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools import (
@@ -20,8 +20,8 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools impo
     GetMergersFromIdentifiersResp,
     fetch_mergers_from_company_id,
     get_advisors_for_company_in_transaction_from_identifier,
-    get_merger_info_from_transaction_id,
     get_mergers_from_identifiers,
+    get_mergers_info_from_transaction_ids,
 )
 
 
@@ -116,7 +116,7 @@ class TestMergersAndAcquisitions:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
-    async def test_get_merger_info_from_transaction_id(
+    async def test_get_mergers_info_from_transaction_ids(
         self,
         httpx_client: httpx.AsyncClient,
         httpx_mock: HTTPXMock,
@@ -126,17 +126,20 @@ class TestMergersAndAcquisitions:
         THEN we get back the detailed merger information
         """
         transaction_id = 517414
+        error_transaction_id = 0
 
         timeline_resp = [
             {"status": "Announced", "date": "2000-09-12"},
             {"status": "Closed", "date": "2000-09-12"},
         ]
         participants_resp = {
-            "target": {"company_id": 31696, "company_name": "MongoMusic, Inc."},
-            "buyers": [{"company_id": 21835, "company_name": "Microsoft Corporation"}],
+            "target": {"company_id": 31696, "company_name": "MongoMusic, Inc.", "advisors": None},
+            "buyers": [
+                {"company_id": 21835, "company_name": "Microsoft Corporation", "advisors": None}
+            ],
             "sellers": [
-                {"company_id": 18805, "company_name": "Angel Investors L.P."},
-                {"company_id": 20087, "company_name": "Draper Richards, L.P."},
+                {"company_id": 18805, "company_name": "Angel Investors L.P.", "advisors": None},
+                {"company_id": 20087, "company_name": "Draper Richards, L.P.", "advisors": None},
             ],
         }
         consideration_resp = {
@@ -155,26 +158,43 @@ class TestMergersAndAcquisitions:
             ],
         }
 
+        error_resp = f"No merger found for transaction_id: {error_transaction_id}"
+
         httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/merger/info/{transaction_id}",
+            method="POST",
+            url=f"https://kfinance.kensho.com/api/v1/mergers/info",
+            match_json={
+                "transaction_ids": [transaction_id, error_transaction_id],
+                "include_advisors": True,
+            },
             json={
-                "timeline": timeline_resp,
-                "participants": participants_resp,
-                "consideration": consideration_resp,
+                "results": {
+                    transaction_id: {
+                        "timeline": timeline_resp,
+                        "participants": participants_resp,
+                        "consideration": consideration_resp,
+                    },
+                    error_transaction_id: {"error": error_resp},
+                }
             },
         )
 
-        expected_response = MergerInfo.model_validate(
+        expected_response = MergersInfo.model_validate(
             {
-                "timeline": timeline_resp,
-                "participants": participants_resp,
-                "consideration": consideration_resp,
+                "results": {
+                    transaction_id: {
+                        "timeline": timeline_resp,
+                        "participants": participants_resp,
+                        "consideration": consideration_resp,
+                    },
+                    error_transaction_id: {"error": error_resp},
+                }
             }
         )
 
-        resp = await get_merger_info_from_transaction_id(
-            transaction_id=transaction_id,
+        resp = await get_mergers_info_from_transaction_ids(
+            transaction_ids=[transaction_id, error_transaction_id],
+            include_advisors=True,
             httpx_client=httpx_client,
         )
 
