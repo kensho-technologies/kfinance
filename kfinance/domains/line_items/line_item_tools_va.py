@@ -77,6 +77,7 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiersResp(
 ):
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
+    data_source: str = "Visible Alpha"
 
 
 class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
