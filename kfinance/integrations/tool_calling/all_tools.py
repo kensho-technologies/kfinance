@@ -31,7 +31,9 @@ from kfinance.domains.estimates.estimates_tools_va import (
 )
 from kfinance.domains.key_developments.key_devs_tools import GetKeyDevsFromIdentifier
 from kfinance.domains.line_items.line_item_tools import GetFinancialLineItemFromIdentifiers
-from kfinance.domains.line_items.line_item_tools_va import GetFinancialLineItemFromIdentifiersVa
+from kfinance.domains.line_items.line_item_tools_va import (
+    GetVisibleAlphaFinancialLineItemFromIdentifiers,
+)
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools import (
     GetAdvisorsForCompanyInTransactionFromIdentifier,
     GetMergerInfoFromTransactionId,
@@ -51,7 +53,7 @@ from kfinance.domains.rounds_of_funding.rounds_of_funding_tools import (
     GetRoundsOfFundingInfoFromTransactionIds,
 )
 from kfinance.domains.segments.segment_tools import GetSegmentsFromIdentifiers
-from kfinance.domains.segments.segment_tools_va import GetSegmentsFromIdentifiersVa
+from kfinance.domains.segments.segment_tools_va import GetVisibleAlphaSegmentsFromIdentifiers
 from kfinance.domains.statements.statement_tools import GetFinancialStatementFromIdentifiers
 from kfinance.integrations.tool_calling.static_tools.get_latest import GetLatest
 from kfinance.integrations.tool_calling.static_tools.get_n_quarters_ago import GetNQuartersAgo
@@ -88,7 +90,7 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetKeyDevsFromIdentifier,
     # Line Items
     GetFinancialLineItemFromIdentifiers,
-    GetFinancialLineItemFromIdentifiersVa,
+    GetVisibleAlphaFinancialLineItemFromIdentifiers,
     # Prices
     GetPricesFromIdentifiers,
     GetHistoryMetadataFromIdentifiers,
@@ -97,7 +99,7 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetProfessionalsFromPersonIds,
     # Segments
     GetSegmentsFromIdentifiers,
-    GetSegmentsFromIdentifiersVa,
+    GetVisibleAlphaSegmentsFromIdentifiers,
     # Statements
     GetFinancialStatementFromIdentifiers,
     # Mergers & Acquisitions

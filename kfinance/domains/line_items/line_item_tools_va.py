@@ -80,8 +80,8 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiersResp(
     data_source: str = "Visible Alpha"
 
 
-class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
-    name: str = "get_financial_line_item_from_identifiers"
+class GetVisibleAlphaFinancialLineItemFromIdentifiers(KfinanceTool):
+    name: str = "get_visible_alpha_financial_line_item_from_identifiers"
     description: str = dedent("""
         Get any reported financial metric for a list of identifiers: including company-level, segment-level, product-level, and geographic metrics, as well as ratios and per-unit figures. This is the primary tool for a specific named metric. The freeform `line_item_search` query is matched semantically against a large catalog, so phrase it descriptively and prefer this tool before segment-, statement-, or estimate-specific tools.
 
