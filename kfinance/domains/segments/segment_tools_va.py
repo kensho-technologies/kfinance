@@ -5,7 +5,7 @@ import httpx
 from pydantic import BaseModel, Field
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
-from kfinance.client.models.date_and_period_models import PeriodType
+from kfinance.client.models.date_and_period_models import EstimatePeriodType
 from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import CalendarType
@@ -53,7 +53,7 @@ class GetSegmentsFromIdentifiersVa(KfinanceTool):
         self,
         identifiers: list[str],
         segment_type: SegmentType,
-        period_type: PeriodType | None = None,
+        period_type: EstimatePeriodType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
         start_quarter: Literal[1, 2, 3, 4] | None = None,
@@ -82,7 +82,7 @@ async def fetch_segments_from_company_ids_va(
     company_ids: list[int],
     segment_type: SegmentType,
     httpx_client: httpx.AsyncClient,
-    period_type: PeriodType | None = None,
+    period_type: EstimatePeriodType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,
     start_quarter: Literal[1, 2, 3, 4] | None = None,
@@ -125,7 +125,7 @@ async def get_segments_from_identifiers_va(
     identifiers: list[str],
     segment_type: SegmentType,
     httpx_client: httpx.AsyncClient,
-    period_type: PeriodType | None = None,
+    period_type: EstimatePeriodType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,
     start_quarter: Literal[1, 2, 3, 4] | None = None,
