@@ -565,7 +565,7 @@ class KFinanceApiClient:
     def fetch_visible_alpha_line_item(
         self,
         company_ids: list[int],
-        line_item: str,
+        line_item_search: str,
         *,
         start_year: int | None = None,
         end_year: int | None = None,
@@ -586,7 +586,7 @@ class KFinanceApiClient:
 
         request_body: dict[str, str | int | list[int]] = {
             "company_ids": company_ids,
-            "line_item": line_item,
+            "line_item_search": line_item_search,
         }
 
         fields = [

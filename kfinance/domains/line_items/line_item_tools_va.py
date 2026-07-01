@@ -29,7 +29,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 
 
 class GetVisibleAlphaFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
-    line_item: str = Field(
+    line_item_search: str = Field(
         description="The financial metric, business measure, or quantitative data point to retrieve. Use descriptive natural language. Preserve the specificity of what the user asked for; keep any product, model, series, segment, or region qualifiers they named rather than generalizing to a broader metric. When the user names several distinct items, make a separate call per item using its specific name."
     )
     period_type: EstimatePeriodType | None = Field(
@@ -83,7 +83,7 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiersResp(
 class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
     name: str = "get_financial_line_item_from_identifiers"
     description: str = dedent("""
-        Get any reported financial metric for a list of identifiers: including company-level, segment-level, product-level, and geographic metrics, as well as ratios and per-unit figures. This is the primary tool for a specific named metric. The freeform `line_item` query is matched semantically against a large catalog, so phrase it descriptively and prefer this tool before segment-, statement-, or estimate-specific tools.
+        Get any reported financial metric for a list of identifiers: including company-level, segment-level, product-level, and geographic metrics, as well as ratios and per-unit figures. This is the primary tool for a specific named metric. The freeform `line_item_search` query is matched semantically against a large catalog, so phrase it descriptively and prefer this tool before segment-, statement-, or estimate-specific tools.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - To fetch the most recent value, leave all time parameters as null.
@@ -94,17 +94,17 @@ class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
 
         Examples:
         Query: "Get MSFT and AAPL revenue and gross profit quarterly"
-        Function: get_financial_line_item_from_identifiers(line_item="total revenue", identifiers=["MSFT", "AAPL"], period_type="quarterly")
-        Function: get_financial_line_item_from_identifiers(line_item="gross profit", identifiers=["MSFT", "AAPL"], period_type="quarterly")
+        Function: get_financial_line_item_from_identifiers(line_item_search="total revenue", identifiers=["MSFT", "AAPL"], period_type="quarterly")
+        Function: get_financial_line_item_from_identifiers(line_item_search="gross profit", identifiers=["MSFT", "AAPL"], period_type="quarterly")
 
         Query: "How much money did TSMC make for 5nm wafers"
-        Function: get_financial_line_item_from_identifiers(line_item="revenue from 5nm wafers", identifiers=["TSMC"], period_type="annual")
+        Function: get_financial_line_item_from_identifiers(line_item_search="revenue from 5nm wafers", identifiers=["TSMC"], period_type="annual")
 
         Query: "Tesla automotive gross margin for FY2023"
-        Function: get_financial_line_item_from_identifiers(line_item="automotive gross margin", identifiers=["Tesla"], period_type="annual", calendar_type="fiscal", start_year=2023, end_year=2023)
+        Function: get_financial_line_item_from_identifiers(line_item_search="automotive gross margin", identifiers=["Tesla"], period_type="annual", calendar_type="fiscal", start_year=2023, end_year=2023)
 
         Query: "Most recent three quarters except one ppe for Exxon and Hasbro"
-        Function: get_financial_line_item_from_identifiers(line_item="property plant and equipment", period_type="quarterly", num_periods=2, num_periods_back=1, identifiers=["Exxon", "Hasbro"])
+        Function: get_financial_line_item_from_identifiers(line_item_search="property plant and equipment", period_type="quarterly", num_periods=2, num_periods_back=1, identifiers=["Exxon", "Hasbro"])
     """).strip()
     args_schema: Type[BaseModel] = GetVisibleAlphaFinancialLineItemFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}
@@ -112,7 +112,7 @@ class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
     async def _arun(
         self,
         identifiers: list[str],
-        line_item: str,
+        line_item_search: str,
         period_type: EstimatePeriodType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
@@ -126,7 +126,7 @@ class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
         """"""
         return await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=identifiers,
-            line_item=line_item,
+            line_item_search=line_item_search,
             httpx_client=self.kfinance_client.httpx_client,
             period_type=period_type,
             start_year=start_year,
@@ -142,7 +142,7 @@ class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
 
 async def fetch_visible_alpha_line_item_from_company_ids(
     company_ids: list[int],
-    line_item: str,
+    line_item_search: str,
     httpx_client: httpx.AsyncClient,
     period_type: EstimatePeriodType | None = None,
     start_year: int | None = None,
@@ -157,7 +157,7 @@ async def fetch_visible_alpha_line_item_from_company_ids(
     """Fetch line items for a list of company IDs using Visible Alpha as the data source."""
     params: dict[str, Any] = {
         "company_ids": company_ids,
-        "line_item": line_item,
+        "line_item_search": line_item_search,
     }
 
     if period_type is not None:
@@ -187,7 +187,7 @@ async def fetch_visible_alpha_line_item_from_company_ids(
 
 async def get_visible_alpha_financial_line_item_from_identifiers(
     identifiers: list[str],
-    line_item: str,
+    line_item_search: str,
     httpx_client: httpx.AsyncClient,
     period_type: EstimatePeriodType | None = None,
     start_year: int | None = None,
@@ -210,7 +210,7 @@ async def get_visible_alpha_financial_line_item_from_identifiers(
     if id_triple_resp.company_ids:
         line_item_resp = await fetch_visible_alpha_line_item_from_company_ids(
             company_ids=id_triple_resp.company_ids,
-            line_item=line_item,
+            line_item_search=line_item_search,
             httpx_client=httpx_client,
             period_type=period_type,
             start_year=start_year,
@@ -270,10 +270,10 @@ async def get_visible_alpha_financial_line_item_from_identifiers(
     if metadata:
         resp_model.notes.append(
             "The result may not be an exact match. ALWAYS compare the returned"
-            " `line_item.name` against your intent and the listed"
+            " `line_item_search.name` against your intent and the listed"
             " `top_ranked_alternatives`. If any alternative is a closer match to"
             " what was asked, you MUST call the tool again using that exact"
-            " alternative name as the `line_item` query before answering."
+            " alternative name as the `line_item_search` query before answering."
         )
 
     return resp_model
