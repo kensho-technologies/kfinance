@@ -55,8 +55,8 @@ class GetVisibleAlphaSegmentsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Seg
     data_source: str = "Visible Alpha"
 
 
-class GetSegmentsFromIdentifiersVa(KfinanceTool):
-    name: str = "get_segments_from_identifiers"
+class GetVisibleAlphaSegmentsFromIdentifiers(KfinanceTool):
+    name: str = "get_visible_alpha_segments_from_identifiers"
     description: str = dedent("""
         Get the templated business or geographic segments associated with a list of identifiers.
 

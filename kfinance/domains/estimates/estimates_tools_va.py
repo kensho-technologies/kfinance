@@ -74,7 +74,7 @@ class GetVisibleAlphaEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Es
 
 
 class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
-    name: str = "get_consensus_estimates_from_identifiers"
+    name: str = "get_visible_alpha_consensus_estimates_from_identifiers"
     description: str = dedent("""
         Get consensus analyst estimates for a list of identifiers.
 
