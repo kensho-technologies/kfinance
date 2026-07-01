@@ -10,8 +10,8 @@ from kfinance.domains.line_items.response_notes import (
 )
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
 from kfinance.domains.segments.segment_tools_va import (
-    fetch_segments_from_company_ids_va,
-    get_segments_from_identifiers_va,
+    fetch_visible_alpha_segments_from_company_ids,
+    get_visible_alpha_segments_from_identifiers,
 )
 
 
@@ -58,7 +58,7 @@ class TestFetchSegmentsFromCompanyIdsVa:
         self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
     ) -> None:
         """
-        WHEN we fetch segments via the VA function
+        WHEN we fetch segments via the Visible Alpha function
         THEN data_source_type is not sent in the request body
         """
         httpx_mock.add_response(
@@ -67,7 +67,7 @@ class TestFetchSegmentsFromCompanyIdsVa:
             json={"results": {str(SPGI_ID_TRIPLE.company_id): SEGMENTS_RESP}, "errors": {}},
         )
 
-        resp = await fetch_segments_from_company_ids_va(
+        resp = await fetch_visible_alpha_segments_from_company_ids(
             company_ids=[SPGI_ID_TRIPLE.company_id],
             segment_type=SegmentType.business,
             httpx_client=httpx_client,
@@ -97,10 +97,10 @@ class TestGetSegmentsFromIdentifiersVa:
         add_spgi_segments_va_mock: None,
     ) -> None:
         """
-        WHEN we request VA segments for SPGI
+        WHEN we request Visible Alpha segments for SPGI
         THEN the result is keyed by the original identifier
         """
-        resp = await get_segments_from_identifiers_va(
+        resp = await get_visible_alpha_segments_from_identifiers(
             identifiers=["SPGI"],
             segment_type=SegmentType.business,
             httpx_client=httpx_client,
@@ -121,7 +121,7 @@ class TestGetSegmentsFromIdentifiersVa:
         WHEN one identifier cannot be resolved
         THEN it surfaces in errors and the valid result is still returned
         """
-        resp = await get_segments_from_identifiers_va(
+        resp = await get_visible_alpha_segments_from_identifiers(
             identifiers=["SPGI", "non-existent"],
             segment_type=SegmentType.business,
             httpx_client=httpx_client,
@@ -148,7 +148,7 @@ class TestGetSegmentsFromIdentifiersVa:
             },
         )
 
-        resp = await get_segments_from_identifiers_va(
+        resp = await get_visible_alpha_segments_from_identifiers(
             identifiers=["SPGI"],
             segment_type=SegmentType.business,
             httpx_client=httpx_client,
@@ -173,7 +173,7 @@ class TestGetSegmentsFromIdentifiersVa:
             json={"results": {str(SPGI_ID_TRIPLE.company_id): SEGMENTS_RESP}, "errors": {}},
         )
 
-        resp = await get_segments_from_identifiers_va(
+        resp = await get_visible_alpha_segments_from_identifiers(
             identifiers=["SPGI"],
             segment_type=SegmentType.business,
             httpx_client=httpx_client,
@@ -200,7 +200,7 @@ class TestGetSegmentsFromIdentifiersVa:
             },
         )
 
-        resp = await get_segments_from_identifiers_va(
+        resp = await get_visible_alpha_segments_from_identifiers(
             identifiers=[f"{COMPANY_ID_PREFIX}1", f"{COMPANY_ID_PREFIX}2"],
             segment_type=SegmentType.business,
             httpx_client=httpx_client,

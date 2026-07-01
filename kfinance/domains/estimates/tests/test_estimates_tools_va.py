@@ -5,8 +5,8 @@ from pytest_httpx import HTTPXMock
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.estimates.estimates_models import Estimates
 from kfinance.domains.estimates.estimates_tools_va import (
-    fetch_estimates_from_company_ids_va,
-    get_estimates_from_identifiers_va,
+    fetch_visible_alpha_estimates_from_company_ids,
+    get_visible_alpha_estimates_from_identifiers,
 )
 from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata
 from kfinance.domains.line_items.response_notes import (
@@ -51,7 +51,7 @@ class TestFetchEstimatesFromCompanyIdsVa:
         self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
     ) -> None:
         """
-        WHEN we fetch estimates via the VA function
+        WHEN we fetch estimates via the Visible Alpha function
         THEN data_source_type is not sent in the request body
         """
         httpx_mock.add_response(
@@ -64,7 +64,7 @@ class TestFetchEstimatesFromCompanyIdsVa:
             },
         )
 
-        resp = await fetch_estimates_from_company_ids_va(
+        resp = await fetch_visible_alpha_estimates_from_company_ids(
             company_ids=[SPGI_ID_TRIPLE.company_id],
             httpx_client=httpx_client,
         )
@@ -95,7 +95,7 @@ class TestFetchEstimatesFromCompanyIdsVa:
             },
         )
 
-        resp = await fetch_estimates_from_company_ids_va(
+        resp = await fetch_visible_alpha_estimates_from_company_ids(
             company_ids=[SPGI_ID_TRIPLE.company_id],
             httpx_client=httpx_client,
             estimate_search="iPhone unit sales",
@@ -121,7 +121,7 @@ class TestFetchEstimatesFromCompanyIdsVa:
             },
         )
 
-        resp = await fetch_estimates_from_company_ids_va(
+        resp = await fetch_visible_alpha_estimates_from_company_ids(
             company_ids=[SPGI_ID_TRIPLE.company_id],
             httpx_client=httpx_client,
         )
@@ -153,10 +153,10 @@ class TestGetEstimatesFromIdentifiersVa:
         add_spgi_estimates_va_mock: None,
     ) -> None:
         """
-        WHEN we request VA estimates for SPGI
+        WHEN we request Visible Alpha estimates for SPGI
         THEN the result is keyed by the original identifier
         """
-        resp = await get_estimates_from_identifiers_va(
+        resp = await get_visible_alpha_estimates_from_identifiers(
             identifiers=["SPGI"],
             httpx_client=httpx_client,
         )
@@ -176,7 +176,7 @@ class TestGetEstimatesFromIdentifiersVa:
         WHEN one identifier cannot be resolved
         THEN it surfaces in errors and the valid result is still returned
         """
-        resp = await get_estimates_from_identifiers_va(
+        resp = await get_visible_alpha_estimates_from_identifiers(
             identifiers=["SPGI", "non-existent"],
             httpx_client=httpx_client,
         )
@@ -203,7 +203,7 @@ class TestGetEstimatesFromIdentifiersVa:
             },
         )
 
-        resp = await get_estimates_from_identifiers_va(
+        resp = await get_visible_alpha_estimates_from_identifiers(
             identifiers=["SPGI"],
             httpx_client=httpx_client,
         )
@@ -229,7 +229,7 @@ class TestGetEstimatesFromIdentifiersVa:
             },
         )
 
-        resp = await get_estimates_from_identifiers_va(
+        resp = await get_visible_alpha_estimates_from_identifiers(
             identifiers=["SPGI"],
             httpx_client=httpx_client,
         )
@@ -246,7 +246,7 @@ class TestGetEstimatesFromIdentifiersVa:
         WHEN the API returns no metadata
         THEN no alternatives note is added
         """
-        resp = await get_estimates_from_identifiers_va(
+        resp = await get_visible_alpha_estimates_from_identifiers(
             identifiers=["SPGI"],
             httpx_client=httpx_client,
         )
@@ -260,10 +260,10 @@ class TestGetEstimatesFromIdentifiersVa:
         add_spgi_estimates_va_mock: None,
     ) -> None:
         """
-        WHEN we get a valid VA estimates result
+        WHEN we get a valid Visible Alpha estimates result
         THEN fiscal period notes are included (estimates are always fiscal)
         """
-        resp = await get_estimates_from_identifiers_va(
+        resp = await get_visible_alpha_estimates_from_identifiers(
             identifiers=["SPGI"],
             httpx_client=httpx_client,
         )
@@ -289,7 +289,7 @@ class TestGetEstimatesFromIdentifiersVa:
             },
         )
 
-        resp = await get_estimates_from_identifiers_va(
+        resp = await get_visible_alpha_estimates_from_identifiers(
             identifiers=["SPGI"],
             httpx_client=httpx_client,
         )

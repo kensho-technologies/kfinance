@@ -13,7 +13,7 @@ from kfinance.client.models.date_and_period_models import (
     EstimatePeriodType,
     EstimateType,
     Periodicity,
-    PeriodType,  # used by non-VA fetch methods
+    PeriodType,  # used by non-Visible Alpha fetch methods
 )
 from kfinance.client.models.response_models import PostResponse, SingleResultResp
 from kfinance.client.permission_models import Permission
@@ -399,7 +399,7 @@ class KFinanceApiClient:
         response_data = self.fetch(url, method="POST", request_body=request_body)
         return PostResponse[SegmentsResp].model_validate(response_data)
 
-    def fetch_segments_va(
+    def fetch_visible_alpha_segments(
         self,
         company_ids: list[int],
         segment_type: SegmentType,
@@ -562,7 +562,7 @@ class KFinanceApiClient:
         response_data = self.fetch(url, method="POST", request_body=request_body)
         return PostResponse[LineItemResp].model_validate(response_data)
 
-    def fetch_line_item_va(
+    def fetch_visible_alpha_line_item(
         self,
         company_ids: list[int],
         line_item: str,
@@ -1004,7 +1004,7 @@ class KFinanceApiClient:
 
         return SingleResultResp[Estimates].model_validate(response_data)
 
-    def fetch_estimates_va(
+    def fetch_visible_alpha_estimates(
         self,
         company_ids: list[int],
         start_year: int | None = None,

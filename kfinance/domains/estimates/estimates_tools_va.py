@@ -23,7 +23,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
-class GetEstimatesFromIdentifiersVaArgs(ToolArgsWithIdentifiers):
+class GetVisibleAlphaEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     period_type: EstimatePeriodType | None = Field(
         default=None, description="The period type (annual, semi-annual, or quarterly)."
     )
@@ -66,12 +66,12 @@ class PostResponseWithMetadata(BaseModel):
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
 
 
-class GetEstimatesFromIdentifiersVaResp(ToolRespWithIdInfoAndErrors[Estimates]):
+class GetVisibleAlphaEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Estimates]):
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
 
 
-class GetConsensusEstimatesFromIdentifiersVa(KfinanceTool):
+class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
     name: str = "get_consensus_estimates_from_identifiers"
     description: str = dedent("""
         Get consensus analyst estimates for a list of identifiers.
@@ -92,7 +92,7 @@ class GetConsensusEstimatesFromIdentifiersVa(KfinanceTool):
         Query: "Get annual consensus revenue estimates for SPGI for fiscal year 2024"
         Function: get_consensus_estimates_from_identifiers(identifiers=["SPGI"], estimate_search="revenue", period_type="annual", fiscal_start_year=2024, fiscal_end_year=2024)
     """).strip()
-    args_schema: Type[BaseModel] = GetEstimatesFromIdentifiersVaArgs
+    args_schema: Type[BaseModel] = GetVisibleAlphaEstimatesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}
 
     async def _arun(
@@ -107,9 +107,9 @@ class GetConsensusEstimatesFromIdentifiersVa(KfinanceTool):
         num_periods_backward: int | None = None,
         estimate_search: str | None = None,
         currency: str | None = None,
-    ) -> GetEstimatesFromIdentifiersVaResp:
+    ) -> GetVisibleAlphaEstimatesFromIdentifiersResp:
         """"""
-        return await get_estimates_from_identifiers_va(
+        return await get_visible_alpha_estimates_from_identifiers(
             identifiers=identifiers,
             httpx_client=self.kfinance_client.httpx_client,
             period_type=period_type,
@@ -124,7 +124,7 @@ class GetConsensusEstimatesFromIdentifiersVa(KfinanceTool):
         )
 
 
-async def fetch_estimates_from_company_ids_va(
+async def fetch_visible_alpha_estimates_from_company_ids(
     company_ids: list[int],
     httpx_client: httpx.AsyncClient,
     period_type: EstimatePeriodType | None = None,
@@ -168,7 +168,7 @@ async def fetch_estimates_from_company_ids_va(
     return PostResponseWithMetadata.model_validate(resp.json())
 
 
-async def get_estimates_from_identifiers_va(
+async def get_visible_alpha_estimates_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx.AsyncClient,
     period_type: EstimatePeriodType | None = None,
@@ -180,7 +180,7 @@ async def get_estimates_from_identifiers_va(
     num_periods_backward: int | None = None,
     estimate_search: str | None = None,
     currency: str | None = None,
-) -> GetEstimatesFromIdentifiersVaResp:
+) -> GetVisibleAlphaEstimatesFromIdentifiersResp:
     """Fetch estimates for all identifiers using Visible Alpha as the data source."""
 
     id_triple_resp = await unified_fetch_id_triples(
@@ -190,7 +190,7 @@ async def get_estimates_from_identifiers_va(
 
     metadata: dict[str, AlternativeLineItemMetadata] = {}
     if id_triple_resp.company_ids:
-        estimates_resp = await fetch_estimates_from_company_ids_va(
+        estimates_resp = await fetch_visible_alpha_estimates_from_company_ids(
             company_ids=id_triple_resp.company_ids,
             httpx_client=httpx_client,
             period_type=period_type,
@@ -222,7 +222,7 @@ async def get_estimates_from_identifiers_va(
     else:
         results = {}
 
-    resp_model = GetEstimatesFromIdentifiersVaResp(
+    resp_model = GetVisibleAlphaEstimatesFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,

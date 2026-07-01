@@ -9,8 +9,8 @@ from kfinance.domains.line_items.line_item_models import (
     LineItemResp,
 )
 from kfinance.domains.line_items.line_item_tools_va import (
-    fetch_line_item_from_company_ids_va,
-    get_financial_line_item_from_identifiers_va,
+    fetch_visible_alpha_line_item_from_company_ids,
+    get_visible_alpha_financial_line_item_from_identifiers,
 )
 from kfinance.domains.line_items.response_notes import (
     SOURCE_LINK_NOTE,
@@ -47,7 +47,7 @@ class TestFetchLineItemFromCompanyIdsVa:
         self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
     ) -> None:
         """
-        WHEN we fetch a line item via the VA function
+        WHEN we fetch a line item via the Visible Alpha function
         THEN data_source_type is not sent in the request body
         """
         httpx_mock.add_response(
@@ -60,7 +60,7 @@ class TestFetchLineItemFromCompanyIdsVa:
             },
         )
 
-        resp = await fetch_line_item_from_company_ids_va(
+        resp = await fetch_visible_alpha_line_item_from_company_ids(
             company_ids=[SPGI_ID_TRIPLE.company_id],
             line_item="iPhone revenue",
             httpx_client=httpx_client,
@@ -87,7 +87,7 @@ class TestFetchLineItemFromCompanyIdsVa:
             },
         )
 
-        resp = await fetch_line_item_from_company_ids_va(
+        resp = await fetch_visible_alpha_line_item_from_company_ids(
             company_ids=[SPGI_ID_TRIPLE.company_id],
             line_item="iPhone revenue",
             httpx_client=httpx_client,
@@ -120,10 +120,10 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         add_spgi_line_item_va_mock: None,
     ) -> None:
         """
-        WHEN we request a VA line item for SPGI
+        WHEN we request a Visible Alpha line item for SPGI
         THEN the result is keyed by the original identifier, not the company_id
         """
-        resp = await get_financial_line_item_from_identifiers_va(
+        resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI"],
             line_item="iPhone revenue",
             httpx_client=httpx_client,
@@ -144,7 +144,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         WHEN one identifier cannot be resolved
         THEN it surfaces in errors and the valid result is still returned
         """
-        resp = await get_financial_line_item_from_identifiers_va(
+        resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI", "non-existent"],
             line_item="iPhone revenue",
             httpx_client=httpx_client,
@@ -172,7 +172,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
             },
         )
 
-        resp = await get_financial_line_item_from_identifiers_va(
+        resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI"],
             line_item="iPhone revenue",
             httpx_client=httpx_client,
@@ -199,7 +199,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
             },
         )
 
-        resp = await get_financial_line_item_from_identifiers_va(
+        resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI"],
             line_item="iPhone revenue",
             httpx_client=httpx_client,
@@ -217,7 +217,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         WHEN the API returns no metadata
         THEN no alternatives note is added
         """
-        resp = await get_financial_line_item_from_identifiers_va(
+        resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI"],
             line_item="iPhone revenue",
             httpx_client=httpx_client,
@@ -232,10 +232,10 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         add_spgi_line_item_va_mock: None,
     ) -> None:
         """
-        WHEN we get a valid VA line item result
+        WHEN we get a valid Visible Alpha line item result
         THEN the source link note is always included
         """
-        resp = await get_financial_line_item_from_identifiers_va(
+        resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI"],
             line_item="iPhone revenue",
             httpx_client=httpx_client,
@@ -261,7 +261,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
             },
         )
 
-        resp = await get_financial_line_item_from_identifiers_va(
+        resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=[f"{COMPANY_ID_PREFIX}1", f"{COMPANY_ID_PREFIX}2"],
             line_item="iPhone revenue",
             httpx_client=httpx_client,
@@ -288,7 +288,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
             },
         )
 
-        resp = await get_financial_line_item_from_identifiers_va(
+        resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI"],
             line_item="iPhone revenue",
             httpx_client=httpx_client,
