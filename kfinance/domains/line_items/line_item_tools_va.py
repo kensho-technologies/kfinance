@@ -74,7 +74,6 @@ class PostResponseWithMetadata(BaseModel):
 class GetFinancialLineItemFromIdentifiersVaResp(ToolRespWithIdInfoAndErrors[LineItemResp]):
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
-    data_source: str = "visible_alpha"
 
 
 class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
@@ -227,6 +226,7 @@ async def get_financial_line_item_from_identifiers_va(
         identifier_to_results = {}
         for company_id_str, line_item_data in line_item_resp.results.items():
             original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            line_item_data.data_source = "Visible Alpha"
             identifier_to_results[original_identifier] = line_item_data
 
         for company_id_str, meta in line_item_resp.metadata.items():

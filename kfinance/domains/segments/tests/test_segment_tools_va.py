@@ -107,7 +107,9 @@ class TestGetSegmentsFromIdentifiersVa:
         )
 
         assert "SPGI" in resp.identifier_results
-        assert resp.identifier_results["SPGI"] == SegmentsResp.model_validate(SEGMENTS_RESP)
+        expected = SegmentsResp.model_validate(SEGMENTS_RESP)
+        expected.data_source = "Visible Alpha"
+        assert resp.identifier_results["SPGI"] == expected
 
     @pytest.mark.asyncio
     async def test_unknown_identifier_surfaces_as_error(

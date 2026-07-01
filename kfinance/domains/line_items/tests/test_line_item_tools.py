@@ -109,8 +109,10 @@ class TestGetFinancialLineItemFromIdentifiers:
             and notes appropriate for the calendar type.
         """
 
+        expected_li = LineItemResp.model_validate(self.line_item_resp)
+        expected_li.data_source = "Capital IQ"
         expected_response = GetFinancialLineItemFromIdentifiersResp(
-            identifier_results={"SPGI": LineItemResp.model_validate(self.line_item_resp)},
+            identifier_results={"SPGI": expected_li},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
@@ -189,6 +191,7 @@ class TestGetFinancialLineItemFromIdentifiers:
                 },
             }
         )
+        line_item_resp.data_source = "Capital IQ"
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             identifier_results={"C_1": line_item_resp, "C_2": line_item_resp},
             identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
