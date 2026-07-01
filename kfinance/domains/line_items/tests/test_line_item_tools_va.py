@@ -52,7 +52,7 @@ class TestFetchLineItemFromCompanyIdsVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/",
+            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): LINE_ITEM_RESP},
                 "errors": {},
@@ -79,7 +79,7 @@ class TestFetchLineItemFromCompanyIdsVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/",
+            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): LINE_ITEM_RESP},
                 "errors": {},
@@ -104,7 +104,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
     def add_spgi_line_item_va_mock(self, httpx_mock: HTTPXMock) -> None:
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/",
+            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): LINE_ITEM_RESP},
                 "errors": {},
@@ -164,7 +164,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/",
+            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
             json={
                 "results": {},
                 "errors": {str(SPGI_ID_TRIPLE.company_id): "Company not found in Visible Alpha."},
@@ -191,7 +191,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/",
+            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): LINE_ITEM_RESP},
                 "errors": {},
@@ -253,7 +253,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/",
+            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
             json={
                 "results": {"1": LINE_ITEM_RESP, "2": LINE_ITEM_RESP},
                 "errors": {},
@@ -280,7 +280,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/",
+            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): LINE_ITEM_RESP},
                 "errors": {},

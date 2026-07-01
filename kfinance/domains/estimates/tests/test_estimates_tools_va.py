@@ -56,7 +56,7 @@ class TestFetchEstimatesFromCompanyIdsVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/",
+            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): ESTIMATES_RESP},
                 "errors": {},
@@ -82,7 +82,7 @@ class TestFetchEstimatesFromCompanyIdsVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/",
+            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
             match_json={
                 "company_ids": [SPGI_ID_TRIPLE.company_id],
                 "estimate_type": "consensus",
@@ -113,7 +113,7 @@ class TestFetchEstimatesFromCompanyIdsVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/",
+            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): ESTIMATES_RESP},
                 "errors": {},
@@ -137,7 +137,7 @@ class TestGetEstimatesFromIdentifiersVa:
     def add_spgi_estimates_va_mock(self, httpx_mock: HTTPXMock) -> None:
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/",
+            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): ESTIMATES_RESP},
                 "errors": {},
@@ -195,7 +195,7 @@ class TestGetEstimatesFromIdentifiersVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/",
+            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
             json={
                 "results": {},
                 "errors": {str(SPGI_ID_TRIPLE.company_id): "Company not found in Visible Alpha."},
@@ -221,7 +221,7 @@ class TestGetEstimatesFromIdentifiersVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/",
+            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): ESTIMATES_RESP},
                 "errors": {},
@@ -281,7 +281,7 @@ class TestGetEstimatesFromIdentifiersVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/",
+            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): ESTIMATES_RESP},
                 "errors": {},
