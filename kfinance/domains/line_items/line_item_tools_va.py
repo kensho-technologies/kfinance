@@ -59,6 +59,10 @@ class GetFinancialLineItemFromIdentifiersVaArgs(ToolArgsWithIdentifiers):
         default=None,
         description="The end period of the data range expressed as number of periods back relative to the present period (0-99)",
     )
+    currency: str | None = Field(
+        default=None,
+        description="ISO 4217 currency code to return values in (e.g. 'USD', 'EUR'). Defaults to the reporting currency if not specified.",
+    )
 
 
 class PostResponseWithMetadata(BaseModel):
@@ -113,6 +117,7 @@ class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
         calendar_type: CalendarType | None = None,
         num_periods: int | None = None,
         num_periods_back: int | None = None,
+        currency: str | None = None,
     ) -> GetFinancialLineItemFromIdentifiersVaResp:
         """"""
         return await get_financial_line_item_from_identifiers_va(
@@ -127,6 +132,7 @@ class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
             calendar_type=calendar_type,
             num_periods=num_periods,
             num_periods_back=num_periods_back,
+            currency=currency,
         )
 
 
@@ -142,6 +148,7 @@ async def fetch_line_item_from_company_ids_va(
     calendar_type: CalendarType | None = None,
     num_periods: int | None = None,
     num_periods_back: int | None = None,
+    currency: str | None = None,
 ) -> PostResponseWithMetadata:
     """Fetch line items for a list of company IDs using Visible Alpha as the data source."""
     params: dict[str, Any] = {
@@ -166,6 +173,8 @@ async def fetch_line_item_from_company_ids_va(
         params["num_periods"] = num_periods
     if num_periods_back is not None:
         params["num_periods_back"] = num_periods_back
+    if currency is not None:
+        params["currency"] = currency
 
     resp = await httpx_client.post(url="/line_item/", json=params)
     resp.raise_for_status()
@@ -185,6 +194,7 @@ async def get_financial_line_item_from_identifiers_va(
     calendar_type: CalendarType | None = None,
     num_periods: int | None = None,
     num_periods_back: int | None = None,
+    currency: str | None = None,
 ) -> GetFinancialLineItemFromIdentifiersVaResp:
     """Fetch financial line items for all identifiers using Visible Alpha as the data source."""
 
@@ -207,6 +217,7 @@ async def get_financial_line_item_from_identifiers_va(
             calendar_type=calendar_type,
             num_periods=num_periods,
             num_periods_back=num_periods_back,
+            currency=currency,
         )
 
         for company_id_str, error in line_item_resp.errors.items():

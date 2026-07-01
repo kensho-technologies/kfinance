@@ -412,6 +412,7 @@ class KFinanceApiClient:
         num_periods: int | None = None,
         period_type: EstimatePeriodType | None = None,
         calendar_type: CalendarType | None = None,
+        currency: str | None = None,
     ) -> PostResponse[SegmentsResp]:
         """Get segments using Visible Alpha as the data source."""
 
@@ -436,6 +437,7 @@ class KFinanceApiClient:
             ("num_periods", num_periods),
             ("period_type", period_type_val),
             ("calendar_type", calendar_type_val),
+            ("currency", currency),
         ]
 
         for key, value in fields:
@@ -574,6 +576,7 @@ class KFinanceApiClient:
         num_periods: int | None = None,
         period_type: EstimatePeriodType | None = None,
         calendar_type: CalendarType | None = None,
+        currency: str | None = None,
     ) -> dict:
         """Get a financial line item using Visible Alpha as the data source."""
 
@@ -597,6 +600,7 @@ class KFinanceApiClient:
             ("num_periods", num_periods),
             ("period_type", period_type_val),
             ("calendar_type", calendar_type_val),
+            ("currency", currency),
         ]
 
         for key, value in fields:
@@ -1014,6 +1018,7 @@ class KFinanceApiClient:
         num_periods_backward: int | None = None,
         period_type: EstimatePeriodType | None = None,
         estimate_search: str | None = None,
+        currency: str | None = None,
     ) -> dict:
         """Get estimates using Visible Alpha as the data source."""
 
@@ -1030,12 +1035,13 @@ class KFinanceApiClient:
         fields = [
             ("start_year", start_year),
             ("end_year", end_year),
-            ("fiscal_start_quarter", start_quarter),
-            ("fiscal_end_quarter", end_quarter),
+            ("start_quarter", start_quarter),
+            ("end_quarter", end_quarter),
             ("num_periods_forward", num_periods_forward),
             ("num_periods_backward", num_periods_backward),
             ("period_type", period_type_val),
             ("estimate_search", estimate_search),
+            ("currency", currency),
         ]
 
         for key, value in fields:
