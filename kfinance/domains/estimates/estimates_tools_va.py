@@ -69,7 +69,6 @@ class PostResponseWithMetadata(BaseModel):
 class GetEstimatesFromIdentifiersVaResp(ToolRespWithIdInfoAndErrors[Estimates]):
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
-    data_source: str = "visible_alpha"
 
 
 class GetConsensusEstimatesFromIdentifiersVa(KfinanceTool):
@@ -212,6 +211,7 @@ async def get_estimates_from_identifiers_va(
         identifier_to_results = {}
         for company_id_str, estimates_data in estimates_resp.results.items():
             original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            estimates_data.data_source = "Visible Alpha"
             identifier_to_results[original_identifier] = estimates_data
 
         for company_id_str, meta in estimates_resp.metadata.items():

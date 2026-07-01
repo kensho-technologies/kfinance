@@ -110,8 +110,10 @@ class TestEstimates:
         THEN we get back SPGI's estimates and an error for the non-existent company
         """
 
+        expected_est = Estimates.model_validate(self.estimates_data)
+        expected_est.data_source = "Capital IQ"
         expected_resp = GetEstimatesFromIdentifiersResp(
-            identifier_results={"SPGI": Estimates.model_validate(self.estimates_data)},
+            identifier_results={"SPGI": expected_est},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"

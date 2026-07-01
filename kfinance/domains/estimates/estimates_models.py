@@ -25,6 +25,7 @@ class Estimates(BaseModel):
     currency: str | None
     period_type: EstimatePeriodType
     periods: dict[str, EstimatesPeriodData]
+    data_source: str | None = None
 
 
 class ConsensusTargetPriceItem(BaseModel):

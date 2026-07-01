@@ -47,6 +47,7 @@ class BasePeriodsResp(BaseModel):
 class LineItemResp(BasePeriodsResp):
     currency: str | None
     periods: dict[str, LineItemPeriodData]  # period -> line item and period data
+    data_source: str | None = None
 
 
 @dataclass

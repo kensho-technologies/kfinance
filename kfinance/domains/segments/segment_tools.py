@@ -146,6 +146,7 @@ async def get_segments_from_identifiers(
         for company_id_str, segments_data in segments_resp.results.items():
             company_id = int(company_id_str)
             original_identifier = id_triple_resp.get_identifier_from_company_id(company_id)
+            segments_data.data_source = "Capital IQ"
             identifier_to_results[original_identifier] = segments_data
     else:
         identifier_to_results = {}
