@@ -62,7 +62,7 @@ class TestFetchLineItemFromCompanyIdsVa:
 
         resp = await fetch_visible_alpha_line_item_from_company_ids(
             company_ids=[SPGI_ID_TRIPLE.company_id],
-            line_item="iPhone revenue",
+            line_item_search="iPhone revenue",
             httpx_client=httpx_client,
         )
 
@@ -89,7 +89,7 @@ class TestFetchLineItemFromCompanyIdsVa:
 
         resp = await fetch_visible_alpha_line_item_from_company_ids(
             company_ids=[SPGI_ID_TRIPLE.company_id],
-            line_item="iPhone revenue",
+            line_item_search="iPhone revenue",
             httpx_client=httpx_client,
         )
 
@@ -125,7 +125,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         """
         resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI"],
-            line_item="iPhone revenue",
+            line_item_search="iPhone revenue",
             httpx_client=httpx_client,
         )
 
@@ -146,7 +146,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         """
         resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI", "non-existent"],
-            line_item="iPhone revenue",
+            line_item_search="iPhone revenue",
             httpx_client=httpx_client,
         )
 
@@ -174,7 +174,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
 
         resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI"],
-            line_item="iPhone revenue",
+            line_item_search="iPhone revenue",
             httpx_client=httpx_client,
         )
 
@@ -201,7 +201,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
 
         resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI"],
-            line_item="iPhone revenue",
+            line_item_search="iPhone revenue",
             httpx_client=httpx_client,
         )
 
@@ -219,7 +219,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         """
         resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI"],
-            line_item="iPhone revenue",
+            line_item_search="iPhone revenue",
             httpx_client=httpx_client,
         )
 
@@ -237,7 +237,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         """
         resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI"],
-            line_item="iPhone revenue",
+            line_item_search="iPhone revenue",
             httpx_client=httpx_client,
         )
 
@@ -263,7 +263,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
 
         resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=[f"{COMPANY_ID_PREFIX}1", f"{COMPANY_ID_PREFIX}2"],
-            line_item="iPhone revenue",
+            line_item_search="iPhone revenue",
             httpx_client=httpx_client,
         )
 
@@ -290,7 +290,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
 
         resp = await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=["SPGI"],
-            line_item="iPhone revenue",
+            line_item_search="iPhone revenue",
             httpx_client=httpx_client,
         )
 

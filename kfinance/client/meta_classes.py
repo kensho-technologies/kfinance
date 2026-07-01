@@ -267,7 +267,7 @@ class CompanyFunctionsMetaClass:
 
     def line_item_va(
         self,
-        line_item: str,
+        line_item_search: str,
         period_type: Optional[EstimatePeriodType] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
@@ -288,7 +288,7 @@ class CompanyFunctionsMetaClass:
 
         response = self.kfinance_api_client.fetch_visible_alpha_line_item(
             company_ids=[self.company_id],
-            line_item=line_item,
+            line_item_search=line_item_search,
             period_type=period_type,
             start_year=start_year,
             end_year=end_year,
