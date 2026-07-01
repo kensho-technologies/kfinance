@@ -95,7 +95,7 @@ class GetMergersInfoFromTransactionIdsArgs(BaseModel):
 class GetMergersInfoFromTransactionIds(KfinanceTool):
     name: str = "get_mergers_info_from_transaction_ids"
     description: str = dedent("""
-        Provides comprehensive information about merger or acquisition transactions, including their timeline (announced date, closed date), participants' company_names, company_ids, and advisors (if advisors are requested) (target, buyers, sellers), and financial consideration details (including monetary values).
+        Provides comprehensive information about merger or acquisition transactions, including their timeline (announced date, closed date), participants' company_names, company_ids, and advisors if advisors are requested (participants are categorized as target, buyers, sellers), and financial consideration details (including monetary values).
 
         Use this tool for questions about announcement dates, deal/transaction values or amounts paid, completion status, and transaction details.
 
@@ -107,12 +107,12 @@ class GetMergersInfoFromTransactionIds(KfinanceTool):
         Query: "When was the acquisition of Ben & Jerry's announced?"
         Function 1: get_mergers_from_identifiers(identifiers=["Ben & Jerry's"])
         # Function 1 returns all M&A's that involved Ben & Jerry's. Extract the <transaction_id> from the response where Ben & Jerry's was the target.
-        Function 2: get_mergesr_info_from_transaction_ids(transaction_ids=[<transaction_id>])
+        Function 2: get_mergers_info_from_transaction_ids(transaction_ids=[<transaction_id>])
 
         Query: "What was the transaction size of Vodafone's acquisition of Mannesmann?"
         Function 1: get_mergers_from_identifiers(identifiers=["Vodafone"])
         # Function 1 returns all M&A's that involved Vodafone. Extract the <transaction_id> from the response where Vodafone was the buyer and Mannesmann was the target.
-        Function 2: get_mergesr_info_from_transaction_ids(transaction_ids=[<transaction_id>])
+        Function 2: get_mergers_info_from_transaction_ids(transaction_ids=[<transaction_id>])
 
         Query: "List Microsoft's acquisitions over $5 billion announced since 2020, along with the advisors for the acquisitions."
         Function 1: get_mergers_from_identifiers(identifiers=["Microsoft"], start_date="2020-01-01")
