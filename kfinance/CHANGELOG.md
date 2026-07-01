@@ -2,7 +2,7 @@
 
 ## v7.0.0
 - Include additional information in get_mergers_from_identifiers tool call response
-- Replace merger info tool call with a batch version, called get_mergers_info_from_transaction_ids
+- Replace merger info tool call with a batch version named `get_mergers_info_from_transaction_ids`
 - Breaking changes:
   - `merger_title` field has been removed from the `MergerOrAcquisition` object
   type and the `MergerSummary` type, since the newly added fields make that field
