@@ -58,6 +58,15 @@ class LineItemScore:
     score: float
 
 
+class AlternativeLineItem(BaseModel):
+    parameter_name: str
+    currency: str | None
+
+
+class AlternativeLineItemMetadata(BaseModel):
+    top_ranked_alternatives: list[AlternativeLineItem] = Field(default_factory=list)
+
+
 class LineItemType(TypedDict):
     name: str
     aliases: set[str]

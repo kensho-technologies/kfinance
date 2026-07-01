@@ -265,6 +265,53 @@ class CompanyFunctionsMetaClass:
             .set_index(pd.Index([line_item]))
         )
 
+    def line_item_va(
+        self,
+        line_item: str,
+        period_type: Optional[PeriodType] = None,
+        start_year: Optional[int] = None,
+        end_year: Optional[int] = None,
+        start_quarter: Optional[int] = None,
+        end_quarter: Optional[int] = None,
+    ) -> pd.DataFrame:
+        """Get a DataFrame of a financial line item from Visible Alpha."""
+        try:
+            self.validate_inputs(
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+            )
+        except ValueError:
+            return pd.DataFrame()
+
+        response = self.kfinance_api_client.fetch_line_item_va(
+            company_ids=[self.company_id],
+            line_item=line_item,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )
+
+        if not response.get("results"):
+            return pd.DataFrame()
+
+        raw_periods = list(response["results"].values())[0]["periods"]
+
+        line_item_data = {}
+        for period_key, period_data in raw_periods.items():
+            line_item_data[period_key] = period_data["line_item"]["value"]
+
+        return (
+            pd.DataFrame({"line_item": line_item_data})
+            .transpose()
+            .apply(pd.to_numeric)
+            .replace(np.nan, None)
+            .set_index(pd.Index([line_item]))
+        )
+
     @cached(cache=LRUCache(maxsize=100))
     def relationships(self, relationship_type: BusinessRelationshipType) -> "BusinessRelationships":
         """Returns a BusinessRelationships object that includes the current and previous Companies associated with company_id and filtered by relationship_type. The function calls fetch_companies_from_business_relationship.
@@ -468,6 +515,78 @@ class CompanyFunctionsMetaClass:
             end_quarter=end_quarter,
         )
 
+    def _segments_va(
+        self,
+        segment_type: SegmentType,
+        period_type: Optional[PeriodType] = None,
+        start_year: Optional[int] = None,
+        end_year: Optional[int] = None,
+        start_quarter: Optional[int] = None,
+        end_quarter: Optional[int] = None,
+    ) -> dict:
+        """Get the company's segments from Visible Alpha."""
+        try:
+            self.validate_inputs(
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+            )
+        except ValueError:
+            return {}
+
+        segments_response = self.kfinance_api_client.fetch_segments_va(
+            company_ids=[self.company_id],
+            segment_type=segment_type,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )
+
+        if not segments_response.results:
+            return {}
+
+        segments_resp = list(segments_response.results.values())[0]
+        return segments_resp.model_dump(mode="json")["periods"]
+
+    def business_segments_va(
+        self,
+        period_type: Optional[PeriodType] = None,
+        start_year: Optional[int] = None,
+        end_year: Optional[int] = None,
+        start_quarter: Optional[int] = None,
+        end_quarter: Optional[int] = None,
+    ) -> dict:
+        """Get business segments from Visible Alpha."""
+        return self._segments_va(
+            segment_type=SegmentType.business,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )
+
+    def geographic_segments_va(
+        self,
+        period_type: Optional[PeriodType] = None,
+        start_year: Optional[int] = None,
+        end_year: Optional[int] = None,
+        start_quarter: Optional[int] = None,
+        end_quarter: Optional[int] = None,
+    ) -> dict:
+        """Get geographic segments from Visible Alpha."""
+        return self._segments_va(
+            segment_type=SegmentType.geographic,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+        )
+
     @property
     def summary(self) -> str:
         """Lazily fetch and return a company's summary"""
@@ -638,6 +757,55 @@ class CompanyFunctionsMetaClass:
             num_periods_backward=num_periods_backward,
             period_type=period_type,
         )
+
+    def consensus_estimates_va(
+        self,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_forward: int | None = None,
+        num_periods_backward: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+        estimate_search: str | None = None,
+    ) -> pd.DataFrame:
+        """Get consensus estimates from Visible Alpha for the time range and period type."""
+        try:
+            self.validate_inputs(
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+            )
+        except ValueError:
+            return pd.DataFrame()
+
+        estimate_response = self.kfinance_api_client.fetch_estimates_va(
+            company_ids=[self.company_id],
+            estimate_type=EstimateType.consensus,
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            num_periods_forward=num_periods_forward,
+            num_periods_backward=num_periods_backward,
+            estimate_search=estimate_search,
+        )
+
+        if not estimate_response.get("results"):
+            return pd.DataFrame()
+
+        periods = list(estimate_response["results"].values())[0]["periods"]
+
+        estimates_data = {}
+        for period_key, period_data in periods.items():
+            period_estimates = {}
+            for estimate in period_data["estimates"]:
+                period_estimates[estimate["name"]] = estimate["value"]
+            estimates_data[period_key] = period_estimates
+
+        return pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
 
     def guidance(
         self,

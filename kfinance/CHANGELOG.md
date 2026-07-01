@@ -1,5 +1,10 @@
 # Changelog
 
+## v6.6.0
+- Add GetConsensusEstimatesFromIdentifiersVa
+- Add GetFinancialLineItemFromIdentifiersVa
+- Add GetSegmentsFromIdentifiersVa
+
 ## v6.5.1
 - Change M&A tool descriptions and prompts.py for M&A performance improvement
 
