@@ -425,7 +425,6 @@ class KFinanceApiClient:
         request_body: dict[str, str | int | list[int]] = {
             "company_ids": company_ids,
             "segment_type": segment_type_val,
-            "data_source_type": "visible_alpha",
         }
 
         fields = [
@@ -588,7 +587,6 @@ class KFinanceApiClient:
         request_body: dict[str, str | int | list[int]] = {
             "company_ids": company_ids,
             "line_item": line_item,
-            "data_source_type": "visible_alpha",
         }
 
         fields = [
@@ -1029,7 +1027,6 @@ class KFinanceApiClient:
         request_body: dict[str, str | int | list[int]] = {
             "company_ids": company_ids,
             "estimate_type": estimate_type.value,
-            "data_source_type": "visible_alpha",
         }
 
         fields = [

@@ -69,6 +69,7 @@ class PostResponseWithMetadata(BaseModel):
 class GetEstimatesFromIdentifiersVaResp(ToolRespWithIdInfoAndErrors[Estimates]):
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
+    data_source: str = "visible_alpha"
 
 
 class GetConsensusEstimatesFromIdentifiersVa(KfinanceTool):
@@ -143,7 +144,6 @@ async def fetch_estimates_from_company_ids_va(
     payload: dict[str, Any] = {
         "company_ids": company_ids,
         "estimate_type": estimate_type.value,
-        "data_source_type": "visible_alpha",
     }
 
     if period_type is not None:

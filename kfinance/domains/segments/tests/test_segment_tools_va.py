@@ -54,21 +54,16 @@ SEGMENTS_RESP = {
 
 class TestFetchSegmentsFromCompanyIdsVa:
     @pytest.mark.asyncio
-    async def test_sends_visible_alpha_data_source(
+    async def test_data_source_absent_from_payload(
         self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
     ) -> None:
         """
         WHEN we fetch segments via the VA function
-        THEN the request body includes data_source_type = "visible_alpha"
+        THEN data_source_type is not sent in the request body
         """
         httpx_mock.add_response(
             method="POST",
             url="https://kfinance.kensho.com/api/v1/segments/",
-            match_json={
-                "company_ids": [SPGI_ID_TRIPLE.company_id],
-                "segment_type": "business",
-                "data_source_type": "visible_alpha",
-            },
             json={"results": {str(SPGI_ID_TRIPLE.company_id): SEGMENTS_RESP}, "errors": {}},
         )
 
@@ -79,6 +74,7 @@ class TestFetchSegmentsFromCompanyIdsVa:
         )
 
         assert str(SPGI_ID_TRIPLE.company_id) in resp.results
+        assert "data_source_type" not in httpx_mock.get_requests()[-1].content.decode()
 
 
 class TestGetSegmentsFromIdentifiersVa:
