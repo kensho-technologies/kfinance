@@ -3,7 +3,8 @@
 ## v7.0.0
 - Include `status`, `start_date`, `target`, and `buyers` fields in `get_mergers_from_identifiers` 
   tool call response and `MergerOrAcquisition` object.
-- Replace merger info tool call with a batch version named `get_mergers_info_from_transaction_ids`
+- Replace merger info tool call with a batch version named `get_mergers_info_from_transaction_ids`,
+  which also supports the option of including advisors in the response
 - Breaking changes:
   - `merger_title` field has been removed from the `MergerOrAcquisition` object
   type and the `MergerSummary` type, since the newly added fields make that field
