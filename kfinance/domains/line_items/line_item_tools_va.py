@@ -69,6 +69,7 @@ class PostResponseWithMetadata(BaseModel):
     results: dict[str, LineItemResp]
     errors: dict[str, str] = Field(default_factory=dict)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
+    data_source: str | None = None
 
 
 class GetVisibleAlphaFinancialLineItemFromIdentifiersResp(
