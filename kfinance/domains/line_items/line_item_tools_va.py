@@ -74,6 +74,7 @@ class PostResponseWithMetadata(BaseModel):
 class GetFinancialLineItemFromIdentifiersVaResp(ToolRespWithIdInfoAndErrors[LineItemResp]):
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
+    data_source: str = "visible_alpha"
 
 
 class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
@@ -154,7 +155,6 @@ async def fetch_line_item_from_company_ids_va(
     params: dict[str, Any] = {
         "company_ids": company_ids,
         "line_item": line_item,
-        "data_source_type": "visible_alpha",
     }
 
     if period_type is not None:

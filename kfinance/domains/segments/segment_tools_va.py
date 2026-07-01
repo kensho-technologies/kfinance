@@ -52,6 +52,7 @@ class GetSegmentsFromIdentifiersVaArgs(ToolArgsWithIdentifiers):
 
 class GetSegmentsFromIdentifiersVaResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):
     notes: list[str] = Field(default_factory=list)
+    data_source: str = "visible_alpha"
 
 
 class GetSegmentsFromIdentifiersVa(KfinanceTool):
@@ -130,7 +131,6 @@ async def fetch_segments_from_company_ids_va(
     payload: dict[str, Any] = {
         "company_ids": company_ids,
         "segment_type": segment_type.value,
-        "data_source_type": "visible_alpha",
     }
 
     if period_type is not None:
