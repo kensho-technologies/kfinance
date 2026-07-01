@@ -5,7 +5,11 @@ import httpx
 from pydantic import BaseModel, Field
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
-from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
+from kfinance.client.models.date_and_period_models import (
+    EstimatePeriodType,
+    NumPeriods,
+    NumPeriodsBack,
+)
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
     AlternativeLineItemMetadata,
@@ -28,7 +32,7 @@ class GetFinancialLineItemFromIdentifiersVaArgs(ToolArgsWithIdentifiers):
     line_item: str = Field(
         description="The financial metric, business measure, or quantitative data point to retrieve. Use descriptive natural language. Preserve the specificity of what the user asked for; keep any product, model, series, segment, or region qualifiers they named rather than generalizing to a broader metric. When the user names several distinct items, make a separate call per item using its specific name."
     )
-    period_type: PeriodType | None = Field(
+    period_type: EstimatePeriodType | None = Field(
         default=None, description="The period type (annual or quarterly)"
     )
     start_year: int | None = Field(
@@ -101,7 +105,7 @@ class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
         self,
         identifiers: list[str],
         line_item: str,
-        period_type: PeriodType | None = None,
+        period_type: EstimatePeriodType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
         start_quarter: Literal[1, 2, 3, 4] | None = None,
@@ -130,7 +134,7 @@ async def fetch_line_item_from_company_ids_va(
     company_ids: list[int],
     line_item: str,
     httpx_client: httpx.AsyncClient,
-    period_type: PeriodType | None = None,
+    period_type: EstimatePeriodType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,
     start_quarter: Literal[1, 2, 3, 4] | None = None,
@@ -173,7 +177,7 @@ async def get_financial_line_item_from_identifiers_va(
     identifiers: list[str],
     line_item: str,
     httpx_client: httpx.AsyncClient,
-    period_type: PeriodType | None = None,
+    period_type: EstimatePeriodType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,
     start_quarter: Literal[1, 2, 3, 4] | None = None,

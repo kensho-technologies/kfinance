@@ -268,7 +268,7 @@ class CompanyFunctionsMetaClass:
     def line_item_va(
         self,
         line_item: str,
-        period_type: Optional[PeriodType] = None,
+        period_type: Optional[EstimatePeriodType] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
@@ -518,7 +518,7 @@ class CompanyFunctionsMetaClass:
     def _segments_va(
         self,
         segment_type: SegmentType,
-        period_type: Optional[PeriodType] = None,
+        period_type: Optional[EstimatePeriodType] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
@@ -553,7 +553,7 @@ class CompanyFunctionsMetaClass:
 
     def business_segments_va(
         self,
-        period_type: Optional[PeriodType] = None,
+        period_type: Optional[EstimatePeriodType] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
@@ -571,7 +571,7 @@ class CompanyFunctionsMetaClass:
 
     def geographic_segments_va(
         self,
-        period_type: Optional[PeriodType] = None,
+        period_type: Optional[EstimatePeriodType] = None,
         start_year: Optional[int] = None,
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,

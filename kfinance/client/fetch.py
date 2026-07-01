@@ -13,7 +13,7 @@ from kfinance.client.models.date_and_period_models import (
     EstimatePeriodType,
     EstimateType,
     Periodicity,
-    PeriodType,
+    PeriodType,  # used by non-VA fetch methods
 )
 from kfinance.client.models.response_models import PostResponse, SingleResultResp
 from kfinance.client.permission_models import Permission
@@ -410,7 +410,7 @@ class KFinanceApiClient:
         end_quarter: int | None = None,
         num_periods_back: int | None = None,
         num_periods: int | None = None,
-        period_type: PeriodType | None = None,
+        period_type: EstimatePeriodType | None = None,
         calendar_type: CalendarType | None = None,
     ) -> PostResponse[SegmentsResp]:
         """Get segments using Visible Alpha as the data source."""
@@ -572,7 +572,7 @@ class KFinanceApiClient:
         end_quarter: int | None = None,
         num_periods_back: int | None = None,
         num_periods: int | None = None,
-        period_type: PeriodType | None = None,
+        period_type: EstimatePeriodType | None = None,
         calendar_type: CalendarType | None = None,
     ) -> dict:
         """Get a financial line item using Visible Alpha as the data source."""
