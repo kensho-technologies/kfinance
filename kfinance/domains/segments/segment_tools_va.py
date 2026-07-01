@@ -52,6 +52,7 @@ class GetVisibleAlphaSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 class GetVisibleAlphaSegmentsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):
     notes: list[str] = Field(default_factory=list)
+    data_source: str = "Visible Alpha"
 
 
 class GetSegmentsFromIdentifiersVa(KfinanceTool):
