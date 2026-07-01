@@ -399,6 +399,52 @@ class KFinanceApiClient:
         response_data = self.fetch(url, method="POST", request_body=request_body)
         return PostResponse[SegmentsResp].model_validate(response_data)
 
+    def fetch_segments_va(
+        self,
+        company_ids: list[int],
+        segment_type: SegmentType,
+        *,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_back: int | None = None,
+        num_periods: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+    ) -> PostResponse[SegmentsResp]:
+        """Get segments using Visible Alpha as the data source."""
+
+        url = f"{self.url_base}segments/"
+
+        period_type_val = period_type.value if period_type is not None else None
+        calendar_type_val = calendar_type.value if calendar_type is not None else None
+        segment_type_val = segment_type.value if segment_type is not None else None
+
+        request_body: dict[str, str | int | list[int]] = {
+            "company_ids": company_ids,
+            "segment_type": segment_type_val,
+            "data_source_type": "visible_alpha",
+        }
+
+        fields = [
+            ("start_year", start_year),
+            ("end_year", end_year),
+            ("start_quarter", start_quarter),
+            ("end_quarter", end_quarter),
+            ("num_periods_back", num_periods_back),
+            ("num_periods", num_periods),
+            ("period_type", period_type_val),
+            ("calendar_type", calendar_type_val),
+        ]
+
+        for key, value in fields:
+            if value is not None:
+                request_body[key] = value
+
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+        return PostResponse[SegmentsResp].model_validate(response_data)
+
     def fetch_price_chart(
         self,
         trading_item_id: int,
@@ -514,6 +560,51 @@ class KFinanceApiClient:
 
         response_data = self.fetch(url, method="POST", request_body=request_body)
         return PostResponse[LineItemResp].model_validate(response_data)
+
+    def fetch_line_item_va(
+        self,
+        company_ids: list[int],
+        line_item: str,
+        *,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_back: int | None = None,
+        num_periods: int | None = None,
+        period_type: PeriodType | None = None,
+        calendar_type: CalendarType | None = None,
+    ) -> dict:
+        """Get a financial line item using Visible Alpha as the data source."""
+
+        url = f"{self.url_base}line_item/"
+
+        period_type_val = period_type.value if period_type is not None else None
+        calendar_type_val = calendar_type.value if calendar_type is not None else None
+
+        request_body: dict[str, str | int | list[int]] = {
+            "company_ids": company_ids,
+            "line_item": line_item,
+            "data_source_type": "visible_alpha",
+        }
+
+        fields = [
+            ("start_year", start_year),
+            ("end_year", end_year),
+            ("start_quarter", start_quarter),
+            ("end_quarter", end_quarter),
+            ("num_periods_back", num_periods_back),
+            ("num_periods", num_periods),
+            ("period_type", period_type_val),
+            ("calendar_type", calendar_type_val),
+        ]
+
+        for key, value in fields:
+            if value is not None:
+                request_body[key] = value
+
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+        return response_data
 
     def fetch_info(self, company_id: int) -> dict:
         """Get the company info."""
@@ -910,6 +1001,49 @@ class KFinanceApiClient:
         response_data = self.fetch(url, method="POST", request_body=request_body)
 
         return SingleResultResp[Estimates].model_validate(response_data)
+
+    def fetch_estimates_va(
+        self,
+        company_ids: list[int],
+        estimate_type: EstimateType,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_forward: int | None = None,
+        num_periods_backward: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+        estimate_search: str | None = None,
+    ) -> dict:
+        """Get estimates using Visible Alpha as the data source."""
+
+        url = f"{self.url_base}estimates/"
+
+        period_type_val = period_type.value if period_type is not None else None
+
+        request_body: dict[str, str | int | list[int]] = {
+            "company_ids": company_ids,
+            "estimate_type": estimate_type.value,
+            "data_source_type": "visible_alpha",
+        }
+
+        fields = [
+            ("start_year", start_year),
+            ("end_year", end_year),
+            ("fiscal_start_quarter", start_quarter),
+            ("fiscal_end_quarter", end_quarter),
+            ("num_periods_forward", num_periods_forward),
+            ("num_periods_backward", num_periods_backward),
+            ("period_type", period_type_val),
+            ("estimate_search", estimate_search),
+        ]
+
+        for key, value in fields:
+            if value is not None:
+                request_body[key] = value
+
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+        return response_data
 
     def fetch_consensus_target_price(
         self,
