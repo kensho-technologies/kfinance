@@ -8,7 +8,6 @@ from kfinance.domains.companies.company_models import CompanyId, CompanyIdAndNam
 
 class MergerSummary(BaseModel):
     transaction_id: int
-    merger_title: str
     status: str
     start_date: date_type | None
     closed_date: date_type | None

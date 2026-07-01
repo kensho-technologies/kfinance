@@ -1481,7 +1481,6 @@ class MergerOrAcquisition:
         kfinance_api_client: KFinanceApiClient,
         transaction_id: int,
         status: str,
-        merger_title: str | None,
         start_date: date | None,
         closed_date: date | None,
         target: str,
@@ -1496,7 +1495,6 @@ class MergerOrAcquisition:
         self.kfinance_api_client = kfinance_api_client
         self.transaction_id = transaction_id
         self.status = status
-        self.merger_title = merger_title
         self.start_date = start_date
         self.closed_date = closed_date
         self.target = target
@@ -1516,11 +1514,6 @@ class MergerOrAcquisition:
                 )
             self._merger_info = merger_info
         return self._merger_info
-
-    @property
-    def get_merger_title(self) -> str | None:
-        """The merger title includes the status of the merger and its target."""
-        return self.merger_title
 
     @property
     def get_timeline(self) -> list[MergerTimelineElement]:
@@ -1757,7 +1750,6 @@ class MergersAndAcquisitions(set):
                 kfinance_api_client=kfinance_api_client,
                 transaction_id=id_and_title["transaction_id"],
                 status=id_and_title["status"],
-                merger_title=id_and_title["merger_title"],
                 start_date=id_and_title["start_date"],
                 closed_date=id_and_title["closed_date"],
                 target=id_and_title["target"],

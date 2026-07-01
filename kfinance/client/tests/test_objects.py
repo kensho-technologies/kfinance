@@ -333,7 +333,6 @@ MERGERS_RESP = MergersResp.model_validate(
         "target": [
             {
                 "transaction_id": 0,
-                "merger_title": "Closed M/A of Microsoft Corporation",
                 "status": "Closed",
                 "start_date": "2021-01-01",
                 "closed_date": "2021-01-01",
@@ -344,7 +343,6 @@ MERGERS_RESP = MergersResp.model_validate(
         "buyer": [
             {
                 "transaction_id": 517414,
-                "merger_title": "Closed M/A of MongoMusic, Inc.",
                 "status": "Closed",
                 "start_date": "2000-09-12",
                 "closed_date": "2000-09-12",
@@ -353,7 +351,6 @@ MERGERS_RESP = MergersResp.model_validate(
             },
             {
                 "transaction_id": 596722,
-                "merger_title": "Closed M/A of Digital Anvil, Inc.",
                 "status": "Closed",
                 "start_date": "2000-12-05",
                 "closed_date": "2000-12-05",
@@ -364,7 +361,6 @@ MERGERS_RESP = MergersResp.model_validate(
         "seller": [
             {
                 "transaction_id": 455551,
-                "merger_title": "Closed M/A of VacationSpot.com, Inc.",
                 "status": "Closed",
                 "start_date": "2000-01-30",
                 "closed_date": "2000-03-17",
@@ -373,7 +369,6 @@ MERGERS_RESP = MergersResp.model_validate(
             },
             {
                 "transaction_id": 456045,
-                "merger_title": "Closed M/A of TransPoint, LLC",
                 "status": "Closed",
                 "start_date": "2000-02-15",
                 "closed_date": "2000-09-05",
@@ -851,7 +846,6 @@ class TestCompany(TestCase):
                 {
                     "transaction_id": merger.transaction_id,
                     "status": merger.status,
-                    "merger_title": merger.merger_title,
                     "start_date": merger.start_date,
                     "closed_date": merger.closed_date,
                     "target": merger.target,
@@ -863,7 +857,6 @@ class TestCompany(TestCase):
                 {
                     "transaction_id": merger.transaction_id,
                     "status": merger.status,
-                    "merger_title": merger.merger_title,
                     "start_date": merger.start_date,
                     "closed_date": merger.closed_date,
                     "target": merger.target,
@@ -875,7 +868,6 @@ class TestCompany(TestCase):
                 {
                     "transaction_id": merger.transaction_id,
                     "status": merger.status,
-                    "merger_title": merger.merger_title,
                     "start_date": merger.start_date,
                     "closed_date": merger.closed_date,
                     "target": merger.target,

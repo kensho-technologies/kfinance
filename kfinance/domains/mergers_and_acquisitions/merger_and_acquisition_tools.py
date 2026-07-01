@@ -52,13 +52,13 @@ class GetMergersFromIdentifiers(KfinanceTool):
 
         Results are categorized by the company's role: target (being acquired), buyer (making the acquisition), or seller (divesting an asset).
 
-        This tool returns ONLY transaction_id, merger_title, status, start_date, closed_date, target, and buyers for each transaction. It does NOT return deal/transaction values or amounts paid, completion status, or participant details. To get any of those, take all relevant transaction_ids from this responses and call get_mergers_info_from_transaction_ids with them.
+        This tool returns ONLY transaction_id, status, start_date, closed_date, target, and buyers for each transaction. It does NOT return deal/transaction values or amounts paid, completion status, or participant details. To get any of those, take all relevant transaction_ids from this responses and call get_mergers_info_from_transaction_ids with them.
 
         - The numeric identifier of a COMPANY is never a transaction_id. Always obtain transaction_id values from this tool's response — never pass a company identifier to get_mergers_info_from_transaction_ids.
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - When requesting all mergers, leave start_date and end_date null.
         - Only specify date ranges when the user explicitly requests mergers and acquisitions during some date range.
-        - Provides transaction_id, merger_title, and transaction closed_date.
+        - Provides transaction_id, status, start_date, closed_date, target, and buyers.
 
         Examples:
         Query: "Which companies did Microsoft purchase?"
