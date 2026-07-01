@@ -152,7 +152,7 @@ async def fetch_visible_alpha_segments_from_company_ids(
     if currency is not None:
         payload["currency"] = currency
 
-    resp = await httpx_client.post(url="/segments/", json=payload)
+    resp = await httpx_client.post(url="/segments/visible_alpha", json=payload)
     resp.raise_for_status()
 
     return PostResponse[SegmentsResp].model_validate(resp.json())

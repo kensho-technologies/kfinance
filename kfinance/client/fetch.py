@@ -416,7 +416,7 @@ class KFinanceApiClient:
     ) -> PostResponse[SegmentsResp]:
         """Get segments using Visible Alpha as the data source."""
 
-        url = f"{self.url_base}segments/"
+        url = f"{self.url_base}segments/visible_alpha"
 
         period_type_val = period_type.value if period_type is not None else None
         calendar_type_val = calendar_type.value if calendar_type is not None else None
@@ -579,7 +579,7 @@ class KFinanceApiClient:
     ) -> dict:
         """Get a financial line item using Visible Alpha as the data source."""
 
-        url = f"{self.url_base}line_item/"
+        url = f"{self.url_base}line_item/visible_alpha"
 
         period_type_val = period_type.value if period_type is not None else None
         calendar_type_val = calendar_type.value if calendar_type is not None else None
@@ -1019,7 +1019,7 @@ class KFinanceApiClient:
     ) -> dict:
         """Get consensus estimates using Visible Alpha as the data source."""
 
-        url = f"{self.url_base}estimates/"
+        url = f"{self.url_base}estimates/visible_alpha"
 
         period_type_val = period_type.value if period_type is not None else None
 

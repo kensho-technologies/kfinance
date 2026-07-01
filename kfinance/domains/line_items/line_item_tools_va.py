@@ -179,7 +179,7 @@ async def fetch_visible_alpha_line_item_from_company_ids(
     if currency is not None:
         params["currency"] = currency
 
-    resp = await httpx_client.post(url="/line_item/", json=params)
+    resp = await httpx_client.post(url="/line_item/visible_alpha", json=params)
     resp.raise_for_status()
 
     return PostResponseWithMetadata.model_validate(resp.json())

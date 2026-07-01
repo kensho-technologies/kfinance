@@ -63,7 +63,7 @@ class TestFetchSegmentsFromCompanyIdsVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/segments/",
+            url="https://kfinance.kensho.com/api/v1/segments/visible_alpha",
             json={"results": {str(SPGI_ID_TRIPLE.company_id): SEGMENTS_RESP}, "errors": {}},
         )
 
@@ -82,7 +82,7 @@ class TestGetSegmentsFromIdentifiersVa:
     def add_spgi_segments_va_mock(self, httpx_mock: HTTPXMock) -> None:
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/segments/",
+            url="https://kfinance.kensho.com/api/v1/segments/visible_alpha",
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): SEGMENTS_RESP},
                 "errors": {},
@@ -141,7 +141,7 @@ class TestGetSegmentsFromIdentifiersVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/segments/",
+            url="https://kfinance.kensho.com/api/v1/segments/visible_alpha",
             json={
                 "results": {},
                 "errors": {str(SPGI_ID_TRIPLE.company_id): "Company not found in Visible Alpha."},
@@ -169,7 +169,7 @@ class TestGetSegmentsFromIdentifiersVa:
 
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/segments/",
+            url="https://kfinance.kensho.com/api/v1/segments/visible_alpha",
             json={"results": {str(SPGI_ID_TRIPLE.company_id): SEGMENTS_RESP}, "errors": {}},
         )
 
@@ -193,7 +193,7 @@ class TestGetSegmentsFromIdentifiersVa:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/segments/",
+            url="https://kfinance.kensho.com/api/v1/segments/visible_alpha",
             json={
                 "results": {"1": SEGMENTS_RESP, "2": SEGMENTS_RESP},
                 "errors": {},
