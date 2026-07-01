@@ -1007,7 +1007,6 @@ class KFinanceApiClient:
     def fetch_estimates_va(
         self,
         company_ids: list[int],
-        estimate_type: EstimateType,
         start_year: int | None = None,
         end_year: int | None = None,
         start_quarter: int | None = None,
@@ -1018,7 +1017,7 @@ class KFinanceApiClient:
         estimate_search: str | None = None,
         currency: str | None = None,
     ) -> dict:
-        """Get estimates using Visible Alpha as the data source."""
+        """Get consensus estimates using Visible Alpha as the data source."""
 
         url = f"{self.url_base}estimates/"
 
@@ -1026,7 +1025,7 @@ class KFinanceApiClient:
 
         request_body: dict[str, str | int | list[int]] = {
             "company_ids": company_ids,
-            "estimate_type": estimate_type.value,
+            "estimate_type": EstimateType.consensus.value,
         }
 
         fields = [

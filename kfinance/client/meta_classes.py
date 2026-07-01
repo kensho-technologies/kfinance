@@ -791,7 +791,6 @@ class CompanyFunctionsMetaClass:
 
         estimate_response = self.kfinance_api_client.fetch_estimates_va(
             company_ids=[self.company_id],
-            estimate_type=EstimateType.consensus,
             period_type=period_type,
             start_year=start_year,
             end_year=end_year,

@@ -112,7 +112,6 @@ class GetConsensusEstimatesFromIdentifiersVa(KfinanceTool):
         """"""
         return await get_estimates_from_identifiers_va(
             identifiers=identifiers,
-            estimate_type=EstimateType.consensus,
             httpx_client=self.kfinance_client.httpx_client,
             period_type=period_type,
             fiscal_start_year=fiscal_start_year,
@@ -128,7 +127,6 @@ class GetConsensusEstimatesFromIdentifiersVa(KfinanceTool):
 
 async def fetch_estimates_from_company_ids_va(
     company_ids: list[int],
-    estimate_type: EstimateType,
     httpx_client: httpx.AsyncClient,
     period_type: EstimatePeriodType | None = None,
     fiscal_start_year: int | None = None,
@@ -140,10 +138,10 @@ async def fetch_estimates_from_company_ids_va(
     estimate_search: str | None = None,
     currency: str | None = None,
 ) -> PostResponseWithMetadata:
-    """Fetch estimates for a list of company IDs using Visible Alpha as the data source."""
+    """Fetch consensus estimates for a list of company IDs using Visible Alpha as the data source."""
     payload: dict[str, Any] = {
         "company_ids": company_ids,
-        "estimate_type": estimate_type.value,
+        "estimate_type": EstimateType.consensus.value,
     }
 
     if period_type is not None:
@@ -173,7 +171,6 @@ async def fetch_estimates_from_company_ids_va(
 
 async def get_estimates_from_identifiers_va(
     identifiers: list[str],
-    estimate_type: EstimateType,
     httpx_client: httpx.AsyncClient,
     period_type: EstimatePeriodType | None = None,
     fiscal_start_year: int | None = None,
@@ -196,7 +193,6 @@ async def get_estimates_from_identifiers_va(
     if id_triple_resp.company_ids:
         estimates_resp = await fetch_estimates_from_company_ids_va(
             company_ids=id_triple_resp.company_ids,
-            estimate_type=estimate_type,
             httpx_client=httpx_client,
             period_type=period_type,
             fiscal_start_year=fiscal_start_year,
