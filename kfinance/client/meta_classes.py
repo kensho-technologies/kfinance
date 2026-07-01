@@ -286,7 +286,7 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return pd.DataFrame()
 
-        response = self.kfinance_api_client.fetch_line_item_va(
+        response = self.kfinance_api_client.fetch_visible_alpha_line_item(
             company_ids=[self.company_id],
             line_item=line_item,
             period_type=period_type,
@@ -517,7 +517,7 @@ class CompanyFunctionsMetaClass:
             end_quarter=end_quarter,
         )
 
-    def _segments_va(
+    def _visible_alpha_segments(
         self,
         segment_type: SegmentType,
         period_type: Optional[EstimatePeriodType] = None,
@@ -538,7 +538,7 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return {}
 
-        segments_response = self.kfinance_api_client.fetch_segments_va(
+        segments_response = self.kfinance_api_client.fetch_visible_alpha_segments(
             company_ids=[self.company_id],
             segment_type=segment_type,
             period_type=period_type,
@@ -555,7 +555,7 @@ class CompanyFunctionsMetaClass:
         segments_resp = list(segments_response.results.values())[0]
         return segments_resp.model_dump(mode="json")["periods"]
 
-    def business_segments_va(
+    def business_visible_alpha_segments(
         self,
         period_type: Optional[EstimatePeriodType] = None,
         start_year: Optional[int] = None,
@@ -565,7 +565,7 @@ class CompanyFunctionsMetaClass:
         currency: Optional[str] = None,
     ) -> dict:
         """Get business segments from Visible Alpha."""
-        return self._segments_va(
+        return self._visible_alpha_segments(
             segment_type=SegmentType.business,
             period_type=period_type,
             start_year=start_year,
@@ -575,7 +575,7 @@ class CompanyFunctionsMetaClass:
             currency=currency,
         )
 
-    def geographic_segments_va(
+    def geographic_visible_alpha_segments(
         self,
         period_type: Optional[EstimatePeriodType] = None,
         start_year: Optional[int] = None,
@@ -585,7 +585,7 @@ class CompanyFunctionsMetaClass:
         currency: Optional[str] = None,
     ) -> dict:
         """Get geographic segments from Visible Alpha."""
-        return self._segments_va(
+        return self._visible_alpha_segments(
             segment_type=SegmentType.geographic,
             period_type=period_type,
             start_year=start_year,
@@ -789,7 +789,7 @@ class CompanyFunctionsMetaClass:
         except ValueError:
             return pd.DataFrame()
 
-        estimate_response = self.kfinance_api_client.fetch_estimates_va(
+        estimate_response = self.kfinance_api_client.fetch_visible_alpha_estimates(
             company_ids=[self.company_id],
             period_type=period_type,
             start_year=start_year,

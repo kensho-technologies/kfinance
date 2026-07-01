@@ -28,7 +28,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
-class GetFinancialLineItemFromIdentifiersVaArgs(ToolArgsWithIdentifiers):
+class GetVisibleAlphaFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
     line_item: str = Field(
         description="The financial metric, business measure, or quantitative data point to retrieve. Use descriptive natural language. Preserve the specificity of what the user asked for; keep any product, model, series, segment, or region qualifiers they named rather than generalizing to a broader metric. When the user names several distinct items, make a separate call per item using its specific name."
     )
@@ -71,7 +71,9 @@ class PostResponseWithMetadata(BaseModel):
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
 
 
-class GetFinancialLineItemFromIdentifiersVaResp(ToolRespWithIdInfoAndErrors[LineItemResp]):
+class GetVisibleAlphaFinancialLineItemFromIdentifiersResp(
+    ToolRespWithIdInfoAndErrors[LineItemResp]
+):
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
 
@@ -102,7 +104,7 @@ class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
         Query: "Most recent three quarters except one ppe for Exxon and Hasbro"
         Function: get_financial_line_item_from_identifiers(line_item="property plant and equipment", period_type="quarterly", num_periods=2, num_periods_back=1, identifiers=["Exxon", "Hasbro"])
     """).strip()
-    args_schema: Type[BaseModel] = GetFinancialLineItemFromIdentifiersVaArgs
+    args_schema: Type[BaseModel] = GetVisibleAlphaFinancialLineItemFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}
 
     async def _arun(
@@ -118,9 +120,9 @@ class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
         num_periods: int | None = None,
         num_periods_back: int | None = None,
         currency: str | None = None,
-    ) -> GetFinancialLineItemFromIdentifiersVaResp:
+    ) -> GetVisibleAlphaFinancialLineItemFromIdentifiersResp:
         """"""
-        return await get_financial_line_item_from_identifiers_va(
+        return await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=identifiers,
             line_item=line_item,
             httpx_client=self.kfinance_client.httpx_client,
@@ -136,7 +138,7 @@ class GetFinancialLineItemFromIdentifiersVa(KfinanceTool):
         )
 
 
-async def fetch_line_item_from_company_ids_va(
+async def fetch_visible_alpha_line_item_from_company_ids(
     company_ids: list[int],
     line_item: str,
     httpx_client: httpx.AsyncClient,
@@ -181,7 +183,7 @@ async def fetch_line_item_from_company_ids_va(
     return PostResponseWithMetadata.model_validate(resp.json())
 
 
-async def get_financial_line_item_from_identifiers_va(
+async def get_visible_alpha_financial_line_item_from_identifiers(
     identifiers: list[str],
     line_item: str,
     httpx_client: httpx.AsyncClient,
@@ -194,7 +196,7 @@ async def get_financial_line_item_from_identifiers_va(
     num_periods: int | None = None,
     num_periods_back: int | None = None,
     currency: str | None = None,
-) -> GetFinancialLineItemFromIdentifiersVaResp:
+) -> GetVisibleAlphaFinancialLineItemFromIdentifiersResp:
     """Fetch financial line items for all identifiers using Visible Alpha as the data source."""
 
     id_triple_resp = await unified_fetch_id_triples(
@@ -204,7 +206,7 @@ async def get_financial_line_item_from_identifiers_va(
 
     metadata: dict[str, AlternativeLineItemMetadata] = {}
     if id_triple_resp.company_ids:
-        line_item_resp = await fetch_line_item_from_company_ids_va(
+        line_item_resp = await fetch_visible_alpha_line_item_from_company_ids(
             company_ids=id_triple_resp.company_ids,
             line_item=line_item,
             httpx_client=httpx_client,
@@ -249,7 +251,7 @@ async def get_financial_line_item_from_identifiers_va(
         for line_item_response in results.values():
             line_item_response.remove_all_periods_other_than_the_most_recent_one()
 
-    resp_model = GetFinancialLineItemFromIdentifiersVaResp(
+    resp_model = GetVisibleAlphaFinancialLineItemFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,

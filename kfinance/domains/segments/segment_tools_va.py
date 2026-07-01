@@ -23,7 +23,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
-class GetSegmentsFromIdentifiersVaArgs(ToolArgsWithIdentifiers):
+class GetVisibleAlphaSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     segment_type: SegmentType
     period_type: EstimatePeriodType | None = Field(
         default=None, description="The period type (annual, semi-annual, or quarterly)."
@@ -50,7 +50,7 @@ class GetSegmentsFromIdentifiersVaArgs(ToolArgsWithIdentifiers):
     )
 
 
-class GetSegmentsFromIdentifiersVaResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):
+class GetVisibleAlphaSegmentsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):
     notes: list[str] = Field(default_factory=list)
 
 
@@ -78,7 +78,7 @@ class GetSegmentsFromIdentifiersVa(KfinanceTool):
         Query: "What are the ltm business segments for SPGI for the last three calendar quarters but one?"
         Function: get_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=2, num_periods_back=1, identifiers=["SPGI"])
     """).strip()
-    args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersVaArgs
+    args_schema: Type[BaseModel] = GetVisibleAlphaSegmentsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}
 
     async def _arun(
@@ -94,9 +94,9 @@ class GetSegmentsFromIdentifiersVa(KfinanceTool):
         num_periods: int | None = None,
         num_periods_back: int | None = None,
         currency: str | None = None,
-    ) -> GetSegmentsFromIdentifiersVaResp:
+    ) -> GetVisibleAlphaSegmentsFromIdentifiersResp:
         """"""
-        return await get_segments_from_identifiers_va(
+        return await get_visible_alpha_segments_from_identifiers(
             identifiers=identifiers,
             segment_type=segment_type,
             httpx_client=self.kfinance_client.httpx_client,
@@ -112,7 +112,7 @@ class GetSegmentsFromIdentifiersVa(KfinanceTool):
         )
 
 
-async def fetch_segments_from_company_ids_va(
+async def fetch_visible_alpha_segments_from_company_ids(
     company_ids: list[int],
     segment_type: SegmentType,
     httpx_client: httpx.AsyncClient,
@@ -157,7 +157,7 @@ async def fetch_segments_from_company_ids_va(
     return PostResponse[SegmentsResp].model_validate(resp.json())
 
 
-async def get_segments_from_identifiers_va(
+async def get_visible_alpha_segments_from_identifiers(
     identifiers: list[str],
     segment_type: SegmentType,
     httpx_client: httpx.AsyncClient,
@@ -170,7 +170,7 @@ async def get_segments_from_identifiers_va(
     num_periods: int | None = None,
     num_periods_back: int | None = None,
     currency: str | None = None,
-) -> GetSegmentsFromIdentifiersVaResp:
+) -> GetVisibleAlphaSegmentsFromIdentifiersResp:
     """Fetch segments for all identifiers using Visible Alpha as the data source."""
 
     id_triple_resp = await unified_fetch_id_triples(
@@ -179,7 +179,7 @@ async def get_segments_from_identifiers_va(
     errors: list[str] = list(id_triple_resp.errors.values())
 
     if id_triple_resp.company_ids:
-        segments_resp = await fetch_segments_from_company_ids_va(
+        segments_resp = await fetch_visible_alpha_segments_from_company_ids(
             company_ids=id_triple_resp.company_ids,
             segment_type=segment_type,
             httpx_client=httpx_client,
@@ -220,7 +220,7 @@ async def get_segments_from_identifiers_va(
         for segments_response in results.values():
             segments_response.remove_all_periods_other_than_the_most_recent_one()
 
-    resp_model = GetSegmentsFromIdentifiersVaResp(
+    resp_model = GetVisibleAlphaSegmentsFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,

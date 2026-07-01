@@ -26,7 +26,9 @@ from kfinance.domains.estimates.estimates_tools import (
     GetConsensusTargetPriceFromIdentifiers,
     GetGuidanceFromIdentifiers,
 )
-from kfinance.domains.estimates.estimates_tools_va import GetConsensusEstimatesFromIdentifiersVa
+from kfinance.domains.estimates.estimates_tools_va import (
+    GetVisibleAlphaConsensusEstimatesFromIdentifiers,
+)
 from kfinance.domains.key_developments.key_devs_tools import GetKeyDevsFromIdentifier
 from kfinance.domains.line_items.line_item_tools import GetFinancialLineItemFromIdentifiers
 from kfinance.domains.line_items.line_item_tools_va import GetFinancialLineItemFromIdentifiersVa
@@ -108,7 +110,7 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetFundingSummaryFromIdentifiers,
     # Estimates
     GetConsensusEstimatesFromIdentifiers,
-    GetConsensusEstimatesFromIdentifiersVa,
+    GetVisibleAlphaConsensusEstimatesFromIdentifiers,
     GetGuidanceFromIdentifiers,
     GetConsensusTargetPriceFromIdentifiers,
     GetAnalystRecommendationsFromIdentifiers,
