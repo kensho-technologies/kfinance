@@ -273,6 +273,7 @@ class CompanyFunctionsMetaClass:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
+        currency: Optional[str] = None,
     ) -> pd.DataFrame:
         """Get a DataFrame of a financial line item from Visible Alpha."""
         try:
@@ -293,6 +294,7 @@ class CompanyFunctionsMetaClass:
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
+            currency=currency,
         )
 
         if not response.get("results"):
@@ -523,6 +525,7 @@ class CompanyFunctionsMetaClass:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
+        currency: Optional[str] = None,
     ) -> dict:
         """Get the company's segments from Visible Alpha."""
         try:
@@ -543,6 +546,7 @@ class CompanyFunctionsMetaClass:
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
+            currency=currency,
         )
 
         if not segments_response.results:
@@ -558,6 +562,7 @@ class CompanyFunctionsMetaClass:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
+        currency: Optional[str] = None,
     ) -> dict:
         """Get business segments from Visible Alpha."""
         return self._segments_va(
@@ -567,6 +572,7 @@ class CompanyFunctionsMetaClass:
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
+            currency=currency,
         )
 
     def geographic_segments_va(
@@ -576,6 +582,7 @@ class CompanyFunctionsMetaClass:
         end_year: Optional[int] = None,
         start_quarter: Optional[int] = None,
         end_quarter: Optional[int] = None,
+        currency: Optional[str] = None,
     ) -> dict:
         """Get geographic segments from Visible Alpha."""
         return self._segments_va(
@@ -585,6 +592,7 @@ class CompanyFunctionsMetaClass:
             end_year=end_year,
             start_quarter=start_quarter,
             end_quarter=end_quarter,
+            currency=currency,
         )
 
     @property
@@ -768,6 +776,7 @@ class CompanyFunctionsMetaClass:
         num_periods_backward: int | None = None,
         period_type: EstimatePeriodType | None = None,
         estimate_search: str | None = None,
+        currency: str | None = None,
     ) -> pd.DataFrame:
         """Get consensus estimates from Visible Alpha for the time range and period type."""
         try:
@@ -791,6 +800,7 @@ class CompanyFunctionsMetaClass:
             num_periods_forward=num_periods_forward,
             num_periods_backward=num_periods_backward,
             estimate_search=estimate_search,
+            currency=currency,
         )
 
         if not estimate_response.get("results"):

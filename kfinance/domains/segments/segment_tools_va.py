@@ -5,17 +5,49 @@ import httpx
 from pydantic import BaseModel, Field
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
-from kfinance.client.models.date_and_period_models import EstimatePeriodType
+from kfinance.client.models.date_and_period_models import (
+    EstimatePeriodType,
+    NumPeriods,
+    NumPeriodsBack,
+)
 from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.line_items.response_notes import insert_fiscal_period_notes
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
-from kfinance.domains.segments.segment_tools import GetSegmentsFromIdentifiersArgs
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
+    ToolArgsWithIdentifiers,
     ToolRespWithIdInfoAndErrors,
+    ValidQuarter,
 )
+
+
+class GetSegmentsFromIdentifiersVaArgs(ToolArgsWithIdentifiers):
+    segment_type: SegmentType
+    period_type: EstimatePeriodType | None = Field(
+        default=None, description="The period type (annual, semi-annual, or quarterly)."
+    )
+    start_year: int | None = Field(
+        default=None, description="The starting year for the data range."
+    )
+    end_year: int | None = Field(default=None, description="The ending year for the data range.")
+    start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter (1-4).")
+    end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter (1-4).")
+    calendar_type: CalendarType | None = Field(
+        default=None, description="Fiscal year or calendar year."
+    )
+    num_periods: NumPeriods | None = Field(
+        default=None, description="The number of periods to retrieve data for (1-99)."
+    )
+    num_periods_back: NumPeriodsBack | None = Field(
+        default=None,
+        description="The end period expressed as number of periods back relative to the present period (0-99).",
+    )
+    currency: str | None = Field(
+        default=None,
+        description="ISO 4217 currency code to return values in (e.g. 'USD', 'EUR'). Defaults to the reporting currency if not specified.",
+    )
 
 
 class GetSegmentsFromIdentifiersVaResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):
@@ -46,7 +78,7 @@ class GetSegmentsFromIdentifiersVa(KfinanceTool):
         Query: "What are the ltm business segments for SPGI for the last three calendar quarters but one?"
         Function: get_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=2, num_periods_back=1, identifiers=["SPGI"])
     """).strip()
-    args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersArgs
+    args_schema: Type[BaseModel] = GetSegmentsFromIdentifiersVaArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}
 
     async def _arun(
@@ -61,6 +93,7 @@ class GetSegmentsFromIdentifiersVa(KfinanceTool):
         calendar_type: CalendarType | None = None,
         num_periods: int | None = None,
         num_periods_back: int | None = None,
+        currency: str | None = None,
     ) -> GetSegmentsFromIdentifiersVaResp:
         """"""
         return await get_segments_from_identifiers_va(
@@ -75,6 +108,7 @@ class GetSegmentsFromIdentifiersVa(KfinanceTool):
             calendar_type=calendar_type,
             num_periods=num_periods,
             num_periods_back=num_periods_back,
+            currency=currency,
         )
 
 
@@ -90,6 +124,7 @@ async def fetch_segments_from_company_ids_va(
     calendar_type: CalendarType | None = None,
     num_periods: int | None = None,
     num_periods_back: int | None = None,
+    currency: str | None = None,
 ) -> PostResponse[SegmentsResp]:
     """Fetch segments for a list of company IDs using Visible Alpha as the data source."""
     payload: dict[str, Any] = {
@@ -114,6 +149,8 @@ async def fetch_segments_from_company_ids_va(
         payload["num_periods"] = num_periods
     if num_periods_back is not None:
         payload["num_periods_back"] = num_periods_back
+    if currency is not None:
+        payload["currency"] = currency
 
     resp = await httpx_client.post(url="/segments/", json=payload)
     resp.raise_for_status()
@@ -133,6 +170,7 @@ async def get_segments_from_identifiers_va(
     calendar_type: CalendarType | None = None,
     num_periods: int | None = None,
     num_periods_back: int | None = None,
+    currency: str | None = None,
 ) -> GetSegmentsFromIdentifiersVaResp:
     """Fetch segments for all identifiers using Visible Alpha as the data source."""
 
@@ -154,6 +192,7 @@ async def get_segments_from_identifiers_va(
             calendar_type=calendar_type,
             num_periods=num_periods,
             num_periods_back=num_periods_back,
+            currency=currency,
         )
 
         for company_id_str, error in segments_resp.errors.items():

@@ -54,6 +54,10 @@ class GetEstimatesFromIdentifiersVaArgs(ToolArgsWithIdentifiers):
         default=None,
         description="The financial metric, business measure, or quantitative data point to retrieve. Use descriptive natural language. Preserve the specificity of what the user asked for; keep any product, model, series, segment, or region qualifiers they named rather than generalizing to a broader metric. When the user names several distinct items, make a separate call per item using its specific name.",
     )
+    currency: str | None = Field(
+        default=None,
+        description="ISO 4217 currency code to return values in (e.g. 'USD', 'EUR'). Defaults to the reporting currency if not specified.",
+    )
 
 
 class PostResponseWithMetadata(BaseModel):
@@ -102,6 +106,7 @@ class GetConsensusEstimatesFromIdentifiersVa(KfinanceTool):
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
         estimate_search: str | None = None,
+        currency: str | None = None,
     ) -> GetEstimatesFromIdentifiersVaResp:
         """"""
         return await get_estimates_from_identifiers_va(
@@ -116,6 +121,7 @@ class GetConsensusEstimatesFromIdentifiersVa(KfinanceTool):
             num_periods_forward=num_periods_forward,
             num_periods_backward=num_periods_backward,
             estimate_search=estimate_search,
+            currency=currency,
         )
 
 
@@ -131,6 +137,7 @@ async def fetch_estimates_from_company_ids_va(
     num_periods_forward: int | None = None,
     num_periods_backward: int | None = None,
     estimate_search: str | None = None,
+    currency: str | None = None,
 ) -> PostResponseWithMetadata:
     """Fetch estimates for a list of company IDs using Visible Alpha as the data source."""
     payload: dict[str, Any] = {
@@ -155,6 +162,8 @@ async def fetch_estimates_from_company_ids_va(
         payload["num_periods_backward"] = num_periods_backward
     if estimate_search is not None:
         payload["estimate_search"] = estimate_search
+    if currency is not None:
+        payload["currency"] = currency
 
     resp = await httpx_client.post(url="/estimates/", json=payload)
     resp.raise_for_status()
@@ -174,6 +183,7 @@ async def get_estimates_from_identifiers_va(
     num_periods_forward: int | None = None,
     num_periods_backward: int | None = None,
     estimate_search: str | None = None,
+    currency: str | None = None,
 ) -> GetEstimatesFromIdentifiersVaResp:
     """Fetch estimates for all identifiers using Visible Alpha as the data source."""
 
@@ -196,6 +206,7 @@ async def get_estimates_from_identifiers_va(
             num_periods_forward=num_periods_forward,
             num_periods_backward=num_periods_backward,
             estimate_search=estimate_search,
+            currency=currency,
         )
 
         for company_id_str, error in estimates_resp.errors.items():
