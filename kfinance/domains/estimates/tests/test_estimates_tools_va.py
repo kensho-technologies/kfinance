@@ -2,7 +2,6 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from kfinance.client.models.date_and_period_models import EstimateType
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.estimates.estimates_models import Estimates
 from kfinance.domains.estimates.estimates_tools_va import (
@@ -67,7 +66,6 @@ class TestFetchEstimatesFromCompanyIdsVa:
 
         resp = await fetch_estimates_from_company_ids_va(
             company_ids=[SPGI_ID_TRIPLE.company_id],
-            estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
 
@@ -99,7 +97,6 @@ class TestFetchEstimatesFromCompanyIdsVa:
 
         resp = await fetch_estimates_from_company_ids_va(
             company_ids=[SPGI_ID_TRIPLE.company_id],
-            estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
             estimate_search="iPhone unit sales",
         )
@@ -126,7 +123,6 @@ class TestFetchEstimatesFromCompanyIdsVa:
 
         resp = await fetch_estimates_from_company_ids_va(
             company_ids=[SPGI_ID_TRIPLE.company_id],
-            estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
 
@@ -162,7 +158,6 @@ class TestGetEstimatesFromIdentifiersVa:
         """
         resp = await get_estimates_from_identifiers_va(
             identifiers=["SPGI"],
-            estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
 
@@ -181,7 +176,6 @@ class TestGetEstimatesFromIdentifiersVa:
         """
         resp = await get_estimates_from_identifiers_va(
             identifiers=["SPGI", "non-existent"],
-            estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
 
@@ -209,7 +203,6 @@ class TestGetEstimatesFromIdentifiersVa:
 
         resp = await get_estimates_from_identifiers_va(
             identifiers=["SPGI"],
-            estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
 
@@ -236,7 +229,6 @@ class TestGetEstimatesFromIdentifiersVa:
 
         resp = await get_estimates_from_identifiers_va(
             identifiers=["SPGI"],
-            estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
 
@@ -254,7 +246,6 @@ class TestGetEstimatesFromIdentifiersVa:
         """
         resp = await get_estimates_from_identifiers_va(
             identifiers=["SPGI"],
-            estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
 
@@ -272,7 +263,6 @@ class TestGetEstimatesFromIdentifiersVa:
         """
         resp = await get_estimates_from_identifiers_va(
             identifiers=["SPGI"],
-            estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
 
@@ -299,7 +289,6 @@ class TestGetEstimatesFromIdentifiersVa:
 
         resp = await get_estimates_from_identifiers_va(
             identifiers=["SPGI"],
-            estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
 
