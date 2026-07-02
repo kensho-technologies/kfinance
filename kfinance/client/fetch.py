@@ -755,6 +755,10 @@ class KFinanceApiClient:
 
         :param company_id: The company ID to filter on.
         :type company_id: int
+        :param start_date: The start date to filter mergers on.
+        :type start_date: str | None
+        :param end_date: The end date to filter mergers on.
+        :type end_date: str | None
         :return: A MergersResp, containing transaction IDs, closed_date, and 'merger titles' for each of the three kinds of roles the given company could be party to.
         :rtype: MergersResp
         """
@@ -766,10 +770,12 @@ class KFinanceApiClient:
     def fetch_mergers_info(
         self, transaction_ids: list[int], include_advisors: bool = False
     ) -> MergersInfo:
-        """Fetches information about the given merger or acquisition, including the timeline, the participants, and the considerations.
+        """Fetches information about the given mergers or acquisitions, including the timeline, the participants, and the considerations.
 
-        :param transaction_id: The transaction ID to filter on.
-        :type transaction_id: int
+        :param transaction_ids: The transaction IDs to filter on.
+        :type transaction_ids: list[int]
+        :param include_advisors: Whether to include advisors for participants.
+        :type include_advisors: bool
         :return: A dictionary containing the timeline, the participants, and the considerations (eith their details) of the transaction.
         :rtype: MergerInfo
         """

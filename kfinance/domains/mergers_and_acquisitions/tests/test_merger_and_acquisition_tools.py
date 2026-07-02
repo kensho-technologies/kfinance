@@ -122,8 +122,8 @@ class TestMergersAndAcquisitions:
         httpx_mock: HTTPXMock,
     ) -> None:
         """
-        WHEN we request merger info for a specific transaction
-        THEN we get back the detailed merger information
+        WHEN we request merger info for multiple transactions
+        THEN we get back the detailed merger information for each of them
         """
         transaction_id = 517414
         error_transaction_id = 0
