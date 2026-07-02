@@ -8,7 +8,7 @@ class EntityInfo(BaseModel):
     """Resolved entity information for a single identifier."""
 
     entity_id: int
-    company_name: str | None
+    entity_name: str | None
     ticker: str | None
     country: str | None
 
@@ -36,7 +36,7 @@ class EntityIdResp(BaseModel):
         Pre-processed API response:
         {
             'data': {
-                'USA': {'entity_id': 12425677, 'company_name': 'United States', 'ticker': null, 'country': 'USA'},
+                'USA': {'entity_id': 12425677, 'entity_name': 'United States', 'ticker': null, 'country': 'USA'},
                 'non-existent': {'error': 'No identification triple found for the provided identifier: NON-EXISTENT of type: ticker'}
             }
         }
@@ -44,7 +44,7 @@ class EntityIdResp(BaseModel):
         Post-processed API response:
         {
             'identifiers_resolved': {
-                'USA': {'entity_id': 12425677, 'company_name': 'United States', 'ticker': null, 'country': 'USA'},
+                'USA': {'entity_id': 12425677, 'entity_name': 'United States', 'ticker': null, 'country': 'USA'},
             },
             'errors': {
                 'non-existent': 'No identification triple found for the provided identifier: NON-EXISTENT of type: ticker'
