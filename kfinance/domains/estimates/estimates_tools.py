@@ -224,6 +224,7 @@ async def get_estimates_from_identifiers(
         else:
             resp: SingleResultResp[Estimates] = task.result
             if resp.result is not None:
+                resp.result.data_source = "Capital IQ"
                 results[task.result_key] = resp.result
             if resp.error is not None:
                 error_msg = f"{task.result_key}: {resp.error}"

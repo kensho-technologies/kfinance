@@ -105,8 +105,10 @@ class TestSegments:
         THEN we get back segments for SPGI and an error for the non-existent company
         """
 
+        expected_seg = SegmentsResp.model_validate(self.segments_response)
+        expected_seg.data_source = "Capital IQ"
         expected_resp = GetSegmentsFromIdentifiersResp(
-            identifier_results={"SPGI": SegmentsResp.model_validate(self.segments_response)},
+            identifier_results={"SPGI": expected_seg},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
@@ -155,6 +157,7 @@ class TestSegments:
                 },
             }
         )
+        expected_single_company_response.data_source = "Capital IQ"
 
         expected_response = GetSegmentsFromIdentifiersResp(
             identifier_results={

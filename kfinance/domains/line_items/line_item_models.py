@@ -47,6 +47,7 @@ class BasePeriodsResp(BaseModel):
 class LineItemResp(BasePeriodsResp):
     currency: str | None
     periods: dict[str, LineItemPeriodData]  # period -> line item and period data
+    data_source: str | None = None
 
 
 @dataclass
@@ -56,6 +57,15 @@ class LineItemScore:
     name: str
     description: str
     score: float
+
+
+class AlternativeLineItem(BaseModel):
+    parameter_name: str
+    currency: str | None
+
+
+class AlternativeLineItemMetadata(BaseModel):
+    top_ranked_alternatives: list[AlternativeLineItem] = Field(default_factory=list)
 
 
 class LineItemType(TypedDict):
