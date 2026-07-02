@@ -54,6 +54,10 @@ class GetVisibleAlphaEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=None,
         description="The financial metric, business measure, or quantitative data point to retrieve. Use descriptive natural language. Preserve the specificity of what the user asked for; keep any product, model, series, segment, or region qualifiers they named rather than generalizing to a broader metric. When the user names several distinct items, make a separate call per item using its specific name.",
     )
+    calendar_type: CalendarType | None = Field(
+        default=None,
+        description="Fiscal year or calendar year. Use 'calendar' for calendar year references.",
+    )
     currency: str | None = Field(
         default=None,
         description="ISO 4217 currency code to return values in (e.g. 'USD', 'EUR'). Defaults to the reporting currency if not specified.",
@@ -108,6 +112,7 @@ class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
         estimate_search: str | None = None,
+        calendar_type: CalendarType | None = None,
         currency: str | None = None,
     ) -> GetVisibleAlphaEstimatesFromIdentifiersResp:
         """"""
@@ -123,6 +128,7 @@ class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
             num_periods_backward=num_periods_backward,
             estimate_search=estimate_search,
             currency=currency,
+            calendar_type=calendar_type,
         )
 
 
@@ -137,6 +143,7 @@ async def fetch_visible_alpha_estimates_from_company_ids(
     num_periods_forward: int | None = None,
     num_periods_backward: int | None = None,
     estimate_search: str | None = None,
+    calendar_type: CalendarType | None = None,
     currency: str | None = None,
 ) -> PostResponseWithMetadata:
     """Fetch consensus estimates for a list of company IDs using Visible Alpha as the data source."""
@@ -163,6 +170,8 @@ async def fetch_visible_alpha_estimates_from_company_ids(
         payload["estimate_search"] = estimate_search
     if currency is not None:
         payload["currency"] = currency
+    if calendar_type is not None:
+        payload["calendar_type"] = calendar_type.value
 
     resp = await httpx_client.post(url="/estimates/visible_alpha", json=payload)
     resp.raise_for_status()
@@ -181,6 +190,7 @@ async def get_visible_alpha_estimates_from_identifiers(
     num_periods_forward: int | None = None,
     num_periods_backward: int | None = None,
     estimate_search: str | None = None,
+    calendar_type: CalendarType | None = None,
     currency: str | None = None,
 ) -> GetVisibleAlphaEstimatesFromIdentifiersResp:
     """Fetch estimates for all identifiers using Visible Alpha as the data source."""
@@ -204,6 +214,7 @@ async def get_visible_alpha_estimates_from_identifiers(
             num_periods_backward=num_periods_backward,
             estimate_search=estimate_search,
             currency=currency,
+            calendar_type=calendar_type,
         )
 
         for company_id_str, error in estimates_resp.errors.items():
@@ -232,7 +243,7 @@ async def get_visible_alpha_estimates_from_identifiers(
     )
 
     insert_fiscal_period_notes(
-        calendar_type=CalendarType.fiscal,
+        calendar_type=calendar_type,
         period_type=period_type,
         resp_model=resp_model,
     )

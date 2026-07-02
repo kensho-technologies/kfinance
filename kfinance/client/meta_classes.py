@@ -25,7 +25,7 @@ from kfinance.domains.companies.company_models import (
 )
 from kfinance.domains.competitors.competitor_models import CompetitorSource
 from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType
-from kfinance.domains.line_items.line_item_models import LINE_ITEMS
+from kfinance.domains.line_items.line_item_models import LINE_ITEMS, CalendarType
 from kfinance.domains.professionals.professionals_models import (
     CompanyProfessional,
     PersonProfessionalsResult,
@@ -776,6 +776,7 @@ class CompanyFunctionsMetaClass:
         num_periods_backward: int | None = None,
         period_type: EstimatePeriodType | None = None,
         estimate_search: str | None = None,
+        calendar_type: CalendarType | None = None,
         currency: str | None = None,
     ) -> pd.DataFrame:
         """Get consensus estimates from Visible Alpha for the time range and period type."""
@@ -799,6 +800,7 @@ class CompanyFunctionsMetaClass:
             num_periods_forward=num_periods_forward,
             num_periods_backward=num_periods_backward,
             estimate_search=estimate_search,
+            calendar_type=calendar_type,
             currency=currency,
         )
 
