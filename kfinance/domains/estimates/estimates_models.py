@@ -28,6 +28,10 @@ class Estimates(BaseModel):
     data_source: str | None = None
 
 
+class VisibleAlphaEstimates(Estimates):
+    estimate_type: str  # type: ignore[assignment]  # VA puts the resolved metric name here, not the enum value
+
+
 class ConsensusTargetPriceItem(BaseModel):
     name: str
     value: Decimal | None

@@ -3,7 +3,7 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_ID_TRIPLE
-from kfinance.domains.estimates.estimates_models import Estimates
+from kfinance.domains.estimates.estimates_models import VisibleAlphaEstimates
 from kfinance.domains.estimates.estimates_tools_va import (
     fetch_visible_alpha_estimates_from_company_ids,
     get_visible_alpha_estimates_from_identifiers,
@@ -162,7 +162,7 @@ class TestGetEstimatesFromIdentifiersVa:
         )
 
         assert "SPGI" in resp.identifier_results
-        expected = Estimates.model_validate(ESTIMATES_RESP)
+        expected = VisibleAlphaEstimates.model_validate(ESTIMATES_RESP)
         expected.data_source = "Visible Alpha"
         assert resp.identifier_results["SPGI"] == expected
 

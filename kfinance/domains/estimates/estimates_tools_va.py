@@ -12,7 +12,7 @@ from kfinance.client.models.date_and_period_models import (
     NumPeriodsForward,
 )
 from kfinance.client.permission_models import Permission
-from kfinance.domains.estimates.estimates_models import Estimates
+from kfinance.domains.estimates.estimates_models import VisibleAlphaEstimates
 from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata, CalendarType
 from kfinance.domains.line_items.response_notes import insert_fiscal_period_notes
 from kfinance.integrations.tool_calling.tool_calling_models import (
@@ -65,13 +65,15 @@ class GetVisibleAlphaEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 
 class PostResponseWithMetadata(BaseModel):
-    results: dict[str, Estimates]
+    results: dict[str, VisibleAlphaEstimates]
     errors: dict[str, str] = Field(default_factory=dict)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
     data_source: str | None = None
 
 
-class GetVisibleAlphaEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Estimates]):
+class GetVisibleAlphaEstimatesFromIdentifiersResp(
+    ToolRespWithIdInfoAndErrors[VisibleAlphaEstimates]
+):
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
     data_source: str = "Visible Alpha"
