@@ -980,7 +980,7 @@ class KFinanceApiClient:
         """
         url = f"{self.url_base}ratings/issuer_ratings/"
 
-        request_body: dict[str, str | int] = {
+        request_body: dict[str, Any] = {
             "entity_ids": entity_ids,
         }
 

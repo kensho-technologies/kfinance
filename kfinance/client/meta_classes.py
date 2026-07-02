@@ -755,7 +755,7 @@ class CompanyFunctionsMetaClass:
                 rows.append(row)
 
         return pd.DataFrame(rows)
-    
+
     def issuer_ratings(self) -> dict:
         """Get issuer-level ratings for the company.
 
@@ -763,9 +763,7 @@ class CompanyFunctionsMetaClass:
         :rtype: dict
         """
 
-        response = self.kfinance_api_client.fetch_issuer_ratings(
-            entity_ids=[self.company_id]
-        )
+        response = self.kfinance_api_client.fetch_issuer_ratings(entity_ids=[self.company_id])
 
         if not response.results:
             return {}
@@ -778,7 +776,6 @@ class CompanyFunctionsMetaClass:
         # TODO: should this structure be flattened?
         issuer_ratings = response.results[entity_id_str]
         return issuer_ratings.model_dump(mode="json")["ratings"]
-    
 
 
 for line_item in LINE_ITEMS:
