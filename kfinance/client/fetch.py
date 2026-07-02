@@ -1015,6 +1015,7 @@ class KFinanceApiClient:
         num_periods_backward: int | None = None,
         period_type: EstimatePeriodType | None = None,
         estimate_search: str | None = None,
+        calendar_type: CalendarType | None = None,
         currency: str | None = None,
     ) -> dict:
         """Get consensus estimates using Visible Alpha as the data source."""
@@ -1038,6 +1039,7 @@ class KFinanceApiClient:
             ("period_type", period_type_val),
             ("estimate_search", estimate_search),
             ("currency", currency),
+            ("calendar_type", calendar_type.value if calendar_type is not None else None),
         ]
 
         for key, value in fields:
