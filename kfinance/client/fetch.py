@@ -1038,8 +1038,8 @@ class KFinanceApiClient:
             ("num_periods_backward", num_periods_backward),
             ("period_type", period_type_val),
             ("estimate_search", estimate_search),
+            ("calendar_type", calendar_type),
             ("currency", currency),
-            ("calendar_type", calendar_type.value if calendar_type is not None else None),
         ]
 
         for key, value in fields:

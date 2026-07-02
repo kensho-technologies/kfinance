@@ -168,10 +168,10 @@ async def fetch_visible_alpha_estimates_from_company_ids(
         payload["num_periods_backward"] = num_periods_backward
     if estimate_search is not None:
         payload["estimate_search"] = estimate_search
-    if currency is not None:
-        payload["currency"] = currency
     if calendar_type is not None:
         payload["calendar_type"] = calendar_type.value
+    if currency is not None:
+        payload["currency"] = currency
 
     resp = await httpx_client.post(url="/estimates/visible_alpha", json=payload)
     resp.raise_for_status()
