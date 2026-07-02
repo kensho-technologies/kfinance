@@ -267,13 +267,13 @@ async def fetch_estimates_from_company_id(
     if period_type is not None:
         params["period_type"] = period_type.value
     if fiscal_start_year is not None:
-        params["start_year"] = fiscal_start_year
+        params["fiscal_start_year"] = fiscal_start_year
     if fiscal_end_year is not None:
-        params["end_year"] = fiscal_end_year
+        params["fiscal_end_year"] = fiscal_end_year
     if fiscal_start_quarter is not None:
-        params["start_quarter"] = fiscal_start_quarter
+        params["fiscal_start_quarter"] = fiscal_start_quarter
     if fiscal_end_quarter is not None:
-        params["end_quarter"] = fiscal_end_quarter
+        params["fiscal_end_quarter"] = fiscal_end_quarter
     if num_periods_forward is not None:
         params["num_periods_forward"] = num_periods_forward
     if num_periods_backward is not None:
