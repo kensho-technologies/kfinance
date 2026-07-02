@@ -1480,8 +1480,11 @@ class MergerOrAcquisition:
         self,
         kfinance_api_client: KFinanceApiClient,
         transaction_id: int,
-        merger_title: str | None,
+        status: str,
+        start_date: date | None,
         closed_date: date | None,
+        target: str,
+        buyers: list[str],
     ) -> None:
         """MergerOrAcqusition initializer.
 
@@ -1491,21 +1494,26 @@ class MergerOrAcquisition:
         """
         self.kfinance_api_client = kfinance_api_client
         self.transaction_id = transaction_id
-        self.merger_title = merger_title
+        self.status = status
+        self.start_date = start_date
         self.closed_date = closed_date
+        self.target = target
+        self.buyers = buyers
         self._merger_info: MergerInfo | None = None
 
     @property
     def merger_info(self) -> MergerInfo:
         """Property for the combined information in the merger."""
         if not self._merger_info:
-            self._merger_info = self.kfinance_api_client.fetch_merger_info(self.transaction_id)
+            merger_info = self.kfinance_api_client.fetch_mergers_info(
+                [self.transaction_id]
+            ).results[self.transaction_id]
+            if not isinstance(merger_info, MergerInfo):
+                raise ValueError(
+                    f"No information for merger with transaction ID {self.transaction_id}"
+                )
+            self._merger_info = merger_info
         return self._merger_info
-
-    @property
-    def get_merger_title(self) -> str | None:
-        """The merger title includes the status of the merger and its target."""
-        return self.merger_title
 
     @property
     def get_timeline(self) -> list[MergerTimelineElement]:
@@ -1741,8 +1749,11 @@ class MergersAndAcquisitions(set):
             MergerOrAcquisition(
                 kfinance_api_client=kfinance_api_client,
                 transaction_id=id_and_title["transaction_id"],
-                merger_title=id_and_title["merger_title"],
+                status=id_and_title["status"],
+                start_date=id_and_title["start_date"],
                 closed_date=id_and_title["closed_date"],
+                target=id_and_title["target"],
+                buyers=id_and_title["buyers"],
             )
             for id_and_title in ids_and_titles
         )

@@ -38,6 +38,7 @@ from kfinance.domains.estimates.estimates_models import (
 from kfinance.domains.line_items.line_item_models import LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerInfo,
+    MergersInfo,
     MergersResp,
 )
 from kfinance.domains.prices.price_models import HistoryMetadataResp
@@ -331,38 +332,48 @@ MERGERS_RESP = MergersResp.model_validate(
     {
         "target": [
             {
-                "transaction_id": 10998717,
-                "merger_title": "Closed M/A of Microsoft Corporation",
+                "transaction_id": 0,
+                "status": "Closed",
+                "start_date": "2021-01-01",
                 "closed_date": "2021-01-01",
-            },
-            {
-                "transaction_id": 28237969,
-                "merger_title": "Closed M/A of Microsoft Corporation",
-                "closed_date": "2022-01-01",
+                "target": "Microsoft Corporation",
+                "buyers": [],
             },
         ],
         "buyer": [
             {
                 "transaction_id": 517414,
-                "merger_title": "Closed M/A of MongoMusic, Inc.",
-                "closed_date": "2023-01-01",
+                "status": "Closed",
+                "start_date": "2000-09-12",
+                "closed_date": "2000-09-12",
+                "target": "MongoMusic, Inc.",
+                "buyers": ["Microsoft Corporation"],
             },
             {
                 "transaction_id": 596722,
-                "merger_title": "Closed M/A of Digital Anvil, Inc.",
-                "closed_date": "2023-01-01",
+                "status": "Closed",
+                "start_date": "2000-12-05",
+                "closed_date": "2000-12-05",
+                "target": "Digital Anvil, Inc.",
+                "buyers": ["Microsoft Corporation"],
             },
         ],
         "seller": [
             {
                 "transaction_id": 455551,
-                "merger_title": "Closed M/A of VacationSpot.com, Inc.",
-                "closed_date": "2024-01-01",
+                "status": "Closed",
+                "start_date": "2000-01-30",
+                "closed_date": "2000-03-17",
+                "target": "VacationSpot.com, Inc.",
+                "buyers": ["Expedia, Inc."],
             },
             {
                 "transaction_id": 456045,
-                "merger_title": "Closed M/A of TransPoint, LLC",
-                "closed_date": "2025-01-01",
+                "status": "Closed",
+                "start_date": "2000-02-15",
+                "closed_date": "2000-09-05",
+                "target": "TransPoint, LLC",
+                "buyers": ["CheckFree Corp."],
             },
         ],
     }
@@ -388,15 +399,33 @@ MOCK_MERGERS_DB = {
                 {"status": "Closed", "date": "2000-09-12"},
             ],
             "participants": {
-                "target": {"company_id": 31696, "company_name": "MongoMusic, Inc."},
-                "buyers": [{"company_id": 21835, "company_name": "Microsoft Corporation"}],
+                "target": {
+                    "company_id": 31696,
+                    "company_name": "MongoMusic, Inc.",
+                    "advisors": None,
+                },
+                "buyers": [
+                    {"company_id": 21835, "company_name": "Microsoft Corporation", "advisors": None}
+                ],
                 "sellers": [
-                    {"company_id": 18805, "company_name": "Angel Investors L.P."},
-                    {"company_id": 20087, "company_name": "Draper Richards, L.P."},
-                    {"company_id": 22103, "company_name": "BRV Partners, LLC"},
-                    {"company_id": 23745, "company_name": "Venture Frogs, LLC"},
-                    {"company_id": 105902, "company_name": "ARGUS Capital International Limited"},
-                    {"company_id": 880300, "company_name": "Sony Music Entertainment, Inc."},
+                    {"company_id": 18805, "company_name": "Angel Investors L.P.", "advisors": None},
+                    {
+                        "company_id": 20087,
+                        "company_name": "Draper Richards, L.P.",
+                        "advisors": None,
+                    },
+                    {"company_id": 22103, "company_name": "BRV Partners, LLC", "advisors": None},
+                    {"company_id": 23745, "company_name": "Venture Frogs, LLC", "advisors": None},
+                    {
+                        "company_id": 105902,
+                        "company_name": "ARGUS Capital International Limited",
+                        "advisors": None,
+                    },
+                    {
+                        "company_id": 880300,
+                        "company_name": "Sony Music Entertainment, Inc.",
+                        "advisors": None,
+                    },
                 ],
             },
             "consideration": {
@@ -579,11 +608,21 @@ class MockKFinanceApiClient:
         """Get the transcript for an earnings item."""
         return MOCK_TRANSCRIPT_DB[key_dev_id]
 
-    def fetch_mergers_for_company(self, company_id):
+    def fetch_mergers_for_company(self, company_id: int) -> MergersResp:
         return copy.deepcopy(MERGERS_RESP)
 
-    def fetch_merger_info(self, transaction_id: int):
-        return copy.deepcopy(MOCK_MERGERS_DB[str(transaction_id)])
+    def fetch_mergers_info(
+        self, transaction_ids: list[int], include_advisors: bool = False
+    ) -> MergersInfo:
+        return MergersInfo.model_validate(
+            {
+                "results": {
+                    transaction_id: info
+                    for transaction_id, info in MOCK_MERGERS_DB.items()
+                    if transaction_id in transaction_ids
+                }
+            }
+        )
 
     def fetch_advisors_for_company_in_merger(self, transaction_id, advised_company_id):
         return copy.deepcopy(MOCK_COMPANY_DB[advised_company_id]["advisors"][transaction_id])
@@ -806,24 +845,33 @@ class TestCompany(TestCase):
             "target": [
                 {
                     "transaction_id": merger.transaction_id,
-                    "merger_title": merger.merger_title,
+                    "status": merger.status,
+                    "start_date": merger.start_date,
                     "closed_date": merger.closed_date,
+                    "target": merger.target,
+                    "buyers": merger.buyers,
                 }
                 for merger in mergers["target"]
             ],
             "buyer": [
                 {
                     "transaction_id": merger.transaction_id,
-                    "merger_title": merger.merger_title,
+                    "status": merger.status,
+                    "start_date": merger.start_date,
                     "closed_date": merger.closed_date,
+                    "target": merger.target,
+                    "buyers": merger.buyers,
                 }
                 for merger in mergers["buyer"]
             ],
             "seller": [
                 {
                     "transaction_id": merger.transaction_id,
-                    "merger_title": merger.merger_title,
+                    "status": merger.status,
+                    "start_date": merger.start_date,
                     "closed_date": merger.closed_date,
+                    "target": merger.target,
+                    "buyers": merger.buyers,
                 }
                 for merger in mergers["seller"]
             ],
