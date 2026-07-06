@@ -106,20 +106,20 @@ class GetRoundsOfFundingFromIdentifiers(KfinanceTool):
     description: str = dedent(f"""
         Returns funding round overviews: transaction_ids, types, dates, basic notes. Use for funding/capital raising questions (NOT M&A).
 
-        ⚠️ TWO-STEP REQUIREMENT: Most questions need BOTH tools:
+        TWO-STEP REQUIREMENT: Most questions need BOTH tools:
         1. Call THIS → get transaction_ids
         2. Call get_rounds_of_funding_info_from_transaction_ids with those IDs
         3. Answer using data from BOTH
 
         STEP 2 MANDATORY for: pricing trends (up/down-rounds), exact valuations, security details (preferred shares, classes, participation caps), advisors, board seats, liquidation terms, use of proceeds, pre-deal context, investor contribution amounts, transaction specifics (upsizing, textual notes), fees.
 
-        ⚠️ Don't rely on funding_round_notes alone—it's unstructured/incomplete. Always call STEP 2 for detailed questions.
+        Don't rely on funding_round_notes alone—it's unstructured/incomplete. Always call STEP 2 for detailed questions.
 
         ROLE PARAMETER:
         • '{RoundsOfFundingRole.company_raising_funds}': Company receiving funds (e.g., "What rounds did Stripe raise?")
         • '{RoundsOfFundingRole.company_investing_in_round_of_funding}': Investor's perspective (e.g., "Which companies did Sequoia invest in?")
 
-        ⚠️ INVESTOR QUESTIONS: "How much did [INVESTOR] contribute to [COMPANY]'s round?" → Use INVESTOR's identifier with role=company_investing_in_round_of_funding
+        INVESTOR QUESTIONS: "How much did [INVESTOR] contribute to [COMPANY]'s round?" → Use INVESTOR's identifier with role=company_investing_in_round_of_funding
         Example: "How much did Blackbird VC contribute to Morse Micro's Series C?" → identifier=Blackbird VC, role=company_investing_in_round_of_funding
     """).strip()
     args_schema: Type[BaseModel] = GetRoundsofFundingFromIdentifiersArgs
@@ -293,7 +293,7 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
     description: str = dedent("""
         Returns aggregate funding statistics: total_capital_raised, total_rounds count, first/most recent funding dates, rounds_by_type breakdown. No individual round details.
 
-        ⚠️ Use for SIMPLE aggregates only (single summary numbers). For "CUMULATIVE" or "ACROSS ALL ROUNDS" questions, use get_rounds_of_funding_from_identifiers instead—those need individual rounds for verification/filtering.
+        Use for SIMPLE aggregates only (single summary numbers). For "CUMULATIVE" or "ACROSS ALL ROUNDS" questions, use get_rounds_of_funding_from_identifiers instead—those need individual rounds for verification/filtering.
 
         Use THIS for:
         • "How much TOTAL capital has X raised?" (if you don't need to verify individual rounds)
@@ -305,7 +305,7 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
         • "Show me X's funding history" → Use get_rounds_of_funding_from_identifiers
         • Any specific round questions → Use get_rounds_of_funding_from_identifiers
 
-        ⚠️ If returns 0 rounds or null data, MUST follow up with get_rounds_of_funding_from_identifiers (summary often incomplete).
+        If returns 0 rounds or null data, MUST follow up with get_rounds_of_funding_from_identifiers (summary often incomplete).
     """).strip()
     args_schema: Type[BaseModel] = GetFundingSummaryFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
