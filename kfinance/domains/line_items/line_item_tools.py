@@ -12,6 +12,7 @@ from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
     LINE_ITEM_NAMES_AND_ALIASES,
     LINE_ITEM_TO_DESCRIPTIONS_MAP,
+    AlternativeLineItemMetadata,
     CalendarType,
     LineItemResp,
     LineItemScore,
@@ -145,7 +146,8 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 class GetFinancialLineItemFromIdentifiersResp(ToolRespWithIdInfoAndErrors[LineItemResp]):
     notes: list[str] = Field(default_factory=list)
-    data_source: str = "Capital IQ"
+    metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
+    data_source: Literal["Capital IQ", "Visible Alpha"]
 
 
 class GetFinancialLineItemFromIdentifiers(KfinanceTool):
@@ -284,6 +286,7 @@ async def get_financial_line_item_from_identifiers(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,
+        data_source="Capital IQ",
     )
 
     # Add explanatory notes

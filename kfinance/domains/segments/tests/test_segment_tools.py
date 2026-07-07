@@ -113,6 +113,7 @@ class TestSegments:
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            data_source="Capital IQ",
         )
 
         resp = await get_segments_from_identifiers(
@@ -165,6 +166,7 @@ class TestSegments:
             },
             identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            data_source="Capital IQ",
         )
 
         resp = await get_segments_from_identifiers(
@@ -193,6 +195,7 @@ class TestSegments:
                 " NON-EXISTENT of type: ticker"
             ],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            data_source="Capital IQ",
         )
 
         resp = await get_segments_from_identifiers(

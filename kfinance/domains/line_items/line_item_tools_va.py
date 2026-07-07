@@ -10,12 +10,14 @@ from kfinance.client.models.date_and_period_models import (
     NumPeriods,
     NumPeriodsBack,
 )
+from kfinance.client.models.response_models import PostResponseWithMetadata
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
     AlternativeLineItemMetadata,
     CalendarType,
     LineItemResp,
 )
+from kfinance.domains.line_items.line_item_tools import GetFinancialLineItemFromIdentifiersResp
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
     insert_source_link_note,
@@ -23,7 +25,6 @@ from kfinance.domains.line_items.response_notes import (
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithIdInfoAndErrors,
     ValidQuarter,
 )
 
@@ -63,21 +64,6 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifier
         default=None,
         description="ISO 4217 currency code to return values in (e.g. 'USD', 'EUR'). Defaults to the reporting currency if not specified.",
     )
-
-
-class PostResponseWithMetadata(BaseModel):
-    results: dict[str, LineItemResp]
-    errors: dict[str, str] = Field(default_factory=dict)
-    metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
-    data_source: str | None = None
-
-
-class GetVisibleAlphaFinancialLineItemFromIdentifiersResp(
-    ToolRespWithIdInfoAndErrors[LineItemResp]
-):
-    notes: list[str] = Field(default_factory=list)
-    metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
-    data_source: str = "Visible Alpha"
 
 
 class GetVisibleAlphaFinancialLineItemFromIdentifiers(KfinanceTool):
@@ -122,7 +108,7 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiers(KfinanceTool):
         num_periods: int | None = None,
         num_periods_back: int | None = None,
         currency: str | None = None,
-    ) -> GetVisibleAlphaFinancialLineItemFromIdentifiersResp:
+    ) -> GetFinancialLineItemFromIdentifiersResp:
         """"""
         return await get_visible_alpha_financial_line_item_from_identifiers(
             identifiers=identifiers,
@@ -153,7 +139,7 @@ async def fetch_visible_alpha_line_item_from_company_ids(
     num_periods: int | None = None,
     num_periods_back: int | None = None,
     currency: str | None = None,
-) -> PostResponseWithMetadata:
+) -> PostResponseWithMetadata[LineItemResp, AlternativeLineItemMetadata]:
     """Fetch line items for a list of company IDs using Visible Alpha as the data source."""
     params: dict[str, Any] = {
         "company_ids": company_ids,
@@ -182,7 +168,9 @@ async def fetch_visible_alpha_line_item_from_company_ids(
     resp = await httpx_client.post(url="/line_item/visible_alpha", json=params)
     resp.raise_for_status()
 
-    return PostResponseWithMetadata.model_validate(resp.json())
+    return PostResponseWithMetadata[LineItemResp, AlternativeLineItemMetadata].model_validate(
+        resp.json()
+    )
 
 
 async def get_visible_alpha_financial_line_item_from_identifiers(
@@ -198,7 +186,7 @@ async def get_visible_alpha_financial_line_item_from_identifiers(
     num_periods: int | None = None,
     num_periods_back: int | None = None,
     currency: str | None = None,
-) -> GetVisibleAlphaFinancialLineItemFromIdentifiersResp:
+) -> GetFinancialLineItemFromIdentifiersResp:
     """Fetch financial line items for all identifiers using Visible Alpha as the data source."""
 
     id_triple_resp = await unified_fetch_id_triples(
@@ -252,11 +240,12 @@ async def get_visible_alpha_financial_line_item_from_identifiers(
         for line_item_response in results.values():
             line_item_response.remove_all_periods_other_than_the_most_recent_one()
 
-    resp_model = GetVisibleAlphaFinancialLineItemFromIdentifiersResp(
+    resp_model = GetFinancialLineItemFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,
         metadata=metadata,
+        data_source="Visible Alpha",
     )
 
     insert_source_link_note(resp_model)

@@ -8,7 +8,7 @@ from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
-from kfinance.domains.line_items.line_item_models import CalendarType
+from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata, CalendarType
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
 )
@@ -43,7 +43,8 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 class GetSegmentsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):
     notes: list[str] = Field(default_factory=list)
-    data_source: str = "Capital IQ"
+    metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
+    data_source: Literal["Capital IQ", "Visible Alpha"]
 
 
 class GetSegmentsFromIdentifiers(KfinanceTool):
@@ -170,6 +171,7 @@ async def get_segments_from_identifiers(
         identifier_results=identifier_to_results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,
+        data_source="Capital IQ",
     )
 
     # Add explanatory notes

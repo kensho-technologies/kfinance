@@ -118,6 +118,7 @@ class TestEstimates:
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            data_source="Capital IQ",
         )
 
         resp = await get_estimates_from_identifiers(
@@ -150,6 +151,7 @@ class TestEstimates:
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=["SPGI: No results found."],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            data_source="Capital IQ",
         )
 
         resp = await get_estimates_from_identifiers(

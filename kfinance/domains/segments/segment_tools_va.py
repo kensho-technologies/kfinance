@@ -15,10 +15,10 @@ from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.line_items.response_notes import insert_fiscal_period_notes
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
+from kfinance.domains.segments.segment_tools import GetSegmentsFromIdentifiersResp
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
-    ToolRespWithIdInfoAndErrors,
     ValidQuarter,
 )
 
@@ -48,11 +48,6 @@ class GetVisibleAlphaSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=None,
         description="ISO 4217 currency code to return values in (e.g. 'USD', 'EUR'). Defaults to the reporting currency if not specified.",
     )
-
-
-class GetVisibleAlphaSegmentsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):
-    notes: list[str] = Field(default_factory=list)
-    data_source: str = "Visible Alpha"
 
 
 class GetVisibleAlphaSegmentsFromIdentifiers(KfinanceTool):
@@ -95,7 +90,7 @@ class GetVisibleAlphaSegmentsFromIdentifiers(KfinanceTool):
         num_periods: int | None = None,
         num_periods_back: int | None = None,
         currency: str | None = None,
-    ) -> GetVisibleAlphaSegmentsFromIdentifiersResp:
+    ) -> GetSegmentsFromIdentifiersResp:
         """"""
         return await get_visible_alpha_segments_from_identifiers(
             identifiers=identifiers,
@@ -171,7 +166,7 @@ async def get_visible_alpha_segments_from_identifiers(
     num_periods: int | None = None,
     num_periods_back: int | None = None,
     currency: str | None = None,
-) -> GetVisibleAlphaSegmentsFromIdentifiersResp:
+) -> GetSegmentsFromIdentifiersResp:
     """Fetch segments for all identifiers using Visible Alpha as the data source."""
 
     id_triple_resp = await unified_fetch_id_triples(
@@ -220,10 +215,11 @@ async def get_visible_alpha_segments_from_identifiers(
         for segments_response in results.values():
             segments_response.remove_all_periods_other_than_the_most_recent_one()
 
-    resp_model = GetVisibleAlphaSegmentsFromIdentifiersResp(
+    resp_model = GetSegmentsFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,
+        data_source="Visible Alpha",
     )
 
     insert_fiscal_period_notes(

@@ -20,7 +20,7 @@ from kfinance.domains.estimates.estimates_models import (
     ConsensusTargetPrice,
     Estimates,
 )
-from kfinance.domains.line_items.line_item_models import CalendarType
+from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata, CalendarType
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
 )
@@ -63,7 +63,8 @@ class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 class GetEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Estimates]):
     notes: list[str] = Field(default_factory=list)
-    data_source: str = "Capital IQ"
+    metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
+    data_source: Literal["Capital IQ", "Visible Alpha"]
 
 
 class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
@@ -234,6 +235,7 @@ async def get_estimates_from_identifiers(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,
+        data_source="Capital IQ",
     )
 
     # Add explanatory notes

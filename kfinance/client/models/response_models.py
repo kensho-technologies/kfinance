@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 T = TypeVar("T", bound=BaseModel)
+M = TypeVar("M", bound=BaseModel)
 
 Source: TypeAlias = dict[str, str]
 
@@ -35,6 +36,12 @@ class PostResponse(RespWithErrors, Generic[T]):
     """Generic response class that wraps results and errors from API calls."""
 
     results: dict[str, T]
+
+
+class PostResponseWithMetadata(PostResponse[T], Generic[T, M]):
+    """PostResponse extended with a top-level metadata dict."""
+
+    metadata: dict[str, M] = Field(default_factory=dict)
 
 
 class SingleResultResp(BaseModel, Generic[T]):
