@@ -37,13 +37,13 @@ class EstimatesPeriodData(BaseModel):
         "FY2026": {
             "period_end_date": "2026-12-31",
             "estimates": [
-            {"name": "EPS Consensus High", "value": "14.0"},
-            {"name": "Book Value / Share Consensus High", "value": "114.5"}
+                {"name": "EPS Consensus High", "value": "14.0"},
+                {"name": "Book Value / Share Consensus High", "value": "114.5"}
             ]
         }
 
         After:
-          "FY2026": {
+        "FY2026": {
             "period_end_date": "2026-12-31",
             "estimates": {
             "Company Level": {
@@ -54,9 +54,7 @@ class EstimatesPeriodData(BaseModel):
                 "currency": "USD",
                 "estimates": [{"name": "Book Value / Share Consensus High", "value": "114.5"}]
             }
-            }
         }
-
         """
         if not isinstance(data, dict):
             return data
