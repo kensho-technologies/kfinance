@@ -115,16 +115,35 @@ MOCK_COMPANY_DB = {
         "estimates": Estimates.model_validate(
             {
                 "estimate_type": "consensus",
-                "currency": "USD",
                 "period_type": "quarterly",
                 "periods": {
                     "FY2025Q4": {
                         "period_end_date": "2025-12-31",
                         "estimates": [
-                            {"name": "Revenue Consensus High", "value": "3955000000.000000"},
-                            {"name": "Revenue Consensus Low", "value": "3806400000.000000"},
-                            {"name": "Revenue Consensus Mean", "value": "3881725460.000000"},
-                            {"name": "Revenue Consensus Median", "value": "3883000000.000000"},
+                            {
+                                "name": "Revenue Consensus High",
+                                "value": "3955000000.000000",
+                                "ticker_or_company": "Company Level",
+                                "currency": "USD",
+                            },
+                            {
+                                "name": "Revenue Consensus Low",
+                                "value": "3806400000.000000",
+                                "ticker_or_company": "Company Level",
+                                "currency": "USD",
+                            },
+                            {
+                                "name": "Revenue Consensus Mean",
+                                "value": "3881725460.000000",
+                                "ticker_or_company": "Company Level",
+                                "currency": "USD",
+                            },
+                            {
+                                "name": "Revenue Consensus Median",
+                                "value": "3883000000.000000",
+                                "ticker_or_company": "Company Level",
+                                "currency": "USD",
+                            },
                         ],
                     }
                 },
@@ -711,11 +730,15 @@ class TestCompany(TestCase):
         estimates_data = {}
         for period_key, period_data in estimates.periods.items():
             period_estimates = {}
-            for estimate in period_data.estimates:
-                period_estimates[estimate.name] = estimate.value
+            for ticker_or_company, group in period_data.estimates.items():
+                for estimate in group.estimates:
+                    period_estimates[(ticker_or_company, estimate.name)] = estimate.value
             estimates_data[period_key] = period_estimates
 
         expected_estimate = pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
+        expected_estimate.index = pd.MultiIndex.from_tuples(
+            expected_estimate.index, names=["ticker_or_company", "name"]
+        )
         estimate = self.msft_company.company.consensus_estimates()
         pd.testing.assert_frame_equal(expected_estimate, estimate)
 

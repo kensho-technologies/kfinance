@@ -4,6 +4,7 @@
 - Add GetVisibleAlphaConsensusEstimatesFromIdentifiers
 - Add GetVisibleAlphaFinancialLineItemFromIdentifiers
 - Add GetVisibleAlphaSegmentsFromIdentifiers
+- Group estimates by ticker/company in estimates response
 
 ## v6.5.2
 - Fix fiscal year/quarter params not being passed correctly to the estimates API (start_year → fiscal_start_year, etc.)
