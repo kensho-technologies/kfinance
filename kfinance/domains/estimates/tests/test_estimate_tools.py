@@ -30,35 +30,80 @@ from kfinance.domains.line_items.response_notes import (
 class TestEstimates:
     estimates_data = {
         "estimate_type": "consensus",
-        "currency": "USD",
         "period_type": "quarterly",
         "periods": {
             "FY2025Q4": {
                 "period_end_date": "2025-12-31",
                 "estimates": [
-                    {"name": "Book Value / Share - # of Estimates", "value": "2.000000"},
-                    {"name": "Book Value / Share Consensus High", "value": "109.600000"},
+                    {
+                        "name": "Book Value / Share - # of Estimates",
+                        "value": "2.000000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
+                    {
+                        "name": "Book Value / Share Consensus High",
+                        "value": "109.600000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
+                    {
+                        "name": "EPS Normalized - # of Estimates",
+                        "value": "14.000000",
+                        "ticker_or_company": "NYSE: SPGI",
+                        "currency": None,
+                    },
                 ],
             },
             "FY2026Q1": {
                 "period_end_date": "2026-03-31",
                 "estimates": [
-                    {"name": "Book Value / Share - # of Estimates", "value": "2.000000"},
-                    {"name": "Book Value / Share Consensus High", "value": "110.680000"},
+                    {
+                        "name": "Book Value / Share - # of Estimates",
+                        "value": "2.000000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
+                    {
+                        "name": "Book Value / Share Consensus High",
+                        "value": "110.680000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
                 ],
             },
             "FY2026Q2": {
                 "period_end_date": "2026-06-30",
                 "estimates": [
-                    {"name": "Book Value / Share - # of Estimates", "value": "1.000000"},
-                    {"name": "Book Value / Share Consensus High", "value": "105.020000"},
+                    {
+                        "name": "Book Value / Share - # of Estimates",
+                        "value": "1.000000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
+                    {
+                        "name": "Book Value / Share Consensus High",
+                        "value": "105.020000",
+                        "ticker_or_company": "NYSE: SPGI",
+                        "currency": "USD",
+                    },
                 ],
             },
             "FY2026Q3": {
                 "period_end_date": "2026-09-30",
                 "estimates": [
-                    {"name": "Book Value / Share - # of Estimates", "value": "2.000000"},
-                    {"name": "Book Value / Share Consensus High", "value": "113.130000"},
+                    {
+                        "name": "Book Value / Share - # of Estimates",
+                        "value": "2.000000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
+                    {
+                        "name": "Book Value / Share Consensus High",
+                        "value": "113.130000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
                 ],
             },
         },

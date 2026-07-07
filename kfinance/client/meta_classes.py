@@ -610,11 +610,14 @@ class CompanyFunctionsMetaClass:
         estimates_data = {}
         for period_key, period_data in periods.items():
             period_estimates = {}
-            for estimate in period_data["estimates"]:
-                period_estimates[estimate["name"]] = estimate["value"]
+            for ticker_or_company, group in period_data["estimates"].items():
+                for estimate in group["estimates"]:
+                    period_estimates[(ticker_or_company, estimate["name"])] = estimate["value"]
             estimates_data[period_key] = period_estimates
 
-        return pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
+        df = pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
+        df.index = pd.MultiIndex.from_tuples(df.index, names=["ticker_or_company", "name"])
+        return df
 
     def consensus_estimates(
         self,
