@@ -27,19 +27,19 @@ class GetVisibleAlphaEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     period_type: EstimatePeriodType | None = Field(
         default=None, description="The period type (annual, semi-annual, or quarterly)."
     )
-    fiscal_start_year: int | None = Field(
+    start_year: int | None = Field(
         default=None,
         description="The starting year for the data range. Use null for the most recent data.",
     )
-    fiscal_end_year: int | None = Field(
+    end_year: int | None = Field(
         default=None,
         description="The ending year for the data range. Use null for the most recent data.",
     )
-    fiscal_start_quarter: ValidQuarter | None = Field(
+    start_quarter: ValidQuarter | None = Field(
         default=None,
         description="Starting quarter (1-4). Used when period_type is semi-annual or quarterly.",
     )
-    fiscal_end_quarter: ValidQuarter | None = Field(
+    end_quarter: ValidQuarter | None = Field(
         default=None,
         description="Ending quarter (1-4). Used when period_type is semi-annual or quarterly.",
     )
@@ -88,7 +88,7 @@ class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - To fetch the most recent estimates, leave all time parameters as null.
-        - To filter by time, use either absolute time (fiscal_start_year, fiscal_end_year, fiscal_start_quarter, fiscal_end_quarter) OR relative time (num_periods_forward, num_periods_backward)—but not both.
+        - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods_forward, num_periods_backward)—but not both.
 
         Examples:
         Query: "Get consensus EPS estimates for AAPL"
@@ -98,7 +98,7 @@ class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
         Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], estimate_search="iPhone unit sales", period_type="quarterly", num_periods_forward=4)
 
         Query: "Get annual consensus revenue estimates for SPGI for fiscal year 2024"
-        Function: get_consensus_estimates_from_identifiers(identifiers=["SPGI"], estimate_search="revenue", period_type="annual", fiscal_start_year=2024, fiscal_end_year=2024)
+        Function: get_consensus_estimates_from_identifiers(identifiers=["SPGI"], estimate_search="revenue", period_type="annual", start_year=2024, end_year=2024)
     """).strip()
     args_schema: Type[BaseModel] = GetVisibleAlphaEstimatesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}
@@ -107,10 +107,10 @@ class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
         self,
         identifiers: list[str],
         period_type: EstimatePeriodType | None = None,
-        fiscal_start_year: int | None = None,
-        fiscal_end_year: int | None = None,
-        fiscal_start_quarter: Literal[1, 2, 3, 4] | None = None,
-        fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: Literal[1, 2, 3, 4] | None = None,
+        end_quarter: Literal[1, 2, 3, 4] | None = None,
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
         estimate_search: str | None = None,
@@ -122,10 +122,10 @@ class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
             identifiers=identifiers,
             httpx_client=self.kfinance_client.httpx_client,
             period_type=period_type,
-            fiscal_start_year=fiscal_start_year,
-            fiscal_end_year=fiscal_end_year,
-            fiscal_start_quarter=fiscal_start_quarter,
-            fiscal_end_quarter=fiscal_end_quarter,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
             num_periods_forward=num_periods_forward,
             num_periods_backward=num_periods_backward,
             estimate_search=estimate_search,
@@ -138,10 +138,10 @@ async def fetch_visible_alpha_estimates_from_company_ids(
     company_ids: list[int],
     httpx_client: httpx.AsyncClient,
     period_type: EstimatePeriodType | None = None,
-    fiscal_start_year: int | None = None,
-    fiscal_end_year: int | None = None,
-    fiscal_start_quarter: Literal[1, 2, 3, 4] | None = None,
-    fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    start_quarter: Literal[1, 2, 3, 4] | None = None,
+    end_quarter: Literal[1, 2, 3, 4] | None = None,
     num_periods_forward: int | None = None,
     num_periods_backward: int | None = None,
     estimate_search: str | None = None,
@@ -156,14 +156,14 @@ async def fetch_visible_alpha_estimates_from_company_ids(
 
     if period_type is not None:
         payload["period_type"] = period_type.value
-    if fiscal_start_year is not None:
-        payload["start_year"] = fiscal_start_year
-    if fiscal_end_year is not None:
-        payload["end_year"] = fiscal_end_year
-    if fiscal_start_quarter is not None:
-        payload["start_quarter"] = fiscal_start_quarter
-    if fiscal_end_quarter is not None:
-        payload["end_quarter"] = fiscal_end_quarter
+    if start_year is not None:
+        payload["start_year"] = start_year
+    if end_year is not None:
+        payload["end_year"] = end_year
+    if start_quarter is not None:
+        payload["start_quarter"] = start_quarter
+    if end_quarter is not None:
+        payload["end_quarter"] = end_quarter
     if num_periods_forward is not None:
         payload["num_periods_forward"] = num_periods_forward
     if num_periods_backward is not None:
@@ -185,10 +185,10 @@ async def get_visible_alpha_estimates_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx.AsyncClient,
     period_type: EstimatePeriodType | None = None,
-    fiscal_start_year: int | None = None,
-    fiscal_end_year: int | None = None,
-    fiscal_start_quarter: Literal[1, 2, 3, 4] | None = None,
-    fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    start_quarter: Literal[1, 2, 3, 4] | None = None,
+    end_quarter: Literal[1, 2, 3, 4] | None = None,
     num_periods_forward: int | None = None,
     num_periods_backward: int | None = None,
     estimate_search: str | None = None,
@@ -208,10 +208,10 @@ async def get_visible_alpha_estimates_from_identifiers(
             company_ids=id_triple_resp.company_ids,
             httpx_client=httpx_client,
             period_type=period_type,
-            fiscal_start_year=fiscal_start_year,
-            fiscal_end_year=fiscal_end_year,
-            fiscal_start_quarter=fiscal_start_quarter,
-            fiscal_end_quarter=fiscal_end_quarter,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
             num_periods_forward=num_periods_forward,
             num_periods_backward=num_periods_backward,
             estimate_search=estimate_search,
