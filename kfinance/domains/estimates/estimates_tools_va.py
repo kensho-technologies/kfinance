@@ -226,7 +226,6 @@ async def get_visible_alpha_estimates_from_identifiers(
         identifier_to_results = {}
         for company_id_str, estimates_data in estimates_resp.results.items():
             original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
-            estimates_data.data_source = "Visible Alpha"
             identifier_to_results[original_identifier] = estimates_data
 
         for company_id_str, meta in estimates_resp.metadata.items():

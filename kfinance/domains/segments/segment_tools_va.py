@@ -202,7 +202,6 @@ async def get_visible_alpha_segments_from_identifiers(
         identifier_to_results = {}
         for company_id_str, segments_data in segments_resp.results.items():
             original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
-            segments_data.data_source = "Visible Alpha"
             identifier_to_results[original_identifier] = segments_data
 
         results = identifier_to_results

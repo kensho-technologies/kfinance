@@ -106,7 +106,6 @@ class TestSegments:
         """
 
         expected_seg = SegmentsResp.model_validate(self.segments_response)
-        expected_seg.data_source = "Capital IQ"
         expected_resp = GetSegmentsFromIdentifiersResp(
             identifier_results={"SPGI": expected_seg},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
@@ -123,6 +122,7 @@ class TestSegments:
         )
 
         assert resp == expected_resp
+        assert resp.data_source == "Capital IQ"
 
     @pytest.mark.asyncio
     async def test_most_recent_request(
@@ -157,7 +157,6 @@ class TestSegments:
                 },
             }
         )
-        expected_single_company_response.data_source = "Capital IQ"
 
         expected_response = GetSegmentsFromIdentifiersResp(
             identifier_results={

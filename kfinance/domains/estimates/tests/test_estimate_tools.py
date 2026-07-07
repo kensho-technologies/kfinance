@@ -111,7 +111,6 @@ class TestEstimates:
         """
 
         expected_est = Estimates.model_validate(self.estimates_data)
-        expected_est.data_source = "Capital IQ"
         expected_resp = GetEstimatesFromIdentifiersResp(
             identifier_results={"SPGI": expected_est},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
@@ -128,6 +127,7 @@ class TestEstimates:
         )
 
         assert resp == expected_resp
+        assert resp.data_source == "Capital IQ"
 
     @pytest.mark.asyncio
     async def test_fetch_estimates_api_returns_error(

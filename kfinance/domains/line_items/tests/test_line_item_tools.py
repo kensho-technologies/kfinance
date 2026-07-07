@@ -110,7 +110,6 @@ class TestGetFinancialLineItemFromIdentifiers:
         """
 
         expected_li = LineItemResp.model_validate(self.line_item_resp)
-        expected_li.data_source = "Capital IQ"
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             identifier_results={"SPGI": expected_li},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
@@ -128,6 +127,7 @@ class TestGetFinancialLineItemFromIdentifiers:
         )
 
         assert resp == expected_response
+        assert resp.data_source == "Capital IQ"
 
     @pytest.mark.asyncio
     async def test_api_returns_error_for_company(
@@ -191,7 +191,6 @@ class TestGetFinancialLineItemFromIdentifiers:
                 },
             }
         )
-        line_item_resp.data_source = "Capital IQ"
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             identifier_results={"C_1": line_item_resp, "C_2": line_item_resp},
             identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
