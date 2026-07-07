@@ -297,14 +297,14 @@ class CompanyFunctionsMetaClass:
             currency=currency,
         )
 
-        if not response.get("results"):
+        if not response.results:
             return pd.DataFrame()
 
-        raw_periods = list(response["results"].values())[0]["periods"]
+        raw_periods = next(iter(response.results.values())).periods
 
         line_item_data = {}
         for period_key, period_data in raw_periods.items():
-            line_item_data[period_key] = period_data["line_item"]["value"]
+            line_item_data[period_key] = period_data.line_item.value
 
         return (
             pd.DataFrame({"line_item": line_item_data})
@@ -804,16 +804,16 @@ class CompanyFunctionsMetaClass:
             currency=currency,
         )
 
-        if not estimate_response.get("results"):
+        if not estimate_response.results:
             return pd.DataFrame()
 
-        periods = list(estimate_response["results"].values())[0]["periods"]
+        periods = next(iter(estimate_response.results.values())).periods
 
         estimates_data = {}
         for period_key, period_data in periods.items():
             period_estimates = {}
-            for estimate in period_data["estimates"]:
-                period_estimates[estimate["name"]] = estimate["value"]
+            for estimate in period_data.estimates:
+                period_estimates[estimate.name] = estimate.value
             estimates_data[period_key] = period_estimates
 
         return pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)

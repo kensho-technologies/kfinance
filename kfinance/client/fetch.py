@@ -36,6 +36,7 @@ from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
     ConsensusTargetPrice,
     Estimates,
+    VisibleAlphaEstimates,
 )
 from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType, KeyDevsResp
 from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp
@@ -576,7 +577,7 @@ class KFinanceApiClient:
         period_type: EstimatePeriodType | None = None,
         calendar_type: CalendarType | None = None,
         currency: str | None = None,
-    ) -> dict:
+    ) -> PostResponse[LineItemResp]:
         """Get a financial line item using Visible Alpha as the data source."""
 
         url = f"{self.url_base}line_item/visible_alpha"
@@ -606,7 +607,7 @@ class KFinanceApiClient:
                 request_body[key] = value
 
         response_data = self.fetch(url, method="POST", request_body=request_body)
-        return response_data
+        return PostResponse[LineItemResp].model_validate(response_data)
 
     def fetch_info(self, company_id: int) -> dict:
         """Get the company info."""
@@ -1017,12 +1018,13 @@ class KFinanceApiClient:
         estimate_search: str | None = None,
         calendar_type: CalendarType | None = None,
         currency: str | None = None,
-    ) -> dict:
+    ) -> PostResponse[VisibleAlphaEstimates]:
         """Get consensus estimates using Visible Alpha as the data source."""
 
         url = f"{self.url_base}estimates/visible_alpha"
 
         period_type_val = period_type.value if period_type is not None else None
+        calendar_type_val = calendar_type.value if calendar_type is not None else None
 
         request_body: dict[str, str | int | list[int]] = {
             "company_ids": company_ids,
@@ -1038,7 +1040,7 @@ class KFinanceApiClient:
             ("num_periods_backward", num_periods_backward),
             ("period_type", period_type_val),
             ("estimate_search", estimate_search),
-            ("calendar_type", calendar_type),
+            ("calendar_type", calendar_type_val),
             ("currency", currency),
         ]
 
@@ -1047,7 +1049,7 @@ class KFinanceApiClient:
                 request_body[key] = value
 
         response_data = self.fetch(url, method="POST", request_body=request_body)
-        return response_data
+        return PostResponse[VisibleAlphaEstimates].model_validate(response_data)
 
     def fetch_consensus_target_price(
         self,
