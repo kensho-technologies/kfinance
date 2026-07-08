@@ -7,7 +7,7 @@ async def resolve_entities(identifiers: list[str], httpx_client: httpx.AsyncClie
     """Resolve one or more identifiers to id triples using the resolve_entities endpoint."""
 
     resp = await httpx_client.post(
-        url="/ratings/resolve_entities", json=dict(identifiers=identifiers)
+        url="/ratings/resolve_entities/", json=dict(identifiers=identifiers)
     )
     resp.raise_for_status()
     resp_json = resp.json()

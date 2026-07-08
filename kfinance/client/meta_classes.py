@@ -952,7 +952,7 @@ class CompanyFunctionsMetaClass:
         if entity_id_str not in response.results:
             return {}
 
-        # TODO: should this structure be flattened?
+        # Nested structure: org_debt_type_code -> rating_type_code -> RatingTypeData
         issuer_ratings = response.results[entity_id_str]
         return issuer_ratings.model_dump(mode="json")["ratings"]
 

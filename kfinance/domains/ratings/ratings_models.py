@@ -1,7 +1,10 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field, model_validator
+
+
+T = TypeVar("T")
 
 
 class EntityInfo(BaseModel):
@@ -67,6 +70,19 @@ class EntityIdResp(BaseModel):
         # just return the data.
         else:
             return data
+
+class EntityInfoWithResult(BaseModel, Generic[T]):
+    """Entity information combined with result data.
+
+    Similar to IdentifierInfoWithResult but uses entity_name instead of company_name
+    since entities can represent non-company entities (countries, sovereigns, etc.).
+    """
+
+    entity_name: str | None
+    ticker: str | None
+    country: str | None
+    data: T
+
 
 
 class RatingDetail(BaseModel):
