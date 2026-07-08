@@ -17,6 +17,7 @@ from kfinance.client.models.response_models import SingleResultResp
 from kfinance.client.permission_models import Permission
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
+    CiqEstimates,
     ConsensusTargetPrice,
     Estimates,
 )
@@ -219,12 +220,12 @@ async def get_estimates_from_identifiers(
 
     await batch_execute_async_tasks(tasks=tasks)
 
-    results: dict[str, Estimates] = dict()
+    results: dict[str, CiqEstimates] = dict()
     for task in tasks:
         if task.error:
             errors.append(task.error)
         else:
-            resp: SingleResultResp[Estimates] = task.result
+            resp: SingleResultResp[CiqEstimates] = task.result
             if resp.result is not None:
                 results[task.result_key] = resp.result
             if resp.error is not None:
@@ -259,7 +260,7 @@ async def fetch_estimates_from_company_id(
     fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
     num_periods_forward: int | None = None,
     num_periods_backward: int | None = None,
-) -> SingleResultResp[Estimates]:
+) -> SingleResultResp[CiqEstimates]:
     """Fetch estimates for one company_id."""
     # Build query parameters
     params = {
@@ -284,7 +285,7 @@ async def fetch_estimates_from_company_id(
 
     resp = await httpx_client.post(url="/estimates/", json=params)
     resp.raise_for_status()
-    return SingleResultResp[Estimates].model_validate(resp.json())
+    return SingleResultResp[CiqEstimates].model_validate(resp.json())
 
 
 async def get_consensus_target_price_from_identifiers(

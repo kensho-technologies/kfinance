@@ -34,8 +34,8 @@ from kfinance.domains.competitors.competitor_models import CompetitorResponse, C
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
+    CiqEstimates,
     ConsensusTargetPrice,
-    Estimates,
     VisibleAlphaEstimates,
 )
 from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType, KeyDevsResp
@@ -975,7 +975,7 @@ class KFinanceApiClient:
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
         period_type: EstimatePeriodType | None = None,
-    ) -> SingleResultResp[Estimates]:
+    ) -> SingleResultResp[CiqEstimates]:
         """Get estimates or guidance for a specified duration."""
 
         url = f"{self.url_base}estimates/"
@@ -1003,7 +1003,7 @@ class KFinanceApiClient:
 
         response_data = self.fetch(url, method="POST", request_body=request_body)
 
-        return SingleResultResp[Estimates].model_validate(response_data)
+        return SingleResultResp[CiqEstimates].model_validate(response_data)
 
     def fetch_visible_alpha_estimates(
         self,
