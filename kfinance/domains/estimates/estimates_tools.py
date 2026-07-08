@@ -110,7 +110,7 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
 class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_consensus_estimates_from_identifiers"
     description: str = dedent("""
-        Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given identifier.
+        Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given identifier. Returns Capital IQ data.
 
         Returns statistical aggregates including high, low, mean, median, and number of estimates.
         When periods have ended, actual reported values are also returned.
@@ -125,7 +125,7 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
 class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_guidance_from_identifiers"
     description: str = dedent("""
-        Get company-issued financial guidance for a given identifier.
+        Get company-issued financial guidance for a given identifier. Returns Capital IQ data.
 
         Returns the most recent guidance provided by the company for future periods, or the final guidance issued before results were reported for past periods.
     """).strip()
@@ -143,7 +143,7 @@ class GetConsensusTargetPriceFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Con
 class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
     name: str = "get_consensus_target_price_from_identifiers"
     description: str = dedent("""
-        Get consensus target price estimates for a given company. Returns the current consensus analyst target price including high, low, mean, and median values.
+        Get consensus target price estimates for a given company. Returns Capital IQ data. Returns the current consensus analyst target price including high, low, mean, and median values.
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
@@ -167,7 +167,7 @@ class GetAnalystRecommendationsFromIdentifiersResp(
 class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
     name: str = "get_analyst_recommendations_from_identifiers"
     description: str = dedent("""
-        Get analyst recommendations for a given company. Returns the current consensus analyst recommendation breakdown including buy, hold, sell counts and overall rating.
+        Get analyst recommendations for a given company. Returns Capital IQ data. Returns the current consensus analyst recommendation breakdown including buy, hold, sell counts and overall rating.
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}

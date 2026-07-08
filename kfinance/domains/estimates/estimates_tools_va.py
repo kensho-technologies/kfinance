@@ -58,26 +58,27 @@ class GetVisibleAlphaEstimatesFromIdentifiersArgs(BaseEstimatesFromIdentifiersAr
 class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
     name: str = "get_visible_alpha_consensus_estimates_from_identifiers"
     description: str = dedent("""
-        Get consensus analyst estimates for a list of identifiers.
+        Get consensus analyst estimates for a list of identifiers. Returns Visible Alpha data. Prefer this over `get_consensus_estimates_from_identifiers` (Capital IQ) unless the user asks for Capital IQ data or the requested data is not available in Visible Alpha.
 
-        Returns statistical aggregates including high, low, mean, median, and number of estimates. When periods have ended, actual reported values are also returned.
+        Returns the consensus value for each matched metric per period. When periods have ended, actual reported values are also returned. Estimate data is available through 2045.
 
+        - For a ratio, percentage, or proportion, prefer a pre-computed ratio metric from the results or `top_ranked_alternatives`, if available, over fetching a single raw component.
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - To fetch the most recent estimates, leave all time parameters as null.
         - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods_forward, num_periods_backward)—but not both.
 
         Examples:
         Query: "Get consensus EPS estimates for AAPL"
-        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], estimate_search="EPS")
+        Function: get_visible_alpha_consensus_estimates_from_identifiers(identifiers=["AAPL"], estimate_search="EPS")
 
         Query: "Consensus iPhone unit sales for Apple for the next 4 quarters"
-        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], estimate_search="iPhone unit sales", period_type="quarterly", num_periods_forward=4)
+        Function: get_visible_alpha_consensus_estimates_from_identifiers(identifiers=["AAPL"], estimate_search="iPhone unit sales", period_type="quarterly", num_periods_forward=4)
 
-        Query: "Get annual consensus revenue estimates for SPGI for fiscal year 2024"
-        Function: get_consensus_estimates_from_identifiers(identifiers=["SPGI"], estimate_search="revenue", period_type="annual", start_year=2024, end_year=2024)
+        Query: "SAP consensus revenue estimates for fiscal 2027 through 2029 in euros"
+        Function: get_visible_alpha_consensus_estimates_from_identifiers(identifiers=["SAP"], estimate_search="revenue", period_type="annual", start_year=2027, end_year=2029, currency="EUR")
 
         Query: "Get consensus EPS estimates for AAPL in EUR"
-        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], estimate_search="EPS", currency="EUR")
+        Function: get_visible_alpha_consensus_estimates_from_identifiers(identifiers=["AAPL"], estimate_search="EPS", currency="EUR")
     """).strip()
     args_schema: Type[BaseModel] = GetVisibleAlphaEstimatesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}

@@ -156,7 +156,7 @@ class GetFinancialLineItemFromIdentifiersResp(ToolRespWithIdInfoAndErrors[LineIt
 class GetFinancialLineItemFromIdentifiers(KfinanceTool):
     name: str = "get_financial_line_item_from_identifiers"
     description: str = dedent("""
-        Get the financial line item associated with a list of identifiers.
+        Get the financial line item associated with a list of identifiers. Returns Capital IQ data.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - To fetch the most recent value, leave all time parameters as null.

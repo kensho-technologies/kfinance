@@ -31,7 +31,7 @@ class GetVisibleAlphaSegmentsFromIdentifiersArgs(BaseSegmentsFromIdentifiersArgs
 class GetVisibleAlphaSegmentsFromIdentifiers(KfinanceTool):
     name: str = "get_visible_alpha_segments_from_identifiers"
     description: str = dedent("""
-        Get the templated business or geographic segments associated with a list of identifiers.
+        Get the templated business or geographic segments associated with a list of identifiers. Returns Visible Alpha data. Prefer this over `get_segments_from_identifiers` (Capital IQ) unless the user asks for Capital IQ data or the requested data is not available in Visible Alpha.
 
         Use only for a full segment breakdown, not for specific segment metrics.
 
@@ -44,16 +44,16 @@ class GetVisibleAlphaSegmentsFromIdentifiers(KfinanceTool):
 
         Examples:
         Query: "What are the business segments for AT&T?"
-        Function: get_segments_from_identifiers(identifiers=["AT&T"], segment_type="business")
+        Function: get_visible_alpha_segments_from_identifiers(identifiers=["AT&T"], segment_type="business")
 
         Query: "Get most recent geographic segments for Pfizer and JNJ"
-        Function: get_segments_from_identifiers(identifiers=["Pfizer", "JNJ"], segment_type="geographic")
+        Function: get_visible_alpha_segments_from_identifiers(identifiers=["Pfizer", "JNJ"], segment_type="geographic")
 
         Query: "What are the ltm business segments for SPGI for the last three calendar quarters but one?"
-        Function: get_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=2, num_periods_back=1, identifiers=["SPGI"])
+        Function: get_visible_alpha_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=2, num_periods_back=1, identifiers=["SPGI"])
 
         Query: "Get Apple's business segments in EUR"
-        Function: get_segments_from_identifiers(identifiers=["AAPL"], segment_type="business", currency="EUR")
+        Function: get_visible_alpha_segments_from_identifiers(identifiers=["AAPL"], segment_type="business", currency="EUR")
     """).strip()
     args_schema: Type[BaseModel] = GetVisibleAlphaSegmentsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}

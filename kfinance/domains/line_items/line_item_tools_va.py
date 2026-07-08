@@ -42,8 +42,12 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiersArgs(BaseFinancialLineItemF
 class GetVisibleAlphaFinancialLineItemFromIdentifiers(KfinanceTool):
     name: str = "get_visible_alpha_financial_line_item_from_identifiers"
     description: str = dedent("""
-        Get any reported financial metric for a list of identifiers: including company-level, segment-level, product-level, and geographic metrics, as well as ratios and per-unit figures. This is the primary tool for a specific named metric. The freeform `line_item_search` query is matched semantically against a large catalog, so phrase it descriptively and prefer this tool before segment-, statement-, or estimate-specific tools.
+        Get any reported financial metric for a list of identifiers: including company-level, segment-level, product-level, and geographic metrics, as well as ratios and per-unit figures. This is the primary tool for a specific named metric. The freeform `line_item_search` query is matched semantically against a large catalog, so phrase it descriptively and prefer this tool before segment- or statement-specific tools.
 
+        Returns Visible Alpha data. Prefer this over `get_financial_line_item_from_identifiers` (Capital IQ) unless the user asks for Capital IQ data or the requested data is not available in Visible Alpha.
+
+        - Returns reported (actual, historical) figures. For forward-looking forecasts or consensus expectations, use `get_visible_alpha_consensus_estimates_from_identifiers` instead.
+        - For a ratio, percentage, or proportion, prefer a pre-computed ratio metric from the results or `top_ranked_alternatives`, if available, over fetching a single raw component.
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - To fetch the most recent value, leave all time parameters as null.
         - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods, num_periods_back)—but not both.
@@ -53,20 +57,20 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiers(KfinanceTool):
 
         Examples:
         Query: "Get MSFT and AAPL revenue and gross profit quarterly"
-        Function: get_financial_line_item_from_identifiers(line_item_search="total revenue", identifiers=["MSFT", "AAPL"], period_type="quarterly")
-        Function: get_financial_line_item_from_identifiers(line_item_search="gross profit", identifiers=["MSFT", "AAPL"], period_type="quarterly")
+        Function: get_visible_alpha_financial_line_item_from_identifiers(line_item_search="total revenue", identifiers=["MSFT", "AAPL"], period_type="quarterly")
+        Function: get_visible_alpha_financial_line_item_from_identifiers(line_item_search="gross profit", identifiers=["MSFT", "AAPL"], period_type="quarterly")
 
         Query: "How much money did TSMC make for 5nm wafers"
-        Function: get_financial_line_item_from_identifiers(line_item_search="revenue from 5nm wafers", identifiers=["TSMC"], period_type="annual")
+        Function: get_visible_alpha_financial_line_item_from_identifiers(line_item_search="revenue from 5nm wafers", identifiers=["TSMC"])
 
         Query: "Tesla automotive gross margin for FY2023"
-        Function: get_financial_line_item_from_identifiers(line_item_search="automotive gross margin", identifiers=["Tesla"], period_type="annual", calendar_type="fiscal", start_year=2023, end_year=2023)
+        Function: get_visible_alpha_financial_line_item_from_identifiers(line_item_search="automotive gross margin", identifiers=["Tesla"], period_type="annual", calendar_type="fiscal", start_year=2023, end_year=2023)
 
         Query: "Most recent three quarters except one ppe for Exxon and Hasbro"
-        Function: get_financial_line_item_from_identifiers(line_item_search="property plant and equipment", period_type="quarterly", num_periods=2, num_periods_back=1, identifiers=["Exxon", "Hasbro"])
+        Function: get_visible_alpha_financial_line_item_from_identifiers(line_item_search="property plant and equipment", period_type="quarterly", num_periods=2, num_periods_back=1, identifiers=["Exxon", "Hasbro"])
 
         Query: "Get AAPL revenue in EUR"
-        Function: get_financial_line_item_from_identifiers(line_item_search="revenue", identifiers=["AAPL"], currency="EUR")
+        Function: get_visible_alpha_financial_line_item_from_identifiers(line_item_search="revenue", identifiers=["AAPL"], currency="EUR")
     """).strip()
     args_schema: Type[BaseModel] = GetVisibleAlphaFinancialLineItemFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}

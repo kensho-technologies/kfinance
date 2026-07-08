@@ -53,7 +53,7 @@ class GetSegmentsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):
 class GetSegmentsFromIdentifiers(KfinanceTool):
     name: str = "get_segments_from_identifiers"
     description: str = dedent("""
-        Get the templated business or geographic segments associated with a list of identifiers.
+        Get the templated business or geographic segments associated with a list of identifiers. Returns Capital IQ data.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - To fetch the most recent segment data, leave all time parameters as null.
