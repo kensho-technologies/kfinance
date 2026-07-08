@@ -115,7 +115,7 @@ async def fetch_visible_alpha_line_item_from_company_ids(
     num_periods: int | None = None,
     num_periods_back: int | None = None,
     currency: str | None = None,
-) -> PostResponseWithMetadata[LineItemResp, AlternativeLineItemMetadata]:
+) -> PostResponseWithMetadata[LineItemResp]:
     """Fetch line items for a list of company IDs using Visible Alpha as the data source."""
     params: dict[str, Any] = {
         "company_ids": company_ids,
@@ -144,9 +144,7 @@ async def fetch_visible_alpha_line_item_from_company_ids(
     resp = await httpx_client.post(url="/line_item/visible_alpha", json=params)
     resp.raise_for_status()
 
-    return PostResponseWithMetadata[LineItemResp, AlternativeLineItemMetadata].model_validate(
-        resp.json()
-    )
+    return PostResponseWithMetadata[LineItemResp].model_validate(resp.json())
 
 
 async def get_visible_alpha_financial_line_item_from_identifiers(

@@ -126,7 +126,7 @@ async def fetch_visible_alpha_estimates_from_company_ids(
     estimate_search: str | None = None,
     calendar_type: CalendarType | None = None,
     currency: str | None = None,
-) -> PostResponseWithMetadata[VisibleAlphaEstimates, AlternativeLineItemMetadata]:
+) -> PostResponseWithMetadata[VisibleAlphaEstimates]:
     """Fetch consensus estimates for a list of company IDs using Visible Alpha as the data source."""
     payload: dict[str, Any] = {
         "company_ids": company_ids,
@@ -157,9 +157,7 @@ async def fetch_visible_alpha_estimates_from_company_ids(
     resp = await httpx_client.post(url="/estimates/visible_alpha", json=payload)
     resp.raise_for_status()
 
-    return PostResponseWithMetadata[
-        VisibleAlphaEstimates, AlternativeLineItemMetadata
-    ].model_validate(resp.json())
+    return PostResponseWithMetadata[VisibleAlphaEstimates].model_validate(resp.json())
 
 
 async def get_visible_alpha_estimates_from_identifiers(
