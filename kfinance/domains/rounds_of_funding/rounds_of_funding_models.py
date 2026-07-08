@@ -6,7 +6,7 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 from strenum import StrEnum
 
-from kfinance.client.models.response_models import Source
+from kfinance.client.models.type_aliases import Source
 from kfinance.domains.companies.company_models import CompanyId, CompanyIdAndName
 
 

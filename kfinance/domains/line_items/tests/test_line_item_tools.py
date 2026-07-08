@@ -109,13 +109,15 @@ class TestGetFinancialLineItemFromIdentifiers:
             and notes appropriate for the calendar type.
         """
 
+        expected_li = LineItemResp.model_validate(self.line_item_resp)
         expected_response = GetFinancialLineItemFromIdentifiersResp(
-            identifier_results={"SPGI": LineItemResp.model_validate(self.line_item_resp)},
+            identifier_results={"SPGI": expected_li},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
             notes=expected_notes,
+            data_source="Capital IQ",
         )
 
         resp = await get_financial_line_item_from_identifiers(
@@ -126,6 +128,7 @@ class TestGetFinancialLineItemFromIdentifiers:
         )
 
         assert resp == expected_response
+        assert resp.data_source == "Capital IQ"
 
     @pytest.mark.asyncio
     async def test_api_returns_error_for_company(
@@ -149,6 +152,7 @@ class TestGetFinancialLineItemFromIdentifiers:
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=["SPGI: No results found."],
             notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            data_source="Capital IQ",
         )
 
         resp = await get_financial_line_item_from_identifiers(
@@ -193,6 +197,7 @@ class TestGetFinancialLineItemFromIdentifiers:
             identifier_results={"C_1": line_item_resp, "C_2": line_item_resp},
             identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
             notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            data_source="Capital IQ",
         )
 
         resp = await get_financial_line_item_from_identifiers(

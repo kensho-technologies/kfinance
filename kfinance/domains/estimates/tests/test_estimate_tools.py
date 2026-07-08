@@ -7,8 +7,8 @@ from kfinance.client.models.response_models import SingleResultResp
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
+    CiqEstimates,
     ConsensusTargetPrice,
-    Estimates,
 )
 from kfinance.domains.estimates.estimates_tools import (
     GetAnalystRecommendationsFromIdentifiersResp,
@@ -94,8 +94,8 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = SingleResultResp[Estimates](
-            result=Estimates.model_validate(self.estimates_data),
+        expected_resp = SingleResultResp[CiqEstimates](
+            result=CiqEstimates.model_validate(self.estimates_data),
         )
         assert resp == expected_resp
 
@@ -110,13 +110,15 @@ class TestEstimates:
         THEN we get back SPGI's estimates and an error for the non-existent company
         """
 
+        expected_est = CiqEstimates.model_validate(self.estimates_data)
         expected_resp = GetEstimatesFromIdentifiersResp(
-            identifier_results={"SPGI": Estimates.model_validate(self.estimates_data)},
+            identifier_results={"SPGI": expected_est},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            data_source="Capital IQ",
         )
 
         resp = await get_estimates_from_identifiers(
@@ -126,6 +128,7 @@ class TestEstimates:
         )
 
         assert resp == expected_resp
+        assert resp.data_source == "Capital IQ"
 
     @pytest.mark.asyncio
     async def test_fetch_estimates_api_returns_error(
@@ -148,6 +151,7 @@ class TestEstimates:
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=["SPGI: No results found."],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            data_source="Capital IQ",
         )
 
         resp = await get_estimates_from_identifiers(
@@ -185,8 +189,8 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = SingleResultResp[Estimates](
-            result=Estimates.model_validate(guidance_data),
+        expected_resp = SingleResultResp[CiqEstimates](
+            result=CiqEstimates.model_validate(guidance_data),
         )
         assert resp == expected_resp
 

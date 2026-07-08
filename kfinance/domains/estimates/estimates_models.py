@@ -21,10 +21,18 @@ class EstimatesPeriodData(BaseModel):
 
 
 class Estimates(BaseModel):
-    estimate_type: EstimateType
+    estimate_type: EstimateType | str
     currency: str | None
     period_type: EstimatePeriodType
     periods: dict[str, EstimatesPeriodData]
+
+
+class CiqEstimates(Estimates):
+    estimate_type: EstimateType
+
+
+class VisibleAlphaEstimates(Estimates):
+    estimate_type: str
 
 
 class ConsensusTargetPriceItem(BaseModel):
