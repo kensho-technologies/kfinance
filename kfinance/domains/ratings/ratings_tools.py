@@ -2,8 +2,6 @@ from textwrap import dedent
 from typing import Type
 
 import httpx
-from pydantic import BaseModel
-
 from pydantic import BaseModel, Field, computed_field
 
 from kfinance.client.permission_models import Permission
@@ -110,7 +108,9 @@ async def get_issuer_ratings_from_identifiers(
             errors=errors,
         )
 
-    entity_ids = [entity_info.entity_id for entity_info in entity_resp.identifiers_resolved.values()]
+    entity_ids = [
+        entity_info.entity_id for entity_info in entity_resp.identifiers_resolved.values()
+    ]
 
     result = await fetch_issuer_ratings_from_identifiers(
         entity_ids=entity_ids,

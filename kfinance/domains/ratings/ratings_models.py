@@ -71,6 +71,7 @@ class EntityIdResp(BaseModel):
         else:
             return data
 
+
 class EntityInfoWithResult(BaseModel, Generic[T]):
     """Entity information combined with result data.
 
@@ -82,7 +83,6 @@ class EntityInfoWithResult(BaseModel, Generic[T]):
     ticker: str | None
     country: str | None
     data: T
-
 
 
 class RatingDetail(BaseModel):

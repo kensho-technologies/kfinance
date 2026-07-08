@@ -1,15 +1,12 @@
 from datetime import datetime, timezone
-import json
 
 import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.ratings.ratings_models import (
     EntityInfo,
     IssuerRatings,
-    IssuerRatingsResp,
     RatingDetail,
     RatingTypeData,
 )
