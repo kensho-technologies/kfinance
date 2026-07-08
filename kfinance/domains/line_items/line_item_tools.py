@@ -133,7 +133,7 @@ class GetFinancialLineItemFromIdentifiersArgs(BaseFinancialLineItemFromIdentifie
         description="The type of financial line_item requested"
     )
     period_type: PeriodType | None = Field(
-        default=None, description="The period type (annual or quarterly)"
+        default=None, description="The period type (annual, quarterly, ltm, or ytd)"
     )
 
     @model_validator(mode="before")
