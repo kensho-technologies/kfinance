@@ -1,15 +1,15 @@
 import logging
-from typing import Any, Callable, Dict, Generic, TypeAlias, TypeVar
+from typing import Any, Callable, Dict, Generic, TypeVar
 
 from pydantic import BaseModel, Field, model_serializer, model_validator
+
+from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata
 
 
 logger = logging.getLogger(__name__)
 
 
 T = TypeVar("T", bound=BaseModel)
-
-Source: TypeAlias = dict[str, str]
 
 
 class RespWithErrors(BaseModel):
@@ -35,6 +35,12 @@ class PostResponse(RespWithErrors, Generic[T]):
     """Generic response class that wraps results and errors from API calls."""
 
     results: dict[str, T]
+
+
+class PostResponseWithMetadata(PostResponse[T]):
+    """PostResponse extended with a top-level metadata dict."""
+
+    metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
 
 
 class SingleResultResp(BaseModel, Generic[T]):

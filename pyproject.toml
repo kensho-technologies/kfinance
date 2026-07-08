@@ -8,6 +8,7 @@ authors = [
   { name="Keith Page", email="keith.page@kensho.com" },
   { name="Matthew Rosen", email="matthew.rosen@kensho.com" },
   { name="Nick Roshdieh", email="nick.roshdieh@kensho.com" },
+  { name="Efaz Ahmed", email="efaz.ahmed@kensho.com" },
 ]
 description = "Python CLI for kFinance"
 readme = "README.md"

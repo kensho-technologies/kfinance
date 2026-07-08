@@ -8,7 +8,7 @@ from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
 from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
-from kfinance.domains.line_items.line_item_models import CalendarType
+from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata, CalendarType
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
 )
@@ -21,10 +21,9 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
-class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
+class BaseSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
     segment_type: SegmentType
-    period_type: PeriodType | None = Field(default=None, description="The period type")
     start_year: int | None = Field(default=None, description="The starting year for the data range")
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
@@ -41,14 +40,20 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
 
 
+class GetSegmentsFromIdentifiersArgs(BaseSegmentsFromIdentifiersArgs):
+    period_type: PeriodType | None = Field(default=None, description="The period type")
+
+
 class GetSegmentsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):
     notes: list[str] = Field(default_factory=list)
+    metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
+    data_source: str
 
 
 class GetSegmentsFromIdentifiers(KfinanceTool):
     name: str = "get_segments_from_identifiers"
     description: str = dedent("""
-        Get the templated business or geographic segments associated with a list of identifiers.
+        Get the templated business or geographic segments associated with a list of identifiers. Returns Capital IQ data.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - To fetch the most recent segment data, leave all time parameters as null.
@@ -169,6 +174,7 @@ async def get_segments_from_identifiers(
         identifier_results=identifier_to_results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,
+        data_source="Capital IQ",
     )
 
     # Add explanatory notes

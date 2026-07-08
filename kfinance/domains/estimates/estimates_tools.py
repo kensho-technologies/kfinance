@@ -17,10 +17,11 @@ from kfinance.client.models.response_models import SingleResultResp
 from kfinance.client.permission_models import Permission
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
+    CiqEstimates,
     ConsensusTargetPrice,
     Estimates,
 )
-from kfinance.domains.line_items.line_item_models import CalendarType
+from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata, CalendarType
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
 )
@@ -32,10 +33,20 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
-class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
+class BaseEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     period_type: EstimatePeriodType | None = Field(
         default=None, description="The period type (annual, semi-annual, or quarterly)."
     )
+    num_periods_forward: NumPeriodsForward | None = Field(
+        default=None, description="The number of periods forward from today (0-99)."
+    )
+    num_periods_backward: NumPeriodsBackward | None = Field(
+        default=None,
+        description="The number of periods to look back from today (0-99).",
+    )
+
+
+class GetEstimatesFromIdentifiersArgs(BaseEstimatesFromIdentifiersArgs):
     fiscal_start_year: int | None = Field(
         default=None,
         description="The starting year for the data range. Use null for the most recent data.",
@@ -52,17 +63,12 @@ class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=None,
         description="Ending quarter (1-4). Used when period_type is semi-annual or quarterly.",
     )
-    num_periods_forward: NumPeriodsForward | None = Field(
-        default=None, description="The number of periods forward from today (1-99)."
-    )
-    num_periods_backward: NumPeriodsBackward | None = Field(
-        default=None,
-        description="The number of periods to look back from today (1-99).",
-    )
 
 
 class GetEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Estimates]):
     notes: list[str] = Field(default_factory=list)
+    metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
+    data_source: str
 
 
 class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
@@ -104,7 +110,7 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
 class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_consensus_estimates_from_identifiers"
     description: str = dedent("""
-        Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given identifier.
+        Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given identifier. Returns Capital IQ data.
 
         Returns statistical aggregates including high, low, mean, median, and number of estimates.
         When periods have ended, actual reported values are also returned.
@@ -119,7 +125,7 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
 class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_guidance_from_identifiers"
     description: str = dedent("""
-        Get company-issued financial guidance for a given identifier.
+        Get company-issued financial guidance for a given identifier. Returns Capital IQ data.
 
         Returns the most recent guidance provided by the company for future periods, or the final guidance issued before results were reported for past periods.
     """).strip()
@@ -137,7 +143,7 @@ class GetConsensusTargetPriceFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Con
 class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
     name: str = "get_consensus_target_price_from_identifiers"
     description: str = dedent("""
-        Get consensus target price estimates for a given company. Returns the current consensus analyst target price including high, low, mean, and median values.
+        Get consensus target price estimates for a given company. Returns Capital IQ data. Returns the current consensus analyst target price including high, low, mean, and median values.
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
@@ -161,7 +167,7 @@ class GetAnalystRecommendationsFromIdentifiersResp(
 class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
     name: str = "get_analyst_recommendations_from_identifiers"
     description: str = dedent("""
-        Get analyst recommendations for a given company. Returns the current consensus analyst recommendation breakdown including buy, hold, sell counts and overall rating.
+        Get analyst recommendations for a given company. Returns Capital IQ data. Returns the current consensus analyst recommendation breakdown including buy, hold, sell counts and overall rating.
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
@@ -217,12 +223,12 @@ async def get_estimates_from_identifiers(
 
     await batch_execute_async_tasks(tasks=tasks)
 
-    results: dict[str, Estimates] = dict()
+    results: dict[str, CiqEstimates] = dict()
     for task in tasks:
         if task.error:
             errors.append(task.error)
         else:
-            resp: SingleResultResp[Estimates] = task.result
+            resp: SingleResultResp[CiqEstimates] = task.result
             if resp.result is not None:
                 results[task.result_key] = resp.result
             if resp.error is not None:
@@ -233,6 +239,7 @@ async def get_estimates_from_identifiers(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,
+        data_source="Capital IQ",
     )
 
     # Add explanatory notes
@@ -256,7 +263,7 @@ async def fetch_estimates_from_company_id(
     fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
     num_periods_forward: int | None = None,
     num_periods_backward: int | None = None,
-) -> SingleResultResp[Estimates]:
+) -> SingleResultResp[CiqEstimates]:
     """Fetch estimates for one company_id."""
     # Build query parameters
     params = {
@@ -281,7 +288,7 @@ async def fetch_estimates_from_company_id(
 
     resp = await httpx_client.post(url="/estimates/", json=params)
     resp.raise_for_status()
-    return SingleResultResp[Estimates].model_validate(resp.json())
+    return SingleResultResp[CiqEstimates].model_validate(resp.json())
 
 
 async def get_consensus_target_price_from_identifiers(
