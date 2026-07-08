@@ -31,9 +31,9 @@ from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
     AnalystRecommendationsItem,
+    CiqEstimates,
     ConsensusTargetPrice,
     ConsensusTargetPriceItem,
-    Estimates,
 )
 from kfinance.domains.line_items.line_item_models import LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
@@ -112,7 +112,7 @@ MOCK_COMPANY_DB = {
                 ]
             }
         ),
-        "estimates": Estimates.model_validate(
+        "estimates": CiqEstimates.model_validate(
             {
                 "estimate_type": "consensus",
                 "period_type": "quarterly",
@@ -515,7 +515,7 @@ class MockKFinanceApiClient:
         period_type,
     ):
         estimates = MOCK_COMPANY_DB[company_id]["estimates"]
-        return SingleResultResp[Estimates](result=estimates)
+        return SingleResultResp[CiqEstimates](result=estimates)
 
     def fetch_consensus_target_price(self, company_id):
         """Get consensus target price estimates"""
@@ -725,7 +725,7 @@ class TestCompany(TestCase):
         pd.testing.assert_frame_equal(expected_income_statement, income_statement)
 
     def test_estimate(self) -> None:
-        estimates: Estimates = MOCK_COMPANY_DB[msft_company_id]["estimates"]
+        estimates: CiqEstimates = MOCK_COMPANY_DB[msft_company_id]["estimates"]
 
         estimates_data = {}
         for period_key, period_data in estimates.periods.items():

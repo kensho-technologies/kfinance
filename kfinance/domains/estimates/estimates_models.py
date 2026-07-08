@@ -21,7 +21,7 @@ class TickerEstimatesGroup(BaseModel):
     estimates: list[LineItem]
 
 
-class EstimatesPeriodData(BaseModel):
+class CiqEstimatesPeriodData(BaseModel):
     period_end_date: date
     estimates: dict[str, TickerEstimatesGroup]
 
@@ -73,19 +73,25 @@ class EstimatesPeriodData(BaseModel):
         return data
 
 
+class VaEstimatesPeriodData(BaseModel):
+    period_end_date: date
+    estimates: list[LineItem]
+
+
 class Estimates(BaseModel):
     estimate_type: EstimateType | str
-    currency: str | None
     period_type: EstimatePeriodType
-    periods: dict[str, EstimatesPeriodData]
 
 
 class CiqEstimates(Estimates):
     estimate_type: EstimateType
+    periods: dict[str, CiqEstimatesPeriodData]
 
 
 class VisibleAlphaEstimates(Estimates):
     estimate_type: str
+    currency: str | None
+    periods: dict[str, VaEstimatesPeriodData]
 
 
 class ConsensusTargetPriceItem(BaseModel):
