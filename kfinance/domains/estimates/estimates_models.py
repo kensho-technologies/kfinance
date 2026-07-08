@@ -37,8 +37,18 @@ class CiqEstimatesPeriodData(BaseModel):
         "FY2026": {
             "period_end_date": "2026-12-31",
             "estimates": [
-                {"name": "EPS Consensus High", "value": "14.0"},
-                {"name": "Book Value / Share Consensus High", "value": "114.5"}
+                {
+                    "name": "EPS Consensus High", 
+                    "value": "14.0", 
+                    "currency": "EUR",
+                    "ticker_or_company": "Company Level"
+                },
+                {
+                    "name": "Book Value / Share Consensus High", 
+                    "value": "114.5",
+                    "currency": "USD",
+                    "ticker_or_company": "ENXTAM: ASM",
+                }
             ]
         }
 

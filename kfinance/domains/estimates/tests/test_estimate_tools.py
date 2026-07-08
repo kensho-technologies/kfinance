@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import httpx
 import pytest
 from pytest_httpx import HTTPXMock
@@ -8,7 +10,10 @@ from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
     CiqEstimates,
+    CiqEstimatesPeriodData,
     ConsensusTargetPrice,
+    LineItem,
+    TickerEstimatesGroup,
 )
 from kfinance.domains.estimates.estimates_tools import (
     GetAnalystRecommendationsFromIdentifiersResp,
@@ -238,6 +243,54 @@ class TestEstimates:
             result=CiqEstimates.model_validate(guidance_data),
         )
         assert resp == expected_resp
+
+    def test_model_validate_groups_by_ticker(self) -> None:
+        """
+        WHEN we call model_validate on CiqEstimatesPeriodData with a flat API response
+        THEN estimates are grouped by ticker_or_company into TickerEstimatesGroup objects
+        """
+        api_period_data = {
+            "period_end_date": "2026-12-31",
+            "estimates": [
+                {
+                    "name": "EPS Consensus High",
+                    "value": "14.0",
+                    "ticker_or_company": "Company Level",
+                    "currency": "EUR",
+                },
+                {
+                    "name": "EPS Consensus Low",
+                    "value": "12.0",
+                    "ticker_or_company": "Company Level",
+                    "currency": "EUR",
+                },
+                {
+                    "name": "Book Value / Share Consensus High",
+                    "value": "114.5",
+                    "ticker_or_company": "ENXTAM: ASM",
+                    "currency": "USD",
+                },
+            ],
+        }
+
+        result = CiqEstimatesPeriodData.model_validate(api_period_data)
+
+        assert set(result.estimates.keys()) == {"Company Level", "ENXTAM: ASM"}
+
+        company_group = result.estimates["Company Level"]
+        assert isinstance(company_group, TickerEstimatesGroup)
+        assert company_group.currency == "EUR"
+        assert company_group.estimates == [
+            LineItem(name="EPS Consensus High", value=Decimal("14.0")),
+            LineItem(name="EPS Consensus Low", value=Decimal("12.0")),
+        ]
+
+        asm_group = result.estimates["ENXTAM: ASM"]
+        assert isinstance(asm_group, TickerEstimatesGroup)
+        assert asm_group.currency == "USD"
+        assert asm_group.estimates == [
+            LineItem(name="Book Value / Share Consensus High", value=Decimal("114.5")),
+        ]
 
     @pytest.mark.asyncio
     async def test_fetch_consensus_target_price_from_company_id(
