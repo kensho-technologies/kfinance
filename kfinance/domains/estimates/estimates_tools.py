@@ -64,7 +64,7 @@ class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
 class GetEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Estimates]):
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
-    data_source: Literal["Capital IQ", "Visible Alpha"]
+    data_source: str
 
 
 class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
