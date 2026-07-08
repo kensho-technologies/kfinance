@@ -5,11 +5,7 @@ import httpx
 from pydantic import BaseModel, Field
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
-from kfinance.client.models.date_and_period_models import (
-    EstimatePeriodType,
-    NumPeriods,
-    NumPeriodsBack,
-)
+from kfinance.client.models.date_and_period_models import EstimatePeriodType
 from kfinance.client.models.response_models import PostResponseWithMetadata
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
@@ -17,48 +13,25 @@ from kfinance.domains.line_items.line_item_models import (
     CalendarType,
     LineItemResp,
 )
-from kfinance.domains.line_items.line_item_tools import GetFinancialLineItemFromIdentifiersResp
+from kfinance.domains.line_items.line_item_tools import (
+    BaseFinancialLineItemFromIdentifiersArgs,
+    GetFinancialLineItemFromIdentifiersResp,
+)
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
     insert_source_link_note,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
-    ToolArgsWithIdentifiers,
-    ValidQuarter,
 )
 
 
-class GetVisibleAlphaFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
+class GetVisibleAlphaFinancialLineItemFromIdentifiersArgs(BaseFinancialLineItemFromIdentifiersArgs):
     line_item_search: str = Field(
         description="The financial metric, business measure, or quantitative data point to retrieve. Use descriptive natural language. Preserve the specificity of what the user asked for; keep any product, model, series, segment, or region qualifiers they named rather than generalizing to a broader metric. When the user names several distinct items, make a separate call per item using its specific name."
     )
     period_type: EstimatePeriodType | None = Field(
         default=None, description="The period type (annual or quarterly)"
-    )
-    start_year: int | None = Field(
-        default=None,
-        description="The starting year for the data range. Use null for the most recent data.",
-    )
-    end_year: int | None = Field(
-        default=None,
-        description="The ending year for the data range. Use null for the most recent data.",
-    )
-    start_quarter: ValidQuarter | None = Field(
-        default=None, description="Starting quarter (1-4). Only used when period_type is quarterly."
-    )
-    end_quarter: ValidQuarter | None = Field(
-        default=None, description="Ending quarter (1-4). Only used when period_type is quarterly."
-    )
-    calendar_type: CalendarType | None = Field(
-        default=None, description="Fiscal year or calendar year"
-    )
-    num_periods: NumPeriods | None = Field(
-        default=None, description="The number of periods to retrieve data for (1-99)"
-    )
-    num_periods_back: NumPeriodsBack | None = Field(
-        default=None,
-        description="The end period of the data range expressed as number of periods back relative to the present period (0-99)",
     )
     currency: str | None = Field(
         default=None,

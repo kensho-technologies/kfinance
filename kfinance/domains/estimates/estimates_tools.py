@@ -33,10 +33,20 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
-class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
+class BaseEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     period_type: EstimatePeriodType | None = Field(
         default=None, description="The period type (annual, semi-annual, or quarterly)."
     )
+    num_periods_forward: NumPeriodsForward | None = Field(
+        default=None, description="The number of periods forward from today (0-99)."
+    )
+    num_periods_backward: NumPeriodsBackward | None = Field(
+        default=None,
+        description="The number of periods to look back from today (0-99).",
+    )
+
+
+class GetEstimatesFromIdentifiersArgs(BaseEstimatesFromIdentifiersArgs):
     fiscal_start_year: int | None = Field(
         default=None,
         description="The starting year for the data range. Use null for the most recent data.",
@@ -52,13 +62,6 @@ class GetEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     fiscal_end_quarter: ValidQuarter | None = Field(
         default=None,
         description="Ending quarter (1-4). Used when period_type is semi-annual or quarterly.",
-    )
-    num_periods_forward: NumPeriodsForward | None = Field(
-        default=None, description="The number of periods forward from today (1-99)."
-    )
-    num_periods_backward: NumPeriodsBackward | None = Field(
-        default=None,
-        description="The number of periods to look back from today (1-99).",
     )
 
 

@@ -98,16 +98,7 @@ def _smart_line_item_validator(v: str) -> str:
     return v
 
 
-class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
-    # Note: mypy will not enforce this literal because of the type: ignore.
-    # But pydantic still uses the literal to check for allowed values and only includes
-    # allowed values in generated schemas.
-    line_item: Literal[tuple(LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore[valid-type]
-        description="The type of financial line_item requested"
-    )
-    period_type: PeriodType | None = Field(
-        default=None, description="The period type (annual or quarterly)"
-    )
+class BaseFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
     start_year: int | None = Field(
         default=None,
         description="The starting year for the data range. Use null for the most recent data.",
@@ -131,6 +122,18 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
     num_periods_back: NumPeriodsBack | None = Field(
         default=None,
         description="The end period of the data range expressed as number of periods back relative to the present period (0-99)",
+    )
+
+
+class GetFinancialLineItemFromIdentifiersArgs(BaseFinancialLineItemFromIdentifiersArgs):
+    # Note: mypy will not enforce this literal because of the type: ignore.
+    # But pydantic still uses the literal to check for allowed values and only includes
+    # allowed values in generated schemas.
+    line_item: Literal[tuple(LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore[valid-type]
+        description="The type of financial line_item requested"
+    )
+    period_type: PeriodType | None = Field(
+        default=None, description="The period type (annual or quarterly)"
     )
 
     @model_validator(mode="before")

@@ -21,10 +21,9 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
-class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
+class BaseSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
     segment_type: SegmentType
-    period_type: PeriodType | None = Field(default=None, description="The period type")
     start_year: int | None = Field(default=None, description="The starting year for the data range")
     end_year: int | None = Field(default=None, description="The ending year for the data range")
     start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter")
@@ -39,6 +38,10 @@ class GetSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=None,
         description="The end period of the data range expressed as number of periods back relative to the present period (0-99)",
     )
+
+
+class GetSegmentsFromIdentifiersArgs(BaseSegmentsFromIdentifiersArgs):
+    period_type: PeriodType | None = Field(default=None, description="The period type")
 
 
 class GetSegmentsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[SegmentsResp]):

@@ -5,44 +5,22 @@ import httpx
 from pydantic import BaseModel, Field
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
-from kfinance.client.models.date_and_period_models import (
-    EstimatePeriodType,
-    NumPeriods,
-    NumPeriodsBack,
-)
+from kfinance.client.models.date_and_period_models import EstimatePeriodType
 from kfinance.client.models.response_models import PostResponse
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import CalendarType
 from kfinance.domains.line_items.response_notes import insert_fiscal_period_notes
 from kfinance.domains.segments.segment_models import SegmentsResp, SegmentType
-from kfinance.domains.segments.segment_tools import GetSegmentsFromIdentifiersResp
-from kfinance.integrations.tool_calling.tool_calling_models import (
-    KfinanceTool,
-    ToolArgsWithIdentifiers,
-    ValidQuarter,
+from kfinance.domains.segments.segment_tools import (
+    BaseSegmentsFromIdentifiersArgs,
+    GetSegmentsFromIdentifiersResp,
 )
+from kfinance.integrations.tool_calling.tool_calling_models import KfinanceTool
 
 
-class GetVisibleAlphaSegmentsFromIdentifiersArgs(ToolArgsWithIdentifiers):
-    segment_type: SegmentType
+class GetVisibleAlphaSegmentsFromIdentifiersArgs(BaseSegmentsFromIdentifiersArgs):
     period_type: EstimatePeriodType | None = Field(
         default=None, description="The period type (annual, semi-annual, or quarterly)."
-    )
-    start_year: int | None = Field(
-        default=None, description="The starting year for the data range."
-    )
-    end_year: int | None = Field(default=None, description="The ending year for the data range.")
-    start_quarter: ValidQuarter | None = Field(default=None, description="Starting quarter (1-4).")
-    end_quarter: ValidQuarter | None = Field(default=None, description="Ending quarter (1-4).")
-    calendar_type: CalendarType | None = Field(
-        default=None, description="Fiscal year or calendar year."
-    )
-    num_periods: NumPeriods | None = Field(
-        default=None, description="The number of periods to retrieve data for (1-99)."
-    )
-    num_periods_back: NumPeriodsBack | None = Field(
-        default=None,
-        description="The end period expressed as number of periods back relative to the present period (0-99).",
     )
     currency: str | None = Field(
         default=None,

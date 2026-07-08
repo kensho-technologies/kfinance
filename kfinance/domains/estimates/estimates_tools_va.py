@@ -8,26 +8,23 @@ from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import (
     EstimatePeriodType,
     EstimateType,
-    NumPeriodsBackward,
-    NumPeriodsForward,
 )
 from kfinance.client.models.response_models import PostResponseWithMetadata
 from kfinance.client.permission_models import Permission
 from kfinance.domains.estimates.estimates_models import VisibleAlphaEstimates
-from kfinance.domains.estimates.estimates_tools import GetEstimatesFromIdentifiersResp
+from kfinance.domains.estimates.estimates_tools import (
+    BaseEstimatesFromIdentifiersArgs,
+    GetEstimatesFromIdentifiersResp,
+)
 from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata, CalendarType
 from kfinance.domains.line_items.response_notes import insert_fiscal_period_notes
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
-    ToolArgsWithIdentifiers,
     ValidQuarter,
 )
 
 
-class GetVisibleAlphaEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
-    period_type: EstimatePeriodType | None = Field(
-        default=None, description="The period type (annual, semi-annual, or quarterly)."
-    )
+class GetVisibleAlphaEstimatesFromIdentifiersArgs(BaseEstimatesFromIdentifiersArgs):
     start_year: int | None = Field(
         default=None,
         description="The starting year for the data range. Use null for the most recent data.",
@@ -43,13 +40,6 @@ class GetVisibleAlphaEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     end_quarter: ValidQuarter | None = Field(
         default=None,
         description="Ending quarter (1-4). Used when period_type is semi-annual or quarterly.",
-    )
-    num_periods_forward: NumPeriodsForward | None = Field(
-        default=None, description="The number of periods forward from today (0-99)."
-    )
-    num_periods_backward: NumPeriodsBackward | None = Field(
-        default=None,
-        description="The number of periods to look back from today (0-99).",
     )
     estimate_search: str | None = Field(
         default=None,
