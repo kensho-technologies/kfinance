@@ -31,7 +31,7 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiersArgs(BaseFinancialLineItemF
         description="The financial metric, business measure, or quantitative data point to retrieve. Use descriptive natural language. Preserve the specificity of what the user asked for; keep any product, model, series, segment, or region qualifiers they named rather than generalizing to a broader metric. When the user names several distinct items, make a separate call per item using its specific name."
     )
     period_type: EstimatePeriodType | None = Field(
-        default=None, description="The period type (annual or quarterly)"
+        default=None, description="The period type (annual, quarterly, or semi_annual)"
     )
     currency: str | None = Field(
         default=None,
