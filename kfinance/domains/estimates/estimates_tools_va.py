@@ -85,6 +85,9 @@ class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
 
         Query: "Get annual consensus revenue estimates for SPGI for fiscal year 2024"
         Function: get_consensus_estimates_from_identifiers(identifiers=["SPGI"], estimate_search="revenue", period_type="annual", start_year=2024, end_year=2024)
+
+        Query: "Get consensus EPS estimates for AAPL in EUR"
+        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], estimate_search="EPS", currency="EUR")
     """).strip()
     args_schema: Type[BaseModel] = GetVisibleAlphaEstimatesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}

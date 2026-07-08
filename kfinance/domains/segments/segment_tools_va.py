@@ -73,6 +73,9 @@ class GetVisibleAlphaSegmentsFromIdentifiers(KfinanceTool):
 
         Query: "What are the ltm business segments for SPGI for the last three calendar quarters but one?"
         Function: get_segments_from_identifiers(segment_type="business", period_type="ltm", calendar_type="calendar", num_periods=2, num_periods_back=1, identifiers=["SPGI"])
+
+        Query: "Get Apple's business segments in EUR"
+        Function: get_segments_from_identifiers(identifiers=["AAPL"], segment_type="business", currency="EUR")
     """).strip()
     args_schema: Type[BaseModel] = GetVisibleAlphaSegmentsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}

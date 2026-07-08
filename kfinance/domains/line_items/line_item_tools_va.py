@@ -91,6 +91,9 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiers(KfinanceTool):
 
         Query: "Most recent three quarters except one ppe for Exxon and Hasbro"
         Function: get_financial_line_item_from_identifiers(line_item_search="property plant and equipment", period_type="quarterly", num_periods=2, num_periods_back=1, identifiers=["Exxon", "Hasbro"])
+
+        Query: "Get AAPL revenue in EUR"
+        Function: get_financial_line_item_from_identifiers(line_item_search="revenue", identifiers=["AAPL"], currency="EUR")
     """).strip()
     args_schema: Type[BaseModel] = GetVisibleAlphaFinancialLineItemFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}
