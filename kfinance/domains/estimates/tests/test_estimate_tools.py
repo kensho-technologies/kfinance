@@ -17,8 +17,8 @@ from kfinance.domains.estimates.estimates_models import (
 )
 from kfinance.domains.estimates.estimates_tools import (
     GetAnalystRecommendationsFromIdentifiersResp,
+    GetCiqEstimatesFromIdentifiersResp,
     GetConsensusTargetPriceFromIdentifiersResp,
-    GetEstimatesFromIdentifiersResp,
     fetch_analyst_recommendations_from_company_id,
     fetch_consensus_target_price_from_company_id,
     fetch_estimates_from_company_id,
@@ -161,7 +161,7 @@ class TestEstimates:
         """
 
         expected_est = CiqEstimates.model_validate(self.estimates_data)
-        expected_resp = GetEstimatesFromIdentifiersResp(
+        expected_resp = GetCiqEstimatesFromIdentifiersResp(
             identifier_results={"SPGI": expected_est},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
@@ -196,7 +196,7 @@ class TestEstimates:
             json={"results": {}, "errors": {"errors": "No results found."}},
         )
 
-        expected_resp = GetEstimatesFromIdentifiersResp(
+        expected_resp = GetCiqEstimatesFromIdentifiersResp(
             identifier_results={},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=["SPGI: No results found."],
@@ -290,6 +290,46 @@ class TestEstimates:
         assert asm_group.currency == "USD"
         assert asm_group.estimates == [
             LineItem(name="Book Value / Share Consensus High", value=Decimal("114.5")),
+        ]
+
+    def test_model_validate_resolves_currency(self) -> None:
+        """
+        WHEN the first estimate item for a ticker has no currency (e.g. count metrics)
+        THEN the currency is resolved from the first non-null item in the group
+        """
+        api_period_data = {
+            "period_end_date": "2026-12-31",
+            "estimates": [
+                {
+                    "name": "Capital Expenditure - # of Estimates",
+                    "value": "10.000000",
+                    "ticker_or_company": "Company Level",
+                },
+                {
+                    "name": "Capital Expenditure Consensus High",
+                    "value": "-4632990910.000000",
+                    "ticker_or_company": "Company Level",
+                    "currency": "CHF",
+                },
+                {
+                    "name": "Capital Expenditure Consensus Low",
+                    "value": "-3825000000.000000",
+                    "ticker_or_company": "Company Level",
+                    "currency": "CHF",
+                },
+            ],
+        }
+
+        result = CiqEstimatesPeriodData.model_validate(api_period_data)
+
+        company_group = result.estimates["Company Level"]
+        assert company_group.currency == "CHF"
+        assert company_group.estimates == [
+            LineItem(name="Capital Expenditure - # of Estimates", value=Decimal("10.000000")),
+            LineItem(
+                name="Capital Expenditure Consensus High", value=Decimal("-4632990910.000000")
+            ),
+            LineItem(name="Capital Expenditure Consensus Low", value=Decimal("-3825000000.000000")),
         ]
 
     @pytest.mark.asyncio

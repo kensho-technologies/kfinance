@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.6.2
+- Split GetEstimatesFromIdentifiersResp into CIQ and VA variants
+
 ## v6.6.1
 - Group estimates by ticker/company in estimates response
 

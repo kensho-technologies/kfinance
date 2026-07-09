@@ -78,6 +78,8 @@ class CiqEstimatesPeriodData(BaseModel):
             ticker = item.get("ticker_or_company", "Company Level")
             if ticker not in grouped:
                 grouped[ticker] = {"currency": item.get("currency"), "estimates": []}
+            elif grouped[ticker]["currency"] is None and item.get("currency") is not None:
+                grouped[ticker]["currency"] = item.get("currency")
             grouped[ticker]["estimates"].append({"name": item["name"], "value": item.get("value")})
         data = {**data, "estimates": grouped}
         return data
