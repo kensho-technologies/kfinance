@@ -292,10 +292,10 @@ class TestEstimates:
             LineItem(name="Book Value / Share Consensus High", value=Decimal("114.5")),
         ]
 
-    def test_model_validate_currency_from_later_item(self) -> None:
+    def test_model_validate_resolves_currency(self) -> None:
         """
         WHEN the first estimate item for a ticker has no currency (e.g. count metrics)
-        THEN the currency is picked up from a later item that has one
+        THEN the currency is resolved from the first non-null item in the group
         """
         api_period_data = {
             "period_end_date": "2026-12-31",
