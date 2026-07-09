@@ -14,14 +14,20 @@ from kfinance.client.permission_models import Permission
 from kfinance.domains.estimates.estimates_models import VisibleAlphaEstimates
 from kfinance.domains.estimates.estimates_tools import (
     BaseEstimatesFromIdentifiersArgs,
-    GetEstimatesFromIdentifiersResp,
 )
 from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata, CalendarType
 from kfinance.domains.line_items.response_notes import insert_fiscal_period_notes
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
+    ToolRespWithIdInfoAndErrors,
     ValidQuarter,
 )
+
+
+class GetVaEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[VisibleAlphaEstimates]):
+    notes: list[str] = Field(default_factory=list)
+    metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
+    data_source: str
 
 
 class GetVisibleAlphaEstimatesFromIdentifiersArgs(BaseEstimatesFromIdentifiersArgs):
@@ -96,7 +102,7 @@ class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
         estimate_search: str | None = None,
         calendar_type: CalendarType | None = None,
         currency: str | None = None,
-    ) -> GetEstimatesFromIdentifiersResp:
+    ) -> GetVaEstimatesFromIdentifiersResp:
         """"""
         return await get_visible_alpha_estimates_from_identifiers(
             identifiers=identifiers,
@@ -174,7 +180,7 @@ async def get_visible_alpha_estimates_from_identifiers(
     estimate_search: str | None = None,
     calendar_type: CalendarType | None = None,
     currency: str | None = None,
-) -> GetEstimatesFromIdentifiersResp:
+) -> GetVaEstimatesFromIdentifiersResp:
     """Fetch estimates for all identifiers using Visible Alpha as the data source."""
 
     id_triple_resp = await unified_fetch_id_triples(
@@ -216,7 +222,7 @@ async def get_visible_alpha_estimates_from_identifiers(
     else:
         results = {}
 
-    resp_model = GetEstimatesFromIdentifiersResp(
+    resp_model = GetVaEstimatesFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,

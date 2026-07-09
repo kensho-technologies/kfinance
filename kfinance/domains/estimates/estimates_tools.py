@@ -19,7 +19,6 @@ from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
     CiqEstimates,
     ConsensusTargetPrice,
-    Estimates,
 )
 from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata, CalendarType
 from kfinance.domains.line_items.response_notes import (
@@ -65,7 +64,7 @@ class GetEstimatesFromIdentifiersArgs(BaseEstimatesFromIdentifiersArgs):
     )
 
 
-class GetEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Estimates]):
+class GetCiqEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CiqEstimates]):
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
     data_source: str
@@ -91,7 +90,7 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
         fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
-    ) -> GetEstimatesFromIdentifiersResp:
+    ) -> GetCiqEstimatesFromIdentifiersResp:
         """"""
         return await get_estimates_from_identifiers(
             identifiers=identifiers,
@@ -193,7 +192,7 @@ async def get_estimates_from_identifiers(
     fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
     num_periods_forward: int | None = None,
     num_periods_backward: int | None = None,
-) -> GetEstimatesFromIdentifiersResp:
+) -> GetCiqEstimatesFromIdentifiersResp:
     """Fetch estimates for all identifiers."""
 
     id_triple_resp = await unified_fetch_id_triples(
@@ -235,7 +234,7 @@ async def get_estimates_from_identifiers(
                 error_msg = f"{task.result_key}: {resp.error}"
                 errors.append(error_msg)
 
-    resp_model = GetEstimatesFromIdentifiersResp(
+    resp_model = GetCiqEstimatesFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,

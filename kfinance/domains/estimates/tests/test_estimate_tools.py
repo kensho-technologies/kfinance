@@ -17,8 +17,8 @@ from kfinance.domains.estimates.estimates_models import (
 )
 from kfinance.domains.estimates.estimates_tools import (
     GetAnalystRecommendationsFromIdentifiersResp,
+    GetCiqEstimatesFromIdentifiersResp,
     GetConsensusTargetPriceFromIdentifiersResp,
-    GetEstimatesFromIdentifiersResp,
     fetch_analyst_recommendations_from_company_id,
     fetch_consensus_target_price_from_company_id,
     fetch_estimates_from_company_id,
@@ -161,7 +161,7 @@ class TestEstimates:
         """
 
         expected_est = CiqEstimates.model_validate(self.estimates_data)
-        expected_resp = GetEstimatesFromIdentifiersResp(
+        expected_resp = GetCiqEstimatesFromIdentifiersResp(
             identifier_results={"SPGI": expected_est},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
@@ -196,7 +196,7 @@ class TestEstimates:
             json={"results": {}, "errors": {"errors": "No results found."}},
         )
 
-        expected_resp = GetEstimatesFromIdentifiersResp(
+        expected_resp = GetCiqEstimatesFromIdentifiersResp(
             identifier_results={},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=["SPGI: No results found."],
