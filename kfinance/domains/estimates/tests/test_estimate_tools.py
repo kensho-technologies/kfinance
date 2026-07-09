@@ -292,6 +292,46 @@ class TestEstimates:
             LineItem(name="Book Value / Share Consensus High", value=Decimal("114.5")),
         ]
 
+    def test_model_validate_currency_from_later_item(self) -> None:
+        """
+        WHEN the first estimate item for a ticker has no currency (e.g. count metrics)
+        THEN the currency is picked up from a later item that has one
+        """
+        api_period_data = {
+            "period_end_date": "2026-12-31",
+            "estimates": [
+                {
+                    "name": "Capital Expenditure - # of Estimates",
+                    "value": "10.000000",
+                    "ticker_or_company": "Company Level",
+                },
+                {
+                    "name": "Capital Expenditure Consensus High",
+                    "value": "-4632990910.000000",
+                    "ticker_or_company": "Company Level",
+                    "currency": "CHF",
+                },
+                {
+                    "name": "Capital Expenditure Consensus Low",
+                    "value": "-3825000000.000000",
+                    "ticker_or_company": "Company Level",
+                    "currency": "CHF",
+                },
+            ],
+        }
+
+        result = CiqEstimatesPeriodData.model_validate(api_period_data)
+
+        company_group = result.estimates["Company Level"]
+        assert company_group.currency == "CHF"
+        assert company_group.estimates == [
+            LineItem(name="Capital Expenditure - # of Estimates", value=Decimal("10.000000")),
+            LineItem(
+                name="Capital Expenditure Consensus High", value=Decimal("-4632990910.000000")
+            ),
+            LineItem(name="Capital Expenditure Consensus Low", value=Decimal("-3825000000.000000")),
+        ]
+
     @pytest.mark.asyncio
     async def test_fetch_consensus_target_price_from_company_id(
         self,
