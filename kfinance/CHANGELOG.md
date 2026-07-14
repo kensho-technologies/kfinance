@@ -1,10 +1,15 @@
 # Changelog
 
+## v6.6.2
+- Split GetEstimatesFromIdentifiersResp into CIQ and VA variants
+
+## v6.6.1
+- Group estimates by ticker/company in estimates response
+
 ## v6.6.0
 - Add GetVisibleAlphaConsensusEstimatesFromIdentifiers
 - Add GetVisibleAlphaFinancialLineItemFromIdentifiers
 - Add GetVisibleAlphaSegmentsFromIdentifiers
-
 ## v6.5.2
 - Fix fiscal year/quarter params not being passed correctly to the estimates API (start_year → fiscal_start_year, etc.)
 
