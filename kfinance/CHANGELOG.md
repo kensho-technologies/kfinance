@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.6.1
+- Gracefully handle stringified `identifiers` params
+
 ## v6.6.0
 - Add GetVisibleAlphaConsensusEstimatesFromIdentifiers
 - Add GetVisibleAlphaFinancialLineItemFromIdentifiers

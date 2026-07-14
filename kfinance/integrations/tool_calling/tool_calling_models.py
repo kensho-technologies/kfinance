@@ -1,4 +1,5 @@
 import abc
+import json
 from typing import Annotated, Any, Callable, Coroutine, Dict, Generic, Literal, Type, TypeVar
 
 from asyncer import syncify
@@ -11,6 +12,7 @@ from pydantic import (
     ConfigDict,
     Field,
     computed_field,
+    field_validator,
     model_serializer,
 )
 
@@ -151,6 +153,27 @@ class ToolArgsWithIdentifiers(BaseModel):
         min_length=1,
         description="The identifiers, which can be a list of ticker symbols, ISINs, CUSIPs, company names, or company_ids",
     )
+
+    @field_validator("identifiers", mode="before")
+    @classmethod
+    def coerce_identifiers(cls, v: Any) -> list[str]:
+        """Handle bare string ("IBM") and stringified JSON list ('["IBM", "AAPL"]')
+
+        LLMs sometimes pass them instead of the expected list[str]. Coerce both into the correct form.
+        """
+        if isinstance(v, str):
+            v = v.strip()
+            # Handle stringified JSON lists like '["IBM", "AAPL"]'
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    parsed = json.loads(v)
+                    if isinstance(parsed, list):
+                        return [str(item) for item in parsed]
+                except (json.JSONDecodeError, ValueError):
+                    pass
+            # Bare string like "IBM" -> ["IBM"]
+            return [v]
+        return v
 
 
 def convert_str_to_int(v: Any) -> Any:
