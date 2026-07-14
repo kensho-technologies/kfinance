@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import httpx
 import pytest
 from pytest_httpx import HTTPXMock
@@ -7,13 +9,16 @@ from kfinance.client.models.response_models import SingleResultResp
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
+    CiqEstimates,
+    CiqEstimatesPeriodData,
     ConsensusTargetPrice,
-    Estimates,
+    LineItem,
+    TickerEstimatesGroup,
 )
 from kfinance.domains.estimates.estimates_tools import (
     GetAnalystRecommendationsFromIdentifiersResp,
+    GetCiqEstimatesFromIdentifiersResp,
     GetConsensusTargetPriceFromIdentifiersResp,
-    GetEstimatesFromIdentifiersResp,
     fetch_analyst_recommendations_from_company_id,
     fetch_consensus_target_price_from_company_id,
     fetch_estimates_from_company_id,
@@ -30,35 +35,80 @@ from kfinance.domains.line_items.response_notes import (
 class TestEstimates:
     estimates_data = {
         "estimate_type": "consensus",
-        "currency": "USD",
         "period_type": "quarterly",
         "periods": {
             "FY2025Q4": {
                 "period_end_date": "2025-12-31",
                 "estimates": [
-                    {"name": "Book Value / Share - # of Estimates", "value": "2.000000"},
-                    {"name": "Book Value / Share Consensus High", "value": "109.600000"},
+                    {
+                        "name": "Book Value / Share - # of Estimates",
+                        "value": "2.000000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
+                    {
+                        "name": "Book Value / Share Consensus High",
+                        "value": "109.600000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
+                    {
+                        "name": "EPS Normalized - # of Estimates",
+                        "value": "14.000000",
+                        "ticker_or_company": "NYSE: SPGI",
+                        "currency": None,
+                    },
                 ],
             },
             "FY2026Q1": {
                 "period_end_date": "2026-03-31",
                 "estimates": [
-                    {"name": "Book Value / Share - # of Estimates", "value": "2.000000"},
-                    {"name": "Book Value / Share Consensus High", "value": "110.680000"},
+                    {
+                        "name": "Book Value / Share - # of Estimates",
+                        "value": "2.000000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
+                    {
+                        "name": "Book Value / Share Consensus High",
+                        "value": "110.680000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
                 ],
             },
             "FY2026Q2": {
                 "period_end_date": "2026-06-30",
                 "estimates": [
-                    {"name": "Book Value / Share - # of Estimates", "value": "1.000000"},
-                    {"name": "Book Value / Share Consensus High", "value": "105.020000"},
+                    {
+                        "name": "Book Value / Share - # of Estimates",
+                        "value": "1.000000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
+                    {
+                        "name": "Book Value / Share Consensus High",
+                        "value": "105.020000",
+                        "ticker_or_company": "NYSE: SPGI",
+                        "currency": "USD",
+                    },
                 ],
             },
             "FY2026Q3": {
                 "period_end_date": "2026-09-30",
                 "estimates": [
-                    {"name": "Book Value / Share - # of Estimates", "value": "2.000000"},
-                    {"name": "Book Value / Share Consensus High", "value": "113.130000"},
+                    {
+                        "name": "Book Value / Share - # of Estimates",
+                        "value": "2.000000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
+                    {
+                        "name": "Book Value / Share Consensus High",
+                        "value": "113.130000",
+                        "ticker_or_company": "Company Level",
+                        "currency": "USD",
+                    },
                 ],
             },
         },
@@ -94,8 +144,8 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = SingleResultResp[Estimates](
-            result=Estimates.model_validate(self.estimates_data),
+        expected_resp = SingleResultResp[CiqEstimates](
+            result=CiqEstimates.model_validate(self.estimates_data),
         )
         assert resp == expected_resp
 
@@ -110,13 +160,15 @@ class TestEstimates:
         THEN we get back SPGI's estimates and an error for the non-existent company
         """
 
-        expected_resp = GetEstimatesFromIdentifiersResp(
-            identifier_results={"SPGI": Estimates.model_validate(self.estimates_data)},
+        expected_est = CiqEstimates.model_validate(self.estimates_data)
+        expected_resp = GetCiqEstimatesFromIdentifiersResp(
+            identifier_results={"SPGI": expected_est},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[
                 "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            data_source="Capital IQ",
         )
 
         resp = await get_estimates_from_identifiers(
@@ -126,6 +178,7 @@ class TestEstimates:
         )
 
         assert resp == expected_resp
+        assert resp.data_source == "Capital IQ"
 
     @pytest.mark.asyncio
     async def test_fetch_estimates_api_returns_error(
@@ -143,11 +196,12 @@ class TestEstimates:
             json={"results": {}, "errors": {"errors": "No results found."}},
         )
 
-        expected_resp = GetEstimatesFromIdentifiersResp(
+        expected_resp = GetCiqEstimatesFromIdentifiersResp(
             identifier_results={},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=["SPGI: No results found."],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
+            data_source="Capital IQ",
         )
 
         resp = await get_estimates_from_identifiers(
@@ -185,10 +239,98 @@ class TestEstimates:
             httpx_client=httpx_client,
         )
 
-        expected_resp = SingleResultResp[Estimates](
-            result=Estimates.model_validate(guidance_data),
+        expected_resp = SingleResultResp[CiqEstimates](
+            result=CiqEstimates.model_validate(guidance_data),
         )
         assert resp == expected_resp
+
+    def test_model_validate_groups_by_ticker(self) -> None:
+        """
+        WHEN we call model_validate on CiqEstimatesPeriodData with a flat API response
+        THEN estimates are grouped by ticker_or_company into TickerEstimatesGroup objects
+        """
+        api_period_data = {
+            "period_end_date": "2026-12-31",
+            "estimates": [
+                {
+                    "name": "EPS Consensus High",
+                    "value": "14.0",
+                    "ticker_or_company": "Company Level",
+                    "currency": "EUR",
+                },
+                {
+                    "name": "EPS Consensus Low",
+                    "value": "12.0",
+                    "ticker_or_company": "Company Level",
+                    "currency": "EUR",
+                },
+                {
+                    "name": "Book Value / Share Consensus High",
+                    "value": "114.5",
+                    "ticker_or_company": "ENXTAM: ASM",
+                    "currency": "USD",
+                },
+            ],
+        }
+
+        result = CiqEstimatesPeriodData.model_validate(api_period_data)
+
+        assert set(result.estimates.keys()) == {"Company Level", "ENXTAM: ASM"}
+
+        company_group = result.estimates["Company Level"]
+        assert isinstance(company_group, TickerEstimatesGroup)
+        assert company_group.currency == "EUR"
+        assert company_group.estimates == [
+            LineItem(name="EPS Consensus High", value=Decimal("14.0")),
+            LineItem(name="EPS Consensus Low", value=Decimal("12.0")),
+        ]
+
+        asm_group = result.estimates["ENXTAM: ASM"]
+        assert isinstance(asm_group, TickerEstimatesGroup)
+        assert asm_group.currency == "USD"
+        assert asm_group.estimates == [
+            LineItem(name="Book Value / Share Consensus High", value=Decimal("114.5")),
+        ]
+
+    def test_model_validate_resolves_currency(self) -> None:
+        """
+        WHEN the first estimate item for a ticker has no currency (e.g. count metrics)
+        THEN the currency is resolved from the first non-null item in the group
+        """
+        api_period_data = {
+            "period_end_date": "2026-12-31",
+            "estimates": [
+                {
+                    "name": "Capital Expenditure - # of Estimates",
+                    "value": "10.000000",
+                    "ticker_or_company": "Company Level",
+                },
+                {
+                    "name": "Capital Expenditure Consensus High",
+                    "value": "-4632990910.000000",
+                    "ticker_or_company": "Company Level",
+                    "currency": "CHF",
+                },
+                {
+                    "name": "Capital Expenditure Consensus Low",
+                    "value": "-3825000000.000000",
+                    "ticker_or_company": "Company Level",
+                    "currency": "CHF",
+                },
+            ],
+        }
+
+        result = CiqEstimatesPeriodData.model_validate(api_period_data)
+
+        company_group = result.estimates["Company Level"]
+        assert company_group.currency == "CHF"
+        assert company_group.estimates == [
+            LineItem(name="Capital Expenditure - # of Estimates", value=Decimal("10.000000")),
+            LineItem(
+                name="Capital Expenditure Consensus High", value=Decimal("-4632990910.000000")
+            ),
+            LineItem(name="Capital Expenditure Consensus Low", value=Decimal("-3825000000.000000")),
+        ]
 
     @pytest.mark.asyncio
     async def test_fetch_consensus_target_price_from_company_id(

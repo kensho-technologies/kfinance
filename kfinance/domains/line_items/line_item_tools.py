@@ -12,6 +12,7 @@ from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
     LINE_ITEM_NAMES_AND_ALIASES,
     LINE_ITEM_TO_DESCRIPTIONS_MAP,
+    AlternativeLineItemMetadata,
     CalendarType,
     LineItemResp,
     LineItemScore,
@@ -97,16 +98,7 @@ def _smart_line_item_validator(v: str) -> str:
     return v
 
 
-class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
-    # Note: mypy will not enforce this literal because of the type: ignore.
-    # But pydantic still uses the literal to check for allowed values and only includes
-    # allowed values in generated schemas.
-    line_item: Literal[tuple(LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore[valid-type]
-        description="The type of financial line_item requested"
-    )
-    period_type: PeriodType | None = Field(
-        default=None, description="The period type (annual or quarterly)"
-    )
+class BaseFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
     start_year: int | None = Field(
         default=None,
         description="The starting year for the data range. Use null for the most recent data.",
@@ -132,6 +124,18 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
         description="The end period of the data range expressed as number of periods back relative to the present period (0-99)",
     )
 
+
+class GetFinancialLineItemFromIdentifiersArgs(BaseFinancialLineItemFromIdentifiersArgs):
+    # Note: mypy will not enforce this literal because of the type: ignore.
+    # But pydantic still uses the literal to check for allowed values and only includes
+    # allowed values in generated schemas.
+    line_item: Literal[tuple(LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore[valid-type]
+        description="The type of financial line_item requested"
+    )
+    period_type: PeriodType | None = Field(
+        default=None, description="The period type (annual, quarterly, ltm, or ytd)"
+    )
+
     @model_validator(mode="before")
     @classmethod
     def validate_line_item_with_suggestions(cls, values: dict) -> dict:
@@ -145,12 +149,14 @@ class GetFinancialLineItemFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 class GetFinancialLineItemFromIdentifiersResp(ToolRespWithIdInfoAndErrors[LineItemResp]):
     notes: list[str] = Field(default_factory=list)
+    metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
+    data_source: str
 
 
 class GetFinancialLineItemFromIdentifiers(KfinanceTool):
     name: str = "get_financial_line_item_from_identifiers"
     description: str = dedent("""
-        Get the financial line item associated with a list of identifiers.
+        Get the financial line item associated with a list of identifiers. Returns Capital IQ data.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - To fetch the most recent value, leave all time parameters as null.
@@ -283,6 +289,7 @@ async def get_financial_line_item_from_identifiers(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,
+        data_source="Capital IQ",
     )
 
     # Add explanatory notes
