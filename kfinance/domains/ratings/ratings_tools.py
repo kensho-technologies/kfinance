@@ -19,7 +19,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
-class GetIssuerRatingsFromIdentifierArgs(ToolArgsWithIdentifiers):
+class GetIssuerRatingsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     pass
 
 
@@ -75,7 +75,7 @@ class GetIssuerRatingsFromIdentifiers(KfinanceTool):
         Query: "Compare ratings for JPMorgan Chase and Bank of America"
         Function: get_issuer_ratings_from_identifiers(identifiers=["JPM", "BAC"])
     """).strip()
-    args_schema: Type[BaseModel] = GetIssuerRatingsFromIdentifierArgs
+    args_schema: Type[BaseModel] = GetIssuerRatingsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.RatingsPermission}
 
     async def _arun(
