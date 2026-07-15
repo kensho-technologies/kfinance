@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.6.3
+- Gracefully handle stringified `identifiers` params
+
 ## v6.6.2
 - Split GetEstimatesFromIdentifiersResp into CIQ and VA variants
 
