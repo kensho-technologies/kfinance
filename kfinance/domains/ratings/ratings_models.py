@@ -10,7 +10,7 @@ class EntityInfo(BaseModel):
     An entity represents any rateable entity in the ratings system, including sovereigns.
     The user will provide an identifier (e.g., "AAPL", "USA", "Microsoft")
     which gets resolved to an entity_id.
-    
+
     Note that for companies: entity_id == company_id and
     for sovereigns/countries: entity_id is a unique ID for that country.
     """

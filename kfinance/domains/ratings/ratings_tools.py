@@ -2,7 +2,7 @@ from textwrap import dedent
 from typing import Type
 
 import httpx
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from kfinance.client.permission_models import Permission
 from kfinance.domains.ratings.id_resolution import resolve_entities
