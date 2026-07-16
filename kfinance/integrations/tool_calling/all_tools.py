@@ -35,7 +35,6 @@ from kfinance.domains.line_items.line_item_tools_va import (
     GetVisibleAlphaFinancialLineItemFromIdentifiers,
 )
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools import (
-    GetAdvisorsForCompanyInTransactionFromIdentifier,
     GetMergersFromIdentifiers,
     GetMergersInfoFromTransactionIds,
 )
@@ -103,7 +102,6 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     # Statements
     GetFinancialStatementFromIdentifiers,
     # Mergers & Acquisitions
-    GetAdvisorsForCompanyInTransactionFromIdentifier,
     GetMergersInfoFromTransactionIds,
     GetMergersFromIdentifiers,
     # Rounds of Funding

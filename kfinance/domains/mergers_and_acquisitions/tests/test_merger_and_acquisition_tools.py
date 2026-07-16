@@ -1,4 +1,3 @@
-from copy import deepcopy
 from datetime import date
 
 import httpx
@@ -11,15 +10,12 @@ from kfinance.client.tests.test_objects import (
 )
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
-    AdvisorResp,
     MergersInfo,
     MergersResp,
 )
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools import (
-    GetAdvisorsForCompanyInTransactionFromIdentifierResp,
     GetMergersFromIdentifiersResp,
     fetch_mergers_from_company_id,
-    get_advisors_for_company_in_transaction_from_identifier,
     get_mergers_from_identifiers,
     get_mergers_info_from_transaction_ids,
 )
@@ -200,71 +196,3 @@ class TestMergersAndAcquisitions:
 
         assert ordered(resp) == ordered(expected_response)
 
-    @pytest.mark.asyncio
-    async def test_get_advisors_for_company_in_transaction_from_identifier(
-        self,
-        httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
-    ) -> None:
-        """
-        WHEN we request advisors for a company in a specific transaction
-        THEN we get back the advisor information
-        """
-        transaction_id = 554979212
-
-        advisor_data = {
-            "advisor_company_id": 251994106,
-            "advisor_company_name": "Kensho Technologies, Inc.",
-            "advisor_type_name": "Professional Mongo Enjoyer",
-        }
-
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/merger/info/{transaction_id}/advisors/{SPGI_ID_TRIPLE.company_id}",
-            json={"advisors": [deepcopy(advisor_data)]},
-        )
-
-        expected_response = GetAdvisorsForCompanyInTransactionFromIdentifierResp(
-            results=[
-                AdvisorResp(
-                    advisor_company_id=251994106,
-                    advisor_company_name="Kensho Technologies, Inc.",
-                    advisor_type_name="Professional Mongo Enjoyer",
-                )
-            ],
-            errors=[],
-        )
-
-        resp = await get_advisors_for_company_in_transaction_from_identifier(
-            identifier="SPGI",
-            transaction_id=transaction_id,
-            httpx_client=httpx_client,
-        )
-
-        assert resp == expected_response
-
-    @pytest.mark.asyncio
-    async def test_get_advisors_for_company_in_transaction_from_bad_identifier(
-        self,
-        httpx_client: httpx.AsyncClient,
-    ) -> None:
-        """
-        WHEN we request advisors for a non-existent company identifier
-        THEN we get back an error
-        """
-        transaction_id = 554979212
-
-        expected_response = GetAdvisorsForCompanyInTransactionFromIdentifierResp(
-            results=[],
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
-        )
-
-        resp = await get_advisors_for_company_in_transaction_from_identifier(
-            identifier="non-existent",
-            transaction_id=transaction_id,
-            httpx_client=httpx_client,
-        )
-
-        assert resp == expected_response

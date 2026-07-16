@@ -417,15 +417,6 @@ class TestFetchItem(TestCase):
             expected_fetch_url, method="POST", request_body=expected_request_body
         )
 
-    def test_fetch_advisors_for_company_in_merger(self) -> None:
-        transaction_id = 554979212
-        advised_company_id = 251994106
-        expected_fetch_url = f"{self.kfinance_api_client.url_base}merger/info/{transaction_id}/advisors/{advised_company_id}"
-        self.kfinance_api_client.fetch_advisors_for_company_in_merger(
-            transaction_id=transaction_id, advised_company_id=advised_company_id
-        )
-        self.kfinance_api_client.fetch.assert_called_with(expected_fetch_url)
-
     def test_fetch_estimate(self) -> None:
         company_id = 21719
         estimate_type = "consensus"

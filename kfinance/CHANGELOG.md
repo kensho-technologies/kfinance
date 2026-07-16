@@ -6,10 +6,13 @@
 - Replace merger info tool call with a batch version named `get_mergers_info_from_transaction_ids`,
   which also supports the option of including advisors in the response
 - Breaking changes:
+- Remove `get_advisors_for_company_in_transaction_from_identifier` tool, since it is redundant with
+  the `include_advisors` parameter on `get_mergers_info_from_transaction_ids`.
   - `merger_title` field has been removed from the `MergerOrAcquisition` object
   type and the `MergerSummary` type, since the newly added fields make that field
   redundant.
   - `get_merger_info_from_transaction_id` tool call has been removed.
+  - `get_advisors_for_company_in_transaction_from_identifier` tool call has been removed.
 
 ## v6.6.2
 - Split GetEstimatesFromIdentifiersResp into CIQ and VA variants
