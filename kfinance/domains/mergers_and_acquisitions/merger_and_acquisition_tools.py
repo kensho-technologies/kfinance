@@ -201,5 +201,3 @@ async def get_mergers_info_from_transaction_ids(
     )
     resp.raise_for_status()
     return MergersInfo.model_validate(resp.json())
-
-

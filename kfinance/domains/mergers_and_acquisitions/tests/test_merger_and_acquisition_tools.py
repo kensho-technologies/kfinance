@@ -195,4 +195,3 @@ class TestMergersAndAcquisitions:
         )
 
         assert ordered(resp) == ordered(expected_response)
-
