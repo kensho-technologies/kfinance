@@ -1,5 +1,19 @@
 # Changelog
 
+## v7.0.0
+- Include `status`, `start_date`, `target`, and `buyers` fields in `get_mergers_from_identifiers` 
+  tool call response and `MergerOrAcquisition` object.
+- Replace merger info tool call with a batch version named `get_mergers_info_from_transaction_ids`,
+  which also supports the option of including advisors in the response
+- Breaking changes:
+- Remove `get_advisors_for_company_in_transaction_from_identifier` tool, since it is redundant with
+  the `include_advisors` parameter on `get_mergers_info_from_transaction_ids`.
+  - `merger_title` field has been removed from the `MergerOrAcquisition` object
+  type and the `MergerSummary` type, since the newly added fields make that field
+  redundant.
+  - `get_merger_info_from_transaction_id` tool call has been removed.
+  - `get_advisors_for_company_in_transaction_from_identifier` tool call has been removed.
+
 ## v6.7.0
 - Add GetIssuerRatingsFromIdentifiers
 
@@ -16,6 +30,7 @@
 - Add GetVisibleAlphaConsensusEstimatesFromIdentifiers
 - Add GetVisibleAlphaFinancialLineItemFromIdentifiers
 - Add GetVisibleAlphaSegmentsFromIdentifiers
+
 ## v6.5.2
 - Fix fiscal year/quarter params not being passed correctly to the estimates API (start_year → fiscal_start_year, etc.)
 
