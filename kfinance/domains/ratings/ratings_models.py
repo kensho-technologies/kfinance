@@ -1,14 +1,19 @@
 from datetime import datetime
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
 
-T = TypeVar("T")
-
-
 class EntityInfo(BaseModel):
-    """Resolved entity information for a single identifier."""
+    """Resolved entity information for a single identifier.
+
+    An entity represents any rateable entity in the ratings system, including sovereigns.
+    The user will provide an identifier (e.g., "AAPL", "USA", "Microsoft")
+    which gets resolved to an entity_id.
+    
+    Note that for companies: entity_id == company_id and
+    for sovereigns/countries: entity_id is a unique ID for that country.
+    """
 
     entity_id: int
     entity_name: str | None
@@ -72,17 +77,17 @@ class EntityIdResp(BaseModel):
             return data
 
 
-class EntityInfoWithResult(BaseModel, Generic[T]):
-    """Entity information combined with result data.
+class EntityInfoWithResult(BaseModel):
+    """Entity information combined with issuer ratings data.
 
-    Similar to IdentifierInfoWithResult but uses entity_name instead of company_name
-    since entities can represent non-company entities (countries, sovereigns, etc.).
+    Uses entity_name instead of company_name since entities can represent
+    non-company entities (countries, sovereigns, etc.).
     """
 
     entity_name: str | None
     ticker: str | None
     country: str | None
-    data: T
+    data: "IssuerRatings"
 
 
 class RatingDetail(BaseModel):

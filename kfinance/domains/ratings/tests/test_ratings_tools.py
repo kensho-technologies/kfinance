@@ -133,7 +133,7 @@ class TestRatings:
         THEN we get back SPGI's ratings and an error for the non-existent identifier.
         """
 
-        expected_resp = GetIssuerRatingsFromIdentifiersResp(
+        expected_resp = GetIssuerRatingsFromIdentifiersResp.create(
             identifier_results={"SPGI": self.expected_spgi_ratings_response},
             identifier_info={"SPGI": SPGI_ENTITY_INFO},
             errors=[
@@ -184,9 +184,9 @@ class TestRatings:
             },
         )
 
-        expected_resp = GetIssuerRatingsFromIdentifiersResp(
+        expected_resp = GetIssuerRatingsFromIdentifiersResp.create(
             identifier_results={},
-            identifier_info={"SPGI": SPGI_ENTITY_INFO},
+            identifier_info={},
             errors=["SPGI: No ratings data available"],
         )
 
@@ -219,7 +219,7 @@ class TestRatings:
             },
         )
 
-        expected_resp = GetIssuerRatingsFromIdentifiersResp(
+        expected_resp = GetIssuerRatingsFromIdentifiersResp.create(
             identifier_results={},
             identifier_info={},
             errors=[

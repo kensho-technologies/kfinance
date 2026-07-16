@@ -2,7 +2,7 @@ from textwrap import dedent
 from typing import Type
 
 import httpx
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field
 
 from kfinance.client.permission_models import Permission
 from kfinance.domains.ratings.id_resolution import resolve_entities
@@ -26,26 +26,29 @@ class GetIssuerRatingsFromIdentifiersArgs(ToolArgsWithIdentifiers):
 class GetIssuerRatingsFromIdentifiersResp(ToolRespWithErrors):
     """Response for issuer ratings using EntityInfo instead of IdentificationTripleWithCompanyInfo."""
 
-    identifier_results: dict[str, IssuerRatings] = Field(exclude=True)
-    identifier_info: dict[str, EntityInfo] = Field(exclude=True)
+    results: dict[str, EntityInfoWithResult]
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def results(self) -> dict[str, EntityInfoWithResult[IssuerRatings]]:
-        """Combine ratings results with entity info."""
-        output: dict[str, EntityInfoWithResult[IssuerRatings]] = {}
+    @classmethod
+    def create(
+        cls,
+        identifier_results: dict[str, IssuerRatings],
+        identifier_info: dict[str, EntityInfo],
+        errors: list[str],
+    ) -> "GetIssuerRatingsFromIdentifiersResp":
+        """Factory method to create response by combining ratings with entity info."""
+        combined_results: dict[str, EntityInfoWithResult] = {}
 
-        for identifier, result in self.identifier_results.items():
-            entity_info = self.identifier_info[identifier]
+        for identifier, result in identifier_results.items():
+            entity_info = identifier_info[identifier]
 
-            output[identifier] = EntityInfoWithResult(
+            combined_results[identifier] = EntityInfoWithResult(
                 data=result,
                 entity_name=entity_info.entity_name,
                 ticker=entity_info.ticker,
                 country=entity_info.country,
             )
 
-        return output
+        return cls(results=combined_results, errors=errors)
 
 
 class GetIssuerRatingsFromIdentifiers(KfinanceTool):
@@ -102,7 +105,7 @@ async def get_issuer_ratings_from_identifiers(
 
     # check if identifiers were resolved
     if not entity_resp.identifiers_resolved:
-        return GetIssuerRatingsFromIdentifiersResp(
+        return GetIssuerRatingsFromIdentifiersResp.create(
             identifier_results={},
             identifier_info={},
             errors=errors,
@@ -136,7 +139,7 @@ async def get_issuer_ratings_from_identifiers(
         original_identifier = entity_id_to_identifier.get(entity_id, entity_id_str)
         errors.append(f"{original_identifier}: {error}")
 
-    return GetIssuerRatingsFromIdentifiersResp(
+    return GetIssuerRatingsFromIdentifiersResp.create(
         identifier_results=identifier_results,
         identifier_info=entity_resp.identifiers_resolved,
         errors=errors,
