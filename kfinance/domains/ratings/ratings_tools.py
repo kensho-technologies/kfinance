@@ -67,16 +67,16 @@ class GetIssuerRatingsFromIdentifiers(KfinanceTool):
 
         Examples:
         Query: "What are the credit ratings for Apple?"
-        Function: get_issuer_ratings_from_identifiers(identifiers=["AAPL"])
+        Function: get_issuer_ratings_from_identifiers(identifiers=["Apple"])
 
         Query: "Get issuer ratings for Microsoft and Amazon"
-        Function: get_issuer_ratings_from_identifiers(identifiers=["MSFT", "AMZN"])
+        Function: get_issuer_ratings_from_identifiers(identifiers=["Microsoft", "Amazon"])
 
         Query: "What is the sovereign credit rating for the United States?"
-        Function: get_issuer_ratings_from_identifiers(identifiers=["USA"])
+        Function: get_issuer_ratings_from_identifiers(identifiers=["United States"])
 
         Query: "Compare ratings for JPMorgan Chase and Bank of America"
-        Function: get_issuer_ratings_from_identifiers(identifiers=["JPM", "BAC"])
+        Function: get_issuer_ratings_from_identifiers(identifiers=["JPMorgan Chase", "Bank of America"])
     """).strip()
     args_schema: Type[BaseModel] = GetIssuerRatingsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
