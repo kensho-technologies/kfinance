@@ -76,7 +76,7 @@ class GetIssuerRatingsFromIdentifiers(KfinanceTool):
         Function: get_issuer_ratings_from_identifiers(identifiers=["JPM", "BAC"])
     """).strip()
     args_schema: Type[BaseModel] = GetIssuerRatingsFromIdentifiersArgs
-    accepted_permissions: set[Permission] | None = {Permission.RatingsPermission}
+    accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
 
     async def _arun(
         self,

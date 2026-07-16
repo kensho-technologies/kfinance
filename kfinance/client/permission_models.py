@@ -19,7 +19,6 @@ class Permission(StrEnum):
     ProfessionalsPermission = "ProfessionalsPermission"
     VisibleAlphaPermission = "VisibleAlphaPermission"
     VisibleAlphaPremiumPermission = "VisibleAlphaPremiumPermission"
-    RatingsPermission = "RatingsPermission"
     # These permissions are not used by the client, but some users may have these permissions
     # Having them listed here will prevent an avoidable KeyError exception being logged.
     OnlyStaffPermission = "OnlyStaffPermission"
