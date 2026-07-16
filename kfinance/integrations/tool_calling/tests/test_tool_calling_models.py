@@ -27,9 +27,36 @@ from kfinance.domains.companies.company_tools import (
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     IdentifierInfoWithResult,
+    ToolArgsWithIdentifiers,
     ToolRespWithIdInfoAndErrors,
     ValidQuarter,
 )
+
+
+class TestIdentifiersCoercion:
+    """LLMs sometimes pass identifiers as a bare string or a stringified JSON list."""
+
+    @pytest.mark.parametrize(
+        "input_val, expected",
+        [
+            pytest.param(["IBM", "AAPL"], ["IBM", "AAPL"], id="normal list unchanged"),
+            pytest.param("IBM", ["IBM"], id="bare string wrapped in list"),
+            pytest.param('["IBM", "AAPL"]', ["IBM", "AAPL"], id="stringified list parsed"),
+            pytest.param('["IBM"]', ["IBM"], id="stringified single-element list"),
+            pytest.param(" IBM ", ["IBM"], id="bare string stripped"),
+            pytest.param("[not json", ["[not json"], id="malformed bracket string treated as bare"),
+        ],
+    )
+    def test_coerce_identifiers(self, input_val: Any, expected: list[str]) -> None:
+        result = ToolArgsWithIdentifiers.model_validate({"identifiers": input_val})
+        assert result.identifiers == expected
+
+    def test_empty_string_raises(self) -> None:
+        """min_length=1 still enforced after coercion wraps bare string."""
+        # A bare empty string becomes [""] which has length 1 — that's fine.
+        # But an empty list should still fail.
+        with pytest.raises(ValidationError):
+            ToolArgsWithIdentifiers.model_validate({"identifiers": "[]"})
 
 
 class TestGetEndpointsFromToolCallsWithGrounding:
