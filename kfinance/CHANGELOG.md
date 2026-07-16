@@ -14,6 +14,9 @@
   - `get_merger_info_from_transaction_id` tool call has been removed.
   - `get_advisors_for_company_in_transaction_from_identifier` tool call has been removed.
 
+## v6.7.0
+- Add GetIssuerRatingsFromIdentifiers
+
 ## v6.6.3
 - Gracefully handle stringified `identifiers` params
 

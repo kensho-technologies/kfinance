@@ -46,6 +46,7 @@ from kfinance.domains.professionals.professionals_tools import (
     GetProfessionalsFromIdentifiers,
     GetProfessionalsFromPersonIds,
 )
+from kfinance.domains.ratings.ratings_tools import GetIssuerRatingsFromIdentifiers
 from kfinance.domains.rounds_of_funding.rounds_of_funding_tools import (
     GetFundingSummaryFromIdentifiers,
     GetRoundsOfFundingFromIdentifiers,
@@ -114,4 +115,6 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetGuidanceFromIdentifiers,
     GetConsensusTargetPriceFromIdentifiers,
     GetAnalystRecommendationsFromIdentifiers,
+    # Ratings
+    GetIssuerRatingsFromIdentifiers,
 ]
