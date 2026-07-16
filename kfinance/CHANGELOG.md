@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.7.0
+- Add GetIssuerRatingsFromIdentifiers
+
 ## v6.6.3
 - Gracefully handle stringified `identifiers` params
 

@@ -51,6 +51,7 @@ from kfinance.domains.professionals.professionals_models import (
     ProfessionalType,
     Timeframe,
 )
+from kfinance.domains.ratings.ratings_models import IssuerRatingsResp
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
     AdvisorsResp,
     RoundOfFundingInfo,
@@ -1105,3 +1106,23 @@ class KFinanceApiClient:
 
         response_data = self.fetch(url, method="POST", request_body=request_body)
         return KeyDevsResp.model_validate(response_data)
+
+    def fetch_issuer_ratings(
+        self,
+        entity_ids: list[int],
+    ) -> IssuerRatingsResp:
+        """Get issuer-level ratings for one or more entities.
+
+        :param entity_ids: The list of entity IDs to fetch issuer-level ratings for.
+        :type entity_ids: list[int]
+        :return: Issuer Rating response containing ratings grouped by identifier.
+        :rtype: IssuerRatingsResp
+        """
+        url = f"{self.url_base}ratings/issuer_ratings/"
+
+        request_body: dict[str, Any] = {
+            "entity_ids": entity_ids,
+        }
+
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+        return IssuerRatingsResp.model_validate(response_data)
