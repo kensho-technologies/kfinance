@@ -61,6 +61,7 @@ def add_spgi_ratings_mock_resp(httpx_mock: HTTPXMock) -> None:
                     "ratings": {
                         "ICR": {
                             "FCLONG": {
+                                "source": "S&P Global",
                                 "last_review_date": "2025-05-22T01:13:55Z",
                                 "latest": {
                                     "rating": "AA+",
@@ -88,6 +89,7 @@ class TestRatings:
         ratings={
             "ICR": {
                 "FCLONG": RatingTypeData(
+                    source="S&P Global",
                     last_review_date=datetime(2025, 5, 22, 1, 13, 55, tzinfo=timezone.utc),
                     latest=RatingDetail(
                         rating="AA+",
