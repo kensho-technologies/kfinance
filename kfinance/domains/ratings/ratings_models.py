@@ -105,6 +105,7 @@ class RatingDetail(BaseModel):
 class RatingTypeData(BaseModel):
     """Data for a single rating type (e.g., FCLONG, STDSHORT)."""
 
+    source: str = "S&P Global"
     last_review_date: datetime | None = Field(default=None)
     latest: RatingDetail
     history: list[RatingDetail] = Field(default_factory=list)
