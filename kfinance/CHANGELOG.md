@@ -1,5 +1,8 @@
 # Changelog
 
+## 7.1.0
+-- Add additional data items to mergers info tool call response
+
 ## v7.0.2
 - Modify GetIssuerRatingsFromIdentifiers tool description.
 
