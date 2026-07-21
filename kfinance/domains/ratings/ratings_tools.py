@@ -54,13 +54,13 @@ class GetIssuerRatingsFromIdentifiersResp(ToolRespWithErrors):
 class GetIssuerRatingsFromIdentifiers(KfinanceTool):
     name: str = "get_issuer_ratings_from_identifiers"
     description: str = dedent("""
-        Get issuer-level credit ratings for one or more entities (companies, sovereigns, municipalities, etc.).
+        Get issuer-level credit ratings for one or more entities (companies and sovereigns).
 
         Returns ratings from credit rating agencies organized by organization type (e.g., ICR) and rating type
         (e.g., FCLONG for foreign currency long-term, STDSHORT for short-term). Each rating includes the current
         rating, rating action, credit watch status, outlook, and historical ratings.
 
-        - Supports multiple identifiers in a single call (tickers, company names, country codes, ISINs, CUSIPs).
+        - Supports multiple identifiers in a single call (tickers, company IDs, company names, country names, ISO alpha-3 codes, ISINs, CUSIPs).
         - Works with both corporate entities (e.g., "AAPL", "Microsoft") and sovereign entities (e.g., "USA", "Germany").
         - Returns the latest rating along with full rating history for each entity.
         - Includes outlook (Stable, Positive, Negative) and credit watch information when available.
