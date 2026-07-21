@@ -87,6 +87,9 @@ class GetMergersInfoFromTransactionIdsArgs(BaseModel):
     include_advisors: bool = Field(
         default=False, description="Whether to include advisors for participants in the response"
     )
+    include_comments: bool = Field(
+        default=False, description="Whether to include transaction comments in the response"
+    )
 
 
 class GetMergersInfoFromTransactionIds(KfinanceTool):
@@ -111,21 +114,25 @@ class GetMergersInfoFromTransactionIds(KfinanceTool):
         # Function 1 returns all M&A's that involved Vodafone. Extract the <transaction_id> from the response where Vodafone was the buyer and Mannesmann was the target.
         Function 2: get_mergers_info_from_transaction_ids(transaction_ids=[<transaction_id>])
 
-        Query: "List Microsoft's acquisitions over $5 billion announced since 2020, along with the advisors for the acquisitions."
+        Query: "List Microsoft's acquisitions over $5 billion announced since 2020, along with the advisors and comments for the acquisitions."
         Function 1: get_mergers_from_identifiers(identifiers=["Microsoft"], start_date="2020-01-01")
-        # Function 1 returns transactions where Microsoft was the buyer, each with a transaction_id. Deal value and announcement date are NOT in that response, so call get_mergers_info_from_transaction_ids, passing in EVERY candidate transaction_id to check the $5B threshold, the announcement date, and advisors.
-        Function 2: get_mergers_info_from_transaction_ids(transaction_ids=[<transaction_id_1>, <transaction_id_2>, <transaction_id_3>], include_advisors=True)
+        # Function 1 returns transactions where Microsoft was the buyer, each with a transaction_id. Deal value and announcement date are NOT in that response, so call get_mergers_info_from_transaction_ids, passing in EVERY candidate transaction_id to check the $5B threshold, the announcement date, advisors, and comments.
+        Function 2: get_mergers_info_from_transaction_ids(transaction_ids=[<transaction_id_1>, <transaction_id_2>, <transaction_id_3>], include_advisors=True, include_comments=True)
     """).strip()
     args_schema: Type[BaseModel] = GetMergersInfoFromTransactionIdsArgs
     accepted_permissions: set[Permission] | None = {Permission.MergersPermission}
 
     async def _arun(
-        self, transaction_ids: list[int], include_advisors: bool = False
+        self,
+        transaction_ids: list[int],
+        include_advisors: bool = False,
+        include_comments: bool = False,
     ) -> MergersInfo:
         """"""
         return await get_mergers_info_from_transaction_ids(
             transaction_ids=transaction_ids,
             include_advisors=include_advisors,
+            include_comments=include_comments,
             httpx_client=self.kfinance_client.httpx_client,
         )
 
@@ -192,12 +199,17 @@ async def fetch_mergers_from_company_id(
 async def get_mergers_info_from_transaction_ids(
     transaction_ids: list[int],
     include_advisors: bool,
+    include_comments: bool,
     httpx_client: httpx.AsyncClient,
 ) -> MergersInfo:
     """Fetch detailed merger info for a transaction ID."""
     resp = await httpx_client.post(
         url="/mergers/info",
-        json={"transaction_ids": transaction_ids, "include_advisors": include_advisors},
+        json={
+            "transaction_ids": transaction_ids,
+            "include_advisors": include_advisors,
+            "include_comments": include_comments,
+        },
     )
     resp.raise_for_status()
     return MergersInfo.model_validate(resp.json())

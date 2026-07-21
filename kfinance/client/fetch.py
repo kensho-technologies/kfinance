@@ -863,7 +863,10 @@ class KFinanceApiClient:
         return MergersResp.model_validate(self.fetch(url))
 
     def fetch_mergers_info(
-        self, transaction_ids: list[int], include_advisors: bool = False
+        self,
+        transaction_ids: list[int],
+        include_advisors: bool = False,
+        include_comments: bool = False,
     ) -> MergersInfo:
         """Fetches information about the given mergers or acquisitions, including the timeline, the participants, and the considerations.
 
@@ -875,7 +878,11 @@ class KFinanceApiClient:
         :rtype: MergerInfo
         """
         url = f"{self.url_base}mergers/info"
-        request_body = {"transaction_ids": transaction_ids, "include_advisors": include_advisors}
+        request_body = {
+            "transaction_ids": transaction_ids,
+            "include_advisors": include_advisors,
+            "include_comments": include_comments,
+        }
 
         return MergersInfo.model_validate(self.fetch(url, method="POST", request_body=request_body))
 
