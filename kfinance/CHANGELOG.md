@@ -1,5 +1,8 @@
 # Changelog
 
+## v7.0.2
+- Modify GetIssuerRatingsFromIdentifiers tool description.
+
 ## v7.0.1
 - Add 'source' to GetIssuerRatingsFromIdentifiers
 
