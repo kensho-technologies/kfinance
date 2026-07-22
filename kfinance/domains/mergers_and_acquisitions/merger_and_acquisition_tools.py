@@ -95,7 +95,7 @@ class GetMergersInfoFromTransactionIdsArgs(BaseModel):
 class GetMergersInfoFromTransactionIds(KfinanceTool):
     name: str = "get_mergers_info_from_transaction_ids"
     description: str = dedent("""
-        Provides comprehensive information about merger or acquisition transactions, including their timeline (announced date, closed date), participants' company_names, company_ids, and advisors if advisors are requested (participants are categorized as target, buyers, sellers), and financial consideration details (including monetary values).
+        Provides comprehensive information about merger or acquisition transactions, including their timeline (announced date, closed date), participants' company_names, company_ids, and advisors if advisors are requested (participants are categorized as target, buyers, sellers), financial consideration details (including monetary values), and high-level merger details (including a comment about the merger if comments are requested).
 
         Use this tool for questions about announcement dates, deal/transaction values or amounts paid, completion status, and transaction details.
 
@@ -114,9 +114,9 @@ class GetMergersInfoFromTransactionIds(KfinanceTool):
         # Function 1 returns all M&A's that involved Vodafone. Extract the <transaction_id> from the response where Vodafone was the buyer and Mannesmann was the target.
         Function 2: get_mergers_info_from_transaction_ids(transaction_ids=[<transaction_id>])
 
-        Query: "List Microsoft's acquisitions over $5 billion announced since 2020, along with the advisors and comments for the acquisitions."
+        Query: "List Microsoft's acquisitions over $5 billion announced since 2020, along with the advisors and context for the acquisitions."
         Function 1: get_mergers_from_identifiers(identifiers=["Microsoft"], start_date="2020-01-01")
-        # Function 1 returns transactions where Microsoft was the buyer, each with a transaction_id. Deal value and announcement date are NOT in that response, so call get_mergers_info_from_transaction_ids, passing in EVERY candidate transaction_id to check the $5B threshold, the announcement date, advisors, and comments.
+        # Function 1 returns transactions where Microsoft was the buyer, each with a transaction_id. Deal value and announcement date are NOT in that response, so call get_mergers_info_from_transaction_ids, passing in EVERY candidate transaction_id to check the $5B threshold, the announcement date, and advisors. Use include_comments to include a comment that provides additional details and context for each transaction.
         Function 2: get_mergers_info_from_transaction_ids(transaction_ids=[<transaction_id_1>, <transaction_id_2>, <transaction_id_3>], include_advisors=True, include_comments=True)
     """).strip()
     args_schema: Type[BaseModel] = GetMergersInfoFromTransactionIdsArgs
