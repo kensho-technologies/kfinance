@@ -1,5 +1,9 @@
 # Changelog
 
+## v7.0.3
+- Fix swapped `dataitemid`/`spgi_name` for `gain_from_sale_of_assets` and
+  `gain_from_sale_of_investments` line item metadata.
+
 ## v7.0.2
 - Modify GetIssuerRatingsFromIdentifiers tool description.
 
