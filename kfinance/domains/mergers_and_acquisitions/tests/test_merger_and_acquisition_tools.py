@@ -129,13 +129,33 @@ class TestMergersAndAcquisitions:
             {"status": "Closed", "date": "2000-09-12"},
         ]
         participants_resp = {
-            "target": {"company_id": 31696, "company_name": "MongoMusic, Inc.", "advisors": None},
+            "target": {
+                "company_id": 31696,
+                "company_name": "MongoMusic, Inc.",
+                "percent_ownership": None,
+                "advisors": [],
+            },
             "buyers": [
-                {"company_id": 21835, "company_name": "Microsoft Corporation", "advisors": None}
+                {
+                    "company_id": 21835,
+                    "company_name": "Microsoft Corporation",
+                    "percent_ownership": "100.00",
+                    "advisors": [],
+                }
             ],
             "sellers": [
-                {"company_id": 18805, "company_name": "Angel Investors L.P.", "advisors": None},
-                {"company_id": 20087, "company_name": "Draper Richards, L.P.", "advisors": None},
+                {
+                    "company_id": 18805,
+                    "company_name": "Angel Investors L.P.",
+                    "percent_ownership": None,
+                    "advisors": [],
+                },
+                {
+                    "company_id": 20087,
+                    "company_name": "Draper Richards, L.P.",
+                    "percent_ownership": None,
+                    "advisors": [],
+                },
             ],
         }
         consideration_resp = {
@@ -143,6 +163,20 @@ class TestMergersAndAcquisitions:
             "current_calculated_gross_total_transaction_value": "51609375.000000",
             "current_calculated_implied_equity_value": "51609375.000000",
             "current_calculated_implied_enterprise_value": "51609375.000000",
+            "presentation_gross_total_transaction_value": "51609375.000000",
+            "presentation_implied_equity_value": "51609375.000000",
+            "presentation_implied_enterprise_value": "51609375.000000",
+            "target_stock_premium_1_day_prior": None,
+            "target_stock_premium_7_days_prior": None,
+            "target_stock_premium_30_days_prior": None,
+            "current_calculated_tev_ebit": None,
+            "current_calculated_tev_ebitda": None,
+            "current_calculated_tev_revenues": None,
+            "current_calculated_equity_net_income": None,
+            "presentation_tev_ebit": None,
+            "presentation_tev_ebitda": None,
+            "presentation_tev_revenues": None,
+            "presentation_equity_net_income": None,
             "details": [
                 {
                     "scenario": "Stock Lump Sum",
@@ -153,6 +187,11 @@ class TestMergersAndAcquisitions:
                 }
             ],
         }
+        details_resp = {
+            "buy_side_termination_fee": None,
+            "sell_side_termination_fee": None,
+            "comment": "Microsoft Corp. (Nasdaq: MSFT) acquired MongoMusic Inc. for approximately $51.6 million in stock on October 12, 2000.",
+        }
 
         error_resp = f"No merger found for transaction_id: {error_transaction_id}"
 
@@ -162,6 +201,7 @@ class TestMergersAndAcquisitions:
             match_json={
                 "transaction_ids": [transaction_id, error_transaction_id],
                 "include_advisors": True,
+                "include_comments": True,
             },
             json={
                 "results": {
@@ -169,6 +209,7 @@ class TestMergersAndAcquisitions:
                         "timeline": timeline_resp,
                         "participants": participants_resp,
                         "consideration": consideration_resp,
+                        "details": details_resp,
                     },
                     error_transaction_id: {"error": error_resp},
                 }
@@ -182,6 +223,7 @@ class TestMergersAndAcquisitions:
                         "timeline": timeline_resp,
                         "participants": participants_resp,
                         "consideration": consideration_resp,
+                        "details": details_resp,
                     },
                     error_transaction_id: {"error": error_resp},
                 }
@@ -191,6 +233,7 @@ class TestMergersAndAcquisitions:
         resp = await get_mergers_info_from_transaction_ids(
             transaction_ids=[transaction_id, error_transaction_id],
             include_advisors=True,
+            include_comments=True,
             httpx_client=httpx_client,
         )
 

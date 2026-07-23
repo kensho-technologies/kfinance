@@ -25,6 +25,8 @@ class AdvisorResp(BaseModel):
     advisor_company_id: CompanyId
     advisor_company_name: str
     advisor_type_name: str | None
+    advisor_fee_amount: Decimal | None
+    advisor_fee_currency: str | None
 
 
 class MergerTimelineElement(BaseModel):
@@ -33,7 +35,14 @@ class MergerTimelineElement(BaseModel):
 
 
 class MergerParticipant(CompanyIdAndName):
+    percent_ownership: Decimal | None
     advisors: list[AdvisorResp] | None
+
+
+class MergerDetails(BaseModel):
+    buy_side_termination_fee: Decimal | None
+    sell_side_termination_fee: Decimal | None
+    comment: str | None
 
 
 class MergerParticipants(BaseModel):
@@ -55,6 +64,20 @@ class MergerConsideration(BaseModel):
     current_calculated_gross_total_transaction_value: Decimal | None = None
     current_calculated_implied_equity_value: Decimal | None = None
     current_calculated_implied_enterprise_value: Decimal | None = None
+    presentation_gross_total_transaction_value: Decimal | None = None
+    presentation_implied_equity_value: Decimal | None = None
+    presentation_implied_enterprise_value: Decimal | None = None
+    target_stock_premium_1_day_prior: Decimal | None = None
+    target_stock_premium_7_days_prior: Decimal | None = None
+    target_stock_premium_30_days_prior: Decimal | None = None
+    current_calculated_tev_ebit: Decimal | None = None
+    current_calculated_tev_ebitda: Decimal | None = None
+    current_calculated_tev_revenues: Decimal | None = None
+    current_calculated_equity_net_income: Decimal | None = None
+    presentation_tev_ebit: Decimal | None = None
+    presentation_tev_ebitda: Decimal | None = None
+    presentation_tev_revenues: Decimal | None = None
+    presentation_equity_net_income: Decimal | None = None
     details: list[MergerConsiderationDetail]
 
 
@@ -62,6 +85,7 @@ class MergerInfo(BaseModel):
     timeline: list[MergerTimelineElement]
     participants: MergerParticipants
     consideration: MergerConsideration | None = None
+    details: MergerDetails | None
 
 
 class NoMergerFound(BaseModel):
