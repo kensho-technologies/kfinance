@@ -1802,6 +1802,7 @@ class Client:
         refresh_token: Optional[str] = None,
         client_id: Optional[str] = None,
         private_key: Optional[str] = None,
+        kid: Optional[str] = None,
         thread_pool: Optional[ThreadPoolExecutor] = None,
         api_host: str = DEFAULT_API_HOST,
         api_version: int = DEFAULT_API_VERSION,
@@ -1816,6 +1817,8 @@ class Client:
         :type client_id: str, Optional
         :param private_key: users private key that corresponds to the registered public sent to support@kensho.com
         :type private_key: str, Optional
+        :param kid: key ID of the registered public key, required when more than one key is active
+        :type kid: str, Optional
         :param thread_pool: the thread pool used to execute batch requests. The number of concurrent requests is
         capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when batch
         requests are made.
@@ -1844,6 +1847,7 @@ class Client:
             self.kfinance_api_client = KFinanceApiClient(
                 client_id=client_id,
                 private_key=private_key,
+                kid=kid,
                 api_host=api_host,
                 api_version=api_version,
                 okta_host=okta_host,

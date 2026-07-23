@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.2.0
+- Add optional `kid` parameter to `Client`, stamped on the private-key-JWT client assertion so
+  users with more than one active public key (e.g. mid key-rotation) can authenticate.
+
 ## 7.1.0
 - Add additional data items to `get_mergers_info_from_transaction_ids` tool call response.
 - Add `include_comments` parameter to `get_mergers_info_from_transaction_ids` tool call.

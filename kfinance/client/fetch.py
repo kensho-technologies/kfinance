@@ -84,6 +84,7 @@ class KFinanceApiClient:
         refresh_token: Optional[str] = None,
         client_id: Optional[str] = None,
         private_key: Optional[str] = None,
+        kid: Optional[str] = None,
         thread_pool: Optional[ThreadPoolExecutor] = None,
         api_host: str = DEFAULT_API_HOST,
         api_version: int = DEFAULT_API_VERSION,
@@ -98,6 +99,8 @@ class KFinanceApiClient:
         :type client_id: str, Optional
         :param private_key: users private key that corresponds to the registered public sent to support@kensho.com
         :type private_key: str, Optional
+        :param kid: key ID of the registered public key, required when more than one key is active
+        :type kid: str, Optional
         :param thread_pool: the thread pool used to execute batch requests. The number of concurrent requests is
         capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when batch
         requests are made.
@@ -119,6 +122,7 @@ class KFinanceApiClient:
         elif client_id is not None and private_key is not None:
             self.client_id = client_id
             self.private_key = private_key
+            self.kid = kid
             self._access_token_refresh_func = self._get_access_token_via_keypair
         else:
             raise RuntimeError("No credentials for any authentication strategy were provided")
@@ -202,6 +206,7 @@ class KFinanceApiClient:
             },
             self.private_key,
             algorithm="RS256",
+            headers={"kid": self.kid} if self.kid else None,
         )
         response = requests.post(
             f"{self.okta_host}/oauth2/{self.okta_auth_server}/v1/token",
