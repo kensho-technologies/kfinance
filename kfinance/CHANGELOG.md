@@ -1,5 +1,9 @@
 # Changelog
 
+## v7.1.1
+- Fix swapped `dataitemid`/`spgi_name` for `gain_from_sale_of_assets` and
+  `gain_from_sale_of_investments` line item metadata.
+
 ## 7.1.0
 - Add additional data items to `get_mergers_info_from_transaction_ids` tool call response.
 - Add `include_comments` parameter to `get_mergers_info_from_transaction_ids` tool call.

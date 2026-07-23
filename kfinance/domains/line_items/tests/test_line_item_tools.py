@@ -358,3 +358,14 @@ class TestFindSimilarLineItems:
             assert isinstance(item.score, float)
             assert item.name in self.TEST_DESCRIPTORS
             assert item.description == self.TEST_DESCRIPTORS[item.name]
+
+
+def test_sale_line_item_dataitemids_not_swapped() -> None:
+    # ponytail: regression guard for the assets/investments swap (dataitemids 56/62)
+    from kfinance.domains.line_items.line_item_models import LINE_ITEMS
+
+    by_name = {item["name"]: item for item in LINE_ITEMS}
+    assets = by_name["gain_from_sale_of_assets"]
+    invest = by_name["gain_from_sale_of_investments"]
+    assert (assets["dataitemid"], assets["spgi_name"]) == (56, "Gain (Loss) On Sale Of Assets")
+    assert (invest["dataitemid"], invest["spgi_name"]) == (62, "Gain (Loss) On Sale Of Invest.")

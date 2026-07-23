@@ -409,15 +409,15 @@ LINE_ITEMS: list[LineItemType] = [
     {
         "name": "gain_from_sale_of_assets",
         "aliases": set(),
-        "dataitemid": 62,
-        "spgi_name": "Gain (Loss) On Sale Of Invest.",
+        "dataitemid": 56,
+        "spgi_name": "Gain (Loss) On Sale Of Assets",
         "description": "Gain recognized from disposing tangible or intangible assets.",
     },
     {
         "name": "gain_from_sale_of_investments",
         "aliases": set(),
-        "dataitemid": 56,
-        "spgi_name": "Gain (Loss) On Sale Of Assets",
+        "dataitemid": 62,
+        "spgi_name": "Gain (Loss) On Sale Of Invest.",
         "description": "Gain realized from selling investment holdings.",
     },
     {
