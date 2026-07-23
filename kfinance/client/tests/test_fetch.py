@@ -4,6 +4,8 @@ import time
 from unittest import TestCase
 from unittest.mock import MagicMock
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 import jwt
 from pydantic import ValidationError
 import pytest
@@ -927,3 +929,35 @@ class TestAccessTokenRefresh:
         assert not any(thread.is_alive() for thread in threads), "access_token deadlocked"
         assert refresh_calls == 1
         assert tokens == [new_token] * 10
+
+
+class TestKeypairAssertionKid:
+    """The client assertion built by keypair auth carries the kid header when set."""
+
+    TOKEN_URL = "https://kensho.okta.com/oauth2/default/v1/token"
+
+    @staticmethod
+    def _private_key_pem() -> str:
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        return key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        ).decode()
+
+    def _captured_assertion(self, httpx2_mock: Router, kid: str | None) -> str:
+        route = httpx2_mock.post(self.TOKEN_URL).respond(json={"access_token": "fake_token"})
+        client = KFinanceApiClient(
+            client_id="testapp", private_key=self._private_key_pem(), kid=kid
+        )
+        client._get_access_token_via_keypair()  # noqa: SLF001
+        request_body = route.calls.last.request.content.decode()
+        return dict(pair.split("=", 1) for pair in request_body.split("&"))["client_assertion"]
+
+    def test_assertion_stamps_kid_header(self, httpx2_mock: Router) -> None:
+        assertion = self._captured_assertion(httpx2_mock, kid="my-key-id")
+        assert jwt.get_unverified_header(assertion)["kid"] == "my-key-id"
+
+    def test_assertion_omits_kid_header_when_unset(self, httpx2_mock: Router) -> None:
+        assertion = self._captured_assertion(httpx2_mock, kid=None)
+        assert "kid" not in jwt.get_unverified_header(assertion)

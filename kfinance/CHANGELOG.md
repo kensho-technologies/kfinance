@@ -1,5 +1,9 @@
 # Changelog
 
+## v8.1.0
+- Add optional `kid` parameter to `Client`, stamped on the private-key-JWT client assertion so
+  users with more than one active public key (e.g. mid key-rotation) can authenticate.
+
 ## v8.0.2
 - Reject non-string `line_item` values in `get_financial_line_item_from_identifiers` before they reach `.lower()`. A list now returns a clear "one line item per call" validation error instead of an `AttributeError` crash (KFINANCE-MCP-5D).
 
