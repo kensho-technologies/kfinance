@@ -1,6 +1,9 @@
 from unittest import TestCase
 from unittest.mock import MagicMock
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+import jwt
 from pydantic import ValidationError
 import pytest
 from requests_mock import Mocker
@@ -760,3 +763,36 @@ class TestFetchIssuerRatings:
         assert "21719" in resp.results
         assert "21835" in resp.results
         assert resp.errors == {}
+
+
+class TestKeypairAssertionKid:
+    """The client assertion built by keypair auth carries the kid header when set."""
+
+    TOKEN_URL = "https://kensho.okta.com/oauth2/default/v1/token"
+
+    @staticmethod
+    def _private_key_pem() -> str:
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        return key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        ).decode()
+
+    def _captured_assertion(self, requests_mock: Mocker, kid: str | None) -> str:
+        requests_mock.post(url=self.TOKEN_URL, json={"access_token": "fake_token"})
+        client = KFinanceApiClient(
+            client_id="testapp", private_key=self._private_key_pem(), kid=kid
+        )
+        client._get_access_token_via_keypair()  # noqa: SLF001
+        request_body = requests_mock.last_request.text
+        assertion = dict(pair.split("=", 1) for pair in request_body.split("&"))["client_assertion"]
+        return assertion
+
+    def test_assertion_stamps_kid_header(self, requests_mock: Mocker) -> None:
+        assertion = self._captured_assertion(requests_mock, kid="my-key-id")
+        assert jwt.get_unverified_header(assertion)["kid"] == "my-key-id"
+
+    def test_assertion_omits_kid_header_when_unset(self, requests_mock: Mocker) -> None:
+        assertion = self._captured_assertion(requests_mock, kid=None)
+        assert "kid" not in jwt.get_unverified_header(assertion)
