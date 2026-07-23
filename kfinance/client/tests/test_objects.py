@@ -421,28 +421,52 @@ MOCK_MERGERS_DB = {
                 "target": {
                     "company_id": 31696,
                     "company_name": "MongoMusic, Inc.",
+                    "percent_ownership": None,
                     "advisors": None,
                 },
                 "buyers": [
-                    {"company_id": 21835, "company_name": "Microsoft Corporation", "advisors": None}
+                    {
+                        "company_id": 21835,
+                        "company_name": "Microsoft Corporation",
+                        "percent_ownership": "100.00",
+                        "advisors": None,
+                    }
                 ],
                 "sellers": [
-                    {"company_id": 18805, "company_name": "Angel Investors L.P.", "advisors": None},
+                    {
+                        "company_id": 18805,
+                        "company_name": "Angel Investors L.P.",
+                        "percent_ownership": None,
+                        "advisors": None,
+                    },
                     {
                         "company_id": 20087,
                         "company_name": "Draper Richards, L.P.",
+                        "percent_ownership": None,
                         "advisors": None,
                     },
-                    {"company_id": 22103, "company_name": "BRV Partners, LLC", "advisors": None},
-                    {"company_id": 23745, "company_name": "Venture Frogs, LLC", "advisors": None},
+                    {
+                        "company_id": 22103,
+                        "company_name": "BRV Partners, LLC",
+                        "percent_ownership": None,
+                        "advisors": None,
+                    },
+                    {
+                        "company_id": 23745,
+                        "company_name": "Venture Frogs, LLC",
+                        "percent_ownership": None,
+                        "advisors": None,
+                    },
                     {
                         "company_id": 105902,
                         "company_name": "ARGUS Capital International Limited",
+                        "percent_ownership": None,
                         "advisors": None,
                     },
                     {
                         "company_id": 880300,
                         "company_name": "Sony Music Entertainment, Inc.",
+                        "percent_ownership": None,
                         "advisors": None,
                     },
                 ],
@@ -452,6 +476,20 @@ MOCK_MERGERS_DB = {
                 "current_calculated_gross_total_transaction_value": "51609375.000000",
                 "current_calculated_implied_equity_value": "51609375.000000",
                 "current_calculated_implied_enterprise_value": "51609375.000000",
+                "presentation_gross_total_transaction_value": "51609375.000000",
+                "presentation_implied_equity_value": "51609375.000000",
+                "presentation_implied_enterprise_value": "51609375.000000",
+                "target_stock_premium_1_day_prior": None,
+                "target_stock_premium_7_days_prior": None,
+                "target_stock_premium_30_days_prior": None,
+                "current_calculated_tev_ebit": None,
+                "current_calculated_tev_ebitda": None,
+                "current_calculated_tev_revenues": None,
+                "current_calculated_equity_net_income": None,
+                "presentation_tev_ebit": None,
+                "presentation_tev_ebitda": None,
+                "presentation_tev_revenues": None,
+                "presentation_equity_net_income": None,
                 "details": [
                     {
                         "scenario": "Stock Lump Sum",
@@ -461,6 +499,11 @@ MOCK_MERGERS_DB = {
                         "current_calculated_gross_value_of_consideration": "51609375.000000",
                     }
                 ],
+            },
+            "details": {
+                "buy_side_termination_fee": None,
+                "sell_side_termination_fee": None,
+                "comment": "Microsoft Corp. (Nasdaq: MSFT) acquired MongoMusic Inc. for approximately $51.6 million in stock on October 12, 2000.",
             },
         }
     )

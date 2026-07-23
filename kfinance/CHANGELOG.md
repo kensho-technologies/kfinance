@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.1.0
+- Add additional data items to `get_mergers_info_from_transaction_ids` tool call response.
+- Add `include_comments` parameter to `get_mergers_info_from_transaction_ids` tool call.
+
 ## v7.0.2
 - Modify GetIssuerRatingsFromIdentifiers tool description.
 
