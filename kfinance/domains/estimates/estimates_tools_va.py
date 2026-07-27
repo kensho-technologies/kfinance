@@ -1,5 +1,5 @@
 from textwrap import dedent
-from typing import Any, Literal, Type
+from typing import Any, Literal, Type, cast
 
 import httpx
 from pydantic import BaseModel, Field
@@ -95,8 +95,8 @@ class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
         period_type: EstimatePeriodType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
-        start_quarter: Literal[1, 2, 3, 4] | None = None,
-        end_quarter: Literal[1, 2, 3, 4] | None = None,
+        start_quarter: Literal["1", "2", "3", "4"] | None = None,
+        end_quarter: Literal["1", "2", "3", "4"] | None = None,
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
         estimate_search: str | None = None,
@@ -110,8 +110,8 @@ class GetVisibleAlphaConsensusEstimatesFromIdentifiers(KfinanceTool):
             period_type=period_type,
             start_year=start_year,
             end_year=end_year,
-            start_quarter=start_quarter,
-            end_quarter=end_quarter,
+            start_quarter=cast(Literal[1, 2, 3, 4], int(start_quarter)) if start_quarter else None,
+            end_quarter=cast(Literal[1, 2, 3, 4], int(end_quarter)) if end_quarter else None,
             num_periods_forward=num_periods_forward,
             num_periods_backward=num_periods_backward,
             estimate_search=estimate_search,

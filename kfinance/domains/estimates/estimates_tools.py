@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from textwrap import dedent
-from typing import Literal, Type
+from typing import Literal, Type, cast
 
 import httpx
 from pydantic import BaseModel, Field
@@ -86,8 +86,8 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
         period_type: EstimatePeriodType | None = None,
         fiscal_start_year: int | None = None,
         fiscal_end_year: int | None = None,
-        fiscal_start_quarter: Literal[1, 2, 3, 4] | None = None,
-        fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
+        fiscal_start_quarter: Literal["1", "2", "3", "4"] | None = None,
+        fiscal_end_quarter: Literal["1", "2", "3", "4"] | None = None,
         num_periods_forward: int | None = None,
         num_periods_backward: int | None = None,
     ) -> GetCiqEstimatesFromIdentifiersResp:
@@ -99,8 +99,12 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
             period_type=period_type,
             fiscal_start_year=fiscal_start_year,
             fiscal_end_year=fiscal_end_year,
-            fiscal_start_quarter=fiscal_start_quarter,
-            fiscal_end_quarter=fiscal_end_quarter,
+            fiscal_start_quarter=cast(Literal[1, 2, 3, 4], int(fiscal_start_quarter))
+            if fiscal_start_quarter
+            else None,
+            fiscal_end_quarter=cast(Literal[1, 2, 3, 4], int(fiscal_end_quarter))
+            if fiscal_end_quarter
+            else None,
             num_periods_forward=num_periods_forward,
             num_periods_backward=num_periods_backward,
         )

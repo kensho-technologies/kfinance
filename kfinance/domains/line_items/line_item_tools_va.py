@@ -1,5 +1,5 @@
 from textwrap import dedent
-from typing import Any, Literal, Type
+from typing import Any, Literal, Type, cast
 
 import httpx
 from pydantic import BaseModel, Field
@@ -82,8 +82,8 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiers(KfinanceTool):
         period_type: EstimatePeriodType | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
-        start_quarter: Literal[1, 2, 3, 4] | None = None,
-        end_quarter: Literal[1, 2, 3, 4] | None = None,
+        start_quarter: Literal["1", "2", "3", "4"] | None = None,
+        end_quarter: Literal["1", "2", "3", "4"] | None = None,
         calendar_type: CalendarType | None = None,
         num_periods: int | None = None,
         num_periods_back: int | None = None,
@@ -97,8 +97,8 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiers(KfinanceTool):
             period_type=period_type,
             start_year=start_year,
             end_year=end_year,
-            start_quarter=start_quarter,
-            end_quarter=end_quarter,
+            start_quarter=cast(Literal[1, 2, 3, 4], int(start_quarter)) if start_quarter else None,
+            end_quarter=cast(Literal[1, 2, 3, 4], int(end_quarter)) if end_quarter else None,
             calendar_type=calendar_type,
             num_periods=num_periods,
             num_periods_back=num_periods_back,
