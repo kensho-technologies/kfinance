@@ -6,7 +6,6 @@ from asyncer import syncify
 from httpx import HTTPStatusError
 from langchain_core.tools import BaseTool
 from pydantic import (
-    AfterValidator,
     BaseModel,
     BeforeValidator,
     ConfigDict,
@@ -176,13 +175,6 @@ class ToolArgsWithIdentifiers(BaseModel):
         return v
 
 
-def convert_str_to_int(v: Any) -> Any:
-    """Convert strings to integers if possible."""
-    if isinstance(v, str) and v.isdigit():
-        return int(v)
-    return v
-
-
 def convert_int_to_str(v: Any) -> Any:
     """Convert integers to strings if possible."""
     if isinstance(v, int):
@@ -197,11 +189,9 @@ def convert_int_to_str(v: Any) -> Any:
 
 # TODO(LRA-304): Revert following fix after Gemini schema leniency feature is implemented.
 # BeforeValidator: convert possible int to str before Literal validation.
-# AfterValidator: convert str back to int to stay consistent with internal kfinance logic.
 ValidQuarter = Annotated[
     Literal["1", "2", "3", "4"],
     BeforeValidator(convert_int_to_str),
-    AfterValidator(convert_str_to_int),
 ]
 
 
