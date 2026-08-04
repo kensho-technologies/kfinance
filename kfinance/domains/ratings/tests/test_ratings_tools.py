@@ -4,6 +4,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
+from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.ratings.ratings_models import (
     EntityInfo,
     IssuerRatings,
@@ -27,19 +28,19 @@ SPGI_ENTITY_INFO = EntityInfo(
 
 
 @pytest.fixture
-def add_spgi_resolve_entities_mock_resp(httpx_mock: HTTPXMock) -> None:
-    """Add mock response for resolving SPGI identifier."""
+def add_spgi_ids_ratings_mock_resp(httpx_mock: HTTPXMock) -> None:
+    """Add mock response for resolving SPGI identifier via /ids with ratings filter."""
     httpx_mock.add_response(
         method="POST",
-        url="https://kfinance.kensho.com/api/v1/ratings/resolve_entities/",
+        url="https://kfinance.kensho.com/api/v1/ids",
+        match_json={
+            "identifiers": ["SPGI", "non-existent"],
+            "datasets_filter": ["ratings"],
+            "include_countries": True,
+        },
         json={
             "data": {
-                "SPGI": {
-                    "entity_id": 21719,
-                    "entity_name": "S&P Global Inc.",
-                    "ticker": "NYSE:SPGI",
-                    "country": "USA",
-                },
+                "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
                 "non-existent": {
                     "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
                 },
@@ -127,7 +128,7 @@ class TestRatings:
     async def test_get_issuer_ratings_from_identifiers(
         self,
         httpx_client: httpx.AsyncClient,
-        add_spgi_resolve_entities_mock_resp: None,
+        add_spgi_ids_ratings_mock_resp: None,
         add_spgi_ratings_mock_resp: None,
     ) -> None:
         """
@@ -139,7 +140,7 @@ class TestRatings:
             identifier_results={"SPGI": self.expected_spgi_ratings_response},
             identifier_info={"SPGI": SPGI_ENTITY_INFO},
             errors=[
-                "non-existent: No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
         )
 
@@ -160,20 +161,16 @@ class TestRatings:
         WHEN the ratings API returns an error
         THEN the error is mapped back to the identifier and included in the response.
         """
-        # Mock entity resolution
+        # Mock entity resolution via /ids with ratings filter
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/ratings/resolve_entities/",
-            json={
-                "data": {
-                    "SPGI": {
-                        "entity_id": 21719,
-                        "entity_name": "S&P Global Inc.",
-                        "ticker": "NYSE:SPGI",
-                        "country": "USA",
-                    }
-                }
+            url="https://kfinance.kensho.com/api/v1/ids",
+            match_json={
+                "identifiers": ["SPGI"],
+                "datasets_filter": ["ratings"],
+                "include_countries": True,
             },
+            json={"data": {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")}},
         )
 
         # Mock ratings API error
@@ -211,7 +208,12 @@ class TestRatings:
         """
         httpx_mock.add_response(
             method="POST",
-            url="https://kfinance.kensho.com/api/v1/ratings/resolve_entities/",
+            url="https://kfinance.kensho.com/api/v1/ids",
+            match_json={
+                "identifiers": ["non-existent"],
+                "datasets_filter": ["ratings"],
+                "include_countries": True,
+            },
             json={
                 "data": {
                     "non-existent": {
@@ -225,7 +227,7 @@ class TestRatings:
             identifier_results={},
             identifier_info={},
             errors=[
-                "non-existent: No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
             ],
         )
 

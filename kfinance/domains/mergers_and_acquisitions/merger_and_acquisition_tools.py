@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
+from kfinance.client.models.dataset_filter_models import DatasetFilter
 from kfinance.client.permission_models import Permission
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergersInfo,
@@ -146,7 +147,9 @@ async def get_mergers_from_identifiers(
     """Fetch mergers for all identifiers."""
 
     id_triple_resp = await unified_fetch_id_triples(
-        identifiers=identifiers, httpx_client=httpx_client
+        identifiers=identifiers,
+        httpx_client=httpx_client,
+        datasets_filter=[DatasetFilter.TRANSACTIONS_MA],
     )
     errors: list[str] = list(id_triple_resp.errors.values())
 
