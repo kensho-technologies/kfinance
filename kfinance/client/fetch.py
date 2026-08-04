@@ -15,6 +15,7 @@ from kfinance.client.models.date_and_period_models import (
     Periodicity,
     PeriodType,  # used by non-Visible Alpha fetch methods
 )
+from kfinance.client.models.dataset_filter_models import DatasetFilter
 from kfinance.client.models.response_models import PostResponse, SingleResultResp
 from kfinance.client.permission_models import Permission
 from kfinance.domains.business_relationships.business_relationship_models import (
@@ -308,10 +309,28 @@ class KFinanceApiClient:
         url = f"{self.url_base}trading_items/{security_id}/primary"
         return self.fetch(url)
 
-    def unified_fetch_id_triples(self, identifiers: list[str]) -> UnifiedIdTripleResponse:
-        """Resolve one or more identifiers to id triples using the unified (/ids) endpoint."""
+    def unified_fetch_id_triples(
+        self,
+        identifiers: list[str],
+        datasets_filter: list[DatasetFilter] | None = None,
+        include_countries: bool = False,
+    ) -> UnifiedIdTripleResponse:
+        """Resolve one or more identifiers to id triples using the unified (/ids) endpoint.
+
+        Args:
+            identifiers: List of identifiers to resolve.
+            datasets_filter: Optional list of dataset filters to scope entity resolution.
+            include_countries: When True, also resolves ISO 3166-1 alpha-3 country codes to
+                sovereign entity IDs. Used by the Ratings dataset for sovereign entity resolution.
+                Defaults to False.
+        """
         url = f"{self.url_base}ids"
-        resp = self.fetch(url=url, method="POST", request_body=dict(identifiers=identifiers))
+        request_body: dict = dict(identifiers=identifiers)
+        if datasets_filter is not None:
+            request_body["datasets_filter"] = [df.value for df in datasets_filter]
+        if include_countries:
+            request_body["include_countries"] = True
+        resp = self.fetch(url=url, method="POST", request_body=request_body)
         return UnifiedIdTripleResponse.model_validate(resp)
 
     def fetch_trading_items(self, security_id: int) -> dict:

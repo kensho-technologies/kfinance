@@ -4,8 +4,9 @@ from typing import Type
 import httpx
 from pydantic import BaseModel
 
+from kfinance.client.id_resolution import unified_fetch_id_triples
+from kfinance.client.models.dataset_filter_models import DatasetFilter
 from kfinance.client.permission_models import Permission
-from kfinance.domains.ratings.id_resolution import resolve_entities
 from kfinance.domains.ratings.ratings_models import (
     EntityInfo,
     EntityInfoWithResult,
@@ -96,24 +97,40 @@ async def get_issuer_ratings_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx.AsyncClient,
 ) -> GetIssuerRatingsFromIdentifiersResp:
-    """Fetch issuer ratings for a list of identifiers."""
+    """Fetch issuer ratings for a list of identifiers.
 
-    entity_resp = await resolve_entities(identifiers=identifiers, httpx_client=httpx_client)
-    errors: list[str] = [
-        f"{identifier}: {error}" for identifier, error in entity_resp.errors.items()
-    ]
+    Uses /ids with datasets_filter=[RATINGS] and include_countries=True to resolve
+    both company and sovereign identifiers.
+    """
+    id_triple_resp = await unified_fetch_id_triples(
+        identifiers=identifiers,
+        httpx_client=httpx_client,
+        datasets_filter=[DatasetFilter.RATINGS],
+        include_countries=True,
+    )
 
-    # check if identifiers were resolved
-    if not entity_resp.identifiers_resolved:
+    errors: list[str] = list(id_triple_resp.errors.values())
+
+    # Check if any identifiers were resolved
+    if not id_triple_resp.identifiers_to_id_triples:
         return GetIssuerRatingsFromIdentifiersResp.create(
             identifier_results={},
             identifier_info={},
             errors=errors,
         )
 
-    entity_ids = [
-        entity_info.entity_id for entity_info in entity_resp.identifiers_resolved.values()
-    ]
+    # Build EntityInfo from resolved id triples (entity_id == company_id for ratings)
+    identifier_info: dict[str, EntityInfo] = {}
+    entity_ids: list[int] = []
+    for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items():
+        entity_info = EntityInfo(
+            entity_id=id_triple.company_id,
+            entity_name=id_triple.company_name,
+            ticker=id_triple.ticker,
+            country=id_triple.country,
+        )
+        identifier_info[identifier] = entity_info
+        entity_ids.append(id_triple.company_id)
 
     result = await fetch_issuer_ratings_from_identifiers(
         entity_ids=entity_ids,
@@ -121,10 +138,8 @@ async def get_issuer_ratings_from_identifiers(
     )
 
     # Map results back from entity_id to original identifier
-    # Reverse lookup: entity_id -> og identifier
     entity_id_to_identifier = {
-        entity_info.entity_id: identifier
-        for identifier, entity_info in entity_resp.identifiers_resolved.items()
+        info.entity_id: identifier for identifier, info in identifier_info.items()
     }
 
     identifier_results = {}
@@ -141,7 +156,7 @@ async def get_issuer_ratings_from_identifiers(
 
     return GetIssuerRatingsFromIdentifiersResp.create(
         identifier_results=identifier_results,
-        identifier_info=entity_resp.identifiers_resolved,
+        identifier_info=identifier_info,
         errors=errors,
     )
 
