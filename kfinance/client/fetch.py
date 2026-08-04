@@ -9,13 +9,13 @@ import jwt
 import requests
 
 from kfinance.client.industry_models import IndustryClassification
+from kfinance.client.models.dataset_filter_models import DatasetFilter
 from kfinance.client.models.date_and_period_models import (
     EstimatePeriodType,
     EstimateType,
     Periodicity,
     PeriodType,  # used by non-Visible Alpha fetch methods
 )
-from kfinance.client.models.dataset_filter_models import DatasetFilter
 from kfinance.client.models.response_models import PostResponse, SingleResultResp
 from kfinance.client.permission_models import Permission
 from kfinance.domains.business_relationships.business_relationship_models import (

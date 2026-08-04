@@ -1,5 +1,8 @@
 # Changelog
 
+## v7.1.0
+- Update /ids routes to include dataset filter for LFA
+
 ## v7.0.2
 - Modify GetIssuerRatingsFromIdentifiers tool description.
 
