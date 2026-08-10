@@ -361,7 +361,7 @@ class TestFindSimilarLineItems:
 
 
 def test_sale_line_item_dataitemids_not_swapped() -> None:
-    # ponytail: regression guard for the assets/investments swap (dataitemids 56/62)
+    # regression guard for the assets/investments swap (dataitemids 56/62)
     from kfinance.domains.line_items.line_item_models import LINE_ITEMS
 
     by_name = {item["name"]: item for item in LINE_ITEMS}
