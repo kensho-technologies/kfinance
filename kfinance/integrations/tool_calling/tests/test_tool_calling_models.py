@@ -115,27 +115,36 @@ class TestValidQuarter:
     @pytest.mark.parametrize(
         "input_quarter, expectation, expected_quarter",
         [
-            pytest.param(1, does_not_raise(), 1, id="int input works"),
-            pytest.param("1", does_not_raise(), 1, id="str input works"),
+            pytest.param(1, does_not_raise(), "1", id="int input coerced to str"),
+            pytest.param("1", does_not_raise(), "1", id="str input stays str"),
             pytest.param(None, does_not_raise(), None, id="None input works"),
             pytest.param(5, pytest.raises(ValidationError), None, id="invalid int raises"),
             pytest.param("5", pytest.raises(ValidationError), None, id="invalid str raises"),
+            pytest.param(0, pytest.raises(ValidationError), None, id="zero raises"),
+            pytest.param("abc", pytest.raises(ValidationError), None, id="non-digit str raises"),
         ],
     )
     def test_valid_quarter(
         self,
         input_quarter: int | str | None,
         expectation: contextlib.AbstractContextManager,
-        expected_quarter: int | None,
+        expected_quarter: str | None,
     ) -> None:
         """
         GIVEN a model that uses `ValidQuarter`
         WHEN we deserialize with int, str, or None
-        THEN valid str get coerced to int. Invalid values raise.
+        THEN valid inputs are converted as str. Invalid values raise.
         """
         with expectation:
             res = self.QuarterModel.model_validate(dict(quarter=input_quarter))
             assert res.quarter == expected_quarter
+
+    @pytest.mark.parametrize("input_quarter", [1, 2, 3, 4, "1", "2", "3", "4"])
+    def test_model_dump_outputs_string(self, input_quarter: int | str) -> None:
+        """Ensure model_dump() outputs is always string."""
+        res = self.QuarterModel.model_validate(dict(quarter=input_quarter))
+        dumped = res.model_dump()
+        assert isinstance(dumped["quarter"], str)
 
 
 class TestRunSyncAndAsync:
