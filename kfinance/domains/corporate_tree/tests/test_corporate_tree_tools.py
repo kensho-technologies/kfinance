@@ -306,6 +306,7 @@ class TestSearchCorporateTree:
         assert len(result.nodes) == 1
         assert result.nodes[0].company_name == "CRISIL Limited"
         assert result.nodes[0].relationship_type == "AFFILIATE"
+        assert result.nodes[0].level == 1
 
     @pytest.mark.asyncio
     async def test_search_by_country(
@@ -321,6 +322,7 @@ class TestSearchCorporateTree:
 
         assert len(result.nodes) == 1
         assert result.nodes[0].company_name == "S&P Global UK Ltd"
+        assert result.nodes[0].level == 2  # grandchild
 
     @pytest.mark.asyncio
     async def test_search_by_name(
@@ -336,6 +338,7 @@ class TestSearchCorporateTree:
 
         assert len(result.nodes) == 1
         assert result.nodes[0].company_name == "Capital IQ"
+        assert result.nodes[0].level == 2  # grandchild
 
     @pytest.mark.asyncio
     async def test_search_direct_children_only(

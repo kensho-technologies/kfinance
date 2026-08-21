@@ -95,6 +95,7 @@ class SearchNodeResult(BaseModel):
     relationship_type: str
     relationship_status: str
     controlling_interest: bool
+    level: int = Field(description="Depth in the tree (0 = root, 1 = direct child, etc.)")
 
 
 class CorporateTreeSearchResult(BaseModel):
@@ -366,10 +367,20 @@ async def fetch_and_search_corporate_tree(
         company_id=company_id,
         httpx_client=httpx_client,
         include_prior=include_prior,
-        max_depth=1 if direct_children_only else None,
+        max_depth=1 if direct_children_only else 20,
     )
 
     tree = build_corporate_tree_from_response(response, kfinance_api_client)
+
+    # Build a depth map (node object id → level) via traversal
+    depth_map: dict[int, int] = {}
+
+    def _map_depths(node: CorporateTreeNode, level: int) -> None:
+        depth_map[id(node)] = level
+        for child in node.children:
+            _map_depths(child, level + 1)
+
+    _map_depths(tree.root, 0)
 
     # Reuse CorporateTree.search()
     matching_nodes = tree.search(
@@ -377,6 +388,7 @@ async def fetch_and_search_corporate_tree(
         country=country,
         name=name,
         limit=limit,
+        max_depth=1 if direct_children_only else None,
     )
 
     nodes = [
@@ -388,6 +400,7 @@ async def fetch_and_search_corporate_tree(
             relationship_type=node.relationship_type.value if node.relationship_type else "",
             relationship_status=node.relationship_status.value if node.relationship_status else "",
             controlling_interest=node.controlling_interest or False,
+            level=depth_map[id(node)],
         )
         for node in matching_nodes
     ]
