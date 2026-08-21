@@ -672,3 +672,169 @@ class TestCorporateTreeSubtree(TestCase):
         assert grandchild_tree.root.company_id == 103
         assert grandchild_tree.root.company_name == "US Grandchild"
         assert len(grandchild_tree.direct_children) == 0
+
+
+class TestCorporateTreeSearch(TestCase):
+    """Test the search() method that filters nodes across the entire tree."""
+
+    def test_search_no_filters_returns_all(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search()
+        # All 6 nodes: root + 4 children + 1 grandchild
+        assert len(results) == 6
+
+    def test_search_by_country(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(country="USA")
+        # Root (USA) + US Subsidiary + US Grandchild + Former Sub = 4
+        assert len(results) == 4
+        assert all(n.iso_country == "USA" for n in results)
+
+    def test_search_by_country_case_insensitive(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(country="gbr")
+        assert len(results) == 1
+        assert results[0].company_name == "UK Affiliate"
+
+    def test_search_by_relationship_type(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(relationship_type=TreeRelationshipType.affiliate)
+        assert len(results) == 1
+        assert results[0].company_name == "UK Affiliate"
+
+    def test_search_by_relationship_type_recursive(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(relationship_type=TreeRelationshipType.subsidiary_or_operating_unit)
+        # US Subsidiary, US Grandchild, Former Sub = 3
+        assert len(results) == 3
+
+    def test_search_by_name_substring(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(name="subsidiary")
+        assert len(results) == 1
+        assert results[0].company_id == 101
+
+    def test_search_by_name_case_insensitive(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(name="US")
+        # "US Subsidiary", "US Grandchild" (not "Former Sub" since it doesn't contain "US")
+        assert len(results) == 2
+
+    def test_search_by_name_partial_match(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(name="Corp")
+        assert len(results) == 1
+        assert results[0].company_name == "Parent Corp"
+
+    def test_search_combined_filters(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(
+            relationship_type=TreeRelationshipType.subsidiary_or_operating_unit,
+            country="USA",
+        )
+        # US Subsidiary + US Grandchild + Former Sub = 3
+        assert len(results) == 3
+
+    def test_search_combined_filters_with_name(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(
+            relationship_type=TreeRelationshipType.subsidiary_or_operating_unit,
+            country="USA",
+            name="Grandchild",
+        )
+        assert len(results) == 1
+        assert results[0].company_id == 103
+
+    def test_search_with_limit(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(limit=2)
+        assert len(results) == 2
+
+    def test_search_with_limit_and_filter(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(country="USA", limit=2)
+        assert len(results) == 2
+        assert all(n.iso_country == "USA" for n in results)
+
+    def test_search_no_matches(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(country="JPN")
+        assert len(results) == 0
+
+    def test_search_no_matches_name(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(name="Nonexistent")
+        assert len(results) == 0
+
+    def test_search_limit_zero_raises(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        with self.assertRaises(ValueError, msg="limit must be greater than 0"):
+            tree.search(limit=0)
+
+    def test_search_limit_negative_raises(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        with self.assertRaises(ValueError, msg="limit must be greater than 0"):
+            tree.search(limit=-1)
+
+    def test_search_limit_exceeds_total(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(limit=100)
+        assert len(results) == 6  # All nodes returned
+
+    def test_search_finds_deep_nodes(self) -> None:
+        """Search should find nodes at any depth, not just direct children."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(name="Grandchild")
+        assert len(results) == 1
+        assert results[0].company_id == 103
+
+    def test_search_root_included(self) -> None:
+        """Root node should be included in search results if it matches."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(name="Parent Corp")
+        assert len(results) == 1
+        assert results[0].company_id == 100
+
+    def test_search_max_depth_one_direct_children_only(self) -> None:
+        """max_depth=1 should return only root and direct children."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(max_depth=1)
+        # Root (depth 0) + 4 direct children (depth 1) = 5, excludes grandchild
+        assert len(results) == 5
+        ids = {n.company_id for n in results}
+        assert 103 not in ids  # US Grandchild is at depth 2
+
+    def test_search_max_depth_two_includes_grandchildren(self) -> None:
+        """max_depth=2 should include grandchildren."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(max_depth=2)
+        # All 6 nodes (tree only goes 2 levels deep)
+        assert len(results) == 6
+
+    def test_search_max_depth_excludes_deeper_nodes(self) -> None:
+        """max_depth with a filter should still respect depth limit."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(name="Grandchild", max_depth=1)
+        # Grandchild is at depth 2, max_depth=1 won't reach it
+        assert len(results) == 0
+
+    def test_search_max_depth_with_other_filters(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(country="USA", max_depth=1)
+        # Root (USA, depth 0) + US Subsidiary (depth 1) + Former Sub (depth 1) = 3
+        assert len(results) == 3
+
+    def test_search_max_depth_zero_raises(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        with self.assertRaises(ValueError, msg="max_depth must be greater than 0"):
+            tree.search(max_depth=0)
+
+    def test_search_max_depth_negative_raises(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        with self.assertRaises(ValueError, msg="max_depth must be greater than 0"):
+            tree.search(max_depth=-1)
+
+    def test_search_max_depth_and_limit_combined(self) -> None:
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        results = tree.search(max_depth=1, limit=2)
+        assert len(results) == 2

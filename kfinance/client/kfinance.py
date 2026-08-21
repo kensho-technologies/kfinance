@@ -1620,6 +1620,75 @@ class CorporateTree:
             ]
         return result
 
+    def search(
+        self,
+        relationship_type: TreeRelationshipType | None = None,
+        country: str | None = None,
+        name: str | None = None,
+        limit: int | None = None,
+        max_depth: int | None = None,
+    ) -> list[CorporateTreeNode]:
+        """Search the tree for nodes matching the given filters.
+
+        Traverses all nodes (not just direct children) and returns those that
+        match all specified filters. Filters are combined with AND logic.
+
+        :param relationship_type: Filter to nodes with this relationship type.
+        :type relationship_type: TreeRelationshipType, optional
+        :param country: Filter to nodes whose iso_country matches (case-insensitive).
+        :type country: str, optional
+        :param name: Filter to nodes whose company_name contains this substring (case-insensitive).
+        :type name: str, optional
+        :param limit: Maximum number of results to return. Must be > 0.
+        :type limit: int, optional
+        :param max_depth: Maximum depth to search (1 = direct children only, 2 = children
+            and grandchildren, etc.). The root is at depth 0. Must be > 0. Defaults to
+            None (search the whole tree).
+        :type max_depth: int, optional
+        :return: List of matching nodes.
+        :rtype: list[CorporateTreeNode]
+        :raises ValueError: If limit or max_depth is less than 1.
+        """
+        if limit is not None and limit < 1:
+            raise ValueError("limit must be greater than 0")
+        if max_depth is not None and max_depth < 1:
+            raise ValueError("max_depth must be greater than 0")
+
+        results: list[CorporateTreeNode] = []
+        country_lower = country.lower() if country is not None else None
+        name_lower = name.lower() if name is not None else None
+
+        def _search(node: CorporateTreeNode, depth: int) -> bool:
+            """Returns True if limit reached and we should stop."""
+            if limit is not None and len(results) >= limit:
+                return True
+
+            match = True
+            if relationship_type is not None and node.relationship_type != relationship_type:
+                match = False
+            if match and country_lower is not None:
+                if node.iso_country is None or node.iso_country.lower() != country_lower:
+                    match = False
+            if match and name_lower is not None:
+                if name_lower not in node.company_name.lower():
+                    match = False
+
+            if match:
+                results.append(node)
+                if limit is not None and len(results) >= limit:
+                    return True
+
+            if max_depth is not None and depth >= max_depth:
+                return False
+
+            for child in node.children:
+                if _search(child, depth + 1):
+                    return True
+            return False
+
+        _search(self._root_node, depth=0)
+        return results
+
     def summary(self) -> CorporateTreeSummary:
         """Compute summary statistics by traversing the entire tree.
 
