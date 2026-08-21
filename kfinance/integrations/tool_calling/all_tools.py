@@ -1,6 +1,11 @@
 from kfinance.domains.business_relationships.business_relationship_tools import (
     GetBusinessRelationshipFromIdentifiers,
 )
+from kfinance.domains.corporate_tree.corporate_tree_tools import (
+    GetCorporateTreeSummaryFromIdentifiers,
+    GetUltimateParentPathFromIdentifiers,
+    SearchCorporateTreeFromIdentifiers,
+)
 from kfinance.domains.capitalizations.capitalization_tools import GetCapitalizationFromIdentifiers
 from kfinance.domains.companies.company_tools import (
     GetCompanyDescriptionFromIdentifiers,
@@ -117,4 +122,8 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetAnalystRecommendationsFromIdentifiers,
     # Ratings
     GetIssuerRatingsFromIdentifiers,
+    # Corporate Tree
+    GetUltimateParentPathFromIdentifiers,
+    SearchCorporateTreeFromIdentifiers,
+    GetCorporateTreeSummaryFromIdentifiers,
 ]
