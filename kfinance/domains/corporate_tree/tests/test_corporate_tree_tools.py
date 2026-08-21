@@ -168,7 +168,7 @@ class TestGetUltimateParentPath:
     def add_tree_mock(self, httpx_mock: HTTPXMock) -> None:
         httpx_mock.add_response(
             method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=false&include_ultimate_parent_path=true&max_depth=1",
+            url=f"{CORPORATE_TREE_URL}?include_prior=false&include_ultimate_parent_path=true&max_depth=0",
             json=SAMPLE_TREE_RESPONSE,
             is_optional=True,
             is_reusable=True,
@@ -178,7 +178,7 @@ class TestGetUltimateParentPath:
     def add_tree_no_parent_mock(self, httpx_mock: HTTPXMock) -> None:
         httpx_mock.add_response(
             method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=false&include_ultimate_parent_path=true&max_depth=1",
+            url=f"{CORPORATE_TREE_URL}?include_prior=false&include_ultimate_parent_path=true&max_depth=0",
             json=SAMPLE_TREE_RESPONSE_NO_PARENT,
             is_optional=True,
             is_reusable=True,
@@ -249,6 +249,16 @@ class TestSearchCorporateTree:
         httpx_mock.add_response(
             method="GET",
             url=f"{CORPORATE_TREE_URL}?include_prior=false&include_ultimate_parent_path=false&max_depth=20",
+            json=SAMPLE_TREE_RESPONSE,
+            is_optional=True,
+            is_reusable=True,
+        )
+
+    @pytest.fixture
+    def add_tree_depth_1_mock(self, httpx_mock: HTTPXMock) -> None:
+        httpx_mock.add_response(
+            method="GET",
+            url=f"{CORPORATE_TREE_URL}?include_prior=false&include_ultimate_parent_path=false&max_depth=1",
             json=SAMPLE_TREE_RESPONSE,
             is_optional=True,
             is_reusable=True,
@@ -329,7 +339,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_direct_children_only(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx.AsyncClient, add_tree_depth_1_mock: None
     ) -> None:
         """WHEN direct_children_only=True THEN only direct children are searched."""
         result = await fetch_and_search_corporate_tree(

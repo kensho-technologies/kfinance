@@ -49,6 +49,7 @@ class CompanyFunctionsMetaClass:
         self._company_descriptions: CompanyDescriptions | None = None
         self._company_other_names: CompanyOtherNames | None = None
         self._financial_auditors: Auditors | None = None
+        self._corporate_tree: "CorporateTree | None" = None
 
     @property
     @abstractmethod
@@ -959,60 +960,59 @@ class CompanyFunctionsMetaClass:
         issuer_ratings = response.results[entity_id_str]
         return issuer_ratings.model_dump(mode="json")["ratings"]
 
-    def get_corporate_tree(
-        self,
-        include_prior: bool = False,
-        max_depth: int = 20,
-    ) -> "CorporateTree":
-        """Get the corporate tree for this company.
+    @property
+    def corporate_tree(self) -> "CorporateTree":
+        """The corporate tree for this company.
 
         Returns a CorporateTree object that supports navigating to the parent,
         ultimate parent, listing children with filters, and computing summary stats.
 
-        :param include_prior: Include prior/historical relationships in the tree.
-        :type include_prior: bool
-        :param max_depth: Maximum depth to traverse (0-20, default 20).
-        :type max_depth: int
+        Fetches the full tree (max_depth=20) with current relationships only on first access,
+        and caches the result for subsequent accesses.
+
         :return: A CorporateTree object.
         :rtype: CorporateTree
         """
-        from .kfinance import Company, CorporateTree, CorporateTreeNode
+        if self._corporate_tree is None:
+            from .kfinance import CorporateTree, CorporateTreeNode
 
-        from kfinance.domains.corporate_tree.corporate_tree_models import TreeNode
+            from kfinance.domains.corporate_tree.corporate_tree_models import TreeNode
 
-        response = self.kfinance_api_client.fetch_corporate_tree(
-            company_id=self.company_id,
-            include_prior=include_prior,
-            include_ultimate_parent_path=True,
-            max_depth=max_depth,
-        )
-
-        def _build_node(tree_node: TreeNode) -> CorporateTreeNode:
-            """Recursively convert API TreeNode into client CorporateTreeNode."""
-            return CorporateTreeNode(
-                kfinance_api_client=self.kfinance_api_client,
-                company_info=tree_node.company,
-                relationship_type=tree_node.relationship_type,
-                relationship_status=tree_node.relationship_status,
-                controlling_interest=tree_node.controlling_interest,
-                children=[_build_node(child) for child in tree_node.children],
+            response = self.kfinance_api_client.fetch_corporate_tree(
+                company_id=self.company_id,
+                include_prior=False,
+                include_ultimate_parent_path=True,
+                max_depth=20,
             )
 
-        root_node = CorporateTreeNode(
-            kfinance_api_client=self.kfinance_api_client,
-            company_info=response.root.company,
-            relationship_type=None,
-            relationship_status=None,
-            controlling_interest=None,
-            children=[_build_node(child) for child in response.root.children],
-        )
+            def _build_node(tree_node: TreeNode) -> CorporateTreeNode:
+                """Recursively convert API TreeNode into client CorporateTreeNode."""
+                return CorporateTreeNode(
+                    kfinance_api_client=self.kfinance_api_client,
+                    company_info=tree_node.company,
+                    relationship_type=tree_node.relationship_type,
+                    relationship_status=tree_node.relationship_status,
+                    controlling_interest=tree_node.controlling_interest,
+                    children=[_build_node(child) for child in tree_node.children],
+                )
 
-        return CorporateTree(
-            kfinance_api_client=self.kfinance_api_client,
-            root_node=root_node,
-            ultimate_parent_path=response.ultimate_parent_path,
-            truncation=response.truncation,
-        )
+            root_node = CorporateTreeNode(
+                kfinance_api_client=self.kfinance_api_client,
+                company_info=response.root.company,
+                relationship_type=None,
+                relationship_status=None,
+                controlling_interest=None,
+                children=[_build_node(child) for child in response.root.children],
+            )
+
+            self._corporate_tree = CorporateTree(
+                kfinance_api_client=self.kfinance_api_client,
+                root_node=root_node,
+                ultimate_parent_path=response.ultimate_parent_path,
+                truncation=response.truncation,
+            )
+
+        return self._corporate_tree
 
 
 for line_item in LINE_ITEMS:

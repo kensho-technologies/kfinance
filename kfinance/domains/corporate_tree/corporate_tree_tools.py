@@ -236,6 +236,12 @@ class SearchCorporateTreeArgs(ToolArgsWithIdentifiers):
         default=False,
         description="If true, include prior/historical relationships in the tree. By default only current relationships are included.",
     )
+    limit: int = Field(
+        default=50,
+        description="Maximum number of matching nodes to return per identifier (1-200).",
+        ge=1,
+        le=200,
+    )
 
 
 class SearchCorporateTreeFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CorporateTreeSearchResult]):
@@ -250,7 +256,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         Filters are combined with AND logic. At least one filter (relationship_type, country, or name) should be provided for useful results.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - Returns up to 50 matching nodes per identifier.
+        - Returns up to `limit` matching nodes per identifier (default 50, max 200).
         - Set direct_children_only=true to limit results to immediate subsidiaries only.
         - Set include_prior=true to include historical/prior relationships that are no longer active.
 
@@ -275,6 +281,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         name: str | None = None,
         direct_children_only: bool = False,
         include_prior: bool = False,
+        limit: int = 50,
     ) -> SearchCorporateTreeFromIdentifiersResp:
         """"""
         return await search_corporate_tree_from_identifiers(
@@ -284,6 +291,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
             name=name,
             direct_children_only=direct_children_only,
             include_prior=include_prior,
+            limit=limit,
             httpx_client=self.kfinance_client.httpx_client,
             kfinance_api_client=self.kfinance_client.kfinance_api_client,
         )
@@ -298,6 +306,7 @@ async def search_corporate_tree_from_identifiers(
     name: str | None = None,
     direct_children_only: bool = False,
     include_prior: bool = False,
+    limit: int = 50,
 ) -> SearchCorporateTreeFromIdentifiersResp:
     """Search corporate trees for all identifiers."""
 
@@ -318,6 +327,7 @@ async def search_corporate_tree_from_identifiers(
                 name=name,
                 direct_children_only=direct_children_only,
                 include_prior=include_prior,
+                limit=limit,
             ),
             result_key=identifier,
         )
@@ -349,13 +359,14 @@ async def fetch_and_search_corporate_tree(
     name: str | None = None,
     direct_children_only: bool = False,
     include_prior: bool = False,
+    limit: int = 50,
 ) -> CorporateTreeSearchResult:
     """Fetch the corporate tree and search it for a single company."""
     response = await fetch_corporate_tree(
         company_id=company_id,
         httpx_client=httpx_client,
         include_prior=include_prior,
-        max_depth=20,
+        max_depth=1 if direct_children_only else None,
     )
 
     tree = build_corporate_tree_from_response(response, kfinance_api_client)
@@ -365,8 +376,7 @@ async def fetch_and_search_corporate_tree(
         relationship_type=relationship_type,
         country=country,
         name=name,
-        limit=50,
-        max_depth=1 if direct_children_only else None,
+        limit=limit,
     )
 
     nodes = [

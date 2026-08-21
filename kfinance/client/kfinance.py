@@ -1481,7 +1481,7 @@ class CorporateTreeNode:
     def to_company(self) -> Company:
         """Convert this node to a Company object for further API calls.
 
-        Enables chaining, e.g. node.to_company().get_corporate_tree()
+        Enables chaining, e.g. node.to_company().corporate_tree
         """
         return Company(
             kfinance_api_client=self.kfinance_api_client,
@@ -1504,10 +1504,10 @@ class CorporateTree:
 
     Chaining examples::
 
-        tree = company.get_corporate_tree()
-        tree.ultimate_parent.get_corporate_tree()       # re-root on ultimate parent
-        tree.parent.get_corporate_tree()                # re-root on immediate parent
-        tree.children()[0].to_company().get_corporate_tree()  # re-root on a child
+        tree = company.corporate_tree
+        tree.ultimate_parent.corporate_tree       # re-root on ultimate parent
+        tree.parent.corporate_tree                # re-root on immediate parent
+        tree.children()[0].to_company().corporate_tree  # re-root on a child
     """
 
     def __init__(
@@ -1743,7 +1743,7 @@ class CorporateTree:
         """
         if self.is_truncated:
             # Tree may be incomplete — fall back to API call
-            return node.to_company().get_corporate_tree()
+            return node.to_company().corporate_tree
 
         # Compute the ultimate_parent_path for the subtree by finding
         # the ancestry chain from this tree's root to the target node

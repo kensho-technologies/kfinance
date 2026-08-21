@@ -420,10 +420,10 @@ class TestCorporateTreeNode(TestCase):
 
 
 class TestCorporateTreeChaining(TestCase):
-    """Test chaining support via get_corporate_tree."""
+    """Test chaining support via corporate_tree property."""
 
-    def test_get_corporate_tree_via_company(self) -> None:
-        """Test that Company.get_corporate_tree() works end-to-end with mocked API."""
+    def test_corporate_tree_via_company(self) -> None:
+        """Test that Company.corporate_tree works end-to-end with mocked API."""
         with Mocker() as m:
             m.get(
                 url="https://kfinance.kensho.com/api/v1/corporate_tree/100"
@@ -436,14 +436,14 @@ class TestCorporateTreeChaining(TestCase):
                 company_id=100,
                 company_name="Parent Corp",
             )
-            tree = company.get_corporate_tree()
+            tree = company.corporate_tree
 
         assert isinstance(tree, CorporateTree)
         assert tree.root.company_id == 100
         assert len(tree.direct_children) == 4
 
     def test_chaining_ultimate_parent(self) -> None:
-        """Test that tree.ultimate_parent returns a Company that can call get_corporate_tree."""
+        """Test that tree.ultimate_parent returns a Company that can access corporate_tree."""
         ultimate_parent_response = {
             "root": {
                 "company": {"id": 99, "name": "Ultimate Parent Inc", "country": "United States", "iso_country": "USA"},
@@ -476,15 +476,15 @@ class TestCorporateTreeChaining(TestCase):
             )
             client = _make_api_client()
             company = Company(kfinance_api_client=client, company_id=100)
-            tree = company.get_corporate_tree()
+            tree = company.corporate_tree
             # Chain: get the tree for the ultimate parent
-            parent_tree = tree.ultimate_parent.get_corporate_tree()
+            parent_tree = tree.ultimate_parent.corporate_tree
 
         assert parent_tree.root.company_id == 99
         assert parent_tree.root.company_name == "Ultimate Parent Inc"
 
     def test_chaining_child_node(self) -> None:
-        """Test that node.to_company().get_corporate_tree() works."""
+        """Test that node.to_company().corporate_tree works."""
         child_response = {
             "root": {
                 "company": {"id": 101, "name": "US Subsidiary", "country": "United States", "iso_country": "USA"},
@@ -511,9 +511,9 @@ class TestCorporateTreeChaining(TestCase):
             )
             client = _make_api_client()
             company = Company(kfinance_api_client=client, company_id=100)
-            tree = company.get_corporate_tree()
+            tree = company.corporate_tree
             # Chain: get the tree for the first child
-            child_tree = tree.direct_children[0].to_company().get_corporate_tree()
+            child_tree = tree.direct_children[0].to_company().corporate_tree
 
         assert child_tree.root.company_id == 101
         # The child's parent should be Parent Corp (id=100)
