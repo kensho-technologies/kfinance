@@ -289,7 +289,10 @@ class TestSearchCorporateTree:
         # But search starts at root node (depth=0), and root has no relationship_type
         # so all 7 nodes are traversed
         assert len(result.nodes) > 0
-        assert result.is_truncated is False
+        assert result.summary.tree_truncated is False
+        assert result.summary.total_matches == len(result.nodes)
+        assert result.summary.showing == len(result.nodes)
+        assert result.summary.tree_nodes_searched == 7
 
     @pytest.mark.asyncio
     async def test_search_by_relationship_type(
@@ -401,7 +404,7 @@ class TestSearchCorporateTree:
     async def test_search_truncated_tree(
         self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
     ) -> None:
-        """WHEN the tree is truncated THEN is_truncated=True in the response."""
+        """WHEN the tree is truncated THEN summary reports tree_truncated=True."""
         httpx_mock.add_response(
             method="GET",
             url=f"{CORPORATE_TREE_URL}?include_prior=false&include_ultimate_parent_path=false&max_depth=20",
@@ -414,7 +417,8 @@ class TestSearchCorporateTree:
             kfinance_api_client=MOCK_API_CLIENT,
         )
 
-        assert result.is_truncated is True
+        assert result.summary.tree_truncated is True
+        assert result.summary.tree_nodes_searched == 2
 
     @pytest.mark.asyncio
     async def test_search_corporate_tree_from_identifiers(

@@ -98,11 +98,21 @@ class SearchNodeResult(BaseModel):
     level: int = Field(description="Depth in the tree (0 = root, 1 = direct child, etc.)")
 
 
+class SearchSummary(BaseModel):
+    """Summary metadata about the search results."""
+
+    total_matches: int
+    showing: int
+    matches_by_level: dict[str, int]
+    tree_nodes_searched: int
+    tree_truncated: bool
+
+
 class CorporateTreeSearchResult(BaseModel):
     """Search results from the corporate tree."""
 
     nodes: list[SearchNodeResult]
-    is_truncated: bool
+    summary: SearchSummary
 
 
 class SummaryCompanyInfo(BaseModel):
@@ -399,24 +409,36 @@ async def fetch_and_search_corporate_tree(
 
     tree = build_corporate_tree_from_response(response, kfinance_api_client)
 
-    # Build a depth map (node object id → level) via traversal
+    # Build a depth map (node object id → level) via traversal, and count total nodes
     depth_map: dict[int, int] = {}
+    tree_nodes_searched = 0
 
     def _map_depths(node: CorporateTreeNode, level: int) -> None:
+        nonlocal tree_nodes_searched
+        tree_nodes_searched += 1
         depth_map[id(node)] = level
         for child in node.children:
             _map_depths(child, level + 1)
 
     _map_depths(tree.root, 0)
 
-    # Reuse CorporateTree.search()
-    matching_nodes = tree.search(
+    # Search without limit to get total matches and level breakdown
+    all_matching_nodes = tree.search(
         relationship_type=relationship_type,
         country=country,
         name=name,
-        limit=limit,
+        limit=None,
         max_depth=1 if direct_children_only else None,
     )
+
+    # Compute matches_by_level across all matches
+    matches_by_level: dict[str, int] = {}
+    for node in all_matching_nodes:
+        level_key = str(depth_map[id(node)])
+        matches_by_level[level_key] = matches_by_level.get(level_key, 0) + 1
+
+    # Truncate to limit for the returned nodes
+    returned_nodes = all_matching_nodes[:limit]
 
     nodes = [
         SearchNodeResult(
@@ -429,12 +451,18 @@ async def fetch_and_search_corporate_tree(
             controlling_interest=node.controlling_interest or False,
             level=depth_map[id(node)],
         )
-        for node in matching_nodes
+        for node in returned_nodes
     ]
 
     return CorporateTreeSearchResult(
         nodes=nodes,
-        is_truncated=tree.is_truncated,
+        summary=SearchSummary(
+            total_matches=len(all_matching_nodes),
+            showing=len(nodes),
+            matches_by_level=matches_by_level,
+            tree_nodes_searched=tree_nodes_searched,
+            tree_truncated=tree.is_truncated,
+        ),
     )
 
 
