@@ -537,3 +537,138 @@ class TestCorporateTreeStr(TestCase):
         s = str(summary)
         assert "total_nodes=6" in s
         assert "is_truncated=False" in s
+
+
+class TestCorporateTreeSubtree(TestCase):
+    """Test the subtree() optimization that avoids API calls for non-truncated trees."""
+
+    def test_subtree_direct_child_no_api_call(self) -> None:
+        """subtree() on a non-truncated tree should not make an API call."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        child_node = tree.direct_children[0]  # US Subsidiary
+
+        # No Mocker context → any API call would raise ConnectionError
+        subtree = tree.subtree(child_node)
+
+        assert isinstance(subtree, CorporateTree)
+        assert subtree.root.company_id == 101
+        assert subtree.root.company_name == "US Subsidiary"
+
+    def test_subtree_preserves_children(self) -> None:
+        """Subtree should preserve the node's children."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        child_node = tree.direct_children[0]  # US Subsidiary has 1 child
+
+        subtree = tree.subtree(child_node)
+
+        assert len(subtree.direct_children) == 1
+        assert subtree.direct_children[0].company_name == "US Grandchild"
+
+    def test_subtree_leaf_node(self) -> None:
+        """Subtree of a leaf node should have no children."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        leaf_node = tree.direct_children[1]  # UK Affiliate (no children)
+
+        subtree = tree.subtree(leaf_node)
+
+        assert subtree.root.company_id == 102
+        assert len(subtree.direct_children) == 0
+
+    def test_subtree_computes_ultimate_parent_path(self) -> None:
+        """Subtree should extend the parent tree's ultimate_parent_path."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        child_node = tree.direct_children[0]  # US Subsidiary
+
+        subtree = tree.subtree(child_node)
+
+        # Original path: [Ultimate Parent Inc (99), Parent Corp (100)]
+        # Extended with: [US Subsidiary (101)]
+        path = subtree.ultimate_parent_path
+        assert path is not None
+        assert len(path) == 3
+        assert path[0].company_id == 99  # Ultimate Parent Inc
+        assert path[1].company_id == 100  # Parent Corp
+        assert path[2].company_id == 101  # US Subsidiary
+
+    def test_subtree_parent_is_correct(self) -> None:
+        """Subtree's parent should be the original tree's root."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        child_node = tree.direct_children[0]  # US Subsidiary
+
+        subtree = tree.subtree(child_node)
+
+        assert subtree.parent is not None
+        assert subtree.parent.company_id == 100  # Parent Corp
+
+    def test_subtree_grandchild_path(self) -> None:
+        """Subtree of a grandchild should have the full path."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        grandchild = tree.direct_children[0].children[0]  # US Grandchild
+
+        subtree = tree.subtree(grandchild)
+
+        path = subtree.ultimate_parent_path
+        assert path is not None
+        assert len(path) == 4
+        assert path[0].company_id == 99   # Ultimate Parent Inc
+        assert path[1].company_id == 100  # Parent Corp
+        assert path[2].company_id == 101  # US Subsidiary
+        assert path[3].company_id == 103  # US Grandchild
+
+    def test_subtree_is_not_truncated(self) -> None:
+        """Subtree from a non-truncated tree should not be truncated."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        subtree = tree.subtree(tree.direct_children[0])
+        assert subtree.is_truncated is False
+
+    def test_subtree_falls_back_to_api_when_truncated(self) -> None:
+        """When the tree is truncated, subtree() should make an API call."""
+        tree = _build_corporate_tree(SAMPLE_TRUNCATED_RESPONSE)
+        child_node = tree.direct_children[0]
+
+        child_response = {
+            "root": {
+                "company": {"id": 101, "name": "Child 1", "country": "United States", "iso_country": "USA"},
+                "children": [],
+            },
+            "truncation": None,
+            "ultimate_parent_path": [
+                {"id": 100, "name": "Parent Corp", "country": "United States", "iso_country": "USA"},
+                {"id": 101, "name": "Child 1", "country": "United States", "iso_country": "USA"},
+            ],
+        }
+
+        with Mocker() as m:
+            m.get(
+                url="https://kfinance.kensho.com/api/v1/corporate_tree/101"
+                "?include_prior=false&include_ultimate_parent_path=true&max_depth=20",
+                json=child_response,
+            )
+            subtree = tree.subtree(child_node)
+
+        assert subtree.root.company_id == 101
+
+    def test_subtree_summary(self) -> None:
+        """Subtree summary should reflect only the subtree's nodes."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        child_node = tree.direct_children[0]  # US Subsidiary with 1 grandchild
+
+        subtree = tree.subtree(child_node)
+        summary = subtree.summary()
+
+        assert summary.total_nodes == 2  # US Subsidiary + US Grandchild
+        assert summary.nodes_per_level == {0: 1, 1: 1}
+
+    def test_subtree_chaining(self) -> None:
+        """Can chain subtree().subtree() without API calls."""
+        tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
+        child_node = tree.direct_children[0]  # US Subsidiary
+
+        subtree = tree.subtree(child_node)
+        # Now get subtree of the grandchild from the subtree
+        grandchild_node = subtree.direct_children[0]
+        grandchild_tree = subtree.subtree(grandchild_node)
+
+        assert grandchild_tree.root.company_id == 103
+        assert grandchild_tree.root.company_name == "US Grandchild"
+        assert len(grandchild_tree.direct_children) == 0

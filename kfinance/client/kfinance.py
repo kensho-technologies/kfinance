@@ -1657,6 +1657,71 @@ class CorporateTree:
             is_truncated=self.is_truncated,
         )
 
+    def subtree(self, node: CorporateTreeNode) -> "CorporateTree":
+        """Get a CorporateTree rooted at the given node, reusing cached data if possible.
+
+        If the tree is not truncated, the subtree is constructed locally without an
+        API call. If the tree is truncated, falls back to fetching from the API since
+        the subtree may be incomplete.
+
+        The ultimate_parent_path for the subtree is computed by extending this tree's
+        path with the ancestry chain from this tree's root to the target node.
+
+        :param node: A CorporateTreeNode from this tree to use as the new root.
+        :type node: CorporateTreeNode
+        :return: A CorporateTree rooted at the given node.
+        :rtype: CorporateTree
+        """
+        if self.is_truncated:
+            # Tree may be incomplete — fall back to API call
+            return node.to_company().get_corporate_tree()
+
+        # Compute the ultimate_parent_path for the subtree by finding
+        # the ancestry chain from this tree's root to the target node
+        subtree_path = self._compute_path_to_node(node)
+
+        return CorporateTree(
+            kfinance_api_client=self.kfinance_api_client,
+            root_node=node,
+            ultimate_parent_path=subtree_path,
+            truncation=None,
+        )
+
+    def _compute_path_to_node(
+        self, target: CorporateTreeNode
+    ) -> list[TreeCompanyInfo] | None:
+        """Compute the ultimate_parent_path for a subtree rooted at the target node.
+
+        Extends this tree's ultimate_parent_path with the ancestry chain from
+        this tree's root down to the target node.
+        """
+        if self._ultimate_parent_path is None:
+            return None
+
+        # Find the path from root to target via DFS
+        path_from_root: list[TreeCompanyInfo] = []
+
+        def _find_path(node: CorporateTreeNode, current_path: list[TreeCompanyInfo]) -> bool:
+            current_path.append(node._company_info)
+            if node is target:
+                path_from_root.extend(current_path)
+                return True
+            for child in node.children:
+                if _find_path(child, current_path):
+                    return True
+            current_path.pop()
+            return False
+
+        _find_path(self._root_node, [])
+
+        if not path_from_root:
+            # Target not found in tree — fall back to just the existing path
+            return self._ultimate_parent_path
+
+        # Combine: ultimate_parent_path (ends at root) + path_from_root (starts at root)
+        # The root appears in both, so skip it in path_from_root
+        return self._ultimate_parent_path + path_from_root[1:]
+
     def __str__(self) -> str:
         s = self.summary()
         return (
