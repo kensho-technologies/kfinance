@@ -40,6 +40,12 @@ from kfinance.client.models.date_and_period_models import (
 )
 from kfinance.client.server_thread import ServerThread
 from kfinance.domains.companies.company_models import IdentificationTriple
+from kfinance.domains.corporate_tree.corporate_tree_models import (
+    CompanyInfo as TreeCompanyInfo,
+    TreeRelationshipType,
+    TreeRelationshipStatus,
+    TruncationInfo,
+)
 from kfinance.domains.earnings.earning_models import EarningsCall, TranscriptComponent
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerConsideration,
@@ -1381,6 +1387,285 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         :rtype: Image
         """
         return self.primary_trading_item.price_chart(periodicity, adjusted, start_date, end_date)
+
+
+class CorporateTreeSummary:
+    """Summary statistics for a corporate tree."""
+
+    def __init__(
+        self,
+        total_nodes: int,
+        nodes_per_level: dict[int, int],
+        nodes_per_type: dict[str, int],
+        nodes_per_country: dict[str, int],
+        is_truncated: bool,
+    ) -> None:
+        self.total_nodes = total_nodes
+        self.nodes_per_level = nodes_per_level
+        self.nodes_per_type = nodes_per_type
+        self.nodes_per_country = nodes_per_country
+        self.is_truncated = is_truncated
+
+    def __str__(self) -> str:
+        return (
+            f"CorporateTreeSummary(total_nodes={self.total_nodes}, "
+            f"is_truncated={self.is_truncated}, "
+            f"levels={len(self.nodes_per_level)}, "
+            f"types={dict(self.nodes_per_type)}, "
+            f"countries={len(self.nodes_per_country)})"
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+class CorporateTreeNode:
+    """Represents a single node in the corporate tree with navigation capabilities."""
+
+    def __init__(
+        self,
+        kfinance_api_client: KFinanceApiClient,
+        company_info: TreeCompanyInfo,
+        relationship_type: TreeRelationshipType | None,
+        relationship_status: TreeRelationshipStatus | None,
+        controlling_interest: bool | None,
+        children: list[CorporateTreeNode],
+    ) -> None:
+        self.kfinance_api_client = kfinance_api_client
+        self._company_info = company_info
+        self._relationship_type = relationship_type
+        self._relationship_status = relationship_status
+        self._controlling_interest = controlling_interest
+        self._children = children
+
+    @property
+    def company_id(self) -> int:
+        """The company ID of this node."""
+        return self._company_info.id
+
+    @property
+    def company_name(self) -> str:
+        """The company name of this node."""
+        return self._company_info.name
+
+    @property
+    def country(self) -> str | None:
+        """The country of this node's company."""
+        return self._company_info.country
+
+    @property
+    def iso_country(self) -> str | None:
+        """The ISO country code of this node's company."""
+        return self._company_info.iso_country
+
+    @property
+    def relationship_type(self) -> TreeRelationshipType | None:
+        """The relationship type to the parent (None for root)."""
+        return self._relationship_type
+
+    @property
+    def relationship_status(self) -> TreeRelationshipStatus | None:
+        """The relationship status (None for root)."""
+        return self._relationship_status
+
+    @property
+    def controlling_interest(self) -> bool | None:
+        """Whether this is a controlling interest (None for root)."""
+        return self._controlling_interest
+
+    @property
+    def children(self) -> list[CorporateTreeNode]:
+        """Direct children of this node."""
+        return self._children
+
+    def to_company(self) -> Company:
+        """Convert this node to a Company object for further API calls.
+
+        Enables chaining, e.g. node.to_company().get_corporate_tree()
+        """
+        return Company(
+            kfinance_api_client=self.kfinance_api_client,
+            company_id=self.company_id,
+            company_name=self.company_name,
+        )
+
+    def __str__(self) -> str:
+        return f"CorporateTreeNode({self.company_name}, id={self.company_id})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+class CorporateTree:
+    """A navigable corporate tree for a company.
+
+    Provides access to parent/ultimate parent navigation, direct children
+    with filtering, and summary statistics.
+
+    Chaining examples::
+
+        tree = company.get_corporate_tree()
+        tree.ultimate_parent.get_corporate_tree()       # re-root on ultimate parent
+        tree.parent.get_corporate_tree()                # re-root on immediate parent
+        tree.children()[0].to_company().get_corporate_tree()  # re-root on a child
+    """
+
+    def __init__(
+        self,
+        kfinance_api_client: KFinanceApiClient,
+        root_node: CorporateTreeNode,
+        ultimate_parent_path: list[TreeCompanyInfo] | None,
+        truncation: TruncationInfo | None,
+    ) -> None:
+        self.kfinance_api_client = kfinance_api_client
+        self._root_node = root_node
+        self._ultimate_parent_path = ultimate_parent_path
+        self._truncation = truncation
+
+    @property
+    def root(self) -> CorporateTreeNode:
+        """The root node of the corporate tree."""
+        return self._root_node
+
+    @property
+    def is_truncated(self) -> bool:
+        """Whether the tree was truncated due to the max node limit (2000)."""
+        return self._truncation is not None
+
+    @property
+    def truncation_info(self) -> TruncationInfo | None:
+        """Truncation details, or None if the tree was not truncated."""
+        return self._truncation
+
+    @property
+    def parent(self) -> Company | None:
+        """The immediate parent company, or None if this is the ultimate parent.
+
+        Uses the ultimate_parent_path to determine the parent (second-to-last element).
+        Returns None if include_ultimate_parent_path was not requested or if this
+        company is already the ultimate parent.
+        """
+        if self._ultimate_parent_path is None:
+            return None
+        if len(self._ultimate_parent_path) < 2:
+            return None
+        parent_info = self._ultimate_parent_path[-2]
+        return Company(
+            kfinance_api_client=self.kfinance_api_client,
+            company_id=parent_info.id,
+            company_name=parent_info.name,
+        )
+
+    @property
+    def ultimate_parent(self) -> Company:
+        """The ultimate parent company in the corporate hierarchy.
+
+        If ultimate_parent_path was requested, uses the first element.
+        Otherwise falls back to the root node.
+        """
+        if self._ultimate_parent_path and len(self._ultimate_parent_path) > 0:
+            ult_parent_info = self._ultimate_parent_path[0]
+            return Company(
+                kfinance_api_client=self.kfinance_api_client,
+                company_id=ult_parent_info.id,
+                company_name=ult_parent_info.name,
+            )
+        return self._root_node.to_company()
+
+    @property
+    def ultimate_parent_path(self) -> list[Company] | None:
+        """The full path from ultimate parent down to the queried company, as Company objects.
+
+        Returns None if include_ultimate_parent_path was False when fetching the tree.
+        """
+        if self._ultimate_parent_path is None:
+            return None
+        return [
+            Company(
+                kfinance_api_client=self.kfinance_api_client,
+                company_id=info.id,
+                company_name=info.name,
+            )
+            for info in self._ultimate_parent_path
+        ]
+
+    @property
+    def direct_children(self) -> list[CorporateTreeNode]:
+        """Direct children of the root node (unfiltered)."""
+        return self._root_node.children
+
+    def children(
+        self,
+        relationship_type: TreeRelationshipType | None = None,
+        country: str | None = None,
+    ) -> list[CorporateTreeNode]:
+        """Direct children of the root node, optionally filtered.
+
+        :param relationship_type: Filter to only children with this relationship type.
+        :type relationship_type: TreeRelationshipType, optional
+        :param country: Filter to only children whose iso_country matches (case-insensitive).
+        :type country: str, optional
+        :return: Filtered list of direct child nodes.
+        :rtype: list[CorporateTreeNode]
+        """
+        result = self._root_node.children
+        if relationship_type is not None:
+            result = [n for n in result if n.relationship_type == relationship_type]
+        if country is not None:
+            country_lower = country.lower()
+            result = [
+                n
+                for n in result
+                if n.iso_country is not None and n.iso_country.lower() == country_lower
+            ]
+        return result
+
+    def summary(self) -> CorporateTreeSummary:
+        """Compute summary statistics by traversing the entire tree.
+
+        :return: A CorporateTreeSummary with total_nodes, nodes_per_level,
+            nodes_per_type, nodes_per_country, and is_truncated.
+        :rtype: CorporateTreeSummary
+        """
+        nodes_per_level: dict[int, int] = {}
+        nodes_per_type: dict[str, int] = {}
+        nodes_per_country: dict[str, int] = {}
+        total_nodes = 0
+
+        def _traverse(node: CorporateTreeNode, level: int) -> None:
+            nonlocal total_nodes
+            total_nodes += 1
+            nodes_per_level[level] = nodes_per_level.get(level, 0) + 1
+
+            if node.relationship_type is not None:
+                type_key = node.relationship_type.value
+                nodes_per_type[type_key] = nodes_per_type.get(type_key, 0) + 1
+
+            country_key = node.iso_country or "Unknown"
+            nodes_per_country[country_key] = nodes_per_country.get(country_key, 0) + 1
+
+            for child in node.children:
+                _traverse(child, level + 1)
+
+        _traverse(self._root_node, level=0)
+
+        return CorporateTreeSummary(
+            total_nodes=total_nodes,
+            nodes_per_level=nodes_per_level,
+            nodes_per_type=nodes_per_type,
+            nodes_per_country=nodes_per_country,
+            is_truncated=self.is_truncated,
+        )
+
+    def __str__(self) -> str:
+        s = self.summary()
+        return (
+            f"CorporateTree(root={self._root_node.company_name}, "
+            f"total_nodes={s.total_nodes}, truncated={s.is_truncated})"
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 class BusinessRelationships(NamedTuple):

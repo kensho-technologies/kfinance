@@ -51,6 +51,7 @@ from kfinance.domains.professionals.professionals_models import (
     ProfessionalType,
     Timeframe,
 )
+from kfinance.domains.corporate_tree.corporate_tree_models import CorporateTreeResponse
 from kfinance.domains.ratings.ratings_models import IssuerRatingsResp
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
     AdvisorsResp,
@@ -1140,3 +1141,31 @@ class KFinanceApiClient:
 
         response_data = self.fetch(url, method="POST", request_body=request_body)
         return IssuerRatingsResp.model_validate(response_data)
+
+    def fetch_corporate_tree(
+        self,
+        company_id: int,
+        include_prior: bool = False,
+        include_ultimate_parent_path: bool = True,
+        max_depth: int = 20,
+    ) -> CorporateTreeResponse:
+        """Fetch the corporate tree for a company.
+
+        :param company_id: The company ID to fetch the corporate tree for.
+        :type company_id: int
+        :param include_prior: Include prior/historical relationships.
+        :type include_prior: bool
+        :param include_ultimate_parent_path: Return the path from ultimate parent to the queried company.
+        :type include_ultimate_parent_path: bool
+        :param max_depth: Maximum depth to traverse (0-20).
+        :type max_depth: int
+        :return: The corporate tree response.
+        :rtype: CorporateTreeResponse
+        """
+        url = (
+            f"{self.url_base}corporate_tree/{company_id}"
+            f"?include_prior={str(include_prior).lower()}"
+            f"&include_ultimate_parent_path={str(include_ultimate_parent_path).lower()}"
+            f"&max_depth={max_depth}"
+        )
+        return CorporateTreeResponse.model_validate(self.fetch(url))
