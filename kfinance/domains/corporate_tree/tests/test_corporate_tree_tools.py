@@ -442,7 +442,7 @@ class TestGetCorporateTreeSummary:
     def add_tree_mock(self, httpx_mock: HTTPXMock) -> None:
         httpx_mock.add_response(
             method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=false&include_ultimate_parent_path=false&max_depth=20",
+            url=f"{CORPORATE_TREE_URL}?include_prior=false&include_ultimate_parent_path=true&max_depth=20",
             json=SAMPLE_TREE_RESPONSE,
             is_optional=True,
             is_reusable=True,
@@ -464,24 +464,40 @@ class TestGetCorporateTreeSummary:
         # Level 1: Market Intelligence, Ratings, CRISIL, Old Subsidiary (4 nodes)
         # Level 2: Capital IQ, UK Ltd (2 nodes)
         # Total: 7 nodes
-        assert result.total_nodes == 7
-        assert result.nodes_per_level == {0: 1, 1: 4, 2: 2}
-        assert result.nodes_per_type["SUBSIDIARY_OR_OPERATING_UNIT"] == 4
-        assert result.nodes_per_type["AFFILIATE"] == 1
-        assert result.nodes_per_type["MERGED_ENTITY"] == 1
-        assert result.nodes_per_country["USA"] == 5
-        assert result.nodes_per_country["GBR"] == 1
-        assert result.nodes_per_country["IND"] == 1
-        assert result.is_truncated is False
+        assert result.tree_size == 7
+        assert result.tree_truncated is False
+        assert result.direct_children == 4
+        assert result.depth == 2
+
+        # Ultimate parent from SAMPLE_TREE_RESPONSE
+        assert result.ultimate_parent is not None
+        assert result.ultimate_parent.id == 50000
+        assert result.ultimate_parent.name == "Ultimate Parent Corp"
+
+        # by_type
+        assert result.by_type["SUBSIDIARY_OR_OPERATING_UNIT"] == 4
+        assert result.by_type["AFFILIATE"] == 1
+        assert result.by_type["MERGED_ENTITY"] == 1
+
+        # top_countries (all 3 countries fit in top 5)
+        country_map = {c.iso_country: c.count for c in result.top_countries}
+        assert country_map["USA"] == 5
+        assert country_map["GBR"] == 1
+        assert country_map["IND"] == 1
+        assert result.other_countries_count == 0
+
+        # largest_children: Market Intelligence has 2 descendants, others have 0
+        assert result.largest_children[0].name == "S&P Global Market Intelligence"
+        assert result.largest_children[0].descendants == 2
 
     @pytest.mark.asyncio
     async def test_summarize_truncated_tree(
         self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
     ) -> None:
-        """WHEN a tree is truncated THEN summary reports is_truncated=True."""
+        """WHEN a tree is truncated THEN summary reports tree_truncated=True."""
         httpx_mock.add_response(
             method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=false&include_ultimate_parent_path=false&max_depth=20",
+            url=f"{CORPORATE_TREE_URL}?include_prior=false&include_ultimate_parent_path=true&max_depth=20",
             json=SAMPLE_TREE_RESPONSE_TRUNCATED,
         )
 
@@ -491,8 +507,8 @@ class TestGetCorporateTreeSummary:
             kfinance_api_client=MOCK_API_CLIENT,
         )
 
-        assert result.is_truncated is True
-        assert result.total_nodes == 2  # root + 1 child
+        assert result.tree_truncated is True
+        assert result.tree_size == 2  # root + 1 child
 
     @pytest.mark.asyncio
     async def test_get_corporate_tree_summary_from_identifiers(
@@ -507,7 +523,7 @@ class TestGetCorporateTreeSummary:
 
         assert "SPGI" in resp.identifier_results
         result = resp.identifier_results["SPGI"]
-        assert result.total_nodes == 7
+        assert result.tree_size == 7
         assert len(resp.errors) == 0
 
     @pytest.mark.asyncio

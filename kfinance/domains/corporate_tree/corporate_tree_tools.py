@@ -105,14 +105,41 @@ class CorporateTreeSearchResult(BaseModel):
     is_truncated: bool
 
 
+class SummaryCompanyInfo(BaseModel):
+    """Minimal company info for summary results."""
+
+    id: int
+    name: str
+
+
+class SummaryCountryInfo(BaseModel):
+    """Country entry in the top_countries list."""
+
+    country: str
+    iso_country: str
+    count: int
+
+
+class SummaryChildInfo(BaseModel):
+    """A direct child with its descendant count."""
+
+    id: int
+    name: str
+    descendants: int
+
+
 class CorporateTreeSummaryResult(BaseModel):
     """Summary statistics for a corporate tree."""
 
-    total_nodes: int
-    nodes_per_level: dict[int, int]
-    nodes_per_type: dict[str, int]
-    nodes_per_country: dict[str, int]
-    is_truncated: bool
+    tree_size: int
+    tree_truncated: bool
+    direct_children: int
+    depth: int
+    ultimate_parent: SummaryCompanyInfo | None
+    by_type: dict[str, int]
+    top_countries: list[SummaryCountryInfo]
+    other_countries_count: int
+    largest_children: list[SummaryChildInfo]
 
 
 # --- Tool 1: Get Ultimate Parent Path ---
@@ -500,18 +527,82 @@ async def fetch_and_summarize_corporate_tree(
     response = await fetch_corporate_tree(
         company_id=company_id,
         httpx_client=httpx_client,
+        include_ultimate_parent_path=True,
         max_depth=20,
     )
 
     tree = build_corporate_tree_from_response(response, kfinance_api_client)
 
-    # Reuse CorporateTree.summary()
-    summary = tree.summary()
+    # Count descendants for each node via post-order traversal
+    def _count_descendants(node: CorporateTreeNode) -> int:
+        count = 0
+        for child in node.children:
+            count += 1 + _count_descendants(child)
+        return count
+
+    # Compute tree depth (max level)
+    def _max_depth(node: CorporateTreeNode, level: int) -> int:
+        if not node.children:
+            return level
+        return max(_max_depth(child, level + 1) for child in node.children)
+
+    # Compute by_type and country counts via full traversal
+    by_type: dict[str, int] = {}
+    country_counts: dict[str, tuple[str, int]] = {}  # iso_country -> (full_name, count)
+
+    def _traverse(node: CorporateTreeNode) -> None:
+        if node.relationship_type is not None:
+            type_key = node.relationship_type.value
+            by_type[type_key] = by_type.get(type_key, 0) + 1
+
+        iso = node.iso_country or "Unknown"
+        if iso in country_counts:
+            full_name, count = country_counts[iso]
+            country_counts[iso] = (full_name, count + 1)
+        else:
+            country_counts[iso] = (node.country or "Unknown", 1)
+
+        for child in node.children:
+            _traverse(child)
+
+    _traverse(tree.root)
+
+    # Tree size includes root
+    tree_size = 1 + sum(by_type.values())
+
+    # Top 5 countries by count
+    sorted_countries = sorted(country_counts.items(), key=lambda x: -x[1][1])
+    top_countries = [
+        SummaryCountryInfo(country=full_name, iso_country=iso, count=count)
+        for iso, (full_name, count) in sorted_countries[:5]
+    ]
+    other_countries_count = len(sorted_countries) - len(top_countries)
+
+    # Largest 5 direct children by descendant count
+    children_with_counts = [
+        (child, _count_descendants(child))
+        for child in tree.root.children
+    ]
+    children_with_counts.sort(key=lambda x: -x[1])
+    largest_children = [
+        SummaryChildInfo(id=child.company_id, name=child.company_name, descendants=count)
+        for child, count in children_with_counts[:5]
+    ]
+
+    # Ultimate parent
+    ultimate_parent: SummaryCompanyInfo | None = None
+    if response.ultimate_parent_path and len(response.ultimate_parent_path) > 1:
+        parent_info = response.ultimate_parent_path[0]
+        ultimate_parent = SummaryCompanyInfo(id=parent_info.id, name=parent_info.name)
 
     return CorporateTreeSummaryResult(
-        total_nodes=summary.total_nodes,
-        nodes_per_level=summary.nodes_per_level,
-        nodes_per_type=summary.nodes_per_type,
-        nodes_per_country=summary.nodes_per_country,
-        is_truncated=summary.is_truncated,
+        tree_size=tree_size,
+        tree_truncated=tree.is_truncated,
+        direct_children=len(tree.root.children),
+        depth=_max_depth(tree.root, 0),
+        ultimate_parent=ultimate_parent,
+        by_type=by_type,
+        top_countries=top_countries,
+        other_countries_count=other_countries_count,
+        largest_children=largest_children,
     )
