@@ -11,7 +11,6 @@ from kfinance.client.permission_models import Permission
 from kfinance.domains.corporate_tree.corporate_tree_models import (
     CompanyInfo,
     CorporateTreeResponse,
-    TreeNode,
     TreeRelationshipType,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
@@ -19,42 +18,6 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolArgsWithIdentifiers,
     ToolRespWithIdInfoAndErrors,
 )
-
-
-# --- Shared helpers ---
-
-
-def build_corporate_tree_from_response(
-    response: CorporateTreeResponse,
-    kfinance_api_client: object,
-) -> CorporateTree:
-    """Build a CorporateTree from an API response (reuses client classes)."""
-
-    def _build_node(tree_node: TreeNode) -> CorporateTreeNode:
-        return CorporateTreeNode(
-            kfinance_api_client=kfinance_api_client,
-            company_info=tree_node.company,
-            relationship_type=tree_node.relationship_type,
-            relationship_status=tree_node.relationship_status,
-            controlling_interest=tree_node.controlling_interest,
-            children=[_build_node(child) for child in tree_node.children],
-        )
-
-    root_node = CorporateTreeNode(
-        kfinance_api_client=kfinance_api_client,
-        company_info=response.root.company,
-        relationship_type=None,
-        relationship_status=None,
-        controlling_interest=None,
-        children=[_build_node(child) for child in response.root.children],
-    )
-
-    return CorporateTree(
-        kfinance_api_client=kfinance_api_client,
-        root_node=root_node,
-        ultimate_parent_path=response.ultimate_parent_path,
-        truncation=response.truncation,
-    )
 
 
 async def fetch_corporate_tree(
@@ -407,7 +370,7 @@ async def fetch_and_search_corporate_tree(
         max_depth=1 if direct_children_only else 20,
     )
 
-    tree = build_corporate_tree_from_response(response, kfinance_api_client)
+    tree = CorporateTree.from_response(response, kfinance_api_client)
 
     # Build a depth map (node object id → level) via traversal, and count total nodes
     depth_map: dict[int, int] = {}
@@ -559,62 +522,20 @@ async def fetch_and_summarize_corporate_tree(
         max_depth=20,
     )
 
-    tree = build_corporate_tree_from_response(response, kfinance_api_client)
+    tree = CorporateTree.from_response(response, kfinance_api_client)
+    summary = tree.summary()
 
-    # Count descendants for each node via post-order traversal
-    def _count_descendants(node: CorporateTreeNode) -> int:
-        count = 0
-        for child in node.children:
-            count += 1 + _count_descendants(child)
-        return count
-
-    # Compute tree depth (max level)
-    def _max_depth(node: CorporateTreeNode, level: int) -> int:
-        if not node.children:
-            return level
-        return max(_max_depth(child, level + 1) for child in node.children)
-
-    # Compute by_type and country counts via full traversal
-    by_type: dict[str, int] = {}
-    country_counts: dict[str, tuple[str, int]] = {}  # iso_country -> (full_name, count)
-
-    def _traverse(node: CorporateTreeNode) -> None:
-        if node.relationship_type is not None:
-            type_key = node.relationship_type.value
-            by_type[type_key] = by_type.get(type_key, 0) + 1
-
-        iso = node.iso_country or "Unknown"
-        if iso in country_counts:
-            full_name, count = country_counts[iso]
-            country_counts[iso] = (full_name, count + 1)
-        else:
-            country_counts[iso] = (node.country or "Unknown", 1)
-
-        for child in node.children:
-            _traverse(child)
-
-    _traverse(tree.root)
-
-    # Tree size includes root
-    tree_size = 1 + sum(by_type.values())
-
-    # Top 5 countries by count
-    sorted_countries = sorted(country_counts.items(), key=lambda x: -x[1][1])
+    # Format top 5 countries
     top_countries = [
-        SummaryCountryInfo(country=full_name, iso_country=iso, count=count)
-        for iso, (full_name, count) in sorted_countries[:5]
+        SummaryCountryInfo(country=cc.country, iso_country=cc.iso_country, count=cc.count)
+        for cc in summary.nodes_per_country[:5]
     ]
-    other_countries_count = len(sorted_countries) - len(top_countries)
+    other_countries_count = len(summary.nodes_per_country) - len(top_countries)
 
-    # Largest 5 direct children by descendant count
-    children_with_counts = [
-        (child, _count_descendants(child))
-        for child in tree.root.children
-    ]
-    children_with_counts.sort(key=lambda x: -x[1])
+    # Format top 5 largest children
     largest_children = [
-        SummaryChildInfo(id=child.company_id, name=child.company_name, descendants=count)
-        for child, count in children_with_counts[:5]
+        SummaryChildInfo(id=cd.node.company_id, name=cd.node.company_name, descendants=cd.descendants)
+        for cd in summary.children_by_descendants[:5]
     ]
 
     # Ultimate parent
@@ -624,12 +545,12 @@ async def fetch_and_summarize_corporate_tree(
         ultimate_parent = SummaryCompanyInfo(id=parent_info.id, name=parent_info.name)
 
     return CorporateTreeSummaryResult(
-        tree_size=tree_size,
-        tree_truncated=tree.is_truncated,
-        direct_children=len(tree.root.children),
-        depth=_max_depth(tree.root, 0),
+        tree_size=summary.total_nodes,
+        tree_truncated=summary.is_truncated,
+        direct_children=summary.direct_children_count,
+        depth=summary.depth,
         ultimate_parent=ultimate_parent,
-        by_type=by_type,
+        by_type=summary.nodes_per_type,
         top_countries=top_countries,
         other_countries_count=other_countries_count,
         largest_children=largest_children,

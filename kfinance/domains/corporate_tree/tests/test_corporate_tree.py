@@ -347,7 +347,11 @@ class TestCorporateTreeSummary(TestCase):
     def test_summary_nodes_per_country(self) -> None:
         tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)
         summary = tree.summary()
-        assert summary.nodes_per_country == {"USA": 4, "GBR": 1, "DEU": 1}
+        country_map = {c.iso_country: c.count for c in summary.nodes_per_country}
+        assert country_map == {"USA": 4, "GBR": 1, "DEU": 1}
+        # Verify full country name is preserved
+        usa_entry = next(c for c in summary.nodes_per_country if c.iso_country == "USA")
+        assert usa_entry.country == "United States"
 
     def test_summary_is_truncated_false(self) -> None:
         tree = _build_corporate_tree(SAMPLE_CORPORATE_TREE_RESPONSE)

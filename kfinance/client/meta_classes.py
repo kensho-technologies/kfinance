@@ -974,9 +974,7 @@ class CompanyFunctionsMetaClass:
         :rtype: CorporateTree
         """
         if self._corporate_tree is None:
-            from .kfinance import CorporateTree, CorporateTreeNode
-
-            from kfinance.domains.corporate_tree.corporate_tree_models import TreeNode
+            from .kfinance import CorporateTree
 
             response = self.kfinance_api_client.fetch_corporate_tree(
                 company_id=self.company_id,
@@ -985,31 +983,9 @@ class CompanyFunctionsMetaClass:
                 max_depth=20,
             )
 
-            def _build_node(tree_node: TreeNode) -> CorporateTreeNode:
-                """Recursively convert API TreeNode into client CorporateTreeNode."""
-                return CorporateTreeNode(
-                    kfinance_api_client=self.kfinance_api_client,
-                    company_info=tree_node.company,
-                    relationship_type=tree_node.relationship_type,
-                    relationship_status=tree_node.relationship_status,
-                    controlling_interest=tree_node.controlling_interest,
-                    children=[_build_node(child) for child in tree_node.children],
-                )
-
-            root_node = CorporateTreeNode(
+            self._corporate_tree = CorporateTree.from_response(
+                response=response,
                 kfinance_api_client=self.kfinance_api_client,
-                company_info=response.root.company,
-                relationship_type=None,
-                relationship_status=None,
-                controlling_interest=None,
-                children=[_build_node(child) for child in response.root.children],
-            )
-
-            self._corporate_tree = CorporateTree(
-                kfinance_api_client=self.kfinance_api_client,
-                root_node=root_node,
-                ultimate_parent_path=response.ultimate_parent_path,
-                truncation=response.truncation,
             )
 
         return self._corporate_tree

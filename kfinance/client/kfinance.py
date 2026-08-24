@@ -42,6 +42,8 @@ from kfinance.client.server_thread import ServerThread
 from kfinance.domains.companies.company_models import IdentificationTriple
 from kfinance.domains.corporate_tree.corporate_tree_models import (
     CompanyInfo as TreeCompanyInfo,
+    CorporateTreeResponse,
+    TreeNode,
     TreeRelationshipType,
     TreeRelationshipStatus,
     TruncationInfo,
@@ -1389,28 +1391,57 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         return self.primary_trading_item.price_chart(periodicity, adjusted, start_date, end_date)
 
 
+class CountryCount:
+    """Country entry with both full name and ISO code."""
+
+    def __init__(self, country: str, iso_country: str, count: int) -> None:
+        self.country = country
+        self.iso_country = iso_country
+        self.count = count
+
+    def __repr__(self) -> str:
+        return f"CountryCount({self.iso_country}, count={self.count})"
+
+
+class ChildDescendants:
+    """A direct child node paired with its descendant count."""
+
+    def __init__(self, node: "CorporateTreeNode", descendants: int) -> None:
+        self.node = node
+        self.descendants = descendants
+
+    def __repr__(self) -> str:
+        return f"ChildDescendants({self.node.company_name}, descendants={self.descendants})"
+
+
 class CorporateTreeSummary:
     """Summary statistics for a corporate tree."""
 
     def __init__(
         self,
         total_nodes: int,
+        depth: int,
+        direct_children_count: int,
         nodes_per_level: dict[int, int],
         nodes_per_type: dict[str, int],
-        nodes_per_country: dict[str, int],
+        nodes_per_country: list[CountryCount],
+        children_by_descendants: list[ChildDescendants],
         is_truncated: bool,
     ) -> None:
         self.total_nodes = total_nodes
+        self.depth = depth
+        self.direct_children_count = direct_children_count
         self.nodes_per_level = nodes_per_level
         self.nodes_per_type = nodes_per_type
         self.nodes_per_country = nodes_per_country
+        self.children_by_descendants = children_by_descendants
         self.is_truncated = is_truncated
 
     def __str__(self) -> str:
         return (
             f"CorporateTreeSummary(total_nodes={self.total_nodes}, "
+            f"depth={self.depth}, "
             f"is_truncated={self.is_truncated}, "
-            f"levels={len(self.nodes_per_level)}, "
             f"types={dict(self.nodes_per_type)}, "
             f"countries={len(self.nodes_per_country)})"
         )
@@ -1522,10 +1553,61 @@ class CorporateTree:
         self._ultimate_parent_path = ultimate_parent_path
         self._truncation = truncation
 
+    @classmethod
+    def from_response(
+        cls,
+        response: CorporateTreeResponse,
+        kfinance_api_client: KFinanceApiClient,
+    ) -> "CorporateTree":
+        """Build a CorporateTree from an API response.
+
+        :param response: The parsed API response containing the tree structure.
+        :type response: CorporateTreeResponse
+        :param kfinance_api_client: The API client for lazy-loading.
+        :type kfinance_api_client: KFinanceApiClient
+        :return: A fully constructed CorporateTree.
+        :rtype: CorporateTree
+        """
+
+        def _build_node(tree_node: TreeNode) -> CorporateTreeNode:
+            return CorporateTreeNode(
+                kfinance_api_client=kfinance_api_client,
+                company_info=tree_node.company,
+                relationship_type=tree_node.relationship_type,
+                relationship_status=tree_node.relationship_status,
+                controlling_interest=tree_node.controlling_interest,
+                children=[_build_node(child) for child in tree_node.children],
+            )
+
+        root_node = CorporateTreeNode(
+            kfinance_api_client=kfinance_api_client,
+            company_info=response.root.company,
+            relationship_type=None,
+            relationship_status=None,
+            controlling_interest=None,
+            children=[_build_node(child) for child in response.root.children],
+        )
+
+        return cls(
+            kfinance_api_client=kfinance_api_client,
+            root_node=root_node,
+            ultimate_parent_path=response.ultimate_parent_path,
+            truncation=response.truncation,
+        )
+
     @property
     def root(self) -> CorporateTreeNode:
         """The root node of the corporate tree."""
         return self._root_node
+
+    @property
+    def size(self) -> int:
+        """Total number of nodes in the tree."""
+
+        def _count(node: CorporateTreeNode) -> int:
+            return 1 + sum(_count(child) for child in node.children)
+
+        return _count(self._root_node)
 
     @property
     def is_truncated(self) -> bool:
@@ -1692,37 +1774,70 @@ class CorporateTree:
     def summary(self) -> CorporateTreeSummary:
         """Compute summary statistics by traversing the entire tree.
 
-        :return: A CorporateTreeSummary with total_nodes, nodes_per_level,
-            nodes_per_type, nodes_per_country, and is_truncated.
+        :return: A CorporateTreeSummary with total_nodes, depth, nodes_per_level,
+            nodes_per_type, nodes_per_country (with full names), children_by_descendants,
+            and is_truncated.
         :rtype: CorporateTreeSummary
         """
         nodes_per_level: dict[int, int] = {}
         nodes_per_type: dict[str, int] = {}
-        nodes_per_country: dict[str, int] = {}
+        # iso_country -> (full_country_name, count)
+        country_counts: dict[str, tuple[str, int]] = {}
         total_nodes = 0
+        max_depth = 0
 
         def _traverse(node: CorporateTreeNode, level: int) -> None:
-            nonlocal total_nodes
+            nonlocal total_nodes, max_depth
             total_nodes += 1
+            if level > max_depth:
+                max_depth = level
             nodes_per_level[level] = nodes_per_level.get(level, 0) + 1
 
             if node.relationship_type is not None:
                 type_key = node.relationship_type.value
                 nodes_per_type[type_key] = nodes_per_type.get(type_key, 0) + 1
 
-            country_key = node.iso_country or "Unknown"
-            nodes_per_country[country_key] = nodes_per_country.get(country_key, 0) + 1
+            iso = node.iso_country or "Unknown"
+            if iso in country_counts:
+                full_name, count = country_counts[iso]
+                country_counts[iso] = (full_name, count + 1)
+            else:
+                country_counts[iso] = (node.country or "Unknown", 1)
 
             for child in node.children:
                 _traverse(child, level + 1)
 
         _traverse(self._root_node, level=0)
 
+        def _count_descendants(node: CorporateTreeNode) -> int:
+            count = 0
+            for child in node.children:
+                count += 1 + _count_descendants(child)
+            return count
+
+        # Countries sorted by count descending
+        nodes_per_country = [
+            CountryCount(country=full_name, iso_country=iso, count=count)
+            for iso, (full_name, count) in sorted(country_counts.items(), key=lambda x: -x[1][1])
+        ]
+
+        # Direct children sorted by descendant count descending
+        children_by_descendants = sorted(
+            [
+                ChildDescendants(node=child, descendants=_count_descendants(child))
+                for child in self._root_node.children
+            ],
+            key=lambda x: -x.descendants,
+        )
+
         return CorporateTreeSummary(
             total_nodes=total_nodes,
+            depth=max_depth,
+            direct_children_count=len(self._root_node.children),
             nodes_per_level=nodes_per_level,
             nodes_per_type=nodes_per_type,
             nodes_per_country=nodes_per_country,
+            children_by_descendants=children_by_descendants,
             is_truncated=self.is_truncated,
         )
 
