@@ -303,7 +303,7 @@ class TestSearchCorporateTree:
             company_id=SPGI_COMPANY_ID,
             httpx_client=httpx_client,
             kfinance_api_client=MOCK_API_CLIENT,
-            relationship_type=TreeRelationshipType.affiliate,
+            relationship_type=[TreeRelationshipType.affiliate],
         )
 
         assert len(result.nodes) == 1
@@ -320,7 +320,7 @@ class TestSearchCorporateTree:
             company_id=SPGI_COMPANY_ID,
             httpx_client=httpx_client,
             kfinance_api_client=MOCK_API_CLIENT,
-            country="GBR",
+            country=["GBR"],
         )
 
         assert len(result.nodes) == 1
@@ -336,7 +336,7 @@ class TestSearchCorporateTree:
             company_id=SPGI_COMPANY_ID,
             httpx_client=httpx_client,
             kfinance_api_client=MOCK_API_CLIENT,
-            name="Capital",
+            name=["Capital"],
         )
 
         assert len(result.nodes) == 1
@@ -353,7 +353,7 @@ class TestSearchCorporateTree:
             httpx_client=httpx_client,
             kfinance_api_client=MOCK_API_CLIENT,
             direct_children_only=True,
-            relationship_type=TreeRelationshipType.subsidiary_or_operating_unit,
+            relationship_type=[TreeRelationshipType.subsidiary_or_operating_unit],
         )
 
         # Direct children that are subsidiaries: "S&P Global Market Intelligence" and "S&P Global Ratings"
@@ -372,8 +372,8 @@ class TestSearchCorporateTree:
             company_id=SPGI_COMPANY_ID,
             httpx_client=httpx_client,
             kfinance_api_client=MOCK_API_CLIENT,
-            relationship_type=TreeRelationshipType.subsidiary_or_operating_unit,
-            country="USA",
+            relationship_type=[TreeRelationshipType.subsidiary_or_operating_unit],
+            country=["USA"],
         )
 
         # All US subsidiaries (not affiliates, not UK)
@@ -385,6 +385,78 @@ class TestSearchCorporateTree:
         assert "S&P Global UK Ltd" not in names  # GBR, not USA
 
     @pytest.mark.asyncio
+    async def test_search_multiple_countries(
+        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN filtering by multiple countries THEN nodes in ANY of the countries are returned."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            kfinance_api_client=MOCK_API_CLIENT,
+            country=["GBR", "IND"],
+        )
+
+        names = [n.company_name for n in result.nodes]
+        assert "S&P Global UK Ltd" in names
+        assert "CRISIL Limited" in names
+        assert len(result.nodes) == 2
+
+    @pytest.mark.asyncio
+    async def test_search_multiple_relationship_types(
+        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN filtering by multiple relationship types THEN nodes with ANY of the types are returned."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            kfinance_api_client=MOCK_API_CLIENT,
+            relationship_type=[TreeRelationshipType.affiliate, TreeRelationshipType.merged_entity],
+        )
+
+        names = [n.company_name for n in result.nodes]
+        assert "CRISIL Limited" in names
+        assert "Old Subsidiary Inc." in names
+        assert len(result.nodes) == 2
+
+    @pytest.mark.asyncio
+    async def test_search_multiple_names(
+        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN filtering by multiple name substrings THEN nodes matching ANY are returned."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            kfinance_api_client=MOCK_API_CLIENT,
+            name=["Capital", "Ratings"],
+        )
+
+        names = [n.company_name for n in result.nodes]
+        assert "Capital IQ" in names
+        assert "S&P Global Ratings" in names
+        assert len(result.nodes) == 2
+
+    @pytest.mark.asyncio
+    async def test_search_multiple_filters_with_and_logic(
+        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN multiple filter types are combined THEN AND logic applies between them."""
+        # Search for subsidiaries OR affiliates that are in GBR OR IND
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            kfinance_api_client=MOCK_API_CLIENT,
+            relationship_type=[TreeRelationshipType.subsidiary_or_operating_unit, TreeRelationshipType.affiliate],
+            country=["GBR", "IND"],
+        )
+
+        names = [n.company_name for n in result.nodes]
+        # S&P Global UK Ltd is a subsidiary in GBR — matches both filters
+        # CRISIL Limited is an affiliate in IND — matches both filters
+        assert "S&P Global UK Ltd" in names
+        assert "CRISIL Limited" in names
+        assert len(result.nodes) == 2
+
+    @pytest.mark.asyncio
     async def test_search_with_include_prior(
         self, httpx_client: httpx.AsyncClient, add_tree_with_prior_mock: None
     ) -> None:
@@ -394,7 +466,7 @@ class TestSearchCorporateTree:
             httpx_client=httpx_client,
             kfinance_api_client=MOCK_API_CLIENT,
             include_prior=True,
-            relationship_type=TreeRelationshipType.merged_entity,
+            relationship_type=[TreeRelationshipType.merged_entity],
         )
 
         assert len(result.nodes) == 1
@@ -429,7 +501,7 @@ class TestSearchCorporateTree:
             identifiers=["SPGI"],
             httpx_client=httpx_client,
             kfinance_api_client=MOCK_API_CLIENT,
-            country="IND",
+            country=["IND"],
         )
 
         assert "SPGI" in resp.identifier_results

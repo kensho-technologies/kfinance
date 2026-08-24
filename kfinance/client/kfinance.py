@@ -1704,23 +1704,28 @@ class CorporateTree:
 
     def search(
         self,
-        relationship_type: TreeRelationshipType | None = None,
-        country: str | None = None,
-        name: str | None = None,
+        relationship_type: TreeRelationshipType | list[TreeRelationshipType] | None = None,
+        country: str | list[str] | None = None,
+        name: str | list[str] | None = None,
         limit: int | None = None,
         max_depth: int | None = None,
     ) -> list[CorporateTreeNode]:
         """Search the tree for nodes matching the given filters.
 
         Traverses all nodes (not just direct children) and returns those that
-        match all specified filters. Filters are combined with AND logic.
+        match all specified filters. Filters are combined with AND logic across
+        filter types. When a filter is a list, a node matches if it matches ANY
+        value in the list (OR within a filter).
 
-        :param relationship_type: Filter to nodes with this relationship type.
-        :type relationship_type: TreeRelationshipType, optional
-        :param country: Filter to nodes whose iso_country matches (case-insensitive).
-        :type country: str, optional
-        :param name: Filter to nodes whose company_name contains this substring (case-insensitive).
-        :type name: str, optional
+        :param relationship_type: Filter to nodes with this relationship type, or any of the
+            listed types.
+        :type relationship_type: TreeRelationshipType or list[TreeRelationshipType], optional
+        :param country: Filter to nodes whose iso_country matches (case-insensitive), or
+            any of the listed countries.
+        :type country: str or list[str], optional
+        :param name: Filter to nodes whose company_name contains this substring
+            (case-insensitive), or contains any of the listed substrings.
+        :type name: str or list[str], optional
         :param limit: Maximum number of results to return. Must be > 0.
         :type limit: int, optional
         :param max_depth: Maximum depth to search (1 = direct children only, 2 = children
@@ -1736,9 +1741,29 @@ class CorporateTree:
         if max_depth is not None and max_depth < 1:
             raise ValueError("max_depth must be greater than 0")
 
+        # Normalize filters to sets for O(1) membership checks
+        type_set: set[TreeRelationshipType] | None = None
+        if relationship_type is not None:
+            type_set = (
+                set(relationship_type) if isinstance(relationship_type, list)
+                else {relationship_type}
+            )
+
+        country_set: set[str] | None = None
+        if country is not None:
+            country_set = (
+                {c.lower() for c in country} if isinstance(country, list)
+                else {country.lower()}
+            )
+
+        name_list: list[str] | None = None
+        if name is not None:
+            name_list = (
+                [n.lower() for n in name] if isinstance(name, list)
+                else [name.lower()]
+            )
+
         results: list[CorporateTreeNode] = []
-        country_lower = country.lower() if country is not None else None
-        name_lower = name.lower() if name is not None else None
 
         def _search(node: CorporateTreeNode, depth: int) -> bool:
             """Returns True if limit reached and we should stop."""
@@ -1746,13 +1771,14 @@ class CorporateTree:
                 return True
 
             match = True
-            if relationship_type is not None and node.relationship_type != relationship_type:
+            if type_set is not None and node.relationship_type not in type_set:
                 match = False
-            if match and country_lower is not None:
-                if node.iso_country is None or node.iso_country.lower() != country_lower:
+            if match and country_set is not None:
+                if node.iso_country is None or node.iso_country.lower() not in country_set:
                     match = False
-            if match and name_lower is not None:
-                if name_lower not in node.company_name.lower():
+            if match and name_list is not None:
+                node_name_lower = node.company_name.lower()
+                if not any(n in node_name_lower for n in name_list):
                     match = False
 
             if match:

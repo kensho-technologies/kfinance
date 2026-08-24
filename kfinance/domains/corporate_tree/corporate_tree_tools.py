@@ -218,16 +218,17 @@ async def fetch_ultimate_parent_path(
 
 class SearchCorporateTreeArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
-    relationship_type: TreeRelationshipType | None = Field(
+    relationship_type: list[TreeRelationshipType] | None = Field(
         default=None,
+        description="Filter by relationship type(s). Nodes matching ANY of the listed types are included.",
     )
-    country: str | None = Field(
+    country: list[str] | None = Field(
         default=None,
-        description="ISO country code to filter by (e.g., 'USA', 'GBR')",
+        description="ISO country code(s) to filter by (e.g., ['USA', 'GBR']). Nodes in ANY of the listed countries are included.",
     )
-    name: str | None = Field(
+    name: list[str] | None = Field(
         default=None,
-        description="Substring to match against company names (case-insensitive)",
+        description="Substring(s) to match against company names (case-insensitive). Nodes matching ANY of the listed substrings are included.",
     )
     direct_children_only: bool = Field(
         default=False,
@@ -254,7 +255,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
     description: str = dedent("""
         Search a company's corporate tree for subsidiaries, affiliates, or other related entities matching the specified filters.
 
-        Filters are combined with AND logic. At least one filter (relationship_type, country, or name) should be provided for useful results.
+        Filters are combined with AND logic across filter types. When a filter contains multiple values, a node matches if it matches ANY value in the list (OR within a filter).
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - Returns up to `limit` matching nodes per identifier (default 50, max 200).
@@ -263,13 +264,16 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
 
         Examples:
         Query: "What subsidiaries does Microsoft have in Germany?"
-        Function: search_corporate_tree_from_identifiers(identifiers=["Microsoft"], country="DEU", relationship_type="SUBSIDIARY_OR_OPERATING_UNIT")
+        Function: search_corporate_tree_from_identifiers(identifiers=["Microsoft"], country=["DEU"], relationship_type=["SUBSIDIARY_OR_OPERATING_UNIT"])
 
-        Query: "Find all entities named 'Capital' under JPMorgan"
-        Function: search_corporate_tree_from_identifiers(identifiers=["JPM"], name="Capital")
+        Query: "Find all entities named 'Capital' or 'Global' under JPMorgan"
+        Function: search_corporate_tree_from_identifiers(identifiers=["JPM"], name=["Capital", "Global"])
 
         Query: "List the direct subsidiaries of Apple"
-        Function: search_corporate_tree_from_identifiers(identifiers=["Apple"], direct_children_only=true, relationship_type="SUBSIDIARY_OR_OPERATING_UNIT")
+        Function: search_corporate_tree_from_identifiers(identifiers=["Apple"], direct_children_only=true, relationship_type=["SUBSIDIARY_OR_OPERATING_UNIT"])
+
+        Query: "Find all affiliates and subsidiaries of S&P Global in the US, UK, and India"
+        Function: search_corporate_tree_from_identifiers(identifiers=["SPGI"], relationship_type=["SUBSIDIARY_OR_OPERATING_UNIT", "AFFILIATE"], country=["USA", "GBR", "IND"])
     """).strip()
     args_schema: Type[BaseModel] = SearchCorporateTreeArgs
     accepted_permissions: set[Permission] | None = None
@@ -277,9 +281,9 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
     async def _arun(
         self,
         identifiers: list[str],
-        relationship_type: TreeRelationshipType | None = None,
-        country: str | None = None,
-        name: str | None = None,
+        relationship_type: list[TreeRelationshipType] | None = None,
+        country: list[str] | None = None,
+        name: list[str] | None = None,
         direct_children_only: bool = False,
         include_prior: bool = False,
         limit: int = 50,
@@ -302,9 +306,9 @@ async def search_corporate_tree_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx.AsyncClient,
     kfinance_api_client: object,
-    relationship_type: TreeRelationshipType | None = None,
-    country: str | None = None,
-    name: str | None = None,
+    relationship_type: list[TreeRelationshipType] | None = None,
+    country: list[str] | None = None,
+    name: list[str] | None = None,
     direct_children_only: bool = False,
     include_prior: bool = False,
     limit: int = 50,
@@ -355,9 +359,9 @@ async def fetch_and_search_corporate_tree(
     company_id: int,
     httpx_client: httpx.AsyncClient,
     kfinance_api_client: object,
-    relationship_type: TreeRelationshipType | None = None,
-    country: str | None = None,
-    name: str | None = None,
+    relationship_type: list[TreeRelationshipType] | None = None,
+    country: list[str] | None = None,
+    name: list[str] | None = None,
     direct_children_only: bool = False,
     include_prior: bool = False,
     limit: int = 50,
