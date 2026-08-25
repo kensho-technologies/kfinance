@@ -1,8 +1,9 @@
+import json
 from textwrap import dedent
-from typing import Type
+from typing import Any, Type
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from kfinance.client.permission_models import Permission
 from kfinance.domains.ratings.id_resolution import resolve_entities
@@ -11,6 +12,8 @@ from kfinance.domains.ratings.ratings_models import (
     EntityInfoWithResult,
     IssuerRatings,
     IssuerRatingsResp,
+    SecurityRatings,
+    SecurityRatingsResp,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -51,6 +54,44 @@ class GetIssuerRatingsFromIdentifiersResp(ToolRespWithErrors):
         return cls(results=combined_results, errors=errors)
 
 
+class GetSecurityRatingsFromIdentifiersArgs(BaseModel):
+    security_identifiers: list[str] = Field(
+        min_length=1,
+        description="The security identifiers, which can be a list of ISINs, CUSIPs, CINS, or CIQ security_ids",
+    )
+
+    @field_validator("security_identifiers", mode="before")
+    @classmethod
+    def coerce_security_identifiers(cls, v: Any) -> list[str]:
+        """Handle bare string or int and stringified JSON list.
+
+        Coerces single values and JSON strings into list[str].
+        """
+        if isinstance(v, str):
+            v = v.strip()
+            # Handle stringified JSON lists like '["123", "456"]'
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    parsed = json.loads(v)
+                    if isinstance(parsed, list):
+                        return [str(item) for item in parsed]
+                except (json.JSONDecodeError, ValueError):
+                    pass
+            # Bare string like "123456789" -> ["123456789"]
+            return [v]
+        # Handle bare int like 123456789 -> ["123456789"]
+        if isinstance(v, int):
+            return [str(v)]
+        # Already a list
+        return [str(item) for item in v]
+
+
+class GetSecurityRatingsFromIdentifiersResp(ToolRespWithErrors):
+    """Response for security ratings."""
+
+    results: dict[str, SecurityRatings] = Field(default_factory=dict)
+
+
 class GetIssuerRatingsFromIdentifiers(KfinanceTool):
     name: str = "get_issuer_ratings_from_identifiers"
     description: str = dedent("""
@@ -88,6 +129,39 @@ class GetIssuerRatingsFromIdentifiers(KfinanceTool):
         """"""
         return await get_issuer_ratings_from_identifiers(
             identifiers=identifiers,
+            httpx_client=self.kfinance_client.httpx_client,
+        )
+
+
+class GetSecurityRatingsFromIdentifiers(KfinanceTool):
+    name: str = "get_security_ratings_from_identifiers"
+    description: str = dedent("""
+        Get credit ratings for one or more securities.
+
+        Returns ratings from credit rating agencies organized by security identifier and rating type
+        (e.g., FCLONG for foreign currency long-term, STDSHORT for short-term).
+
+        - Supports multiple security identifiers in a single call (CIQ security IDs, ISINs, CUSIPs, CINSs).
+        - Returns the latest rating along with full rating history for each security.
+        - Includes outlook (Stable, Positive, Negative) and credit watch information when available.
+
+        Examples:
+        Query: "What are the credit ratings for security XXX?"
+        Function: get_security_ratings_from_identifiers(security_identifiers=["XXX"])
+
+        Query: "Get ratings for securities 1230 and XXX."
+        Function: get_security_ratings_from_identifiers(security_identifiers=["1230", "XXX"])
+    """).strip()
+    args_schema: Type[BaseModel] = GetSecurityRatingsFromIdentifiersArgs
+    accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
+
+    async def _arun(
+        self,
+        security_identifiers: list[str],
+    ) -> GetSecurityRatingsFromIdentifiersResp:
+        """"""
+        return await get_security_ratings_from_identifiers(
+            security_ids=security_identifiers,
             httpx_client=self.kfinance_client.httpx_client,
         )
 
@@ -146,6 +220,25 @@ async def get_issuer_ratings_from_identifiers(
     )
 
 
+async def get_security_ratings_from_identifiers(
+    security_ids: list[str],
+    httpx_client: httpx.AsyncClient,
+) -> GetSecurityRatingsFromIdentifiersResp:
+    """Fetch security ratings for a list of identifiers."""
+
+    result = await fetch_security_ratings_from_identifiers(
+        security_ids=security_ids,
+        httpx_client=httpx_client,
+    )
+
+    # Results are already mapped from original identifier to ciq security id.
+    errors = [f"{identifier}: {error}" for identifier, error in result.errors.items()]
+    return GetSecurityRatingsFromIdentifiersResp(
+        results=result.results,
+        errors=errors,
+    )
+
+
 async def fetch_issuer_ratings_from_identifiers(
     entity_ids: list[int],
     httpx_client: httpx.AsyncClient,
@@ -157,3 +250,16 @@ async def fetch_issuer_ratings_from_identifiers(
     resp = await httpx_client.post(url=url, json=payload)
     resp.raise_for_status()
     return IssuerRatingsResp.model_validate(resp.json())
+
+
+async def fetch_security_ratings_from_identifiers(
+    security_ids: list[str],
+    httpx_client: httpx.AsyncClient,
+) -> SecurityRatingsResp:
+    """Fetch security-level ratings for one or more securities."""
+    url = "/ratings/security_ratings/"
+    payload: dict[str, str | list[str]] = {"security_ids": security_ids}
+
+    resp = await httpx_client.post(url=url, json=payload)
+    resp.raise_for_status()
+    return SecurityRatingsResp.model_validate(resp.json())

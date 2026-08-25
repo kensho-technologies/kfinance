@@ -103,12 +103,20 @@ class RatingDetail(BaseModel):
 
 
 class RatingTypeData(BaseModel):
-    """Data for a single rating type (e.g., FCLONG, STDSHORT)."""
+    """Data for a single rating type (e.g., FCLONG, STDSHORT).
 
-    source: str = "S&P Global"
-    last_review_date: datetime | None = Field(default=None)
+    If no rating is marked as latest, all ratings will be in history and latest will be None.
+    """
+
+    source: str
     latest: RatingDetail
     history: list[RatingDetail] = Field(default_factory=list)
+
+
+class IssuerRatingTypeData(RatingTypeData):
+    """Issuer level data for a single rating type (e.g., FCLONG, STDSHORT)."""
+
+    last_review_date: datetime | None = Field(default=None)
 
 
 class IssuerRatings(BaseModel):
@@ -117,11 +125,28 @@ class IssuerRatings(BaseModel):
     Nested dict structure: org_debt_type_code -> rating_type_code -> RatingTypeData
     """
 
-    ratings: dict[str, dict[str, RatingTypeData]] = Field(default_factory=dict)
+    ratings: dict[str, dict[str, IssuerRatingTypeData]] = Field(default_factory=dict)
 
 
 class IssuerRatingsResp(BaseModel):
     """Response structure for issuer-level ratings."""
 
     results: dict[str, IssuerRatings] = Field(default_factory=dict)
+    errors: dict[str, str] = Field(default_factory=dict)
+
+
+class SecurityRatings(BaseModel):
+    """Response structure for a single security's ratings.
+
+    Nested dict structure: rating_type_code -> RatingTypeData
+    """
+
+    ciq_security_id: int | None = None
+    ratings: dict[str, RatingTypeData] = Field(default_factory=dict)
+
+
+class SecurityRatingsResp(BaseModel):
+    """Response structure for security-level ratings."""
+
+    results: dict[str, SecurityRatings] = Field(default_factory=dict)
     errors: dict[str, str] = Field(default_factory=dict)

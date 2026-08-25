@@ -26,6 +26,7 @@ from kfinance.domains.estimates.estimates_models import (
     ConsensusTargetPriceItem,
 )
 from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType
+from kfinance.domains.ratings.ratings_models import IssuerRatingsResp, SecurityRatingsResp
 from kfinance.domains.segments.segment_models import SegmentType
 
 
@@ -698,7 +699,6 @@ class TestFetchIssuerRatings:
         WHEN the API returns a response
         THEN the response can be successfully parsed into an IssuerRatingsResp object
         """
-        from kfinance.domains.ratings.ratings_models import IssuerRatingsResp
 
         entity_ids = [21719, 21835]
 
@@ -719,6 +719,7 @@ class TestFetchIssuerRatings:
                                     "outlook_datetime": "2013-04-23T16:35:10",
                                 },
                                 "history": [],
+                                "source": "S&P Global",
                             }
                         }
                     }
@@ -738,6 +739,7 @@ class TestFetchIssuerRatings:
                                     "outlook_datetime": "2015-01-15T10:00:00",
                                 },
                                 "history": [],
+                                "source": "S&P Global",
                             }
                         }
                     }
@@ -759,4 +761,71 @@ class TestFetchIssuerRatings:
         assert len(resp.results) == 2
         assert "21719" in resp.results
         assert "21835" in resp.results
+        assert resp.errors == {}
+
+class TestFetchSecurityRatings:
+    def test_fetch_security_ratings(self, requests_mock: Mocker, mock_client: Client) -> None:
+        """
+        GIVEN a request to fetch ratings for security IDs
+        WHEN the API returns a response
+        THEN the response can be successfully parsed into a SecurityRatingsResp object
+        """
+
+        security_ids = ["123456789", "XXXXX"]
+
+        http_resp = {
+            "results": {
+                "123456789": {
+                    "ciq_security_id": 123456789,
+                    "ratings": {
+                        "FCLONG": {
+                            "latest": {
+                                "rating": "AA+",
+                                "rating_datetime": "2013-04-23T16:35:10",
+                                "rating_action_word": "New Rating",
+                                "credit_watch": None,
+                                "credit_watch_datetime": None,
+                                "outlook": "Stable",
+                                "outlook_datetime": "2013-04-23T16:35:10",
+                            },
+                            "history": [],
+                            "source": "S&P Global",
+                        }
+                    }
+                },
+                "XXXXX": {
+                    "ciq_security_id": 3333333333,
+                    "ratings": {
+                        "FCLONG": {
+                            "latest": {
+                                "rating": "AA-",
+                                "rating_datetime": "2016-04-23T16:35:10",
+                                "rating_action_word": "NR",
+                                "credit_watch": None,
+                                "credit_watch_datetime": None,
+                                "outlook": None,
+                                "outlook_datetime": None,
+                            },
+                            "history": [],
+                            "source": "S&P Global",
+                        }
+                    }
+                },
+            },
+            "errors": {},
+        }
+
+        expected_resp = SecurityRatingsResp.model_validate(http_resp)
+
+        requests_mock.post(
+            url=f"{mock_client.kfinance_api_client.url_base}ratings/security_ratings/",
+            json=http_resp,
+        )
+
+        resp = mock_client.kfinance_api_client.fetch_security_ratings(security_ids=security_ids)
+
+        assert resp == expected_resp
+        assert len(resp.results) == 2
+        assert "123456789" in resp.results
+        assert "XXXXX" in resp.results
         assert resp.errors == {}
