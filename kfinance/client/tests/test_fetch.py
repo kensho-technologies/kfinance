@@ -763,6 +763,7 @@ class TestFetchIssuerRatings:
         assert "21835" in resp.results
         assert resp.errors == {}
 
+
 class TestFetchSecurityRatings:
     def test_fetch_security_ratings(self, requests_mock: Mocker, mock_client: Client) -> None:
         """
@@ -791,7 +792,7 @@ class TestFetchSecurityRatings:
                             "history": [],
                             "source": "S&P Global",
                         }
-                    }
+                    },
                 },
                 "XXXXX": {
                     "ciq_security_id": 3333333333,
@@ -809,7 +810,7 @@ class TestFetchSecurityRatings:
                             "history": [],
                             "source": "S&P Global",
                         }
-                    }
+                    },
                 },
             },
             "errors": {},
