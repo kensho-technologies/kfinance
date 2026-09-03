@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Any
 
 from pydantic import BaseModel
 from strenum import StrEnum
@@ -12,6 +13,17 @@ class StatementType(StrEnum):
     balance_sheet = "balance_sheet"
     income_statement = "income_statement"
     cashflow = "cashflow"
+
+
+def normalize_statement_type(v: Any) -> Any:
+    """Normalize 'cash_flow' to 'cashflow' before enum validation.
+
+    LLMs infer 'cash_flow' from the underscore pattern of the other enum values
+    (balance_sheet, income_statement).
+    """
+    if isinstance(v, str) and v == "cash_flow":
+        return "cashflow"
+    return v
 
 
 class Statement(BaseModel):

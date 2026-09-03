@@ -16,6 +16,16 @@ class Capitalization(StrEnum):
     shares_outstanding = "shares_outstanding"
 
 
+def normalize_capitalization(v: Any) -> Any:
+    """Normalize 'enterprise_value' / 'total_enterprise_value' to 'tev' before enum validation.
+
+    LLMs expand the abbreviation TEV into its full form.
+    """
+    if isinstance(v, str) and v in ("enterprise_value", "total_enterprise_value"):
+        return "tev"
+    return v
+
+
 class DailyCapitalization(BaseModel):
     """DailyCapitalization represents market cap, TEV, and shares outstanding for a day"""
 
