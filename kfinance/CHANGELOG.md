@@ -1,5 +1,8 @@
 # Changelog
 
+## v7.2.0
+- Add GetSecurityRatingsFromIdentifiers
+
 ## v7.1.2
 - Fix swapped `dataitemid`/`spgi_name` for `gain_from_sale_of_assets` and
   `gain_from_sale_of_investments` line item metadata.
