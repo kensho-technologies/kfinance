@@ -9,12 +9,46 @@ from kfinance.domains.line_items.response_notes import (
     FISCAL_PERIOD_WARNING,
     FISCAL_YEAR_TERMINOLOGY_WARNING,
 )
-from kfinance.domains.statements.statement_models import StatementsResp, StatementType
+from kfinance.domains.statements.statement_models import (
+    StatementsResp,
+    StatementType,
+    normalize_statement_type,
+)
 from kfinance.domains.statements.statement_tools import (
+    GetFinancialStatementFromIdentifiersArgs,
     GetFinancialStatementFromIdentifiersResp,
     fetch_statements_from_company_ids,
     get_financial_statement_from_identifiers,
 )
+
+
+class TestStatementParamCoercion:
+    """Tests for LLM-friendly param aliases (KFINANCE-MCP-50)."""
+
+    def test_cash_flow_normalized_to_cashflow(self) -> None:
+        args = GetFinancialStatementFromIdentifiersArgs.model_validate(
+            {"identifiers": ["AAPL"], "statement": "cash_flow"}
+        )
+        assert args.statement == StatementType.cashflow
+
+    def test_statement_type_alias_accepted(self) -> None:
+        args = GetFinancialStatementFromIdentifiersArgs.model_validate(
+            {"identifiers": ["AAPL"], "statement_type": "income_statement"}
+        )
+        assert args.statement == StatementType.income_statement
+
+    def test_statement_type_alias_does_not_override_statement(self) -> None:
+        """If both 'statement' and 'statement_type' are provided, 'statement' wins."""
+        args = GetFinancialStatementFromIdentifiersArgs.model_validate(
+            {"identifiers": ["AAPL"], "statement": "balance_sheet", "statement_type": "cashflow"}
+        )
+        assert args.statement == StatementType.balance_sheet
+
+    def test_normalize_statement_type_passthrough(self) -> None:
+        assert normalize_statement_type("balance_sheet") == "balance_sheet"
+        assert normalize_statement_type("income_statement") == "income_statement"
+        assert normalize_statement_type("cashflow") == "cashflow"
+        assert normalize_statement_type(42) == 42
 
 
 class TestStatements:

@@ -12,6 +12,7 @@ from kfinance.domains.key_developments.key_devs_models import (
     KeyDevsResp,
 )
 from kfinance.domains.key_developments.key_devs_tools import (
+    GetKeyDevsFromIdentifierArgs,
     GetKeyDevsFromIdentifierResp,
     fetch_key_devs_from_company_id,
     get_key_devs_from_identifier,
@@ -52,6 +53,24 @@ def add_spgi_key_devs_mock_resp(httpx_mock: HTTPXMock) -> None:
         },
         is_optional=True,
     )
+
+
+class TestKeyDevsParamCoercion:
+    """Tests for LLM-friendly param aliases (KFINANCE-MCP-50)."""
+
+    def test_identifiers_plural_accepted_as_list(self) -> None:
+        args = GetKeyDevsFromIdentifierArgs.model_validate({"identifiers": ["AAPL"]})
+        assert args.identifier == "AAPL"
+
+    def test_identifiers_plural_accepted_as_string(self) -> None:
+        args = GetKeyDevsFromIdentifierArgs.model_validate({"identifiers": "AAPL"})
+        assert args.identifier == "AAPL"
+
+    def test_identifiers_does_not_override_identifier(self) -> None:
+        args = GetKeyDevsFromIdentifierArgs.model_validate(
+            {"identifier": "MSFT", "identifiers": ["AAPL"]}
+        )
+        assert args.identifier == "MSFT"
 
 
 class TestKeyDevs:

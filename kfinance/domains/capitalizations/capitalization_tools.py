@@ -1,14 +1,18 @@
 from datetime import date
 from textwrap import dedent
-from typing import Type
+from typing import Annotated, Type
 
 import httpx
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, BeforeValidator, Field
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
-from kfinance.domains.capitalizations.capitalization_models import Capitalization, Capitalizations
+from kfinance.domains.capitalizations.capitalization_models import (
+    Capitalization,
+    Capitalizations,
+    normalize_capitalization,
+)
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
@@ -18,7 +22,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 
 class GetCapitalizationFromIdentifiersArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
-    capitalization: Capitalization
+    capitalization: Annotated[Capitalization, BeforeValidator(normalize_capitalization)]
     start_date: date | None = Field(
         description="The start date for historical capitalization retrieval. Use null for latest values. For annual data, use January 1st of the year.",
         default=None,

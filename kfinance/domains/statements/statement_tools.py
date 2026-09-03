@@ -1,8 +1,8 @@
 from textwrap import dedent
-from typing import Any, Literal, Type, cast
+from typing import Annotated, Any, Literal, Type, cast
 
 import httpx
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, BeforeValidator, Field, model_validator
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
@@ -15,6 +15,7 @@ from kfinance.domains.line_items.response_notes import (
 from kfinance.domains.statements.statement_models import (
     StatementsResp,
     StatementType,
+    normalize_statement_type,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -26,7 +27,20 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 
 class GetFinancialStatementFromIdentifiersArgs(ToolArgsWithIdentifiers):
     # no description because the description for enum fields comes from the enum docstring.
-    statement: StatementType
+    statement: Annotated[StatementType, BeforeValidator(normalize_statement_type)]
+
+    @model_validator(mode="before")
+    @classmethod
+    def accept_statement_type_alias(cls, data: Any) -> Any:
+        """Accept 'statement_type' as an alias for 'statement'.
+
+        LLMs infer the '_type' suffix from other tools' field names
+        (segment_type, period_type, calendar_type).
+        """
+        if isinstance(data, dict) and "statement_type" in data and "statement" not in data:
+            data["statement"] = data.pop("statement_type")
+        return data
+
     period_type: PeriodType | None = Field(
         default=None, description="The period type (annual or quarterly)"
     )

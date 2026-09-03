@@ -17,8 +17,10 @@ from kfinance.domains.capitalizations.capitalization_models import (
     Capitalization,
     Capitalizations,
     DailyCapitalization,
+    normalize_capitalization,
 )
 from kfinance.domains.capitalizations.capitalization_tools import (
+    GetCapitalizationFromIdentifiersArgs,
     GetCapitalizationFromIdentifiersResp,
     fetch_capitalizations_from_company_id,
     get_capitalizations_from_identifiers,
@@ -52,6 +54,28 @@ def add_spgi_capitalizations_mock_resp(httpx_mock: HTTPXMock) -> None:
         url=f"https://kfinance.kensho.com/api/v1/market_cap/{SPGI_COMPANY_ID}/none/none",
         json=CAPITALIZATION_RESP,
     )
+
+
+class TestCapitalizationParamCoercion:
+    """Tests for LLM-friendly param aliases (KFINANCE-MCP-50)."""
+
+    def test_enterprise_value_normalized_to_tev(self) -> None:
+        args = GetCapitalizationFromIdentifiersArgs.model_validate(
+            {"identifiers": ["AAPL"], "capitalization": "enterprise_value"}
+        )
+        assert args.capitalization == Capitalization.tev
+
+    def test_total_enterprise_value_normalized_to_tev(self) -> None:
+        args = GetCapitalizationFromIdentifiersArgs.model_validate(
+            {"identifiers": ["AAPL"], "capitalization": "total_enterprise_value"}
+        )
+        assert args.capitalization == Capitalization.tev
+
+    def test_normalize_capitalization_passthrough(self) -> None:
+        assert normalize_capitalization("market_cap") == "market_cap"
+        assert normalize_capitalization("tev") == "tev"
+        assert normalize_capitalization("shares_outstanding") == "shares_outstanding"
+        assert normalize_capitalization(42) == 42
 
 
 class TestCapitalizations:
