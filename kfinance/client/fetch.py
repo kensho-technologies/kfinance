@@ -52,7 +52,7 @@ from kfinance.domains.professionals.professionals_models import (
     Timeframe,
 )
 from kfinance.domains.corporate_tree.corporate_tree_models import CorporateTreeResponse
-from kfinance.domains.ratings.ratings_models import IssuerRatingsResp
+from kfinance.domains.ratings.ratings_models import IssuerRatingsResp, SecurityRatingsResp
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
     AdvisorsResp,
     RoundOfFundingInfo,
@@ -1169,3 +1169,23 @@ class KFinanceApiClient:
             f"&max_depth={max_depth}"
         )
         return CorporateTreeResponse.model_validate(self.fetch(url))
+
+    def fetch_security_ratings(
+        self,
+        security_ids: list[str],
+    ) -> SecurityRatingsResp:
+        """Get ratings for one or more securities.
+
+        :param security_ids: The list of security identifiers to fetch ratings for.
+        :type security_ids: list[str]
+        :return: Security Rating response containing ratings grouped by identifier.
+        :rtype: SecurityRatingsResp
+        """
+        url = f"{self.url_base}ratings/security_ratings/"
+
+        request_body: dict[str, Any] = {
+            "security_ids": security_ids,
+        }
+
+        response_data = self.fetch(url, method="POST", request_body=request_body)
+        return SecurityRatingsResp.model_validate(response_data)

@@ -1,9 +1,9 @@
 from datetime import date
 from textwrap import dedent
-from typing import Type
+from typing import Any, Type
 
 import httpx
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
@@ -16,6 +16,19 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 
 
 class GetKeyDevsFromIdentifierArgs(ToolArgsWithIdentifier):
+    @model_validator(mode="before")
+    @classmethod
+    def accept_identifiers_for_identifier_field(cls, data: Any) -> Any:
+        """Accept 'identifiers' (plural) as an alias for 'identifier' (singular).
+
+        Every other kfinance tool uses 'identifiers' (plural), so LLMs
+        extrapolate that pattern to this tool.
+        """
+        if isinstance(data, dict) and "identifiers" in data and "identifier" not in data:
+            ids = data.pop("identifiers")
+            data["identifier"] = ids[0] if isinstance(ids, list) else ids
+        return data
+
     start_date: date | None = Field(
         default=None,
         description="The start date for fetching key developments (inclusive). Use null to get all key developments from the beginning.",
