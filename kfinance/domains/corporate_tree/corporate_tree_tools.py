@@ -1,4 +1,4 @@
-from collections import Counter, defaultdict
+from collections import Counter
 from textwrap import dedent
 from typing import Type
 
@@ -21,10 +21,6 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolArgsWithIdentifiers,
     ToolRespWithIdInfoAndErrors,
 )
-
-
-# How many countries and direct children to report in a tree summary.
-_TOP_N = 5
 
 
 # --- Fetchers ---
@@ -56,21 +52,6 @@ async def fetch_ultimate_parent_paths(
     resp = await httpx_client.get(url=f"/corporate_tree/{company_id}/ultimate_parent_paths")
     resp.raise_for_status()
     return UltimateParentPathsResponse.model_validate(resp.json())
-
-
-# --- Graph helpers ---
-#
-# `level` on a node is the shallowest depth at which the relationship was found, so it is not
-# always `parent.level + 1`. These helpers rebuild the graph by following `parent_company_id`
-# instead of doing arithmetic on `level`.
-
-
-def _children_by_parent(nodes: list[CorporateTreeNode]) -> dict[int, set[int]]:
-    """Map each parent company id to the set of its child company ids."""
-    children_by_parent: dict[int, set[int]] = defaultdict(set)
-    for node in nodes:
-        children_by_parent[node.parent_company_id].add(node.company.company_id)
-    return children_by_parent
 
 
 # --- Response models ---
@@ -112,36 +93,6 @@ class CorporateTreeSearchResult(BaseModel):
     root: CompanyInfo
     nodes: list[SearchNodeResult]
     summary: SearchSummary
-
-
-class SummaryCountryInfo(BaseModel):
-    """Country entry in the top_countries list."""
-
-    country: str | None = None
-    iso_country: str | None = None
-    company_count: int
-
-
-class CorporateTreeSummaryResult(BaseModel):
-    """Summary statistics for a corporate tree."""
-
-    root: CompanyInfo
-    total_companies: int = Field(description="Distinct companies in the tree, counting the root.")
-    total_edges: int = Field(
-        description="Parent-child relationships in the tree. Exceeds total_companies when companies have multiple parents."
-    )
-    max_depth: int
-    direct_children_count: int
-    companies_per_level: dict[str, int] = Field(
-        description="Companies at each level, each counted once at its shallowest level. Excludes the root."
-    )
-    edges_per_relationship_type: dict[str, int]
-    edges_per_relationship_status: dict[str, int]
-    top_countries: list[SummaryCountryInfo]
-    other_countries_count: int
-    truncated_company_ids: list[int] = Field(
-        description="Companies at the max_depth limit whose children are not counted. Empty when the whole tree was retrieved."
-    )
 
 
 # --- Tool 1: Get Ultimate Parent Paths ---
@@ -453,162 +404,5 @@ async def fetch_and_search_corporate_tree(
             truncated_company_ids=(
                 response.truncation.truncated_company_ids if response.truncation else []
             ),
-        ),
-    )
-
-
-# --- Tool 3: Get Corporate Tree Summary ---
-
-
-class CorporateTreeSummaryArgs(ToolArgsWithIdentifiers):
-    include_prior: bool = Field(
-        default=False,
-        description="If true, include prior/historical relationships in the counts. By default only current relationships are included.",
-    )
-
-
-class GetCorporateTreeSummaryFromIdentifiersResp(
-    ToolRespWithIdInfoAndErrors[CorporateTreeSummaryResult]
-):
-    pass
-
-
-class GetCorporateTreeSummaryFromIdentifiers(KfinanceTool):
-    name: str = "get_corporate_tree_summary_from_identifiers"
-    description: str = dedent("""
-        Get summary statistics about the corporate tree below a company.
-
-        Returns the total number of companies and relationships, plus a breakdown by level, by relationship type (subsidiary, merged entity, investment arm, affiliated government institution) and by country.
-
-        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - The tree is a graph, not a strict hierarchy: a company can be owned through several parents, which is why total_edges can exceed total_companies.
-        - Covers only the companies below the queried company. To find who owns it, use get_ultimate_parent_paths_from_identifiers.
-        - Set include_prior=true to also count historical relationships that are no longer active.
-
-        Examples:
-        Query: "How many subsidiaries does Berkshire Hathaway have?"
-        Function: get_corporate_tree_summary_from_identifiers(identifiers=["Berkshire Hathaway"])
-
-        Query: "Compare the corporate tree sizes of Apple and Microsoft"
-        Function: get_corporate_tree_summary_from_identifiers(identifiers=["Apple", "Microsoft"])
-    """).strip()
-    args_schema: Type[BaseModel] = CorporateTreeSummaryArgs
-    accepted_permissions: set[Permission] | None = None
-
-    async def _arun(
-        self, identifiers: list[str], include_prior: bool = False
-    ) -> GetCorporateTreeSummaryFromIdentifiersResp:
-        """"""
-        return await get_corporate_tree_summary_from_identifiers(
-            identifiers=identifiers,
-            include_prior=include_prior,
-            httpx_client=self.kfinance_client.httpx_client,
-        )
-
-
-async def get_corporate_tree_summary_from_identifiers(
-    identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
-    include_prior: bool = False,
-) -> GetCorporateTreeSummaryFromIdentifiersResp:
-    """Fetch corporate tree summaries for all identifiers."""
-
-    id_triple_resp = await unified_fetch_id_triples(
-        identifiers=identifiers, httpx_client=httpx_client
-    )
-    errors: list[str] = list(id_triple_resp.errors.values())
-
-    tasks = [
-        AsyncTask(
-            func=fetch_and_summarize_corporate_tree,
-            kwargs=dict(
-                company_id=id_triple.company_id,
-                httpx_client=httpx_client,
-                include_prior=include_prior,
-            ),
-            result_key=identifier,
-        )
-        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-    ]
-
-    await batch_execute_async_tasks(tasks=tasks)
-
-    results: dict[str, CorporateTreeSummaryResult] = dict()
-    for task in tasks:
-        if task.error:
-            errors.append(task.error)
-        else:
-            results[task.result_key] = task.result
-
-    return GetCorporateTreeSummaryFromIdentifiersResp(
-        identifier_results=results,
-        identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
-    )
-
-
-async def fetch_and_summarize_corporate_tree(
-    company_id: int,
-    httpx_client: httpx.AsyncClient,
-    include_prior: bool = False,
-) -> CorporateTreeSummaryResult:
-    """Fetch the whole corporate tree for a single company and summarize it."""
-    response = await fetch_corporate_tree(
-        company_id=company_id,
-        httpx_client=httpx_client,
-        include_prior=include_prior,
-    )
-
-    # A company can appear at several levels, so bucket each one at its shallowest. The buckets
-    # then sum to total_companies - 1, the root having no level of its own.
-    shallowest_level_by_company: dict[int, int] = {}
-    for node in response.nodes:
-        node_company_id = node.company.company_id
-        shallowest_level_by_company[node_company_id] = min(
-            node.level, shallowest_level_by_company.get(node_company_id, node.level)
-        )
-
-    # Countries are counted per distinct company rather than per relationship.
-    country_by_company: dict[int, tuple[str | None, str | None]] = {
-        response.root.company_id: (response.root.country, response.root.iso_country)
-    }
-    for node in response.nodes:
-        country_by_company[node.company.company_id] = (
-            node.company.country,
-            node.company.iso_country,
-        )
-    company_counts_by_country = Counter(country_by_company.values())
-    ranked_countries = sorted(
-        company_counts_by_country.items(),
-        key=lambda item: (-item[1], item[0][1] or "", item[0][0] or ""),
-    )
-
-    direct_child_company_ids = _children_by_parent(response.nodes).get(
-        response.root.company_id, set()
-    )
-
-    return CorporateTreeSummaryResult(
-        root=response.root,
-        total_companies=response.summary.total_companies,
-        total_edges=response.summary.total_edges,
-        max_depth=response.summary.max_depth,
-        direct_children_count=len(direct_child_company_ids),
-        companies_per_level={
-            str(level): count
-            for level, count in sorted(Counter(shallowest_level_by_company.values()).items())
-        },
-        edges_per_relationship_type=dict(
-            sorted(Counter(node.relationship_type.value for node in response.nodes).items())
-        ),
-        edges_per_relationship_status=dict(
-            sorted(Counter(node.relationship_status.value for node in response.nodes).items())
-        ),
-        top_countries=[
-            SummaryCountryInfo(country=country, iso_country=iso_country, company_count=count)
-            for (country, iso_country), count in ranked_countries[:_TOP_N]
-        ],
-        other_countries_count=max(len(company_counts_by_country) - _TOP_N, 0),
-        truncated_company_ids=(
-            response.truncation.truncated_company_ids if response.truncation else []
         ),
     )

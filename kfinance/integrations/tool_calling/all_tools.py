@@ -11,7 +11,6 @@ from kfinance.domains.companies.company_tools import (
 )
 from kfinance.domains.competitors.competitor_tools import GetCompetitorsFromIdentifiers
 from kfinance.domains.corporate_tree.corporate_tree_tools import (
-    GetCorporateTreeSummaryFromIdentifiers,
     GetUltimateParentPathsFromIdentifiers,
     SearchCorporateTreeFromIdentifiers,
 )
@@ -128,6 +127,5 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     # Corporate Tree
     GetUltimateParentPathsFromIdentifiers,
     SearchCorporateTreeFromIdentifiers,
-    GetCorporateTreeSummaryFromIdentifiers,
     GetSecurityRatingsFromIdentifiers,
 ]

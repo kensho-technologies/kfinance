@@ -6,10 +6,8 @@ from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.corporate_tree.corporate_tree_models import TreeRelationshipType
 from kfinance.domains.corporate_tree.corporate_tree_tools import (
     fetch_and_search_corporate_tree,
-    fetch_and_summarize_corporate_tree,
     fetch_corporate_tree,
     fetch_ultimate_parent_paths,
-    get_corporate_tree_summary_from_identifiers,
     get_ultimate_parent_paths_from_identifiers,
     search_corporate_tree_from_identifiers,
 )
@@ -178,13 +176,6 @@ SAMPLE_TREE_RESPONSE_NO_COUNTRY = {
         }
     ],
     "summary": {"max_depth": 1, "total_companies": 2, "total_edges": 1},
-}
-
-# A company with no relationships at all.
-SAMPLE_TREE_RESPONSE_EMPTY = {
-    "root": SPGI_ROOT,
-    "nodes": [],
-    "summary": {"max_depth": 0, "total_companies": 1, "total_edges": 0},
 }
 
 # A tree reaching level 10, used to check that level keys are ordered numerically rather than
@@ -718,179 +709,6 @@ class TestSearchCorporateTree:
     ) -> None:
         """WHEN an identifier cannot be resolved THEN the error is reported and no call is made."""
         resp = await search_corporate_tree_from_identifiers(
-            identifiers=["non-existent"], httpx_client=httpx_client
-        )
-
-        assert resp.identifier_results == {}
-        assert len(resp.errors) == 1
-
-
-# --- Tests for get_corporate_tree_summary ---
-
-
-class TestGetCorporateTreeSummary:
-    @pytest.fixture
-    def add_tree_mock(self, httpx_mock: HTTPXMock) -> None:
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=false",
-            json=SAMPLE_TREE_RESPONSE,
-            is_optional=True,
-            is_reusable=True,
-        )
-
-    @pytest.mark.asyncio
-    async def test_summary_totals_come_from_the_api(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
-    ) -> None:
-        """WHEN a tree is summarized THEN the server-computed totals are passed through."""
-        result = await fetch_and_summarize_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
-        )
-
-        assert result.root.company_id == SPGI_COMPANY_ID
-        assert result.total_companies == 9
-        # More edges than companies, because companies can have several parents.
-        assert result.total_edges == 12
-        assert result.max_depth == 3
-        assert result.truncated_company_ids == []
-
-    @pytest.mark.asyncio
-    async def test_summary_counts_direct_children_once_each(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
-    ) -> None:
-        """WHEN a direct child is attached by two relationship types THEN it is counted once."""
-        result = await fetch_and_summarize_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
-        )
-
-        # 4 level-1 edges, but the NJ Data Center accounts for two of them.
-        assert result.direct_children_count == 3
-
-    @pytest.mark.asyncio
-    async def test_summary_buckets_each_company_at_its_shallowest_level(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
-    ) -> None:
-        """WHEN a company appears at several levels THEN it is counted once, at the shallowest."""
-        result = await fetch_and_summarize_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
-        )
-
-        # IHS Markit is at level 1 and level 3, and is counted only at level 1.
-        assert result.companies_per_level == {"1": 3, "2": 4, "3": 1}
-        # The root has no level of its own, so the buckets account for everyone else.
-        assert sum(result.companies_per_level.values()) == result.total_companies - 1
-
-    @pytest.mark.asyncio
-    async def test_summary_counts_edges_per_relationship_type_and_status(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
-    ) -> None:
-        """WHEN a tree is summarized THEN relationship breakdowns count edges, not companies."""
-        result = await fetch_and_summarize_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
-        )
-
-        assert result.edges_per_relationship_type == {
-            "investment_arm": 1,
-            "merged_entity": 2,
-            "subsidiary_or_operating_unit": 9,
-        }
-        assert result.edges_per_relationship_status == {"current": 12}
-        assert sum(result.edges_per_relationship_type.values()) == result.total_edges
-
-    @pytest.mark.asyncio
-    async def test_summary_counts_countries_per_distinct_company(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
-    ) -> None:
-        """WHEN a tree is summarized THEN countries are ranked by distinct-company count."""
-        result = await fetch_and_summarize_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
-        )
-
-        assert [
-            (country.iso_country, country.company_count) for country in result.top_countries
-        ] == [("USA", 7), ("GBR", 2)]
-        assert result.top_countries[0].country == "United States"
-        # The root is included, so the counts account for every company in the tree.
-        assert sum(country.company_count for country in result.top_countries) == 9
-        assert result.other_countries_count == 0
-
-    @pytest.mark.asyncio
-    async def test_summary_of_a_company_with_no_relationships(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-    ) -> None:
-        """WHEN a company has no relationships THEN the summary is empty but well-formed."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=false",
-            json=SAMPLE_TREE_RESPONSE_EMPTY,
-        )
-
-        result = await fetch_and_summarize_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
-        )
-
-        assert result.total_companies == 1
-        assert result.total_edges == 0
-        assert result.direct_children_count == 0
-        assert result.companies_per_level == {}
-        assert result.edges_per_relationship_type == {}
-        # The root itself still contributes a country.
-        assert [country.iso_country for country in result.top_countries] == ["USA"]
-
-    @pytest.mark.asyncio
-    async def test_summary_sends_include_prior(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-    ) -> None:
-        """WHEN include_prior is set THEN it reaches the request URL and no max_depth is sent."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=true",
-            json=SAMPLE_TREE_RESPONSE,
-        )
-
-        result = await fetch_and_summarize_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, include_prior=True
-        )
-
-        assert result.total_edges == 12
-
-    @pytest.mark.asyncio
-    async def test_summary_reports_truncated_company_ids(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-    ) -> None:
-        """WHEN the API reports truncation THEN the truncated company ids are passed through."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=false",
-            json=SAMPLE_TREE_RESPONSE_TRUNCATED,
-        )
-
-        result = await fetch_and_summarize_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
-        )
-
-        assert result.truncated_company_ids == [SNL, IHS_MARKIT, NJ_DATA_CENTER]
-
-    @pytest.mark.asyncio
-    async def test_get_corporate_tree_summary_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
-    ) -> None:
-        """WHEN the full tool function is called THEN identifiers resolve and trees summarize."""
-        resp = await get_corporate_tree_summary_from_identifiers(
-            identifiers=["SPGI"], httpx_client=httpx_client
-        )
-
-        assert resp.errors == []
-        assert resp.identifier_info == {"SPGI": SPGI_ID_TRIPLE}
-        assert resp.identifier_results["SPGI"].total_companies == 9
-
-    @pytest.mark.asyncio
-    async def test_get_corporate_tree_summary_with_unresolvable_identifier(
-        self, httpx_client: httpx.AsyncClient
-    ) -> None:
-        """WHEN an identifier cannot be resolved THEN the error is reported and no call is made."""
-        resp = await get_corporate_tree_summary_from_identifiers(
             identifiers=["non-existent"], httpx_client=httpx_client
         )
 
