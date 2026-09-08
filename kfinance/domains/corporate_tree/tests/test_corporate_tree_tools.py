@@ -187,6 +187,35 @@ SAMPLE_TREE_RESPONSE_EMPTY = {
     "summary": {"max_depth": 0, "total_companies": 1, "total_edges": 0},
 }
 
+# An edge list containing a cycle: a cross-holding puts the root back under its own subsidiary,
+# SNL -> JD Power -> Kensho -> S&P Global. The API's cycle guard rejects a company that already
+# appears on the path being extended, but the response unions relationships found along different
+# paths, so two routes can together close a loop that neither closes alone.
+#
+# The loop deliberately closes on the root rather than on an intermediate company: that is the
+# shape where computing each company's reachable set in a single post-order pass undercounts a
+# direct child, so this fixture also covers the fixpoint iteration in `_descendant_counts`.
+SAMPLE_TREE_RESPONSE_CYCLIC = {
+    "root": SPGI_ROOT,
+    "nodes": [
+        {
+            "company": {"company_id": child_id, "company_name": child_name, **_USA},
+            "level": level,
+            "parent_company_id": parent_id,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        }
+        for level, parent_id, child_id, child_name in [
+            (1, SPGI_COMPANY_ID, SNL, "SNL Financial LC"),
+            (1, SPGI_COMPANY_ID, OSTTRA, "Osttra Group Ltd."),
+            (2, SNL, JD_POWER, "J.D. Power"),
+            (3, JD_POWER, KENSHO, "Kensho Technologies, Inc."),
+            (4, KENSHO, SPGI_COMPANY_ID, "S&P Global Inc."),
+        ]
+    ],
+    "summary": {"max_depth": 4, "total_companies": 5, "total_edges": 5},
+}
+
 # A tree reaching level 10, used to check that level keys are ordered numerically rather than
 # lexicographically ("10" must not sort before "2").
 SAMPLE_DEEP_TREE_RESPONSE = {
@@ -830,6 +859,27 @@ class TestGetCorporateTreeSummary:
         assert result.largest_children[0].company_name == "SNL Financial LC"
         # The subtrees share companies, so the counts deliberately overshoot the tree size.
         assert sum(child.descendant_count for child in result.largest_children) > 8
+
+    @pytest.mark.asyncio
+    async def test_summary_ranks_largest_children_when_the_edge_list_has_a_cycle(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """WHEN the edge list contains a cycle THEN descendant counts terminate and exclude self."""
+        httpx_mock.add_response(
+            method="GET",
+            url=f"{CORPORATE_TREE_URL}?include_prior=false",
+            json=SAMPLE_TREE_RESPONSE_CYCLIC,
+        )
+
+        result = await fetch_and_summarize_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
+        )
+
+        # SNL reaches around the loop back to the root, and from there Osttra too, but it never
+        # counts itself. Osttra is a leaf.
+        assert [
+            (child.company_id, child.descendant_count) for child in result.largest_children
+        ] == [(SNL, 4), (OSTTRA, 0)]
 
     @pytest.mark.asyncio
     async def test_summary_of_a_company_with_no_relationships(

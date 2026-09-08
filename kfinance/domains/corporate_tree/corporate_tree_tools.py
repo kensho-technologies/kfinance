@@ -1,4 +1,4 @@
-from collections import Counter, defaultdict, deque
+from collections import Counter, defaultdict
 from textwrap import dedent
 from typing import Type
 
@@ -73,23 +73,58 @@ def _children_by_parent(nodes: list[CorporateTreeNode]) -> dict[int, set[int]]:
     return children_by_parent
 
 
-def _reachable_company_ids(
-    start_company_id: int, children_by_parent: dict[int, set[int]]
-) -> set[int]:
-    """Return every company reachable from start_company_id, including itself.
+def _descendant_counts(
+    root_company_id: int, children_by_parent: dict[int, set[int]]
+) -> dict[int, int]:
+    """Count the distinct companies below every company reachable from root_company_id.
 
-    Breadth-first over companies rather than edges, so a company reached through several parents
-    is expanded once. The tree is a DAG, so the sets returned for two sibling companies can
-    overlap.
+    Each company's reachable set is `{itself} | union(reachable sets of its children)`, computed
+    once and reused by every parent, rather than re-traversed once per direct child of the root.
+    It has to be a union and not a sum of counts: the tree is a DAG, so two children's reachable
+    sets can overlap and adding their counts would double-count the shared companies.
+
+    Each set is held as an integer bitmask over dense bit positions, because company ids are
+    around 1.8e9 and would otherwise make the masks enormous. That keeps a union to a machine-word
+    OR instead of copying set elements up the graph, which matters on trees that are both wide and
+    deep.
     """
-    reachable = {start_company_id}
-    queue = deque([start_company_id])
-    while queue:
-        for child_company_id in children_by_parent.get(queue.popleft(), ()):
-            if child_company_id not in reachable:
-                reachable.add(child_company_id)
-                queue.append(child_company_id)
-    return reachable
+    # Depth-first post-order, iterative because trees can be dozens of levels deep. A company is
+    # appended only after all of its children, so one forward pass over `order` sees children
+    # before parents.
+    bit_of_company: dict[int, int] = {}
+    order: list[int] = []
+    stack: list[tuple[int, bool]] = [(root_company_id, False)]
+    while stack:
+        company_id, children_expanded = stack.pop()
+        if children_expanded:
+            order.append(company_id)
+        elif company_id not in bit_of_company:
+            bit_of_company[company_id] = 1 << len(bit_of_company)
+            stack.append((company_id, True))
+            stack.extend(
+                (child_company_id, False)
+                for child_company_id in children_by_parent.get(company_id, ())
+                if child_company_id not in bit_of_company
+            )
+
+    # The edge list can contain cycles: the API's cycle guard applies per path, and the response
+    # unions relationships discovered along different paths, so two routes can together close a
+    # loop. A single post-order pass would then miss the edges that run backwards, so iterate to a
+    # fixpoint. On an acyclic tree that is one pass to fill and one to confirm nothing grew.
+    reachable = dict(bit_of_company)
+    grew = True
+    while grew:
+        grew = False
+        for company_id in order:
+            mask = reachable[company_id]
+            for child_company_id in children_by_parent.get(company_id, ()):
+                mask |= reachable[child_company_id]
+            if mask != reachable[company_id]:
+                reachable[company_id] = mask
+                grew = True
+
+    # Each mask includes the company itself, which is not one of its own descendants.
+    return {company_id: mask.bit_count() - 1 for company_id, mask in reachable.items()}
 
 
 # --- Response models ---
@@ -614,14 +649,13 @@ async def fetch_and_summarize_corporate_tree(
     children_by_parent = _children_by_parent(response.nodes)
     direct_child_company_ids = children_by_parent.get(response.root.company_id, set())
     company_names = {node.company.company_id: node.company.company_name for node in response.nodes}
+    descendant_counts = _descendant_counts(response.root.company_id, children_by_parent)
     ranked_children = sorted(
         (
             SummaryChildInfo(
                 company_id=child_company_id,
                 company_name=company_names[child_company_id],
-                # _reachable_company_ids includes the child itself, which is not its own descendant.
-                descendant_count=len(_reachable_company_ids(child_company_id, children_by_parent))
-                - 1,
+                descendant_count=descendant_counts[child_company_id],
             )
             for child_company_id in direct_child_company_ids
         ),
