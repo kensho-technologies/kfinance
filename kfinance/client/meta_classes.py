@@ -36,7 +36,7 @@ from kfinance.domains.segments.segment_models import SegmentType
 
 
 if TYPE_CHECKING:
-    from .kfinance import BusinessRelationships, Companies, CorporateTree
+    from .kfinance import BusinessRelationships, Companies
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,6 @@ class CompanyFunctionsMetaClass:
         self._company_descriptions: CompanyDescriptions | None = None
         self._company_other_names: CompanyOtherNames | None = None
         self._financial_auditors: Auditors | None = None
-        self._corporate_tree: "CorporateTree | None" = None
 
     @property
     @abstractmethod
@@ -959,36 +958,6 @@ class CompanyFunctionsMetaClass:
         # Nested structure: org_debt_type_code -> rating_type_code -> RatingTypeData
         issuer_ratings = response.results[entity_id_str]
         return issuer_ratings.model_dump(mode="json")["ratings"]
-
-    @property
-    def corporate_tree(self) -> "CorporateTree":
-        """The corporate tree for this company.
-
-        Returns a CorporateTree object that supports navigating to the parent,
-        ultimate parent, listing children with filters, and computing summary stats.
-
-        Fetches the full tree (max_depth=20) with current relationships only on first access,
-        and caches the result for subsequent accesses.
-
-        :return: A CorporateTree object.
-        :rtype: CorporateTree
-        """
-        if self._corporate_tree is None:
-            from .kfinance import CorporateTree
-
-            response = self.kfinance_api_client.fetch_corporate_tree(
-                company_id=self.company_id,
-                include_prior=False,
-                include_ultimate_parent_path=True,
-                max_depth=20,
-            )
-
-            self._corporate_tree = CorporateTree.from_response(
-                response=response,
-                kfinance_api_client=self.kfinance_api_client,
-            )
-
-        return self._corporate_tree
 
 
 for line_item in LINE_ITEMS:

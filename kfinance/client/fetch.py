@@ -31,6 +31,10 @@ from kfinance.domains.companies.company_models import (
     UnifiedIdTripleResponse,
 )
 from kfinance.domains.competitors.competitor_models import CompetitorResponse, CompetitorSource
+from kfinance.domains.corporate_tree.corporate_tree_models import (
+    CorporateTreeResponse,
+    UltimateParentPathsResponse,
+)
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
@@ -51,7 +55,6 @@ from kfinance.domains.professionals.professionals_models import (
     ProfessionalType,
     Timeframe,
 )
-from kfinance.domains.corporate_tree.corporate_tree_models import CorporateTreeResponse
 from kfinance.domains.ratings.ratings_models import IssuerRatingsResp, SecurityRatingsResp
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
     AdvisorsResp,
@@ -1146,8 +1149,7 @@ class KFinanceApiClient:
         self,
         company_id: int,
         include_prior: bool = False,
-        include_ultimate_parent_path: bool = True,
-        max_depth: int = 20,
+        max_depth: int | None = None,
     ) -> CorporateTreeResponse:
         """Fetch the corporate tree for a company.
 
@@ -1155,20 +1157,31 @@ class KFinanceApiClient:
         :type company_id: int
         :param include_prior: Include prior/historical relationships.
         :type include_prior: bool
-        :param include_ultimate_parent_path: Return the path from ultimate parent to the queried company.
-        :type include_ultimate_parent_path: bool
-        :param max_depth: Maximum depth to traverse (0-20).
-        :type max_depth: int
+        :param max_depth: Maximum depth to traverse. `None` indicates unbounded (fetch the whole tree).
+        :type max_depth: int | None
         :return: The corporate tree response.
         :rtype: CorporateTreeResponse
         """
         url = (
-            f"{self.url_base}corporate_tree/{company_id}"
-            f"?include_prior={str(include_prior).lower()}"
-            f"&include_ultimate_parent_path={str(include_ultimate_parent_path).lower()}"
-            f"&max_depth={max_depth}"
+            f"{self.url_base}corporate_tree/{company_id}?include_prior={str(include_prior).lower()}"
         )
+        if max_depth is not None:
+            url += f"&max_depth={max_depth}"
         return CorporateTreeResponse.model_validate(self.fetch(url))
+
+    def fetch_ultimate_parent_paths(self, company_id: int) -> UltimateParentPathsResponse:
+        """Fetch the ultimate parent paths for a company.
+
+        A company may have several ultimate parents, so multiple paths can be returned. Each path
+        starts at the requested company and ends with the ultimate parent of that path.
+
+        :param company_id: The company ID to fetch the ultimate parent paths for.
+        :type company_id: int
+        :return: The ultimate parent paths response.
+        :rtype: UltimateParentPathsResponse
+        """
+        url = f"{self.url_base}corporate_tree/{company_id}/ultimate_parent_paths"
+        return UltimateParentPathsResponse.model_validate(self.fetch(url))
 
     def fetch_security_ratings(
         self,
