@@ -182,7 +182,7 @@ class SearchCorporateTreeArgs(ToolArgsWithIdentifiers):
         default=None,
         description="Filter by relationship type(s). Nodes matching ANY of the listed types are included.",
     )
-    iso_country: list[str] | None = Field(
+    country_iso_code: list[str] | None = Field(
         default=None,
         description="Countries to filter by, as ISO 3166-1 alpha-3 codes only (e.g., ['USA', 'GBR', 'DEU']). Full country names are not accepted. Nodes in ANY of the listed countries are included.",
     )
@@ -226,11 +226,11 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         - Set max_depth to limit how deep to search. E.g. max_depth=1 searches direct children only. Omit it to search the whole tree.
         - Set include_prior=true to also include historical relationships that are no longer active.
         - A company owned through several parents appears once per parent, each with its own parent_company_id. `summary.distinct_companies` counts the underlying companies.
-        - iso_country takes ISO 3166-1 alpha-3 codes only. Convert country names to codes before calling, e.g. Germany -> DEU.
+        - country_iso_code takes ISO 3166-1 alpha-3 codes only. Convert country names to codes before calling, e.g. Germany -> DEU.
 
         Examples:
         Query: "What subsidiaries does Microsoft have in Germany?"
-        Function: search_corporate_tree_from_identifiers(identifiers=["Microsoft"], iso_country=["DEU"], relationship_type=["subsidiary_or_operating_unit"])
+        Function: search_corporate_tree_from_identifiers(identifiers=["Microsoft"], country_iso_code=["DEU"], relationship_type=["subsidiary_or_operating_unit"])
 
         Query: "Find all entities named 'Capital' or 'Global' under JPMorgan"
         Function: search_corporate_tree_from_identifiers(identifiers=["JPM"], name=["Capital", "Global"])
@@ -239,7 +239,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         Function: search_corporate_tree_from_identifiers(identifiers=["Apple"], max_depth=1, relationship_type=["subsidiary_or_operating_unit"])
 
         Query: "Find all subsidiaries and investment arms of S&P Global in the US, UK, and India"
-        Function: search_corporate_tree_from_identifiers(identifiers=["SPGI"], relationship_type=["subsidiary_or_operating_unit", "investment_arm"], iso_country=["USA", "GBR", "IND"])
+        Function: search_corporate_tree_from_identifiers(identifiers=["SPGI"], relationship_type=["subsidiary_or_operating_unit", "investment_arm"], country_iso_code=["USA", "GBR", "IND"])
     """).strip()
     args_schema: Type[BaseModel] = SearchCorporateTreeArgs
     accepted_permissions: set[Permission] | None = None
@@ -248,7 +248,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         self,
         identifiers: list[str],
         relationship_type: list[TreeRelationshipType] | None = None,
-        iso_country: list[str] | None = None,
+        country_iso_code: list[str] | None = None,
         name: list[str] | None = None,
         max_depth: int | None = None,
         include_prior: bool = False,
@@ -258,7 +258,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         return await search_corporate_tree_from_identifiers(
             identifiers=identifiers,
             relationship_type=relationship_type,
-            iso_country=iso_country,
+            country_iso_code=country_iso_code,
             name=name,
             max_depth=max_depth,
             include_prior=include_prior,
@@ -271,7 +271,7 @@ async def search_corporate_tree_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx.AsyncClient,
     relationship_type: list[TreeRelationshipType] | None = None,
-    iso_country: list[str] | None = None,
+    country_iso_code: list[str] | None = None,
     name: list[str] | None = None,
     max_depth: int | None = None,
     include_prior: bool = False,
@@ -291,7 +291,7 @@ async def search_corporate_tree_from_identifiers(
                 company_id=id_triple.company_id,
                 httpx_client=httpx_client,
                 relationship_type=relationship_type,
-                iso_country=iso_country,
+                country_iso_code=country_iso_code,
                 name=name,
                 max_depth=max_depth,
                 include_prior=include_prior,
@@ -321,21 +321,21 @@ async def search_corporate_tree_from_identifiers(
 def _node_matches(
     node: CorporateTreeNode,
     relationship_types: set[TreeRelationshipType] | None,
-    iso_countries: set[str] | None,
+    country_iso_codes: set[str] | None,
     names: list[str] | None,
 ) -> bool:
     """Whether a node satisfies every supplied filter.
 
-    `iso_countries` and `names` are expected pre-casefolded by the caller.
+    `country_iso_codes` and `names` are expected pre-casefolded by the caller.
     """
     if relationship_types is not None and node.relationship_type not in relationship_types:
         return False
 
-    if iso_countries is not None:
+    if country_iso_codes is not None:
         # Matched against the ISO alpha-3 code only; the full country name is not consulted.
         if node.company.iso_country is None:
             return False
-        if node.company.iso_country.casefold() not in iso_countries:
+        if node.company.iso_country.casefold() not in country_iso_codes:
             return False
 
     if names is not None:
@@ -350,7 +350,7 @@ async def fetch_and_search_corporate_tree(
     company_id: int,
     httpx_client: httpx.AsyncClient,
     relationship_type: list[TreeRelationshipType] | None = None,
-    iso_country: list[str] | None = None,
+    country_iso_code: list[str] | None = None,
     name: list[str] | None = None,
     max_depth: int | None = None,
     include_prior: bool = False,
@@ -365,14 +365,16 @@ async def fetch_and_search_corporate_tree(
     )
 
     relationship_types = set(relationship_type) if relationship_type else None
-    iso_countries = {value.casefold() for value in iso_country} if iso_country else None
+    country_iso_codes = (
+        {value.casefold() for value in country_iso_code} if country_iso_code else None
+    )
     names = [value.casefold() for value in name] if name else None
 
     # The API already applied max_depth, so there is no depth filtering left to do here.
     matches = [
         node
         for node in response.nodes
-        if _node_matches(node, relationship_types, iso_countries, names)
+        if _node_matches(node, relationship_types, country_iso_codes, names)
     ]
 
     return CorporateTreeSearchResult(

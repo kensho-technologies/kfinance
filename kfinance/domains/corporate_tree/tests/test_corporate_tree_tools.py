@@ -484,13 +484,15 @@ class TestSearchCorporateTree:
         assert {node.company_id for node in result.nodes} == {NJ_DATA_CENTER, KENSHO, OSTTRA}
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("iso_country", ["GBR", "gbr"])
-    async def test_search_by_iso_country_is_case_insensitive(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None, iso_country: str
+    @pytest.mark.parametrize("country_iso_code", ["GBR", "gbr"])
+    async def test_search_by_country_iso_code_is_case_insensitive(
+        self, httpx_client: httpx.AsyncClient, add_tree_mock: None, country_iso_code: str
     ) -> None:
         """WHEN an ISO alpha-3 code is given in any case THEN the same edges match."""
         result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, iso_country=[iso_country]
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            country_iso_code=[country_iso_code],
         )
 
         # IHS Markit is reached at level 1 and again at level 3, so 3 edges over 2 companies.
@@ -499,23 +501,25 @@ class TestSearchCorporateTree:
         assert {node.company_id for node in result.nodes} == {IHS_MARKIT, OSTTRA}
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("iso_country", ["United Kingdom", "GB", "UK"])
-    async def test_search_by_iso_country_ignores_full_names_and_other_codes(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None, iso_country: str
+    @pytest.mark.parametrize("country_iso_code", ["United Kingdom", "GB", "UK"])
+    async def test_search_by_country_iso_code_ignores_full_names_and_other_codes(
+        self, httpx_client: httpx.AsyncClient, add_tree_mock: None, country_iso_code: str
     ) -> None:
         """WHEN anything but an alpha-3 code is given THEN it matches nothing."""
         result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, iso_country=[iso_country]
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            country_iso_code=[country_iso_code],
         )
 
         assert result.summary.total_matches == 0
         assert result.nodes == []
 
     @pytest.mark.asyncio
-    async def test_search_by_iso_country_excludes_companies_with_no_country(
+    async def test_search_by_country_iso_code_excludes_companies_with_no_country(
         self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
     ) -> None:
-        """WHEN a company has no iso_country THEN an iso_country filter never matches it."""
+        """WHEN a company has no iso_country THEN a country_iso_code filter never matches it."""
         httpx_mock.add_response(
             method="GET",
             url=f"{CORPORATE_TREE_URL}?include_prior=false",
@@ -524,7 +528,7 @@ class TestSearchCorporateTree:
         )
 
         filtered = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, iso_country=["USA"]
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, country_iso_code=["USA"]
         )
         assert filtered.summary.total_matches == 0
 
@@ -536,12 +540,12 @@ class TestSearchCorporateTree:
         assert unfiltered.nodes[0].iso_country is None
 
     @pytest.mark.asyncio
-    async def test_search_by_multiple_iso_countries(
+    async def test_search_by_multiple_country_iso_codes(
         self, httpx_client: httpx.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN several countries are given THEN edges in ANY of them match."""
         result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, iso_country=["GBR", "USA"]
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, country_iso_code=["GBR", "USA"]
         )
 
         assert result.summary.total_matches == 12
@@ -581,7 +585,7 @@ class TestSearchCorporateTree:
         result = await fetch_and_search_corporate_tree(
             company_id=SPGI_COMPANY_ID,
             httpx_client=httpx_client,
-            iso_country=["GBR"],
+            country_iso_code=["GBR"],
             relationship_type=[TreeRelationshipType.subsidiary_or_operating_unit],
         )
 
@@ -598,7 +602,7 @@ class TestSearchCorporateTree:
         result = await fetch_and_search_corporate_tree(
             company_id=SPGI_COMPANY_ID,
             httpx_client=httpx_client,
-            iso_country=["USA"],
+            country_iso_code=["USA"],
             relationship_type=[TreeRelationshipType.investment_arm],
         )
 
@@ -696,7 +700,7 @@ class TestSearchCorporateTree:
     ) -> None:
         """WHEN the full tool function is called THEN identifiers resolve and trees are searched."""
         resp = await search_corporate_tree_from_identifiers(
-            identifiers=["SPGI"], httpx_client=httpx_client, iso_country=["GBR"]
+            identifiers=["SPGI"], httpx_client=httpx_client, country_iso_code=["GBR"]
         )
 
         assert resp.errors == []
