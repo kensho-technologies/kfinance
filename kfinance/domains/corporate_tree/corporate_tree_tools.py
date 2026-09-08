@@ -73,60 +73,6 @@ def _children_by_parent(nodes: list[CorporateTreeNode]) -> dict[int, set[int]]:
     return children_by_parent
 
 
-def _descendant_counts(
-    root_company_id: int, children_by_parent: dict[int, set[int]]
-) -> dict[int, int]:
-    """Count the distinct companies below every company reachable from root_company_id.
-
-    Each company's reachable set is `{itself} | union(reachable sets of its children)`, computed
-    once and reused by every parent, rather than re-traversed once per direct child of the root.
-    It has to be a union and not a sum of counts: the tree is a DAG, so two children's reachable
-    sets can overlap and adding their counts would double-count the shared companies.
-
-    Each set is held as an integer bitmask over dense bit positions, because company ids are
-    around 1.8e9 and would otherwise make the masks enormous. That keeps a union to a machine-word
-    OR instead of copying set elements up the graph, which matters on trees that are both wide and
-    deep.
-    """
-    # Depth-first post-order, iterative because trees can be dozens of levels deep. A company is
-    # appended only after all of its children, so one forward pass over `order` sees children
-    # before parents.
-    bit_of_company: dict[int, int] = {}
-    order: list[int] = []
-    stack: list[tuple[int, bool]] = [(root_company_id, False)]
-    while stack:
-        company_id, children_expanded = stack.pop()
-        if children_expanded:
-            order.append(company_id)
-        elif company_id not in bit_of_company:
-            bit_of_company[company_id] = 1 << len(bit_of_company)
-            stack.append((company_id, True))
-            stack.extend(
-                (child_company_id, False)
-                for child_company_id in children_by_parent.get(company_id, ())
-                if child_company_id not in bit_of_company
-            )
-
-    # The edge list can contain cycles: the API's cycle guard applies per path, and the response
-    # unions relationships discovered along different paths, so two routes can together close a
-    # loop. A single post-order pass would then miss the edges that run backwards, so iterate to a
-    # fixpoint. On an acyclic tree that is one pass to fill and one to confirm nothing grew.
-    reachable = dict(bit_of_company)
-    grew = True
-    while grew:
-        grew = False
-        for company_id in order:
-            mask = reachable[company_id]
-            for child_company_id in children_by_parent.get(company_id, ()):
-                mask |= reachable[child_company_id]
-            if mask != reachable[company_id]:
-                reachable[company_id] = mask
-                grew = True
-
-    # Each mask includes the company itself, which is not one of its own descendants.
-    return {company_id: mask.bit_count() - 1 for company_id, mask in reachable.items()}
-
-
 # --- Response models ---
 
 
@@ -176,14 +122,6 @@ class SummaryCountryInfo(BaseModel):
     company_count: int
 
 
-class SummaryChildInfo(BaseModel):
-    """A direct child with the number of companies below it."""
-
-    company_id: int
-    company_name: str
-    descendant_count: int
-
-
 class CorporateTreeSummaryResult(BaseModel):
     """Summary statistics for a corporate tree."""
 
@@ -201,7 +139,6 @@ class CorporateTreeSummaryResult(BaseModel):
     edges_per_relationship_status: dict[str, int]
     top_countries: list[SummaryCountryInfo]
     other_countries_count: int
-    largest_children: list[SummaryChildInfo]
     truncated_company_ids: list[int] = Field(
         description="Companies at the max_depth limit whose children are not counted. Empty when the whole tree was retrieved."
     )
@@ -541,10 +478,10 @@ class GetCorporateTreeSummaryFromIdentifiers(KfinanceTool):
     description: str = dedent("""
         Get summary statistics about the corporate tree below a company.
 
-        Returns the total number of companies and relationships, a breakdown by level, by relationship type (subsidiary, merged entity, investment arm, affiliated government institution) and by country, plus the direct children with the most companies beneath them.
+        Returns the total number of companies and relationships, plus a breakdown by level, by relationship type (subsidiary, merged entity, investment arm, affiliated government institution) and by country.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - The tree is a graph, not a strict hierarchy: a company can be owned through several parents, which is why total_edges can exceed total_companies and why the descendant counts in largest_children can overlap and need not sum to total_companies.
+        - The tree is a graph, not a strict hierarchy: a company can be owned through several parents, which is why total_edges can exceed total_companies.
         - Covers only the companies below the queried company. To find who owns it, use get_ultimate_parent_paths_from_identifiers.
         - Set include_prior=true to also count historical relationships that are no longer active.
 
@@ -646,20 +583,8 @@ async def fetch_and_summarize_corporate_tree(
         key=lambda item: (-item[1], item[0][1] or "", item[0][0] or ""),
     )
 
-    children_by_parent = _children_by_parent(response.nodes)
-    direct_child_company_ids = children_by_parent.get(response.root.company_id, set())
-    company_names = {node.company.company_id: node.company.company_name for node in response.nodes}
-    descendant_counts = _descendant_counts(response.root.company_id, children_by_parent)
-    ranked_children = sorted(
-        (
-            SummaryChildInfo(
-                company_id=child_company_id,
-                company_name=company_names[child_company_id],
-                descendant_count=descendant_counts[child_company_id],
-            )
-            for child_company_id in direct_child_company_ids
-        ),
-        key=lambda child: (-child.descendant_count, child.company_id),
+    direct_child_company_ids = _children_by_parent(response.nodes).get(
+        response.root.company_id, set()
     )
 
     return CorporateTreeSummaryResult(
@@ -683,7 +608,6 @@ async def fetch_and_summarize_corporate_tree(
             for (country, iso_country), count in ranked_countries[:_TOP_N]
         ],
         other_countries_count=max(len(company_counts_by_country) - _TOP_N, 0),
-        largest_children=ranked_children[:_TOP_N],
         truncated_company_ids=(
             response.truncation.truncated_company_ids if response.truncation else []
         ),
