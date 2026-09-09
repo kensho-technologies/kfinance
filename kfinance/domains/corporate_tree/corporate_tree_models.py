@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from strenum import StrEnum
 
+from kfinance.domains.companies.company_models import CompanyId
+
 
 class TreeRelationshipType(StrEnum):
     """The type of parent-child relationship in the corporate tree."""
@@ -21,7 +23,7 @@ class TreeRelationshipStatus(StrEnum):
 class CompanyInfo(BaseModel):
     """Basic identifying information for a company in the corporate tree."""
 
-    company_id: int
+    company_id: CompanyId
     company_name: str
     country: str | None = None
     iso_country: str | None = None
@@ -40,7 +42,7 @@ class CorporateTreeNode(BaseModel):
     """
 
     company: CompanyInfo
-    parent_company_id: int
+    parent_company_id: CompanyId
     level: int
     relationship_type: TreeRelationshipType
     relationship_status: TreeRelationshipStatus
@@ -64,7 +66,7 @@ class TruncationInfo(BaseModel):
     Present only when max_depth was supplied and the tree continues past it.
     """
 
-    truncated_company_ids: list[int]
+    truncated_company_ids: list[CompanyId]
 
 
 class CorporateTreeResponse(BaseModel):
@@ -83,11 +85,11 @@ class ParentPathElement(BaseModel):
     parent at the end of a path has neither a `parent_company_id` nor a `relationship_type`.
     """
 
-    company_id: int
+    company_id: CompanyId
     company_name: str
     country: str | None = None
     iso_country: str | None = None
-    parent_company_id: int | None = None
+    parent_company_id: CompanyId | None = None
     relationship_type: TreeRelationshipType | None = None
 
 

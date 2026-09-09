@@ -388,6 +388,25 @@ class TestGetUltimateParentPaths:
         assert paths[0][0].relationship_type is None
 
     @pytest.mark.asyncio
+    async def test_paths_serialize_company_ids_with_the_company_prefix(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """WHEN a path is dumped THEN its company ids carry the re-queryable C_ prefix."""
+        httpx_mock.add_response(
+            method="GET", url=ULTIMATE_PARENT_PATHS_URL, json=MULTI_PATHS_RESPONSE
+        )
+
+        resp = await get_ultimate_parent_paths_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client
+        )
+        dumped = resp.identifier_results["SPGI"].model_dump()
+
+        assert dumped["paths"][0][0]["company_id"] == f"C_{MCGRAW_HILL_EDUCATION}"
+        assert dumped["paths"][0][0]["parent_company_id"] == f"C_{JUVENILE_RETAIL}"
+        # The ultimate parent terminating the path keeps a null parent rather than a prefixed one.
+        assert dumped["paths"][0][-1]["parent_company_id"] is None
+
+    @pytest.mark.asyncio
     async def test_get_ultimate_parent_paths_with_unresolvable_identifier(
         self, httpx_client: httpx.AsyncClient
     ) -> None:
@@ -423,16 +442,17 @@ class TestSearchCorporateTree:
             company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
         )
 
-        assert result.root.company_id == SPGI_COMPANY_ID
+        assert result.queried_company.company_id == SPGI_COMPANY_ID
         assert result.summary.total_matches == 12
         assert result.summary.distinct_companies == 8
         assert result.summary.showing == 12
-        assert len(result.nodes) == 12
+        assert len(result.matches) == 12
         assert result.summary.matches_by_level == {"1": 4, "2": 6, "3": 2}
-        assert result.summary.tree_total_companies == 9
-        assert result.summary.tree_total_edges == 12
-        assert result.summary.tree_max_depth == 3
-        assert result.summary.truncated_company_ids == []
+        assert result.summary.companies_searched == 9
+        assert result.summary.relationships_searched == 12
+        assert result.summary.deepest_level_searched == 3
+        # The API omits the truncation key when the whole tree was returned.
+        assert result.summary.search_was_depth_limited is False
 
     @pytest.mark.asyncio
     async def test_search_never_matches_the_root(
@@ -444,10 +464,10 @@ class TestSearchCorporateTree:
         )
 
         assert result.summary.total_matches == 0
-        assert result.nodes == []
+        assert result.matches == []
         assert result.summary.matches_by_level == {}
         # The root is still reported so the caller knows whose tree was searched.
-        assert result.root.company_name == "S&P Global Inc."
+        assert result.queried_company.company_name == "S&P Global Inc."
 
     @pytest.mark.asyncio
     async def test_search_by_relationship_type(
@@ -461,9 +481,10 @@ class TestSearchCorporateTree:
         )
 
         assert result.summary.total_matches == 2
-        assert {node.company_id for node in result.nodes} == {NJ_DATA_CENTER, KENSHO}
+        assert {match.company_id for match in result.matches} == {NJ_DATA_CENTER, KENSHO}
         assert all(
-            node.relationship_type is TreeRelationshipType.merged_entity for node in result.nodes
+            match.relationship_type is TreeRelationshipType.merged_entity
+            for match in result.matches
         )
 
     @pytest.mark.asyncio
@@ -481,7 +502,7 @@ class TestSearchCorporateTree:
         )
 
         assert result.summary.total_matches == 3
-        assert {node.company_id for node in result.nodes} == {NJ_DATA_CENTER, KENSHO, OSTTRA}
+        assert {match.company_id for match in result.matches} == {NJ_DATA_CENTER, KENSHO, OSTTRA}
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("country_iso_code", ["GBR", "gbr"])
@@ -498,7 +519,7 @@ class TestSearchCorporateTree:
         # IHS Markit is reached at level 1 and again at level 3, so 3 edges over 2 companies.
         assert result.summary.total_matches == 3
         assert result.summary.distinct_companies == 2
-        assert {node.company_id for node in result.nodes} == {IHS_MARKIT, OSTTRA}
+        assert {match.company_id for match in result.matches} == {IHS_MARKIT, OSTTRA}
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("country_iso_code", ["United Kingdom", "GB", "UK"])
@@ -513,7 +534,7 @@ class TestSearchCorporateTree:
         )
 
         assert result.summary.total_matches == 0
-        assert result.nodes == []
+        assert result.matches == []
 
     @pytest.mark.asyncio
     async def test_search_by_country_iso_code_excludes_companies_with_no_country(
@@ -537,7 +558,7 @@ class TestSearchCorporateTree:
             company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
         )
         assert unfiltered.summary.total_matches == 1
-        assert unfiltered.nodes[0].iso_country is None
+        assert unfiltered.matches[0].iso_country is None
 
     @pytest.mark.asyncio
     async def test_search_by_multiple_country_iso_codes(
@@ -560,7 +581,7 @@ class TestSearchCorporateTree:
         )
 
         assert result.summary.distinct_companies == 3
-        assert {node.company_id for node in result.nodes} == {
+        assert {match.company_id for match in result.matches} == {
             NJ_DATA_CENTER,
             JUVENILE_RETAIL,
             MCGRAW_HILL_EDUCATION,
@@ -575,13 +596,13 @@ class TestSearchCorporateTree:
             company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name=["Kensho", "Osttra"]
         )
 
-        assert {node.company_id for node in result.nodes} == {KENSHO, OSTTRA}
+        assert {match.company_id for match in result.matches} == {KENSHO, OSTTRA}
 
     @pytest.mark.asyncio
     async def test_search_combines_filters_with_and_logic(
         self, httpx_client: httpx.AsyncClient, add_tree_mock: None
     ) -> None:
-        """WHEN several filter types are given THEN a node must satisfy all of them."""
+        """WHEN several filter types are given THEN a match must satisfy all of them."""
         result = await fetch_and_search_corporate_tree(
             company_id=SPGI_COMPANY_ID,
             httpx_client=httpx_client,
@@ -592,13 +613,13 @@ class TestSearchCorporateTree:
         # Osttra is in GBR but is an investment arm, so only the two IHS Markit edges match.
         assert result.summary.total_matches == 2
         assert result.summary.distinct_companies == 1
-        assert {node.company_id for node in result.nodes} == {IHS_MARKIT}
+        assert {match.company_id for match in result.matches} == {IHS_MARKIT}
 
     @pytest.mark.asyncio
     async def test_search_with_contradictory_filters_returns_nothing(
         self, httpx_client: httpx.AsyncClient, add_tree_mock: None
     ) -> None:
-        """WHEN filters cannot be satisfied together THEN no nodes are returned."""
+        """WHEN filters cannot be satisfied together THEN no matches are returned."""
         result = await fetch_and_search_corporate_tree(
             company_id=SPGI_COMPANY_ID,
             httpx_client=httpx_client,
@@ -607,7 +628,7 @@ class TestSearchCorporateTree:
         )
 
         assert result.summary.total_matches == 0
-        assert result.nodes == []
+        assert result.matches == []
 
     @pytest.mark.asyncio
     async def test_search_reports_a_company_once_per_parent(
@@ -620,40 +641,40 @@ class TestSearchCorporateTree:
 
         assert result.summary.total_matches == 2
         assert result.summary.distinct_companies == 1
-        assert {node.parent_company_id for node in result.nodes} == {SNL, NJ_DATA_CENTER}
+        assert {match.parent_company_id for match in result.matches} == {SNL, NJ_DATA_CENTER}
 
     @pytest.mark.asyncio
-    async def test_search_limit_truncates_nodes_but_not_the_totals(
+    async def test_search_limit_truncates_matches_but_not_the_totals(
         self, httpx_client: httpx.AsyncClient, add_tree_mock: None
     ) -> None:
-        """WHEN limit is below the match count THEN nodes are capped but total_matches is not."""
+        """WHEN limit is below the match count THEN matches are capped but total_matches is not."""
         result = await fetch_and_search_corporate_tree(
             company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, limit=3
         )
 
         assert result.summary.total_matches == 12
         assert result.summary.showing == 3
-        assert len(result.nodes) == 3
+        assert len(result.matches) == 3
         # matches_by_level describes every match, not just the ones shown.
         assert sum(result.summary.matches_by_level.values()) == 12
 
     @pytest.mark.asyncio
-    async def test_search_flattens_node_fields(
+    async def test_search_flattens_company_fields_onto_each_match(
         self, httpx_client: httpx.AsyncClient, add_tree_mock: None
     ) -> None:
-        """WHEN a node is returned THEN the nested company fields are flattened onto it."""
+        """WHEN a match is returned THEN the nested company fields are flattened onto it."""
         result = await fetch_and_search_corporate_tree(
             company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name=["Osttra"]
         )
 
-        (node,) = result.nodes
-        assert node.company_id == OSTTRA
-        assert node.company_name == "Osttra Group Ltd."
-        assert node.country == "United Kingdom"
-        assert node.iso_country == "GBR"
-        assert node.parent_company_id == IHS_MARKIT
-        assert node.level == 2
-        assert node.relationship_type is TreeRelationshipType.investment_arm
+        (match,) = result.matches
+        assert match.company_id == OSTTRA
+        assert match.company_name == "Osttra Group Ltd."
+        assert match.country == "United Kingdom"
+        assert match.iso_country == "GBR"
+        assert match.parent_company_id == IHS_MARKIT
+        assert match.level == 2
+        assert match.relationship_type is TreeRelationshipType.investment_arm
 
     @pytest.mark.asyncio
     async def test_search_sends_max_depth_and_include_prior(
@@ -675,7 +696,28 @@ class TestSearchCorporateTree:
 
         assert result.summary.total_matches == 4
         assert result.summary.matches_by_level == {"1": 4}
-        assert result.summary.truncated_company_ids == [SNL, IHS_MARKIT, NJ_DATA_CENTER]
+        # The fixture carries a truncation key, so the search is reported as depth-limited.
+        assert result.summary.search_was_depth_limited is True
+
+    @pytest.mark.asyncio
+    async def test_search_result_serializes_company_ids_with_the_company_prefix(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """WHEN the result is dumped THEN every company id carries the re-queryable C_ prefix."""
+        httpx_mock.add_response(
+            method="GET",
+            url=f"{CORPORATE_TREE_URL}?include_prior=false&max_depth=1",
+            json=SAMPLE_TREE_RESPONSE_TRUNCATED,
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, max_depth=1
+        )
+        dumped = result.model_dump()
+
+        assert dumped["queried_company"]["company_id"] == f"C_{SPGI_COMPANY_ID}"
+        assert dumped["matches"][0]["company_id"] == f"C_{SNL}"
+        assert dumped["matches"][0]["parent_company_id"] == f"C_{SPGI_COMPANY_ID}"
 
     @pytest.mark.asyncio
     async def test_search_orders_level_keys_numerically(

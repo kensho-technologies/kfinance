@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
+from kfinance.domains.companies.company_models import CompanyId
 from kfinance.domains.corporate_tree.corporate_tree_models import (
     CompanyInfo,
     CorporateTreeNode,
@@ -57,41 +58,51 @@ async def fetch_ultimate_parent_paths(
 # --- Response models ---
 
 
-class SearchNodeResult(BaseModel):
-    """A single relationship returned from a corporate tree search."""
+class SearchMatch(BaseModel):
+    """A single matching relationship returned from a corporate tree search."""
 
-    company_id: int
+    company_id: CompanyId
     company_name: str
     country: str | None = None
     iso_country: str | None = None
-    parent_company_id: int
+    parent_company_id: CompanyId
     level: int
     relationship_type: TreeRelationshipType
     relationship_status: TreeRelationshipStatus
 
 
 class SearchSummary(BaseModel):
-    """Summary metadata about the search results and the tree they were drawn from."""
+    """Summary metadata about the search results and the portion of the tree they were drawn from."""
 
     total_matches: int = Field(
         description="Matching relationships. A company owned through several parents matches once per parent."
     )
     distinct_companies: int = Field(description="Distinct companies among the matches.")
-    showing: int = Field(description="Matches included in `nodes`, capped by the `limit` argument.")
-    matches_by_level: dict[str, int]
-    tree_total_companies: int
-    tree_total_edges: int
-    tree_max_depth: int
-    truncated_company_ids: list[int] = Field(
-        description="Companies at the max_depth limit whose children were not searched. Empty when the whole tree was searched."
+    showing: int = Field(
+        description="Matches included in `matches`, capped by the `limit` argument. When it is below total_matches, narrow the filters to see the rest; there is no way to page through results."
+    )
+    matches_by_level: dict[str, int] = Field(
+        description="Count of matches at each level below the queried company, where level 1 is a direct child."
+    )
+    companies_searched: int = Field(
+        description="Distinct companies searched, counting the queried company. Capped by max_depth, so this is NOT the size of the full tree unless the whole tree was searched."
+    )
+    relationships_searched: int = Field(
+        description="Parent-child relationships searched. Larger than companies_searched when companies have several parents. Also capped by max_depth."
+    )
+    deepest_level_searched: int = Field(
+        description="The deepest level actually reached. When the search was depth-limited this is just max_depth."
+    )
+    search_was_depth_limited: bool = Field(
+        description="True when max_depth stopped the search before the tree ended, meaning the counts above describe only the searched portion."
     )
 
 
 class CorporateTreeSearchResult(BaseModel):
     """Search results from a company's corporate tree."""
 
-    root: CompanyInfo
-    nodes: list[SearchNodeResult]
+    queried_company: CompanyInfo
+    matches: list[SearchMatch]
     summary: SearchSummary
 
 
@@ -184,7 +195,7 @@ class SearchCorporateTreeArgs(ToolArgsWithIdentifiers):
     )
     country_iso_code: list[str] | None = Field(
         default=None,
-        description="Countries to filter by, as ISO 3166-1 alpha-3 codes only (e.g., ['USA', 'GBR', 'DEU']). Full country names are not accepted. Nodes in ANY of the listed countries are included.",
+        description="Countries to filter by, as ISO 3166-1 alpha-3 codes only (e.g., ['USA', 'GBR', 'DEU']). Nodes in ANY of the listed countries are included.",
     )
     name: list[str] | None = Field(
         default=None,
@@ -192,7 +203,7 @@ class SearchCorporateTreeArgs(ToolArgsWithIdentifiers):
     )
     max_depth: int | None = Field(
         default=None,
-        description="How many levels below the company to search. Omit to search the entire tree. Use max_depth=1 to search direct subsidiaries only.",
+        description="How many levels below the company to search. Omit to search the entire tree. Use max_depth=1 to search direct relationships only.",
         ge=0,
     )
     include_prior: bool = Field(
@@ -221,9 +232,11 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         Filters are combined with AND logic across filter types. When a filter contains multiple values, a node matches if it matches ANY value in the list (OR within a filter).
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - Returns up to `limit` matching nodes per identifier (default 50). `summary.total_matches` reports how many matched in total.
+        - Returns up to `limit` matches per identifier (default 50) in `matches`. `summary.total_matches` reports how many matched in total. There is no pagination.
+        - `queried_company` echoes the company whose tree was searched. It is the top of the searched tree, not necessarily an ultimate parent; use get_ultimate_parent_paths_from_identifiers to look upward from it.
         - The queried company itself is never a match; only the companies below it are searched.
         - Set max_depth to limit how deep to search. E.g. max_depth=1 searches direct children only. Omit it to search the whole tree.
+        - When max_depth cuts the search short, `summary.search_was_depth_limited` is true and the `summary.companies_searched`/`relationships_searched`/`deepest_level_searched` counts describe only the searched portion, not the whole tree. To see deeper, call again with a larger max_depth or omit it entirely.
         - Set include_prior=true to also include historical relationships that are no longer active.
         - A company owned through several parents appears once per parent, each with its own parent_company_id. `summary.distinct_companies` counts the underlying companies.
         - country_iso_code takes ISO 3166-1 alpha-3 codes only. Convert country names to codes before calling, e.g. Germany -> DEU.
@@ -332,7 +345,6 @@ def _node_matches(
         return False
 
     if country_iso_codes is not None:
-        # Matched against the ISO alpha-3 code only; the full country name is not consulted.
         if node.company.iso_country is None:
             return False
         if node.company.iso_country.casefold() not in country_iso_codes:
@@ -378,9 +390,9 @@ async def fetch_and_search_corporate_tree(
     ]
 
     return CorporateTreeSearchResult(
-        root=response.root,
-        nodes=[
-            SearchNodeResult(
+        queried_company=response.root,
+        matches=[
+            SearchMatch(
                 company_id=node.company.company_id,
                 company_name=node.company.company_name,
                 country=node.company.country,
@@ -400,11 +412,9 @@ async def fetch_and_search_corporate_tree(
                 str(level): count
                 for level, count in sorted(Counter(node.level for node in matches).items())
             },
-            tree_total_companies=response.summary.total_companies,
-            tree_total_edges=response.summary.total_edges,
-            tree_max_depth=response.summary.max_depth,
-            truncated_company_ids=(
-                response.truncation.truncated_company_ids if response.truncation else []
-            ),
+            companies_searched=response.summary.total_companies,
+            relationships_searched=response.summary.total_edges,
+            deepest_level_searched=response.summary.max_depth,
+            search_was_depth_limited=response.truncation is not None,
         ),
     )
