@@ -30,16 +30,7 @@ class CompanyInfo(BaseModel):
 
 
 class CorporateTreeNode(BaseModel):
-    """One parent-child relationship in the flat corporate tree list.
-
-    The tree is returned as an edge list rather than a nested structure. Parentage is expressed
-    solely by `parent_company_id`, which points at either the root company or the company of
-    another node.
-
-    `level` is the shallowest depth at which the relationship was found, so it is NOT always
-    `parent.level + 1`. Rebuild the graph by following `parent_company_id`, never by doing
-    arithmetic on `level`.
-    """
+    """One parent-child relationship in the flat corporate tree list."""
 
     company: CompanyInfo
     parent_company_id: CompanyId
@@ -49,13 +40,9 @@ class CorporateTreeNode(BaseModel):
 
 
 class TreeSummary(BaseModel):
-    """Aggregate statistics about the corporate tree, computed server-side."""
+    """Aggregate statistics about the corporate tree."""
 
-    # Distinct companies in the tree, counting the root.
     total_companies: int
-    # Parent-child relationships in the tree, i.e. len(nodes). The root has no incoming edge, so
-    # a tree with no relationships has total_companies=1 and total_edges=0. A company with
-    # multiple parents makes total_companies smaller than total_edges.
     total_edges: int
     max_depth: int
 
@@ -104,10 +91,7 @@ class UltimateParentPathsResponse(BaseModel):
 
 
 class SearchMatch(BaseModel):
-    """A single matching relationship returned from a corporate tree search.
-
-    Flattens a `CorporateTreeNode` so the company fields sit alongside the relationship fields.
-    """
+    """A single matching relationship returned from a corporate tree search."""
 
     company_id: CompanyId
     company_name: str

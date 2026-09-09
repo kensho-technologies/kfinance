@@ -14,15 +14,6 @@ from kfinance.domains.corporate_tree.corporate_tree_tools import (
 
 
 # --- Test fixtures ---
-#
-# SAMPLE_TREE_RESPONSE is copied from the backend's own snapshot
-# (django_app/tests/integration/__snapshots__/test_views_with_mock_data.ambr,
-# TestCorporateTree.test_corporate_tree_snapshot), so it exercises the awkward cases the real API
-# produces:
-#   - 267302130 sits under the root twice, once per relationship type.
-#   - 8536775 sits under two different parents (34482 and 267302130).
-#   - 13651733 appears at level 1 and again at level 3, under a different parent.
-# 9 distinct companies (counting the root) across 12 edges.
 
 SNL = 34482
 IHS_MARKIT = 13651733
@@ -147,7 +138,6 @@ SAMPLE_TREE_RESPONSE = {
         },
     ],
     "summary": {"max_depth": 3, "total_companies": 9, "total_edges": 12},
-    # The API omits the "truncation" key entirely when the whole tree was returned.
 }
 
 # The same tree fetched with max_depth=1: the three level-1 companies are reported as truncated.
@@ -195,8 +185,6 @@ SAMPLE_DEEP_TREE_RESPONSE = {
     "summary": {"max_depth": 10, "total_companies": 11, "total_edges": 10},
 }
 
-# Copied from the backend snapshot TestUltimateParentPaths.test_ultimate_parent_paths_snapshot:
-# McGraw-Hill Education is owned through two distinct chains, both ending at S&P Global.
 MULTI_PATHS_RESPONSE = {
     "paths": [
         [
@@ -258,7 +246,6 @@ MULTI_PATHS_RESPONSE = {
     ]
 }
 
-# S&P Global has no controlling parent, so it is its own ultimate parent.
 SINGLE_PATH_RESPONSE = {
     "paths": [[{**SPGI_ROOT, "parent_company_id": None, "relationship_type": None}]]
 }

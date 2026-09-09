@@ -137,7 +137,6 @@ async def get_ultimate_parent_paths_from_identifiers(
 
 
 class SearchCorporateTreeArgs(ToolArgsWithIdentifiers):
-    # no description because the description for enum fields comes from the enum docstring.
     relationship_type: list[TreeRelationshipType] | None = Field(
         default=None,
         description="Filter by relationship type(s). Nodes matching ANY of the listed types are included.",
