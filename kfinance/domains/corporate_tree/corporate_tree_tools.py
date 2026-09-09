@@ -8,12 +8,12 @@ from pydantic import BaseModel, Field
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
-from kfinance.domains.companies.company_models import CompanyId
 from kfinance.domains.corporate_tree.corporate_tree_models import (
-    CompanyInfo,
     CorporateTreeNode,
     CorporateTreeResponse,
-    TreeRelationshipStatus,
+    CorporateTreeSearchResult,
+    SearchMatch,
+    SearchSummary,
     TreeRelationshipType,
     UltimateParentPathsResponse,
 )
@@ -55,58 +55,7 @@ async def fetch_ultimate_parent_paths(
     return UltimateParentPathsResponse.model_validate(resp.json())
 
 
-# --- Response models ---
-
-
-class SearchMatch(BaseModel):
-    """A single matching relationship returned from a corporate tree search."""
-
-    company_id: CompanyId
-    company_name: str
-    country: str | None = None
-    iso_country: str | None = None
-    parent_company_id: CompanyId
-    level: int
-    relationship_type: TreeRelationshipType
-    relationship_status: TreeRelationshipStatus
-
-
-class SearchSummary(BaseModel):
-    """Summary metadata about the search results and the portion of the tree they were drawn from."""
-
-    total_matches: int = Field(
-        description="Matching relationships. A company owned through several parents matches once per parent."
-    )
-    distinct_companies: int = Field(description="Distinct companies among the matches.")
-    showing: int = Field(
-        description="Matches included in `matches`, capped by the `limit` argument. When it is below total_matches, narrow the filters to see the rest; there is no way to page through results."
-    )
-    matches_by_level: dict[str, int] = Field(
-        description="Count of matches at each level below the queried company, where level 1 is a direct child."
-    )
-    companies_searched: int = Field(
-        description="Distinct companies searched, counting the queried company. Capped by max_depth, so this is NOT the size of the full tree unless the whole tree was searched."
-    )
-    relationships_searched: int = Field(
-        description="Parent-child relationships searched. Larger than companies_searched when companies have several parents. Also capped by max_depth."
-    )
-    deepest_level_searched: int = Field(
-        description="The deepest level actually reached. When the search was depth-limited this is just max_depth."
-    )
-    search_was_depth_limited: bool = Field(
-        description="True when max_depth stopped the search before the tree ended, meaning the counts above describe only the searched portion."
-    )
-
-
-class CorporateTreeSearchResult(BaseModel):
-    """Search results from a company's corporate tree."""
-
-    queried_company: CompanyInfo
-    matches: list[SearchMatch]
-    summary: SearchSummary
-
-
-# --- Tool 1: Get Ultimate Parent Paths ---
+# --- Tool: Get Ultimate Parent Paths ---
 
 
 class GetUltimateParentPathsFromIdentifiersResp(
@@ -184,7 +133,7 @@ async def get_ultimate_parent_paths_from_identifiers(
     )
 
 
-# --- Tool 2: Search Corporate Tree ---
+# --- Tool: Search Corporate Tree ---
 
 
 class SearchCorporateTreeArgs(ToolArgsWithIdentifiers):
