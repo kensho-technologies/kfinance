@@ -1,5 +1,8 @@
 # Changelog
 
+## v7.2.2
+- Add `--api-host` option to the local mcp server.
+
 ## v7.2.1
 - Coerce common incorrect param values like cash_flow -> cashflow
 
