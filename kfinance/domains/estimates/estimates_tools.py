@@ -170,7 +170,7 @@ class GetAnalystRecommendationsFromIdentifiersResp(
 class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
     name: str = "get_analyst_recommendations_from_identifiers"
     description: str = dedent("""
-        Get analyst recommendations for a given company. Returns Capital IQ data. Returns the current consensus analyst recommendation breakdown including buy, hold, sell counts and overall rating.
+        Get analyst recommendations for a given company. Returns Capital IQ data. Returns the current consensus analyst recommendation breakdown including buy, hold, sell counts and overall analyst sentiment. If the user is asking for a company's rating, assume this means credit rating unless the user clearly asks for analyst ratings.
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
