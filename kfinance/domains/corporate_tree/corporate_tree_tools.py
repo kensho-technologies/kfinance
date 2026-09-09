@@ -50,6 +50,7 @@ class GetUltimateParentPathsFromIdentifiers(KfinanceTool):
         Function: get_ultimate_parent_paths_from_identifiers(identifiers=["YouTube", "WhatsApp"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
+    # TODO: Specify permissions
     accepted_permissions: set[Permission] | None = None
 
     async def _arun(self, identifiers: list[str]) -> GetUltimateParentPathsFromIdentifiersResp:
@@ -176,6 +177,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         Function: search_corporate_tree_from_identifiers(identifiers=["SPGI"], relationship_type=["subsidiary_or_operating_unit", "investment_arm"], country_iso_code=["USA", "GBR", "IND"])
     """).strip()
     args_schema: Type[BaseModel] = SearchCorporateTreeFromIdentifiersArgs
+    # TODO: Specify permissions
     accepted_permissions: set[Permission] | None = None
 
     async def _arun(
