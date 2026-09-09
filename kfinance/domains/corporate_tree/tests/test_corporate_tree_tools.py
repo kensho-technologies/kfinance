@@ -13,8 +13,6 @@ from kfinance.domains.corporate_tree.corporate_tree_tools import (
 )
 
 
-# --- Test fixtures ---
-
 SNL = 34482
 IHS_MARKIT = 13651733
 NJ_DATA_CENTER = 267302130
@@ -255,9 +253,6 @@ CORPORATE_TREE_URL = f"{API_BASE}/corporate_tree/{SPGI_COMPANY_ID}"
 ULTIMATE_PARENT_PATHS_URL = f"{CORPORATE_TREE_URL}/ultimate_parent_paths"
 
 
-# --- Tests for the fetchers ---
-
-
 class TestFetchCorporateTree:
     @pytest.mark.asyncio
     async def test_fetch_corporate_tree(
@@ -333,9 +328,6 @@ class TestFetchUltimateParentPaths:
         assert resp.paths[1][1].parent_company_id == NJ_DATA_CENTER
 
 
-# --- Tests for get_ultimate_parent_paths ---
-
-
 class TestGetUltimateParentPaths:
     @pytest.mark.asyncio
     async def test_get_ultimate_parent_paths_from_identifiers(
@@ -404,9 +396,6 @@ class TestGetUltimateParentPaths:
 
         assert resp.identifier_results == {}
         assert len(resp.errors) == 1
-
-
-# --- Tests for search_corporate_tree ---
 
 
 class TestSearchCorporateTree:

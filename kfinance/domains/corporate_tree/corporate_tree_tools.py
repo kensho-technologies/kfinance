@@ -24,40 +24,6 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
-# --- Fetchers ---
-
-
-async def fetch_corporate_tree(
-    company_id: int,
-    httpx_client: httpx.AsyncClient,
-    include_prior: bool = False,
-    max_depth: int | None = None,
-) -> CorporateTreeResponse:
-    """Fetch the corporate tree for a single company.
-
-    max_depth=None traverses the whole tree.
-    """
-    url = f"/corporate_tree/{company_id}?include_prior={str(include_prior).lower()}"
-    if max_depth is not None:
-        url += f"&max_depth={max_depth}"
-    resp = await httpx_client.get(url=url)
-    resp.raise_for_status()
-    return CorporateTreeResponse.model_validate(resp.json())
-
-
-async def fetch_ultimate_parent_paths(
-    company_id: int,
-    httpx_client: httpx.AsyncClient,
-) -> UltimateParentPathsResponse:
-    """Fetch every path from a single company up to its ultimate parents."""
-    resp = await httpx_client.get(url=f"/corporate_tree/{company_id}/ultimate_parent_paths")
-    resp.raise_for_status()
-    return UltimateParentPathsResponse.model_validate(resp.json())
-
-
-# --- Tool: Get Ultimate Parent Paths ---
-
-
 class GetUltimateParentPathsFromIdentifiersResp(
     ToolRespWithIdInfoAndErrors[UltimateParentPathsResponse]
 ):
@@ -133,10 +99,17 @@ async def get_ultimate_parent_paths_from_identifiers(
     )
 
 
-# --- Tool: Search Corporate Tree ---
+async def fetch_ultimate_parent_paths(
+    company_id: int,
+    httpx_client: httpx.AsyncClient,
+) -> UltimateParentPathsResponse:
+    """Fetch every path from a single company up to its ultimate parents."""
+    resp = await httpx_client.get(url=f"/corporate_tree/{company_id}/ultimate_parent_paths")
+    resp.raise_for_status()
+    return UltimateParentPathsResponse.model_validate(resp.json())
 
 
-class SearchCorporateTreeArgs(ToolArgsWithIdentifiers):
+class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
     relationship_type: list[TreeRelationshipType] | None = Field(
         default=None,
         description="Filter by relationship type(s). Nodes matching ANY of the listed types are included.",
@@ -202,7 +175,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         Query: "Find all subsidiaries and investment arms of S&P Global in the US, UK, and India"
         Function: search_corporate_tree_from_identifiers(identifiers=["SPGI"], relationship_type=["subsidiary_or_operating_unit", "investment_arm"], country_iso_code=["USA", "GBR", "IND"])
     """).strip()
-    args_schema: Type[BaseModel] = SearchCorporateTreeArgs
+    args_schema: Type[BaseModel] = SearchCorporateTreeFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = None
 
     async def _arun(
@@ -358,3 +331,21 @@ async def fetch_and_search_corporate_tree(
             search_was_depth_limited=response.truncation is not None,
         ),
     )
+
+
+async def fetch_corporate_tree(
+    company_id: int,
+    httpx_client: httpx.AsyncClient,
+    include_prior: bool = False,
+    max_depth: int | None = None,
+) -> CorporateTreeResponse:
+    """Fetch the corporate tree for a single company.
+
+    max_depth=None traverses the whole tree.
+    """
+    url = f"/corporate_tree/{company_id}?include_prior={str(include_prior).lower()}"
+    if max_depth is not None:
+        url += f"&max_depth={max_depth}"
+    resp = await httpx_client.get(url=url)
+    resp.raise_for_status()
+    return CorporateTreeResponse.model_validate(resp.json())
