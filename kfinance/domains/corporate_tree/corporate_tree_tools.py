@@ -282,26 +282,24 @@ async def search_corporate_tree_from_identifiers(
 
 def _node_matches(
     node: CorporateTreeNode,
-    relationship_types: set[TreeRelationshipType] | None,
-    country_iso_codes: set[str] | None,
+    relationship_types: list[TreeRelationshipType] | None,
+    country_iso_codes: list[str] | None,
     names: list[str] | None,
 ) -> bool:
-    """Whether a node satisfies every supplied filter.
-
-    `country_iso_codes` and `names` are expected pre-casefolded by the caller.
-    """
+    """Whether a node satisfies every supplied filter. Country and name matching is case-insensitive."""
     if relationship_types is not None and node.relationship_type not in relationship_types:
         return False
 
     if country_iso_codes is not None:
-        if node.company.iso_country is None:
+        iso_country = node.company.iso_country
+        if iso_country is None:
             return False
-        if node.company.iso_country.casefold() not in country_iso_codes:
+        if not any(iso_country.casefold() == code.casefold() for code in country_iso_codes):
             return False
 
     if names is not None:
         node_name = node.company.company_name.casefold()
-        if not any(name in node_name for name in names):
+        if not any(name.casefold() in node_name for name in names):
             return False
 
     return True
@@ -325,17 +323,11 @@ async def fetch_and_search_corporate_tree(
         max_depth=max_depth,
     )
 
-    relationship_types = set(relationship_type) if relationship_type else None
-    country_iso_codes = (
-        {value.casefold() for value in country_iso_code} if country_iso_code else None
-    )
-    names = [value.casefold() for value in name] if name else None
-
     # The API already applied max_depth, so there is no depth filtering left to do here.
     matches = [
         node
         for node in response.nodes
-        if _node_matches(node, relationship_types, country_iso_codes, names)
+        if _node_matches(node, relationship_type, country_iso_code, name)
     ]
 
     return CorporateTreeSearchResult(
