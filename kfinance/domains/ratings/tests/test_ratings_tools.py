@@ -228,7 +228,7 @@ class TestRatings:
             identifier_results={},
             identifier_info={},
             errors=[
-                "USA: No results found for entity which resolved to United States "
+                "USA: No ratings data found for entity which resolved to United States "
                 "(entity ID 4217533)."
             ],
         )

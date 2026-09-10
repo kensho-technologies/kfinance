@@ -217,7 +217,7 @@ async def get_issuer_ratings_from_identifiers(
 
         if entity_info:
             errors.append(
-                f"{original_identifier}: No results found for entity which resolved to "
+                f"{original_identifier}: No ratings data found for entity which resolved to "
                 f"{entity_info.entity_name} (entity ID {entity_id})."
             )
         else:
