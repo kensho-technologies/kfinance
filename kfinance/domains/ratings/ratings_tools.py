@@ -195,23 +195,33 @@ async def get_issuer_ratings_from_identifiers(
     )
 
     # Map results back from entity_id to original identifier
-    # Reverse lookup: entity_id -> og identifier
-    entity_id_to_identifier = {
-        entity_info.entity_id: identifier
+    # Reverse lookup: entity_id -> original identifier and resolved entity info
+    entity_id_to_info = {
+        entity_info.entity_id: (identifier, entity_info)
         for identifier, entity_info in entity_resp.identifiers_resolved.items()
     }
 
     identifier_results = {}
     for entity_id_str, ratings_data in result.results.items():
         entity_id = int(entity_id_str)
-        original_identifier = entity_id_to_identifier[entity_id]
+        original_identifier, _ = entity_id_to_info[entity_id]
         identifier_results[original_identifier] = ratings_data
 
-    # Add errors from API, mapping entity_id back to identifier
+    # Add errors from API, including what each identifier resolved to
     for entity_id_str, error in result.errors.items():
         entity_id = int(entity_id_str)
-        original_identifier = entity_id_to_identifier.get(entity_id, entity_id_str)
-        errors.append(f"{original_identifier}: {error}")
+        original_identifier, entity_info = entity_id_to_info.get(
+            entity_id,
+            (entity_id_str, None),
+        )
+
+        if entity_info:
+            errors.append(
+                f"{original_identifier}: No results found for entity which resolved to "
+                f"{entity_info.entity_name} (entity ID {entity_id})."
+            )
+        else:
+            errors.append(f"{original_identifier}: {error}")
 
     return GetIssuerRatingsFromIdentifiersResp.create(
         identifier_results=identifier_results,

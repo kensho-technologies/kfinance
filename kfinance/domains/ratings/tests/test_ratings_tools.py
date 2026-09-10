@@ -196,7 +196,7 @@ class TestRatings:
     ) -> None:
         """
         WHEN the ratings API returns an error
-        THEN the error is mapped back to the identifier and included in the response.
+        THEN the error identifies what the original identifier resolved to.
         """
         # Mock entity resolution
         httpx_mock.add_response(
@@ -204,10 +204,10 @@ class TestRatings:
             url="https://kfinance.kensho.com/api/v1/ratings/resolve_entities/",
             json={
                 "data": {
-                    "SPGI": {
-                        "entity_id": 21719,
-                        "entity_name": "S&P Global Inc.",
-                        "ticker": "NYSE:SPGI",
+                    "USA": {
+                        "entity_id": 4217533,
+                        "entity_name": "United States",
+                        "ticker": None,
                         "country": "USA",
                     }
                 }
@@ -220,18 +220,21 @@ class TestRatings:
             url="https://kfinance.kensho.com/api/v1/ratings/issuer_ratings/",
             json={
                 "results": {},
-                "errors": {"21719": "No ratings data available"},
+                "errors": {"4217533": "No results found."},
             },
         )
 
         expected_resp = GetIssuerRatingsFromIdentifiersResp.create(
             identifier_results={},
             identifier_info={},
-            errors=["SPGI: No ratings data available"],
+            errors=[
+                "USA: No results found for entity which resolved to United States "
+                "(entity ID 4217533)."
+            ],
         )
 
         resp = await get_issuer_ratings_from_identifiers(
-            identifiers=["SPGI"],
+            identifiers=["USA"],
             httpx_client=httpx_client,
         )
 
