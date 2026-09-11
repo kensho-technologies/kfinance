@@ -39,7 +39,7 @@ This function initializes and starts an MCP server that exposes the kFinance too
 
 The server's full signature is as follows:
 
-`kfinance.mcp [--stdio|-s|--sse|--streamable-http] --refresh-token <refresh-token> --client-id <client-id> --private-key <private-key>`
+`kfinance.mcp [--stdio|-s|--sse|--streamable-http] --refresh-token <refresh-token> --client-id <client-id> --private-key <private-key> --api-host <api-host>`
 
 Authentication Methods (in order of precedence):
 
@@ -53,6 +53,15 @@ Transport Layers:
 - `--sse`: Server-Sent Events transport (default)
 - `--streamable-http`: HTTP transport
 
+API Host:
+
+- `--api-host <api-host>`: The kFinance API host to fetch data from. Defaults to production
+  (`https://kfinance.kensho.com`). Useful for pointing the server at a local or
+  pre-production backend.
+- Refresh tokens are redeemed against `--api-host`, so a token issued by one host will not
+  authenticate against another. Key-pair authentication goes to Okta instead, and so works
+  against any host.
+
 Examples:
 ```bash
 # Using stdio with MCP Inspector
@@ -63,6 +72,9 @@ python -m kfinance.mcp --refresh-token <token>
 
 # Using streamable-http
 python -m kfinance.mcp --streamable-http --refresh-token <token>
+
+# Against a locally running backend
+python -m kfinance.mcp --stdio --api-host http://localhost:8000 --refresh-token <token>
 ```
 
 ## MCP Proxy
