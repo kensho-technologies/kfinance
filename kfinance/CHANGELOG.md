@@ -1,5 +1,8 @@
 # Changelog
 
+## v7.2.2
+- Add source to estimate line item response object.
+
 ## v7.2.1
 - Coerce common incorrect param values like cash_flow -> cashflow
 

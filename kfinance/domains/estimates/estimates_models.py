@@ -3,9 +3,10 @@ from decimal import Decimal
 import logging
 from typing import Any
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from kfinance.client.models.date_and_period_models import EstimatePeriodType, EstimateType
+from kfinance.client.models.type_aliases import Source
 
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 class LineItem(BaseModel):
     name: str
     value: Decimal | None
+    sources: list[Source] = Field(default_factory=list)
 
 
 class TickerEstimatesGroup(BaseModel):
