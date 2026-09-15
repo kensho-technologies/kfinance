@@ -1,5 +1,8 @@
 # Changelog
 
+## v7.3.0
+- Add corporate tree tools: `get_ultimate_parent_paths_from_identifiers` and `search_corporate_tree_from_identifiers`.
+
 ## v7.2.1
 - Coerce common incorrect param values like cash_flow -> cashflow
 
