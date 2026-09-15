@@ -119,7 +119,7 @@ class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=None,
         description="Countries to filter by, as ISO 3166-1 alpha-3 codes only (e.g., ['USA', 'GBR', 'DEU']). Nodes in ANY of the listed countries are included.",
     )
-    name: list[str] | None = Field(
+    name_contains: list[str] | None = Field(
         default=None,
         description="Substring(s) to match against company names (case-insensitive). Nodes matching ANY of the listed substrings are included.",
     )
@@ -168,7 +168,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         Function: search_corporate_tree_from_identifiers(identifiers=["Microsoft"], country_iso_code=["DEU"], relationship_type=["subsidiary_or_operating_unit"])
 
         Query: "Find all entities named 'Capital' or 'Global' under JPMorgan"
-        Function: search_corporate_tree_from_identifiers(identifiers=["JPM"], name=["Capital", "Global"])
+        Function: search_corporate_tree_from_identifiers(identifiers=["JPM"], name_contains=["Capital", "Global"])
 
         Query: "List the direct subsidiaries of Apple"
         Function: search_corporate_tree_from_identifiers(identifiers=["Apple"], max_depth=1, relationship_type=["subsidiary_or_operating_unit"])
@@ -185,7 +185,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         identifiers: list[str],
         relationship_type: list[TreeRelationshipType] | None = None,
         country_iso_code: list[str] | None = None,
-        name: list[str] | None = None,
+        name_contains: list[str] | None = None,
         max_depth: int | None = None,
         include_prior: bool = False,
         limit: int = 50,
@@ -195,7 +195,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
             identifiers=identifiers,
             relationship_type=relationship_type,
             country_iso_code=country_iso_code,
-            name=name,
+            name_contains=name_contains,
             max_depth=max_depth,
             include_prior=include_prior,
             limit=limit,
@@ -208,7 +208,7 @@ async def search_corporate_tree_from_identifiers(
     httpx_client: httpx.AsyncClient,
     relationship_type: list[TreeRelationshipType] | None = None,
     country_iso_code: list[str] | None = None,
-    name: list[str] | None = None,
+    name_contains: list[str] | None = None,
     max_depth: int | None = None,
     include_prior: bool = False,
     limit: int = 50,
@@ -228,7 +228,7 @@ async def search_corporate_tree_from_identifiers(
                 httpx_client=httpx_client,
                 relationship_type=relationship_type,
                 country_iso_code=country_iso_code,
-                name=name,
+                name_contains=name_contains,
                 max_depth=max_depth,
                 include_prior=include_prior,
                 limit=limit,
@@ -258,7 +258,7 @@ def _node_matches(
     node: CorporateTreeNode,
     relationship_types: list[TreeRelationshipType] | None,
     country_iso_codes: list[str] | None,
-    names: list[str] | None,
+    name_substrings: list[str] | None,
 ) -> bool:
     """Whether a node satisfies every supplied filter. Country and name matching is case-insensitive."""
     if relationship_types is not None and node.relationship_type not in relationship_types:
@@ -271,9 +271,9 @@ def _node_matches(
         if not any(iso_country.casefold() == code.casefold() for code in country_iso_codes):
             return False
 
-    if names is not None:
+    if name_substrings is not None:
         node_name = node.company.company_name.casefold()
-        if not any(name.casefold() in node_name for name in names):
+        if not any(substring.casefold() in node_name for substring in name_substrings):
             return False
 
     return True
@@ -284,7 +284,7 @@ async def fetch_and_search_corporate_tree(
     httpx_client: httpx.AsyncClient,
     relationship_type: list[TreeRelationshipType] | None = None,
     country_iso_code: list[str] | None = None,
-    name: list[str] | None = None,
+    name_contains: list[str] | None = None,
     max_depth: int | None = None,
     include_prior: bool = False,
     limit: int = 50,
@@ -301,7 +301,7 @@ async def fetch_and_search_corporate_tree(
     matches = [
         node
         for node in response.nodes
-        if _node_matches(node, relationship_type, country_iso_code, name)
+        if _node_matches(node, relationship_type, country_iso_code, name_contains)
     ]
 
     return CorporateTreeSearchResult(

@@ -436,7 +436,7 @@ class TestSearchCorporateTree:
     ) -> None:
         """WHEN the filter matches only the queried company THEN there are no matches."""
         result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name=["S&P Global"]
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name_contains=["S&P Global"]
         )
 
         assert result.summary.total_matches == 0
@@ -553,7 +553,7 @@ class TestSearchCorporateTree:
     ) -> None:
         """WHEN a name substring is given THEN it matches company names case-insensitively."""
         result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name=["mcgraw"]
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name_contains=["mcgraw"]
         )
 
         assert result.summary.distinct_companies == 3
@@ -569,7 +569,9 @@ class TestSearchCorporateTree:
     ) -> None:
         """WHEN several name substrings are given THEN companies matching ANY of them match."""
         result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name=["Kensho", "Osttra"]
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            name_contains=["Kensho", "Osttra"],
         )
 
         assert {match.company_id for match in result.matches} == {KENSHO, OSTTRA}
@@ -612,7 +614,7 @@ class TestSearchCorporateTree:
     ) -> None:
         """WHEN a company has several parents THEN it is returned once per parent."""
         result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name=["Juvenile Retail"]
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name_contains=["Juvenile Retail"]
         )
 
         assert result.summary.total_matches == 2
@@ -640,7 +642,7 @@ class TestSearchCorporateTree:
     ) -> None:
         """WHEN a match is returned THEN the nested company fields are flattened onto it."""
         result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name=["Osttra"]
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name_contains=["Osttra"]
         )
 
         (match,) = result.matches
