@@ -12,6 +12,7 @@ from kfinance.domains.corporate_tree.corporate_tree_models import (
     CorporateTreeNode,
     CorporateTreeResponse,
     CorporateTreeSearchResult,
+    ParentPathElement,
     SearchMatch,
     SearchSummary,
     TreeRelationshipType,
@@ -22,6 +23,14 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
     ToolArgsWithIdentifiers,
     ToolRespWithIdInfoAndErrors,
 )
+
+
+class GetUltimateParentPathsFromIdentifiersArgs(ToolArgsWithIdentifiers):
+    max_levels_up: int | None = Field(
+        default=None,
+        description="How many levels above the company to return. Omit to follow every chain all the way up to its ultimate parent. max_levels_up=1 returns the company and its immediate parents only, max_levels_up=2 also their parents, and so on.",
+        ge=1,
+    )
 
 
 class GetUltimateParentPathsFromIdentifiersResp(
@@ -41,6 +50,8 @@ class GetUltimateParentPathsFromIdentifiers(KfinanceTool):
         - Each element's relationship_type describes how that element is owned by the next element in the path. The ultimate parent ending a path has a null parent_company_id and a null relationship_type.
         - A company with no controlling parent is its own ultimate parent, returned as a single path holding only that company.
         - Only current relationships are followed; prior/historical ownership is never included.
+        - Use max_levels_up to stop short of the ultimate parent, e.g. max_levels_up=1 to ask only who directly owns the company. A path cut short this way does NOT end at an ultimate parent: its last element keeps a non-null parent_company_id and relationship_type, showing that the chain continues above the returned portion. Call again with a larger max_levels_up, or omit it, to see the rest.
+        - Cutting paths short can make two chains that only differ higher up identical, and identical paths are returned once, so fewer paths may come back than the company has ownership chains.
 
         Examples:
         Query: "Who is the ultimate parent of Instagram?"
@@ -48,15 +59,21 @@ class GetUltimateParentPathsFromIdentifiers(KfinanceTool):
 
         Query: "Show the ownership chain for YouTube and WhatsApp"
         Function: get_ultimate_parent_paths_from_identifiers(identifiers=["YouTube", "WhatsApp"])
+
+        Query: "Who directly owns Instagram?"
+        Function: get_ultimate_parent_paths_from_identifiers(identifiers=["Instagram"], max_levels_up=1)
     """).strip()
-    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
+    args_schema: Type[BaseModel] = GetUltimateParentPathsFromIdentifiersArgs
     # TODO: Specify permissions
     accepted_permissions: set[Permission] | None = None
 
-    async def _arun(self, identifiers: list[str]) -> GetUltimateParentPathsFromIdentifiersResp:
+    async def _arun(
+        self, identifiers: list[str], max_levels_up: int | None = None
+    ) -> GetUltimateParentPathsFromIdentifiersResp:
         """"""
         return await get_ultimate_parent_paths_from_identifiers(
             identifiers=identifiers,
+            max_levels_up=max_levels_up,
             httpx_client=self.kfinance_client.httpx_client,
         )
 
@@ -64,6 +81,7 @@ class GetUltimateParentPathsFromIdentifiers(KfinanceTool):
 async def get_ultimate_parent_paths_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx.AsyncClient,
+    max_levels_up: int | None = None,
 ) -> GetUltimateParentPathsFromIdentifiersResp:
     """Fetch the ultimate parent paths for all identifiers."""
 
@@ -74,10 +92,11 @@ async def get_ultimate_parent_paths_from_identifiers(
 
     tasks = [
         AsyncTask(
-            func=fetch_ultimate_parent_paths,
+            func=fetch_and_cap_ultimate_parent_paths,
             kwargs=dict(
                 company_id=id_triple.company_id,
                 httpx_client=httpx_client,
+                max_levels_up=max_levels_up,
             ),
             result_key=identifier,
         )
@@ -108,6 +127,52 @@ async def fetch_ultimate_parent_paths(
     resp = await httpx_client.get(url=f"/corporate_tree/{company_id}/ultimate_parent_paths")
     resp.raise_for_status()
     return UltimateParentPathsResponse.model_validate(resp.json())
+
+
+def _cap_paths(
+    paths: list[list[ParentPathElement]], max_levels_up: int
+) -> list[list[ParentPathElement]]:
+    """Cut every path down to max_levels_up levels above the queried company, dropping duplicates.
+
+    A path holding the company and the max_levels_up levels above it has max_levels_up + 1
+    elements, since the queried company itself occupies the first one.
+
+    Two chains that diverge only above the cut become the same path, and are returned once, in the
+    position of the first. Paths are compared on their companies and on the relationships between them.
+    """
+    capped: list[list[ParentPathElement]] = []
+    seen: set[tuple[tuple[int, ...], tuple[TreeRelationshipType | None, ...]]] = set()
+
+    for path in paths:
+        cut = path[: max_levels_up + 1]
+        key = (
+            tuple(element.company_id for element in cut),
+            # exclude the last upwards edge from the dedup key. This means that
+            # if the last element has multiple parent relationships, we only keep one
+            # since those parents did not make the cut and won't be in the response anyway
+            tuple(element.relationship_type for element in cut[:-1]),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        capped.append(cut)
+
+    return capped
+
+
+async def fetch_and_cap_ultimate_parent_paths(
+    company_id: int,
+    httpx_client: httpx.AsyncClient,
+    max_levels_up: int | None = None,
+) -> UltimateParentPathsResponse:
+    """Fetch the ultimate parent paths for a single company and cap how far up they run.
+
+    The API returns whole paths, so max_levels_up is applied here rather than by the API.
+    """
+    response = await fetch_ultimate_parent_paths(company_id=company_id, httpx_client=httpx_client)
+    if max_levels_up is None:
+        return response
+    return UltimateParentPathsResponse(paths=_cap_paths(response.paths, max_levels_up))
 
 
 class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):

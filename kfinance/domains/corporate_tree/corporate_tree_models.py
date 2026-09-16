@@ -83,7 +83,7 @@ class ParentPathElement(BaseModel):
 class UltimateParentPathsResponse(BaseModel):
     """The full API response for the ultimate parent paths endpoint.
 
-    Every path starts at the requested company and ends with the ultimate parent of that path.
+    Every path starts at the requested company and further elements go up the chain from there.
     A company with no controlling parent yields a single path holding only that company.
     """
 

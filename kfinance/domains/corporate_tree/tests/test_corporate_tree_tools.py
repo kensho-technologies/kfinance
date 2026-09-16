@@ -1,10 +1,13 @@
 import httpx
+from pydantic import ValidationError
 import pytest
 from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.corporate_tree.corporate_tree_models import TreeRelationshipType
 from kfinance.domains.corporate_tree.corporate_tree_tools import (
+    GetUltimateParentPathsFromIdentifiersArgs,
+    fetch_and_cap_ultimate_parent_paths,
     fetch_and_search_corporate_tree,
     fetch_corporate_tree,
     fetch_ultimate_parent_paths,
@@ -248,6 +251,31 @@ SINGLE_PATH_RESPONSE = {
     "paths": [[{**SPGI_ROOT, "parent_company_id": None, "relationship_type": None}]]
 }
 
+# Two chains through the same companies, differing only in how the New Jersey Data Center owns
+# Kensho. Capping must keep both, since they are distinct ownership chains rather than duplicates.
+DUAL_RELATIONSHIP_PATHS_RESPONSE = {
+    "paths": [
+        [
+            {
+                "company_id": KENSHO,
+                "company_name": "Kensho Technologies, Inc.",
+                **_USA,
+                "parent_company_id": NJ_DATA_CENTER,
+                "relationship_type": relationship_type,
+            },
+            {
+                "company_id": NJ_DATA_CENTER,
+                "company_name": "McGraw Hill Financial, Inc., New Jersey Data Center",
+                **_USA,
+                "parent_company_id": SPGI_COMPANY_ID,
+                "relationship_type": "subsidiary_or_operating_unit",
+            },
+            {**SPGI_ROOT, "parent_company_id": None, "relationship_type": None},
+        ]
+        for relationship_type in ("subsidiary_or_operating_unit", "merged_entity")
+    ]
+}
+
 API_BASE = "https://kfinance.kensho.com/api/v1"
 CORPORATE_TREE_URL = f"{API_BASE}/corporate_tree/{SPGI_COMPANY_ID}"
 ULTIMATE_PARENT_PATHS_URL = f"{CORPORATE_TREE_URL}/ultimate_parent_paths"
@@ -328,6 +356,140 @@ class TestFetchUltimateParentPaths:
         assert resp.paths[1][1].parent_company_id == NJ_DATA_CENTER
 
 
+class TestCapUltimateParentPaths:
+    """max_levels_up is applied client-side, so these exercise the capping directly."""
+
+    @pytest.fixture
+    def multi_paths(self, httpx_mock: HTTPXMock) -> None:
+        httpx_mock.add_response(
+            method="GET",
+            url=f"{API_BASE}/corporate_tree/{MCGRAW_HILL_EDUCATION}/ultimate_parent_paths",
+            json=MULTI_PATHS_RESPONSE,
+        )
+
+    @pytest.mark.asyncio
+    async def test_no_max_levels_up_returns_whole_paths(
+        self, httpx_client: httpx.AsyncClient, multi_paths: None
+    ) -> None:
+        """WHEN max_levels_up is omitted THEN paths run all the way to the ultimate parent."""
+        resp = await fetch_and_cap_ultimate_parent_paths(
+            company_id=MCGRAW_HILL_EDUCATION, httpx_client=httpx_client
+        )
+
+        assert [len(path) for path in resp.paths] == [4, 4]
+        assert all(path[-1].company_id == SPGI_COMPANY_ID for path in resp.paths)
+
+    @pytest.mark.asyncio
+    async def test_max_levels_up_of_one_returns_the_immediate_parent(
+        self, httpx_client: httpx.AsyncClient, multi_paths: None
+    ) -> None:
+        """WHEN max_levels_up=1 THEN each path holds the company and whoever directly owns it."""
+        resp = await fetch_and_cap_ultimate_parent_paths(
+            company_id=MCGRAW_HILL_EDUCATION, httpx_client=httpx_client, max_levels_up=1
+        )
+
+        # Both chains run through the same direct owner, so capping collapses them into one path.
+        assert [[element.company_id for element in path] for path in resp.paths] == [
+            [MCGRAW_HILL_EDUCATION, JUVENILE_RETAIL]
+        ]
+
+    @pytest.mark.asyncio
+    async def test_max_levels_up_of_two_keeps_both_chains(
+        self, httpx_client: httpx.AsyncClient, multi_paths: None
+    ) -> None:
+        """WHEN the cut falls above where the chains diverge THEN both paths are returned."""
+        resp = await fetch_and_cap_ultimate_parent_paths(
+            company_id=MCGRAW_HILL_EDUCATION, httpx_client=httpx_client, max_levels_up=2
+        )
+
+        assert [[element.company_id for element in path] for path in resp.paths] == [
+            [MCGRAW_HILL_EDUCATION, JUVENILE_RETAIL, SNL],
+            [MCGRAW_HILL_EDUCATION, JUVENILE_RETAIL, NJ_DATA_CENTER],
+        ]
+
+    @pytest.mark.asyncio
+    async def test_a_cut_path_keeps_the_edge_leading_further_up(
+        self, httpx_client: httpx.AsyncClient, multi_paths: None
+    ) -> None:
+        """WHEN a path is cut short THEN its last element still points above the returned portion.
+
+        This is what separates a cut path from one that genuinely reached an ultimate parent, which
+        ends with both fields null.
+        """
+        resp = await fetch_and_cap_ultimate_parent_paths(
+            company_id=MCGRAW_HILL_EDUCATION, httpx_client=httpx_client, max_levels_up=1
+        )
+
+        (last,) = [path[-1] for path in resp.paths]
+        assert last.company_id == JUVENILE_RETAIL
+        assert last.parent_company_id is not None
+        assert last.relationship_type == TreeRelationshipType.subsidiary_or_operating_unit
+
+    @pytest.mark.asyncio
+    async def test_max_levels_up_past_the_top_returns_whole_paths(
+        self, httpx_client: httpx.AsyncClient, multi_paths: None
+    ) -> None:
+        """WHEN max_levels_up exceeds the chain length THEN nothing is cut and nothing collapses."""
+        resp = await fetch_and_cap_ultimate_parent_paths(
+            company_id=MCGRAW_HILL_EDUCATION, httpx_client=httpx_client, max_levels_up=99
+        )
+
+        assert [len(path) for path in resp.paths] == [4, 4]
+        assert all(path[-1].parent_company_id is None for path in resp.paths)
+
+    @pytest.mark.asyncio
+    async def test_a_company_that_is_its_own_ultimate_parent_is_unaffected(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """WHEN a company has no controlling parent THEN its one-element path survives capping."""
+        httpx_mock.add_response(
+            method="GET", url=ULTIMATE_PARENT_PATHS_URL, json=SINGLE_PATH_RESPONSE
+        )
+
+        resp = await fetch_and_cap_ultimate_parent_paths(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, max_levels_up=1
+        )
+
+        assert [[element.company_id for element in path] for path in resp.paths] == [
+            [SPGI_COMPANY_ID]
+        ]
+
+    @pytest.mark.asyncio
+    async def test_chains_differing_only_by_relationship_type_are_both_kept(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """WHEN two chains share their companies but not their relationships THEN both remain."""
+        httpx_mock.add_response(
+            method="GET",
+            url=f"{API_BASE}/corporate_tree/{KENSHO}/ultimate_parent_paths",
+            json=DUAL_RELATIONSHIP_PATHS_RESPONSE,
+        )
+
+        resp = await fetch_and_cap_ultimate_parent_paths(
+            company_id=KENSHO, httpx_client=httpx_client, max_levels_up=1
+        )
+
+        assert [[element.company_id for element in path] for path in resp.paths] == [
+            [KENSHO, NJ_DATA_CENTER],
+            [KENSHO, NJ_DATA_CENTER],
+        ]
+        assert [path[0].relationship_type for path in resp.paths] == [
+            TreeRelationshipType.subsidiary_or_operating_unit,
+            TreeRelationshipType.merged_entity,
+        ]
+
+
+class TestGetUltimateParentPathsArgs:
+    def test_max_levels_up_defaults_to_no_limit(self) -> None:
+        args = GetUltimateParentPathsFromIdentifiersArgs(identifiers=["SPGI"])
+        assert args.max_levels_up is None
+
+    def test_max_levels_up_rejects_zero(self) -> None:
+        """Zero levels up would return only the queried company, so omission means "no limit"."""
+        with pytest.raises(ValidationError):
+            GetUltimateParentPathsFromIdentifiersArgs(identifiers=["SPGI"], max_levels_up=0)
+
+
 class TestGetUltimateParentPaths:
     @pytest.mark.asyncio
     async def test_get_ultimate_parent_paths_from_identifiers(
@@ -365,6 +527,25 @@ class TestGetUltimateParentPaths:
         assert paths[0][0].company_id == SPGI_COMPANY_ID
         assert paths[0][0].parent_company_id is None
         assert paths[0][0].relationship_type is None
+
+    @pytest.mark.asyncio
+    async def test_get_ultimate_parent_paths_with_max_levels_up(
+        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+    ) -> None:
+        """WHEN max_levels_up is passed to the tool THEN the returned paths are cut and deduped."""
+        httpx_mock.add_response(
+            method="GET", url=ULTIMATE_PARENT_PATHS_URL, json=MULTI_PATHS_RESPONSE
+        )
+
+        resp = await get_ultimate_parent_paths_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client, max_levels_up=1
+        )
+
+        assert resp.errors == []
+        paths = resp.identifier_results["SPGI"].paths
+        assert [[element.company_id for element in path] for path in paths] == [
+            [MCGRAW_HILL_EDUCATION, JUVENILE_RETAIL]
+        ]
 
     @pytest.mark.asyncio
     async def test_paths_serialize_company_ids_with_the_company_prefix(
