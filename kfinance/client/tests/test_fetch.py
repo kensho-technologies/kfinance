@@ -825,3 +825,21 @@ class TestFetchSecurityRatings:
         assert "123456789" in resp.results
         assert "XXXXX" in resp.results
         assert resp.errors == {}
+
+
+class TestFetchRedirects:
+    def test_fetch_follows_redirects(self, httpx2_mock: Router, mock_client: Client) -> None:
+        """
+        GIVEN an endpoint that redirects
+        WHEN fetch is called
+        THEN the redirect is followed (matching the old requests-based behavior)
+        """
+        url_base = mock_client.kfinance_api_client.url_base
+        httpx2_mock.get(f"{url_base}info/{SPGI_COMPANY_ID}").respond(
+            status_code=307, headers={"location": f"{url_base}info/{SPGI_COMPANY_ID}/"}
+        )
+        httpx2_mock.get(f"{url_base}info/{SPGI_COMPANY_ID}/").respond(json={"name": "S&P Global"})
+
+        assert mock_client.kfinance_api_client.fetch_info(company_id=SPGI_COMPANY_ID) == {
+            "name": "S&P Global"
+        }

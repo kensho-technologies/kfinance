@@ -185,6 +185,7 @@ class KFinanceApiClient:
         response = httpx2.get(
             f"{self.api_host}/oauth2/refresh?refresh_token={self.refresh_token}",
             timeout=60,
+            follow_redirects=True,
         )
         response.raise_for_status()
         return response.json().get("access_token")
@@ -216,6 +217,7 @@ class KFinanceApiClient:
                 "client_assertion": encoded,
             },
             timeout=60,
+            follow_redirects=True,
         )
         response.raise_for_status()
         return response.json().get("access_token")
@@ -267,6 +269,7 @@ class KFinanceApiClient:
             headers=headers,
             json=request_body,
             timeout=60,
+            follow_redirects=True,
         )
         response.raise_for_status()
         return response.json()
@@ -472,6 +475,7 @@ class KFinanceApiClient:
                 "Authorization": f"Bearer {self.access_token}",
             },
             timeout=60,
+            follow_redirects=True,
         )
         response.raise_for_status()
         return response.content
