@@ -1,5 +1,8 @@
 # Changelog
 
+## v7.2.3
+- Add RatingsPermission.
+
 ## v7.2.2
 - Add source to estimate line item response object.
 

@@ -25,3 +25,4 @@ class Permission(StrEnum):
     PrivateCompanyFinancialsPermissionExcludeRedistribution = (
         "PrivateCompanyFinancialsPermissionExcludeRedistribution"
     )
+    RatingsPermission = "RatingsPermission"

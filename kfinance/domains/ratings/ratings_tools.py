@@ -120,7 +120,7 @@ class GetIssuerRatingsFromIdentifiers(KfinanceTool):
         Function: get_issuer_ratings_from_identifiers(identifiers=["JPMorgan Chase", "Bank of America"])
     """).strip()
     args_schema: Type[BaseModel] = GetIssuerRatingsFromIdentifiersArgs
-    accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
+    accepted_permissions: set[Permission] | None = {Permission.RatingsPermission}
 
     async def _arun(
         self,
@@ -153,7 +153,7 @@ class GetSecurityRatingsFromIdentifiers(KfinanceTool):
         Function: get_security_ratings_from_identifiers(security_identifiers=["1230", "XXX"])
     """).strip()
     args_schema: Type[BaseModel] = GetSecurityRatingsFromIdentifiersArgs
-    accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
+    accepted_permissions: set[Permission] | None = {Permission.RatingsPermission}
 
     async def _arun(
         self,
