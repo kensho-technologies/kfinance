@@ -3,7 +3,7 @@ from typing import Literal
 import httpx2
 import pytest
 
-from kfinance.conftest import SPGI_ID_TRIPLE, SPGI_SECURITY_ID
+from kfinance.conftest import SPGI_ID_TRIPLE, SPGI_SECURITY_ID, optional_route
 from kfinance.domains.cusip_and_isin.cusip_and_isin_tools import (
     GetCusipOrIsinFromIdentifiersResp,
     fetch_cusip_or_isin_from_security_id,
@@ -19,11 +19,13 @@ class TestCusipAndIsin:
     @pytest.fixture
     def add_spgi_cusip_and_isin_mock_resp(self, httpx2_mock) -> None:
         """Add mock responses for both CUSIP and ISIN endpoints."""
-        httpx2_mock.get(
-            f"https://kfinance.kensho.com/api/v1/isin/{SPGI_ID_TRIPLE.security_id}"
+        optional_route(
+            httpx2_mock.get(f"https://kfinance.kensho.com/api/v1/isin/{SPGI_ID_TRIPLE.security_id}")
         ).respond(json={"isin": SPGI_ISIN})
-        httpx2_mock.get(
-            f"https://kfinance.kensho.com/api/v1/cusip/{SPGI_ID_TRIPLE.security_id}"
+        optional_route(
+            httpx2_mock.get(
+                f"https://kfinance.kensho.com/api/v1/cusip/{SPGI_ID_TRIPLE.security_id}"
+            )
         ).respond(json={"cusip": SPGI_CUSIP})
 
     @pytest.mark.asyncio

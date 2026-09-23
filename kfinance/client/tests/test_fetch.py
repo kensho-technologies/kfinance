@@ -849,3 +849,34 @@ class TestFetchRedirects:
         assert mock_client.kfinance_api_client.fetch_info(company_id=SPGI_COMPANY_ID) == {
             "name": "S&P Global"
         }
+
+
+class TestHttpClientLifecycle:
+    def test_context_manager_closes_http_client(self) -> None:
+        """
+        WHEN a KFinanceApiClient is used as a context manager
+        THEN its pooled HTTP client is closed on exit
+        """
+        with KFinanceApiClient(refresh_token="fake_refresh_token") as api_client:
+            assert not api_client._http_client.is_closed  # noqa: SLF001
+        assert api_client._http_client.is_closed  # noqa: SLF001
+
+    def test_cookies_do_not_persist(self, httpx2_mock: Router, mock_client: Client) -> None:
+        """
+        GIVEN a response that sets a cookie
+        WHEN the next request is made with the same client
+        THEN the cookie is not sent back
+
+        The old requests-based client used a fresh session per request, so cookies never
+        carried over. A shared httpx2.Client would keep them unless told not to.
+        """
+        url_base = mock_client.kfinance_api_client.url_base
+        httpx2_mock.get(f"{url_base}info/1").respond(
+            json={}, headers={"set-cookie": "sticky=1; Path=/"}
+        )
+        second = httpx2_mock.get(f"{url_base}info/2").respond(json={})
+
+        mock_client.kfinance_api_client.fetch_info(company_id=1)
+        mock_client.kfinance_api_client.fetch_info(company_id=2)
+
+        assert "cookie" not in second.calls.last.request.headers

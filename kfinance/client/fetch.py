@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from http.cookiejar import CookieJar, DefaultCookiePolicy
 import logging
 from time import time
 from typing import Any, Callable, Generator, Optional
@@ -140,8 +141,24 @@ class KFinanceApiClient:
         # its state under a thread lock. That matters because batch requests call fetch from
         # a thread pool. Verified with 2000 requests from 10 threads through one client:
         # every response matched its request, over 10 reused connections.
-        # follow_redirects=True keeps the redirect behavior of the old requests-based client.
-        self._http_client = httpx2.Client(timeout=60, follow_redirects=True)
+        # follow_redirects=True and the cookie jar that refuses every cookie keep the behavior
+        # of the old requests-based client, whose module-level calls used a fresh session for
+        # every request (so redirects were followed and no cookies carried over).
+        self._http_client = httpx2.Client(
+            timeout=60,
+            follow_redirects=True,
+            cookies=CookieJar(policy=DefaultCookiePolicy(allowed_domains=[])),
+        )
+
+    def close(self) -> None:
+        """Close the pooled HTTP connections."""
+        self._http_client.close()
+
+    def __enter__(self) -> "KFinanceApiClient":
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self.close()
 
     @contextmanager
     def batch_request_header(self, batch_size: int) -> Generator:

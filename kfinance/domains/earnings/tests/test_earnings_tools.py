@@ -4,7 +4,7 @@ import httpx2
 import pytest
 import time_machine
 
-from kfinance.conftest import SPGI_ID_TRIPLE
+from kfinance.conftest import SPGI_ID_TRIPLE, optional_route
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.earnings.earning_tools import (
     GetEarningsFromIdentifiersResp,
@@ -19,8 +19,10 @@ class TestEarnings:
     @pytest.fixture
     def add_spgi_earnings_mock_resp(self, httpx2_mock) -> None:
         """Add mock response for SPGI earnings."""
-        httpx2_mock.get(
-            f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_ID_TRIPLE.company_id}"
+        optional_route(
+            httpx2_mock.get(
+                f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_ID_TRIPLE.company_id}"
+            )
         ).respond(
             json={
                 "earnings": [
@@ -38,7 +40,7 @@ class TestEarnings:
             }
         )
         # private company without earnings
-        httpx2_mock.get("https://kfinance.kensho.com/api/v1/earnings/1").respond(
+        optional_route(httpx2_mock.get("https://kfinance.kensho.com/api/v1/earnings/1")).respond(
             json={"earnings": []}
         )
 
@@ -172,7 +174,9 @@ class TestTranscript:
     @pytest.fixture
     def add_transcript_mock_resp(self, httpx2_mock) -> None:
         """Add mock response for transcript."""
-        httpx2_mock.get("https://kfinance.kensho.com/api/v1/transcript/12345").respond(
+        optional_route(
+            httpx2_mock.get("https://kfinance.kensho.com/api/v1/transcript/12345")
+        ).respond(
             json={
                 "transcript": [
                     {

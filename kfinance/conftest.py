@@ -1,8 +1,10 @@
 from datetime import datetime
+from typing import Generator
 
 import httpx2
 import pytest
-from respx import Router
+import respx
+from respx import Route, Router
 
 from kfinance.client.kfinance import Client
 from kfinance.domains.companies.company_models import IdentificationTripleWithCompanyInfo
@@ -47,15 +49,25 @@ NON_EXISTENT_ERROR = {
 }
 
 
-def pytest_configure(config: pytest.Config) -> None:
-    """Register the httpx2 marker (pytest-httpx2 doesn't expose its own pytest_configure hook)."""
-    config.addinivalue_line("markers", "httpx2: configure the httpx2_mock fixture")
+def optional_route(route: Route) -> Route:
+    """Allow a mocked route to go uncalled (the equivalent of pytest-httpx's is_optional=True)."""
+    route.optional = True  # type: ignore[attr-defined]
+    return route
 
 
-def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    """Don't fail tests for unused httpx2_mock routes (pytest-httpx's is_optional behavior)."""
-    for item in items:
-        item.add_marker(pytest.mark.httpx2(assert_all_called=False))
+@pytest.fixture
+def httpx2_mock() -> Generator[Router, None, None]:
+    """Mock all httpx2 requests.
+
+    A request that matches no route fails the test, and so does a route that never gets
+    called, unless it was wrapped in optional_route(). This overrides pytest-httpx2's
+    fixture because respx's assert_all_called covers the whole router, so it can't make
+    only some routes optional.
+    """
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        yield router
+        uncalled = [r for r in router.routes if not r.called and not getattr(r, "optional", False)]
+        assert not uncalled, f"Mocked routes were never called: {uncalled}"
 
 
 @pytest.fixture
@@ -67,20 +79,22 @@ def mock_client(httpx2_mock: Router) -> Client:
     client.kfinance_api_client._access_token = "foo"  # noqa: SLF001
     client.kfinance_api_client._access_token_expiry = int(datetime(2100, 1, 1).timestamp())  # noqa: SLF001
 
-    httpx2_mock.get("https://kfinance.kensho.com/api/v1/id/SPGI").respond(
+    optional_route(httpx2_mock.get("https://kfinance.kensho.com/api/v1/id/SPGI")).respond(
         json=SPGI_ID_TRIPLE.model_dump(mode="json")
     )
-    httpx2_mock.get("https://kfinance.kensho.com/api/v1/id/MSFT").respond(
+    optional_route(httpx2_mock.get("https://kfinance.kensho.com/api/v1/id/MSFT")).respond(
         json={"trading_item_id": 2630413, "security_id": 2630412, "company_id": 21835}
     )
 
     # Create mock security id and trading item id for company ids 1 and 2:
     for company_id in [1, 2]:
-        httpx2_mock.get(
-            f"https://kfinance.kensho.com/api/v1/securities/{company_id}/primary"
+        optional_route(
+            httpx2_mock.get(f"https://kfinance.kensho.com/api/v1/securities/{company_id}/primary")
         ).respond(json={"primary_security": company_id})
-        httpx2_mock.get(
-            f"https://kfinance.kensho.com/api/v1/trading_items/{company_id}/primary"
+        optional_route(
+            httpx2_mock.get(
+                f"https://kfinance.kensho.com/api/v1/trading_items/{company_id}/primary"
+            )
         ).respond(json={"primary_trading_item": company_id})
 
     ids_url = "https://kfinance.kensho.com/api/v1/ids"
@@ -107,7 +121,7 @@ def mock_client(httpx2_mock: Router) -> Client:
         },
     }
     for identifiers, data in ids_responses.items():
-        httpx2_mock.post(ids_url, json={"identifiers": list(identifiers)}).respond(
+        optional_route(httpx2_mock.post(ids_url, json={"identifiers": list(identifiers)})).respond(
             json={"data": data}
         )
 
@@ -148,7 +162,7 @@ def httpx_client(httpx2_mock: Router) -> httpx2.AsyncClient:
         },
     }
     for identifiers, data in ids_responses.items():
-        httpx2_mock.post(ids_url, json={"identifiers": list(identifiers)}).respond(
+        optional_route(httpx2_mock.post(ids_url, json={"identifiers": list(identifiers)})).respond(
             json={"data": data}
         )
 
