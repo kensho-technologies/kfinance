@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from textwrap import dedent
 from typing import Literal, Type, cast
 
-import httpx2 as httpx
+import httpx2
 from pydantic import BaseModel, Field
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
@@ -188,7 +188,7 @@ class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
 async def get_estimates_from_identifiers(
     identifiers: list[str],
     estimate_type: EstimateType,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     period_type: EstimatePeriodType | None = None,
     fiscal_start_year: int | None = None,
     fiscal_end_year: int | None = None,
@@ -258,7 +258,7 @@ async def get_estimates_from_identifiers(
 async def fetch_estimates_from_company_id(
     company_id: int,
     estimate_type: EstimateType,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     period_type: EstimatePeriodType | None = None,
     fiscal_start_year: int | None = None,
     fiscal_end_year: int | None = None,
@@ -296,7 +296,7 @@ async def fetch_estimates_from_company_id(
 
 async def get_consensus_target_price_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetConsensusTargetPriceFromIdentifiersResp:
     """Fetch consensus target price for all identifiers."""
 
@@ -340,7 +340,7 @@ async def get_consensus_target_price_from_identifiers(
 
 async def fetch_consensus_target_price_from_company_id(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> SingleResultResp[ConsensusTargetPrice]:
     """Fetch consensus target price for one company_id."""
     resp = await httpx_client.get(url=f"/estimates/consensus_target_price/{company_id}")
@@ -350,7 +350,7 @@ async def fetch_consensus_target_price_from_company_id(
 
 async def get_analyst_recommendations_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetAnalystRecommendationsFromIdentifiersResp:
     """Fetch analyst recommendations for all identifiers."""
 
@@ -394,7 +394,7 @@ async def get_analyst_recommendations_from_identifiers(
 
 async def fetch_analyst_recommendations_from_company_id(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> SingleResultResp[AnalystRecommendations]:
     """Fetch analyst recommendations for one company_id."""
     resp = await httpx_client.get(url=f"/estimates/analyst_recommendations/{company_id}")

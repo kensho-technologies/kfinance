@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 import json
 
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
@@ -99,7 +99,7 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_fetch_key_devs_from_company_id(
-        self, httpx_client: httpx.AsyncClient, add_spgi_key_devs_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_key_devs_mock_resp: None
     ) -> None:
         """
         WHEN we request SPGI's key developments (using SPGI's company id)
@@ -114,7 +114,7 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_fetch_key_devs_with_date_range(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we request key developments with a date range
@@ -142,7 +142,7 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_fetch_key_devs_with_category_filter(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we request key developments with a category filter
@@ -169,7 +169,7 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_get_key_devs_from_identifier(
-        self, httpx_client: httpx.AsyncClient, add_spgi_key_devs_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_key_devs_mock_resp: None
     ) -> None:
         """
         WHEN we fetch key developments for SPGI and a non-existent company
@@ -206,7 +206,7 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_get_key_devs_with_api_error(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the key devs API returns an error (e.g. no data available)
@@ -236,7 +236,7 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_key_devs_with_optional_fields_none(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns key developments with optional fields as None

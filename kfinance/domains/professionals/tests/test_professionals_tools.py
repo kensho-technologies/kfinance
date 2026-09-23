@@ -1,4 +1,4 @@
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
@@ -216,7 +216,7 @@ class TestBuildName:
 class TestFetchProfessionalsCompany:
     @pytest.mark.asyncio
     async def test_fetch_board_members(
-        self, httpx_client: httpx.AsyncClient, add_spgi_board_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_board_mock_resp: None
     ) -> None:
         """
         WHEN we fetch SPGI's board members using SPGI's company id
@@ -232,7 +232,7 @@ class TestFetchProfessionalsCompany:
 
     @pytest.mark.asyncio
     async def test_fetch_current_employees(
-        self, httpx_client: httpx.AsyncClient, add_spgi_employee_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_employee_mock_resp: None
     ) -> None:
         """
         WHEN we fetch SPGI's current employees using SPGI's company id
@@ -248,7 +248,7 @@ class TestFetchProfessionalsCompany:
 
     @pytest.mark.asyncio
     async def test_fetch_past_employees(
-        self, httpx_client: httpx.AsyncClient, add_spgi_past_employee_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_past_employee_mock_resp: None
     ) -> None:
         """
         WHEN we fetch SPGI's past employees using SPGI's company id
@@ -266,7 +266,7 @@ class TestFetchProfessionalsCompany:
 class TestFetchProfessionalsPerson:
     @pytest.mark.asyncio
     async def test_fetch_person_professionals(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch professional history for a person using their person_id
@@ -280,7 +280,7 @@ class TestFetchProfessionalsPerson:
 
     @pytest.mark.asyncio
     async def test_fetch_person_roles_structure(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch professional history for a person
@@ -302,7 +302,7 @@ class TestFetchProfessionalsPerson:
 class TestGetProfessionalsFromIdentifiers:
     @pytest.mark.asyncio
     async def test_get_board_members(
-        self, httpx_client: httpx.AsyncClient, add_spgi_board_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_board_mock_resp: None
     ) -> None:
         """
         WHEN we fetch board members for SPGI by identifier
@@ -323,7 +323,7 @@ class TestGetProfessionalsFromIdentifiers:
 
     @pytest.mark.asyncio
     async def test_include_compensation_false_strips_compensation(
-        self, httpx_client: httpx.AsyncClient, add_spgi_employee_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_employee_mock_resp: None
     ) -> None:
         """
         WHEN we fetch employees with include_compensation=False
@@ -343,7 +343,7 @@ class TestGetProfessionalsFromIdentifiers:
 
     @pytest.mark.asyncio
     async def test_include_compensation_true_keeps_compensation(
-        self, httpx_client: httpx.AsyncClient, add_spgi_employee_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_employee_mock_resp: None
     ) -> None:
         """
         WHEN we fetch employees with include_compensation=True
@@ -362,7 +362,7 @@ class TestGetProfessionalsFromIdentifiers:
     @pytest.mark.asyncio
     async def test_get_professionals_with_invalid_identifier(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_board_mock_resp: None,
     ) -> None:
         """
@@ -382,7 +382,7 @@ class TestGetProfessionalsFromIdentifiers:
 class TestGetProfessionalsFromPersonIds:
     @pytest.mark.asyncio
     async def test_get_person_professionals(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch professional history for a person by person_id
@@ -399,7 +399,7 @@ class TestGetProfessionalsFromPersonIds:
     @pytest.mark.asyncio
     async def test_get_multiple_persons(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
         add_spgi_person_mock_resp: None,
     ) -> None:
@@ -419,7 +419,7 @@ class TestGetProfessionalsFromPersonIds:
 
     @pytest.mark.asyncio
     async def test_include_biography_false_strips_biography(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch person professionals with include_biography=False
@@ -434,7 +434,7 @@ class TestGetProfessionalsFromPersonIds:
 
     @pytest.mark.asyncio
     async def test_include_biography_true_keeps_biography(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch person professionals with include_biography=True
@@ -452,7 +452,7 @@ class TestGetProfessionalsFromPersonIds:
 
     @pytest.mark.asyncio
     async def test_include_compensation_false_strips_compensation(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch person professionals with include_compensation=False
@@ -471,7 +471,7 @@ class TestGetProfessionalsFromPersonIds:
 
     @pytest.mark.asyncio
     async def test_include_compensation_true_keeps_compensation(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch person professionals with include_compensation=True

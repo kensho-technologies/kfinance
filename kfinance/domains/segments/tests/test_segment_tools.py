@@ -1,4 +1,4 @@
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.client.models.response_models import PostResponse
@@ -68,7 +68,7 @@ class TestSegments:
     @pytest.mark.asyncio
     async def test_fetch_segments_from_company_ids(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_segments_mock_resp: None,
     ) -> None:
         """
@@ -93,7 +93,7 @@ class TestSegments:
     @pytest.mark.asyncio
     async def test_get_segments_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_segments_mock_resp: None,
     ) -> None:
         """
@@ -122,7 +122,7 @@ class TestSegments:
         assert resp.data_source == "Capital IQ"
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(self, httpx_client: httpx.AsyncClient, httpx2_mock) -> None:
+    async def test_most_recent_request(self, httpx_client: httpx2.AsyncClient, httpx2_mock) -> None:
         """
         WHEN we request most recent segments for multiple companies
         THEN we only get back the most recent segment for each company
@@ -172,7 +172,7 @@ class TestSegments:
     @pytest.mark.asyncio
     async def test_all_identifiers_fail_resolution(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
     ) -> None:
         """
         WHEN all identifiers fail resolution

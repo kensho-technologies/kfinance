@@ -1,9 +1,11 @@
-import httpx2 as httpx
+import httpx2
 
 from kfinance.domains.ratings.ratings_models import EntityIdResp
 
 
-async def resolve_entities(identifiers: list[str], httpx_client: httpx.AsyncClient) -> EntityIdResp:
+async def resolve_entities(
+    identifiers: list[str], httpx_client: httpx2.AsyncClient
+) -> EntityIdResp:
     """Resolve one or more identifiers to id triples using the resolve_entities endpoint."""
 
     resp = await httpx_client.post(

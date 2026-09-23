@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.conftest import FAKE_COMPANY_1_ID_TRIPLE, FAKE_COMPANY_2_ID_TRIPLE, SPGI_ID_TRIPLE
@@ -145,7 +145,7 @@ class TestRoundsOfFunding:
     @pytest.mark.asyncio
     async def test_fetch_rounds_of_funding_from_company_id(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_rounds_mock_resp: None,
     ) -> None:
         """
@@ -165,7 +165,7 @@ class TestRoundsOfFunding:
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_rounds_mock_resp: None,
     ) -> None:
         """
@@ -193,7 +193,7 @@ class TestRoundsOfFunding:
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_from_transaction_ids_complete_data(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we request funding round info for a transaction with complete advisor data
@@ -308,7 +308,7 @@ class TestRoundsOfFunding:
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_with_mixed_advisor_data(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN some advisor API calls return data and others return empty lists
@@ -407,7 +407,7 @@ class TestRoundsOfFunding:
     @pytest.mark.asyncio
     async def test_get_funding_summary_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """
@@ -461,7 +461,7 @@ class TestRoundsOfFunding:
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_http_404(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the server returns a 404 for a non-existent transaction_id
@@ -487,7 +487,7 @@ class TestRoundsOfFunding:
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_advisor_endpoints_404(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the advisor endpoints return 404

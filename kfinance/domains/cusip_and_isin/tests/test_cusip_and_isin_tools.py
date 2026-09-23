@@ -1,6 +1,6 @@
 from typing import Literal
 
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.conftest import SPGI_ID_TRIPLE, SPGI_SECURITY_ID
@@ -34,7 +34,7 @@ class TestCusipAndIsin:
         self,
         cusip_or_isin: Literal["cusip", "isin"],
         expected_response: str,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_cusip_and_isin_mock_resp: None,
     ) -> None:
         """
@@ -57,7 +57,7 @@ class TestCusipAndIsin:
         self,
         cusip_or_isin: Literal["cusip", "isin"],
         expected_response: str,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_cusip_and_isin_mock_resp: None,
     ) -> None:
         """

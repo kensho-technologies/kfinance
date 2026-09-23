@@ -1,4 +1,4 @@
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
@@ -37,7 +37,7 @@ class TestCompetitors:
 
     @pytest.mark.asyncio
     async def test_fetch_competitors_from_company_id(
-        self, httpx_client: httpx.AsyncClient, add_spgi_competitors_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_competitors_mock_resp: None
     ) -> None:
         """
         WHEN we request SPGI's competitors (using SPGI's company id)
@@ -53,7 +53,7 @@ class TestCompetitors:
 
     @pytest.mark.asyncio
     async def test_get_competitors_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_spgi_competitors_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_competitors_mock_resp: None
     ) -> None:
         """
         WHEN we fetch competitors for SPGI and a non-existent company

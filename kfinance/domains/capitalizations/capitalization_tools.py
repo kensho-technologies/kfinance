@@ -2,7 +2,7 @@ from datetime import date
 from textwrap import dedent
 from typing import Annotated, Type
 
-import httpx2 as httpx
+import httpx2
 from pydantic import BaseModel, BeforeValidator, Field
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
@@ -83,7 +83,7 @@ async def get_capitalizations_from_identifiers(
     capitalization: Capitalization,
     start_date: date | None,
     end_date: date | None,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetCapitalizationFromIdentifiersResp:
     """Fetch market_cap, tev, or shares_outstanding for all identifiers.
 
@@ -169,7 +169,7 @@ async def fetch_capitalizations_from_company_id(
     company_id: int,
     start_date: date | None,
     end_date: date | None,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> Capitalizations:
     """Fetch and return capitalizations for one identifier."""
     url = (

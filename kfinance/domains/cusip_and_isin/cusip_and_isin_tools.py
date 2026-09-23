@@ -1,7 +1,7 @@
 from textwrap import dedent
 from typing import Literal, Type
 
-import httpx2 as httpx
+import httpx2
 from pydantic import BaseModel
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
@@ -75,7 +75,7 @@ class GetIsinFromIdentifiers(KfinanceTool):
 async def get_cusip_or_isin_from_identifiers(
     identifiers: list[str],
     cusip_or_isin: Literal["cusip", "isin"],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetCusipOrIsinFromIdentifiersResp:
     """Fetch cusips or isins for identifiers
 
@@ -132,7 +132,7 @@ async def get_cusip_or_isin_from_identifiers(
 async def fetch_cusip_or_isin_from_security_id(
     security_id: int,
     cusip_or_isin: Literal["cusip", "isin"],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> str:
     """Fetch and return the cusip or isin for a security id."""
     url = f"/{cusip_or_isin}/{security_id}"

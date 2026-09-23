@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.domains.ratings.ratings_models import (
@@ -136,7 +136,7 @@ class TestRatings:
 
     @pytest.mark.asyncio
     async def test_fetch_issuer_ratings_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_spgi_ratings_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_ratings_mock_resp: None
     ) -> None:
         """
         WHEN we request SPGI's issuer ratings (using entity_id)
@@ -154,7 +154,7 @@ class TestRatings:
     @pytest.mark.asyncio
     async def test_get_issuer_ratings_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_resolve_entities_mock_resp: None,
         add_spgi_ratings_mock_resp: None,
     ) -> None:
@@ -181,7 +181,7 @@ class TestRatings:
     @pytest.mark.asyncio
     async def test_get_issuer_ratings_with_api_error(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """
@@ -229,7 +229,7 @@ class TestRatings:
     @pytest.mark.asyncio
     async def test_all_identifiers_fail_resolution(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """
@@ -263,7 +263,7 @@ class TestRatings:
 
     @pytest.mark.asyncio
     async def test_fetch_security_ratings_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_security_ratings_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_security_ratings_mock_resp: None
     ) -> None:
         """
         WHEN we request security ratings (using security_id)
@@ -300,7 +300,7 @@ class TestRatings:
     @pytest.mark.asyncio
     async def test_get_security_ratings_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """

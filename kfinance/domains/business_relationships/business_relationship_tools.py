@@ -1,7 +1,7 @@
 from textwrap import dedent
 from typing import Type
 
-import httpx2 as httpx
+import httpx2
 from pydantic import BaseModel
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
@@ -62,7 +62,7 @@ class GetBusinessRelationshipFromIdentifiers(KfinanceTool):
 async def get_business_relationship_from_identifiers(
     identifiers: list[str],
     business_relationship: BusinessRelationshipType,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetBusinessRelationshipFromIdentifiersResp:
     """Fetch business relationships for all identifiers.
 
@@ -126,7 +126,7 @@ async def get_business_relationship_from_identifiers(
 async def fetch_business_relationship_from_company_id(
     company_id: int,
     business_relationship: BusinessRelationshipType,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> RelationshipResponse:
     """Fetch and return business relationship for one identifier."""
     resp = await httpx_client.get(url=f"/relationship/{company_id}/{business_relationship}")

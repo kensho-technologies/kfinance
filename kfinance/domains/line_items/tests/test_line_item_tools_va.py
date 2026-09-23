@@ -1,4 +1,4 @@
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.conftest import SPGI_ID_TRIPLE
@@ -43,7 +43,7 @@ VA_METADATA = {
 class TestFetchLineItemFromCompanyIdsVa:
     @pytest.mark.asyncio
     async def test_data_source_absent_from_payload(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we fetch a line item via the Visible Alpha function
@@ -67,7 +67,7 @@ class TestFetchLineItemFromCompanyIdsVa:
         assert "data_source_type" not in httpx2_mock.calls[-1].request.content.decode()
 
     @pytest.mark.asyncio
-    async def test_returns_metadata(self, httpx_client: httpx.AsyncClient, httpx2_mock) -> None:
+    async def test_returns_metadata(self, httpx_client: httpx2.AsyncClient, httpx2_mock) -> None:
         """
         WHEN the API returns metadata with alternatives
         THEN the metadata is parsed into AlternativeLineItemMetadata
@@ -106,7 +106,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_maps_result_back_to_identifier(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_line_item_va_mock: None,
     ) -> None:
         """
@@ -127,7 +127,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_unknown_identifier_surfaces_as_error(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_line_item_va_mock: None,
     ) -> None:
         """
@@ -146,7 +146,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_api_error_mapped_back_to_identifier(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns an error keyed by company_id
@@ -171,7 +171,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_metadata_alternative_note_added(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns metadata
@@ -196,7 +196,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_no_metadata_no_alternative_note(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_line_item_va_mock: None,
     ) -> None:
         """
@@ -214,7 +214,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_source_link_note_always_present(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_line_item_va_mock: None,
     ) -> None:
         """
@@ -231,7 +231,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_most_recent_trimmed_for_multi_company(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN requesting multiple companies with no date filters
@@ -256,7 +256,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_metadata_keyed_by_identifier(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns metadata keyed by company_id

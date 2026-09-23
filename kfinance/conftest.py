@@ -1,6 +1,6 @@
 from datetime import datetime
 
-import httpx2 as httpx
+import httpx2
 import pytest
 from respx import Router
 
@@ -115,7 +115,7 @@ def mock_client(httpx2_mock: Router) -> Client:
 
 
 @pytest.fixture(scope="function")
-def httpx_client(httpx2_mock: Router) -> httpx.AsyncClient:
+def httpx_client(httpx2_mock: Router) -> httpx2.AsyncClient:
     """Create an async httpx client with mock responses for id resolution."""
 
     ids_url = "https://kfinance.kensho.com/api/v1/ids"
@@ -152,7 +152,7 @@ def httpx_client(httpx2_mock: Router) -> httpx.AsyncClient:
             json={"data": data}
         )
 
-    return httpx.AsyncClient(base_url="https://kfinance.kensho.com/api/v1")
+    return httpx2.AsyncClient(base_url="https://kfinance.kensho.com/api/v1")
 
 
 @pytest.fixture

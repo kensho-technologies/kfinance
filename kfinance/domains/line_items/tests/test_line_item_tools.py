@@ -1,4 +1,4 @@
-import httpx2 as httpx
+import httpx2
 from langchain_core.utils.function_calling import convert_to_openai_tool
 import pytest
 
@@ -53,7 +53,7 @@ class TestGetFinancialLineItemFromIdentifiers:
     @pytest.mark.asyncio
     async def test_fetch_line_item_from_company_ids(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_line_item_mock_resp: None,
     ) -> None:
         """
@@ -96,7 +96,7 @@ class TestGetFinancialLineItemFromIdentifiers:
         self,
         calendar_type: CalendarType | None,
         expected_notes: list[str],
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_line_item_mock_resp: None,
     ) -> None:
         """
@@ -128,7 +128,7 @@ class TestGetFinancialLineItemFromIdentifiers:
 
     @pytest.mark.asyncio
     async def test_api_returns_error_for_company(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns an error in the errors dict for a company_id
@@ -158,7 +158,7 @@ class TestGetFinancialLineItemFromIdentifiers:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(self, httpx_client: httpx.AsyncClient, httpx2_mock) -> None:
+    async def test_most_recent_request(self, httpx_client: httpx2.AsyncClient, httpx2_mock) -> None:
         """
         WHEN we request most recent line items for multiple companies
         THEN we only get back the most recent line item for each company

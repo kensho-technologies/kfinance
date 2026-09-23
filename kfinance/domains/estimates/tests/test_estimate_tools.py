@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.client.models.date_and_period_models import EstimateType
@@ -126,7 +126,7 @@ class TestEstimates:
     @pytest.mark.asyncio
     async def test_fetch_estimates_from_company_id(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_estimates_mock_resp: None,
     ) -> None:
         """
@@ -148,7 +148,7 @@ class TestEstimates:
     @pytest.mark.asyncio
     async def test_get_estimates_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_estimates_mock_resp: None,
     ) -> None:
         """
@@ -179,7 +179,7 @@ class TestEstimates:
     @pytest.mark.asyncio
     async def test_fetch_estimates_api_returns_error(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """
@@ -209,7 +209,7 @@ class TestEstimates:
     @pytest.mark.asyncio
     async def test_get_estimates_with_guidance_type(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """
@@ -327,7 +327,7 @@ class TestEstimates:
     @pytest.mark.asyncio
     async def test_fetch_consensus_target_price_from_company_id(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """
@@ -367,7 +367,7 @@ class TestEstimates:
     @pytest.mark.asyncio
     async def test_fetch_consensus_target_price_api_returns_error(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """
@@ -399,7 +399,7 @@ class TestEstimates:
     @pytest.mark.asyncio
     async def test_get_consensus_target_price_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """
@@ -445,7 +445,7 @@ class TestEstimates:
     @pytest.mark.asyncio
     async def test_fetch_analyst_recommendations_from_company_id(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """
@@ -483,7 +483,7 @@ class TestEstimates:
     @pytest.mark.asyncio
     async def test_fetch_analyst_recommendations_api_returns_error(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """
@@ -515,7 +515,7 @@ class TestEstimates:
     @pytest.mark.asyncio
     async def test_get_analyst_recommendations_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """

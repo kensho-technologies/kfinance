@@ -1,7 +1,7 @@
 from textwrap import dedent
 from typing import Any, Literal, Type, cast
 
-import httpx2 as httpx
+import httpx2
 from pydantic import BaseModel, Field
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
@@ -109,7 +109,7 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiers(KfinanceTool):
 async def fetch_visible_alpha_line_item_from_company_ids(
     company_ids: list[int],
     line_item_search: str,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     period_type: EstimatePeriodType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,
@@ -154,7 +154,7 @@ async def fetch_visible_alpha_line_item_from_company_ids(
 async def get_visible_alpha_financial_line_item_from_identifiers(
     identifiers: list[str],
     line_item_search: str,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     period_type: EstimatePeriodType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,

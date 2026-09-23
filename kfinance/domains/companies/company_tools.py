@@ -1,7 +1,7 @@
 from textwrap import dedent
 from typing import Any, Literal, Type, overload
 
-import httpx2 as httpx
+import httpx2
 from pydantic import BaseModel, Field
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
@@ -215,7 +215,7 @@ class GetFinancialAuditorsFromIdentifiers(KfinanceTool):
 
 async def get_info_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetInfoFromIdentifiersResp:
     """Fetch company info from identifiers
 
@@ -284,7 +284,7 @@ async def get_info_from_identifiers(
 
 async def fetch_info_from_company_id(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> dict[str, str]:
     """Fetch and return company info for one company_id."""
     url = f"/info/{company_id}"
@@ -295,7 +295,7 @@ async def fetch_info_from_company_id(
 
 async def get_company_other_names_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetCompanyOtherNamesFromIdentifiersResp:
     """Fetch native, historical, and alternative names for all identifiers."""
 
@@ -334,7 +334,7 @@ async def get_company_other_names_from_identifiers(
 
 async def fetch_company_other_names_from_company_id(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> CompanyOtherNames:
     """Fetch and return other names for one company_id."""
     url = f"/info/{company_id}/names"
@@ -346,7 +346,7 @@ async def fetch_company_other_names_from_company_id(
 @overload
 async def get_company_summary_or_description_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     summary_or_description: Literal["summary"],
 ) -> GetCompanySummaryFromIdentifiersResp: ...
 
@@ -354,14 +354,14 @@ async def get_company_summary_or_description_from_identifiers(
 @overload
 async def get_company_summary_or_description_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     summary_or_description: Literal["description"],
 ) -> GetCompanyDescriptionFromIdentifiersResp: ...
 
 
 async def get_company_summary_or_description_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     summary_or_description: Literal["summary", "description"],
 ) -> GetCompanySummaryFromIdentifiersResp | GetCompanyDescriptionFromIdentifiersResp:
     """Return either the short company summary or the long company description for each identifier"""
@@ -415,7 +415,7 @@ async def get_company_summary_or_description_from_identifiers(
 
 async def fetch_company_summary_and_description_from_company_id(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> CompanyDescriptions:
     """Fetch the short company summary and long description for a company id."""
     url = f"/info/{company_id}/descriptions"
@@ -426,7 +426,7 @@ async def fetch_company_summary_and_description_from_company_id(
 
 async def get_financial_auditors_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     calendar_type: CalendarType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,
@@ -471,7 +471,7 @@ async def get_financial_auditors_from_identifiers(
 
 async def fetch_financial_auditors_from_company_id(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     calendar_type: CalendarType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,

@@ -1,4 +1,4 @@
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.conftest import SPGI_ID_TRIPLE
@@ -25,7 +25,7 @@ class TestBusinessRelationships:
 
     @pytest.mark.asyncio
     async def test_fetch_business_relationship_from_company_id(
-        self, httpx_client: httpx.AsyncClient, add_spgi_supplier_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_supplier_mock_resp: None
     ) -> None:
         """
         WHEN we fetch SPGI's supplier using SPGI's company id
@@ -42,7 +42,7 @@ class TestBusinessRelationships:
 
     @pytest.mark.asyncio
     async def test_get_business_relationship_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_spgi_supplier_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_supplier_mock_resp: None
     ) -> None:
         """
         WHEN we fetch suppliers for SPGI and a non-existent company

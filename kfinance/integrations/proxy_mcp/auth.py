@@ -4,7 +4,7 @@ import logging
 import time
 from typing import Generator, Generic, TypeVar
 
-import httpx2 as httpx
+import httpx2
 from jwt import decode as jwt_decode, encode
 
 
@@ -120,7 +120,7 @@ class RefreshTokenDispenser(ClientAccessTokenDispenser):
         super().__init__(cache=cache, access_token_cache_key=access_token_cache_key)
         self._refresh_token = refresh_token
         self._refresh_url = refresh_url
-        self._http_client = httpx.Client(timeout=60)
+        self._http_client = httpx2.Client(timeout=60)
 
     def refresh_access_token(self) -> ClientAccessToken:
         """Exchange the refresh token for a new access token via HTTP GET."""
@@ -170,7 +170,7 @@ class PrivateKeyBasedAccessTokenDispenser(ClientAccessTokenDispenser):
             self._private_key,
             algorithm="RS256",
         )
-        response = httpx.post(
+        response = httpx2.post(
             f"{self._okta_host}/oauth2/default/v1/token",
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -189,14 +189,16 @@ class PrivateKeyBasedAccessTokenDispenser(ClientAccessTokenDispenser):
         return ClientAccessToken(token=token_str)
 
 
-class DynamicBearerAuth(httpx.Auth):
+class DynamicBearerAuth(httpx2.Auth):
     """httpx Auth that injects a fresh Bearer token from a dispenser on every request."""
 
     def __init__(self, dispenser: ClientAccessTokenDispenser) -> None:
         """Initialize with a token dispenser."""
         self._dispenser = dispenser
 
-    def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
+    def auth_flow(
+        self, request: httpx2.Request
+    ) -> Generator[httpx2.Request, httpx2.Response, None]:
         """Inject the current Bearer token into the request Authorization header."""
         request.headers["Authorization"] = f"Bearer {self._dispenser.access_token.token}"
         yield request

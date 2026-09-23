@@ -1,4 +1,4 @@
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.conftest import SPGI_ID_TRIPLE
@@ -47,7 +47,7 @@ VA_METADATA = {
 class TestFetchEstimatesFromCompanyIdsVa:
     @pytest.mark.asyncio
     async def test_data_source_absent_from_payload(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we fetch estimates via the Visible Alpha function
@@ -71,7 +71,7 @@ class TestFetchEstimatesFromCompanyIdsVa:
 
     @pytest.mark.asyncio
     async def test_estimate_search_included_in_payload(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN estimate_search is provided
@@ -101,7 +101,7 @@ class TestFetchEstimatesFromCompanyIdsVa:
         assert str(SPGI_ID_TRIPLE.company_id) in resp.results
 
     @pytest.mark.asyncio
-    async def test_returns_metadata(self, httpx_client: httpx.AsyncClient, httpx2_mock) -> None:
+    async def test_returns_metadata(self, httpx_client: httpx2.AsyncClient, httpx2_mock) -> None:
         """
         WHEN the API returns metadata with ranked alternatives
         THEN the metadata is parsed correctly
@@ -139,7 +139,7 @@ class TestGetEstimatesFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_maps_result_back_to_identifier(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_estimates_va_mock: None,
     ) -> None:
         """
@@ -159,7 +159,7 @@ class TestGetEstimatesFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_unknown_identifier_surfaces_as_error(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_estimates_va_mock: None,
     ) -> None:
         """
@@ -177,7 +177,7 @@ class TestGetEstimatesFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_api_error_mapped_back_to_identifier(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns an error keyed by company_id
@@ -201,7 +201,7 @@ class TestGetEstimatesFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_metadata_alternative_note_added(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns metadata
@@ -225,7 +225,7 @@ class TestGetEstimatesFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_no_metadata_no_alternative_note(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_estimates_va_mock: None,
     ) -> None:
         """
@@ -242,7 +242,7 @@ class TestGetEstimatesFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_fiscal_period_notes_always_present(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_estimates_va_mock: None,
     ) -> None:
         """
@@ -259,7 +259,7 @@ class TestGetEstimatesFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_metadata_keyed_by_identifier(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns metadata keyed by company_id

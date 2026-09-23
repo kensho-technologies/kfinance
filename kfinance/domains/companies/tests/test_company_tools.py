@@ -1,4 +1,4 @@
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE, SPGI_TICKER
@@ -39,7 +39,7 @@ class TestGetCompanyInfo:
 
     @pytest.mark.asyncio
     async def test_fetch_info_from_company_id(
-        self, httpx_client: httpx.AsyncClient, add_spgi_info_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_info_mock_resp: None
     ) -> None:
         """
         WHEN we request SPGI's company info (using SPGI's company id)
@@ -55,7 +55,7 @@ class TestGetCompanyInfo:
 
     @pytest.mark.asyncio
     async def test_get_info_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_spgi_info_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_info_mock_resp: None
     ) -> None:
         """
         WHEN we fetch company info for SPGI and a non-existent company
@@ -113,7 +113,7 @@ class TestGetCompanyOtherNames:
 
     @pytest.mark.asyncio
     async def test_get_company_other_names(
-        self, httpx_client: httpx.AsyncClient, add_spgi_other_names_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_other_names_mock_resp: None
     ) -> None:
         """
         WHEN we fetch SPGI other names  (using SPGI's company id)
@@ -129,7 +129,7 @@ class TestGetCompanyOtherNames:
 
     @pytest.mark.asyncio
     async def test_get_other_names_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_spgi_other_names_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_other_names_mock_resp: None
     ) -> None:
         """
         WHEN we fetch other names for SPGI and a non-existent company
@@ -171,7 +171,7 @@ class TestGetCompanySummaryAndDescription:
 
     @pytest.mark.asyncio
     async def test_fetch_company_summary_and_description_from_company_id(
-        self, httpx_client: httpx.AsyncClient, add_spgi_descriptions_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_descriptions_mock_resp: None
     ) -> None:
         """
         WHEN we request SPGI's summary and description (using SPGI's company id)
@@ -187,7 +187,7 @@ class TestGetCompanySummaryAndDescription:
 
     @pytest.mark.asyncio
     async def test_get_company_summary_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_spgi_descriptions_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_descriptions_mock_resp: None
     ) -> None:
         """
         WHEN we fetch the summary for SPGI and a non-existent company
@@ -212,7 +212,7 @@ class TestGetCompanySummaryAndDescription:
 
     @pytest.mark.asyncio
     async def test_get_company_description_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_spgi_descriptions_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_descriptions_mock_resp: None
     ) -> None:
         """
         WHEN we fetch the description for SPGI and a non-existent company
@@ -271,7 +271,7 @@ class TestGetFinancialAuditors:
 
     @pytest.mark.asyncio
     async def test_fetch_financial_auditors_from_company_id(
-        self, httpx_client: httpx.AsyncClient, add_spgi_auditors_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_auditors_mock_resp: None
     ) -> None:
         """
         WHEN we request SPGI's financial auditors (using SPGI's company id)
@@ -287,7 +287,7 @@ class TestGetFinancialAuditors:
 
     @pytest.mark.asyncio
     async def test_fetch_financial_auditors_with_year_range(
-        self, httpx_client: httpx.AsyncClient, add_spgi_auditors_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_auditors_mock_resp: None
     ) -> None:
         """
         WHEN we request SPGI's financial auditors with start_year and end_year
@@ -305,7 +305,7 @@ class TestGetFinancialAuditors:
 
     @pytest.mark.asyncio
     async def test_get_financial_auditors_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_spgi_auditors_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_auditors_mock_resp: None
     ) -> None:
         """
         WHEN we fetch financial auditors for SPGI and a non-existent company
@@ -329,7 +329,7 @@ class TestGetFinancialAuditors:
 
     @pytest.mark.asyncio
     async def test_fetch_financial_auditors_empty_results(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns empty results for a company

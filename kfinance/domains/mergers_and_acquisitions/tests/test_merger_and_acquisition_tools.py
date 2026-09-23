@@ -1,6 +1,6 @@
 from datetime import date
 
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.client.tests.test_objects import (
@@ -32,7 +32,7 @@ class TestMergersAndAcquisitions:
     @pytest.mark.asyncio
     async def test_fetch_mergers_from_company_id(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_mergers_mock_resp: None,
     ) -> None:
         """
@@ -50,7 +50,7 @@ class TestMergersAndAcquisitions:
 
     @pytest.mark.asyncio
     async def test_fetch_mergers_from_company_id_with_date_range(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we request SPGI's mergers for a specific date range,
@@ -82,7 +82,7 @@ class TestMergersAndAcquisitions:
     @pytest.mark.asyncio
     async def test_get_mergers_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_mergers_mock_resp: None,
     ) -> None:
         """
@@ -108,7 +108,7 @@ class TestMergersAndAcquisitions:
     @pytest.mark.asyncio
     async def test_get_mergers_info_from_transaction_ids(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """

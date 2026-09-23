@@ -1,4 +1,4 @@
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.conftest import SPGI_ID_TRIPLE
@@ -54,7 +54,7 @@ SEGMENTS_RESP = {
 class TestFetchSegmentsFromCompanyIdsVa:
     @pytest.mark.asyncio
     async def test_data_source_absent_from_payload(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we fetch segments via the Visible Alpha function
@@ -87,7 +87,7 @@ class TestGetSegmentsFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_maps_result_back_to_identifier(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_segments_va_mock: None,
     ) -> None:
         """
@@ -108,7 +108,7 @@ class TestGetSegmentsFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_unknown_identifier_surfaces_as_error(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_segments_va_mock: None,
     ) -> None:
         """
@@ -127,7 +127,7 @@ class TestGetSegmentsFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_api_error_mapped_back_to_identifier(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns an error keyed by company_id
@@ -151,7 +151,7 @@ class TestGetSegmentsFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_fiscal_note_added_for_fiscal_calendar_type(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN calendar_type is fiscal
@@ -175,7 +175,7 @@ class TestGetSegmentsFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_most_recent_trimmed_for_multi_company(
-        self, httpx_client: httpx.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN requesting multiple companies with no date filters

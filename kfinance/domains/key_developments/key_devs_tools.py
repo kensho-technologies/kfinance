@@ -2,7 +2,7 @@ from datetime import date
 from textwrap import dedent
 from typing import Any, Type
 
-import httpx2 as httpx
+import httpx2
 from pydantic import BaseModel, Field, model_validator
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
@@ -93,7 +93,7 @@ class GetKeyDevsFromIdentifier(KfinanceTool):
 
 async def get_key_devs_from_identifier(
     identifier: str,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     start_date: date | None = None,
     end_date: date | None = None,
     key_dev_category: KeyDevCategoryType | None = None,
@@ -138,7 +138,7 @@ async def get_key_devs_from_identifier(
 
 async def fetch_key_devs_from_company_id(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     start_date: date | None = None,
     end_date: date | None = None,
     key_dev_category: KeyDevCategoryType | None = None,

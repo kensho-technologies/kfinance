@@ -1,4 +1,4 @@
-import httpx2 as httpx
+import httpx2
 import pytest
 
 from kfinance.client.models.date_and_period_models import Periodicity
@@ -53,7 +53,7 @@ class TestPrices:
     @pytest.mark.asyncio
     async def test_fetch_price_history_from_trading_item_id(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_prices_mock_resp: None,
     ) -> None:
         """
@@ -72,7 +72,7 @@ class TestPrices:
     @pytest.mark.asyncio
     async def test_get_prices_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_prices_mock_resp: None,
     ) -> None:
         """
@@ -96,7 +96,7 @@ class TestPrices:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(self, httpx_client: httpx.AsyncClient, httpx2_mock) -> None:
+    async def test_most_recent_request(self, httpx_client: httpx2.AsyncClient, httpx2_mock) -> None:
         """
         WHEN we request most recent prices for multiple companies
         THEN we only get back the most recent prices for each company
@@ -143,7 +143,7 @@ class TestPrices:
     @pytest.mark.asyncio
     async def test_get_prices_with_date_range(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """
@@ -192,7 +192,7 @@ class TestHistoryMetadata:
     @pytest.mark.asyncio
     async def test_fetch_history_metadata_from_trading_item_id(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_metadata_mock_resp: None,
     ) -> None:
         """
@@ -211,7 +211,7 @@ class TestHistoryMetadata:
     @pytest.mark.asyncio
     async def test_get_history_metadata_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_metadata_mock_resp: None,
     ) -> None:
         """

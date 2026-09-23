@@ -2,7 +2,7 @@ from difflib import SequenceMatcher
 from textwrap import dedent
 from typing import Any, Literal, Type, cast
 
-import httpx2 as httpx
+import httpx2
 from pydantic import BaseModel, Field, model_validator
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
@@ -223,7 +223,7 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
 async def get_financial_line_item_from_identifiers(
     identifiers: list[str],
     line_item: str,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     period_type: PeriodType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,
@@ -306,7 +306,7 @@ async def get_financial_line_item_from_identifiers(
 async def fetch_line_item_from_company_ids(
     company_ids: list[int],
     line_item: str,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     period_type: PeriodType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,

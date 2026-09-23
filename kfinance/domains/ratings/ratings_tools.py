@@ -2,7 +2,7 @@ import json
 from textwrap import dedent
 from typing import Any, Type
 
-import httpx2 as httpx
+import httpx2
 from pydantic import BaseModel, Field, field_validator
 
 from kfinance.client.permission_models import Permission
@@ -187,7 +187,7 @@ class GetSecurityRatingsFromIdentifiers(KfinanceTool):
 
 async def get_issuer_ratings_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetIssuerRatingsFromIdentifiersResp:
     """Fetch issuer ratings for a list of identifiers."""
 
@@ -251,7 +251,7 @@ async def get_issuer_ratings_from_identifiers(
 
 async def get_security_ratings_from_identifiers(
     security_ids: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetSecurityRatingsFromIdentifiersResp:
     """Fetch security ratings for a list of identifiers."""
 
@@ -270,7 +270,7 @@ async def get_security_ratings_from_identifiers(
 
 async def fetch_issuer_ratings_from_identifiers(
     entity_ids: list[int],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> IssuerRatingsResp:
     """Fetch issuer-level ratings for one or more entities."""
     url = "/ratings/issuer_ratings/"
@@ -283,7 +283,7 @@ async def fetch_issuer_ratings_from_identifiers(
 
 async def fetch_security_ratings_from_identifiers(
     security_ids: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> SecurityRatingsResp:
     """Fetch security-level ratings for one or more securities."""
     url = "/ratings/security_ratings/"

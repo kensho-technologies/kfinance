@@ -1,6 +1,6 @@
 from datetime import datetime
 
-import httpx2 as httpx
+import httpx2
 import pytest
 import time_machine
 
@@ -45,7 +45,7 @@ class TestEarnings:
     @pytest.mark.asyncio
     async def test_fetch_earnings_from_company_id(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_earnings_mock_resp: None,
     ) -> None:
         """
@@ -79,7 +79,7 @@ class TestEarnings:
     @pytest.mark.asyncio
     async def test_get_earnings_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_earnings_mock_resp: None,
     ) -> None:
         """
@@ -123,7 +123,7 @@ class TestEarnings:
     @pytest.mark.asyncio
     async def test_get_latest_earnings_logic(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_earnings_mock_resp: None,
     ) -> None:
         """
@@ -147,7 +147,7 @@ class TestEarnings:
     @pytest.mark.asyncio
     async def test_get_next_earnings_logic(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_earnings_mock_resp: None,
     ) -> None:
         """
@@ -192,7 +192,7 @@ class TestTranscript:
     @pytest.mark.asyncio
     async def test_get_transcript_from_key_dev_id(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_transcript_mock_resp: None,
     ) -> None:
         """
