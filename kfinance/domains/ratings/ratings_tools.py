@@ -125,6 +125,9 @@ class GetIssuerRatingsFromIdentifiers(KfinanceTool):
         Permission.GI10YearHistoryPermission,
         Permission.GICurrentPermission,
         Permission.GIFullHistoryPermission,
+        Permission.PF10YearHistoryPermission,
+        Permission.PFCurrentPermission,
+        Permission.PFFullHistoryPermission,
     }
 
     async def _arun(
