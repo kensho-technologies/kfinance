@@ -4,7 +4,7 @@ import logging
 import time
 from typing import Generator, Generic, TypeVar
 
-import httpx
+import httpx2 as httpx
 from jwt import decode as jwt_decode, encode
 
 

@@ -1,8 +1,7 @@
 from decimal import Decimal
 
-import httpx
+import httpx2 as httpx
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.client.models.date_and_period_models import EstimateType
 from kfinance.client.models.response_models import SingleResultResp
@@ -115,16 +114,13 @@ class TestEstimates:
     }
 
     @pytest.fixture
-    def add_spgi_estimates_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+    def add_spgi_estimates_mock_resp(self, httpx2_mock) -> None:
         """Add mock response for SPGI estimates."""
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/estimates/").respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): self.estimates_data},
                 "errors": {},
-            },
-            is_optional=True,
+            }
         )
 
     @pytest.mark.asyncio
@@ -184,16 +180,14 @@ class TestEstimates:
     async def test_fetch_estimates_api_returns_error(
         self,
         httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx2_mock,
     ) -> None:
         """
         WHEN the estimates API returns an error for a company (e.g. no data available)
         THEN the error is extracted and surfaced in the response
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/",
-            json={"results": {}, "errors": {"errors": "No results found."}},
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/estimates/").respond(
+            json={"results": {}, "errors": {"errors": "No results found."}}
         )
 
         expected_resp = GetCiqEstimatesFromIdentifiersResp(
@@ -216,7 +210,7 @@ class TestEstimates:
     async def test_get_estimates_with_guidance_type(
         self,
         httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx2_mock,
     ) -> None:
         """
         WHEN we request guidance estimates
@@ -227,10 +221,8 @@ class TestEstimates:
             "estimate_type": "guidance",
         }
 
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/",
-            json={"results": {str(SPGI_ID_TRIPLE.company_id): guidance_data}, "errors": {}},
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/estimates/").respond(
+            json={"results": {str(SPGI_ID_TRIPLE.company_id): guidance_data}, "errors": {}}
         )
 
         resp = await fetch_estimates_from_company_id(
@@ -336,7 +328,7 @@ class TestEstimates:
     async def test_fetch_consensus_target_price_from_company_id(
         self,
         httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx2_mock,
     ) -> None:
         """
         WHEN we request SPGI's consensus target price
@@ -353,13 +345,13 @@ class TestEstimates:
             ],
         }
 
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}",
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}"
+        ).respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): consensus_target_price_data},
                 "errors": {},
-            },
+            }
         )
 
         resp = await fetch_consensus_target_price_from_company_id(
@@ -376,19 +368,19 @@ class TestEstimates:
     async def test_fetch_consensus_target_price_api_returns_error(
         self,
         httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx2_mock,
     ) -> None:
         """
         WHEN the consensus target price API returns an error (no data available)
         THEN the error is extracted and surfaced in the response
         """
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}",
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}"
+        ).respond(
             json={
                 "results": {},
                 "errors": {"errors": "No consensus target price found."},
-            },
+            }
         )
 
         expected_resp = GetConsensusTargetPriceFromIdentifiersResp(
@@ -408,7 +400,7 @@ class TestEstimates:
     async def test_get_consensus_target_price_from_identifiers(
         self,
         httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx2_mock,
     ) -> None:
         """
         WHEN we request consensus target price for SPGI and a non-existent company
@@ -425,13 +417,13 @@ class TestEstimates:
             ],
         }
 
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}",
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/estimates/consensus_target_price/{SPGI_ID_TRIPLE.company_id}"
+        ).respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): consensus_target_price_data},
                 "errors": {},
-            },
+            }
         )
 
         resp = await get_consensus_target_price_from_identifiers(
@@ -454,7 +446,7 @@ class TestEstimates:
     async def test_fetch_analyst_recommendations_from_company_id(
         self,
         httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx2_mock,
     ) -> None:
         """
         WHEN we request SPGI's analyst recommendations
@@ -469,13 +461,13 @@ class TestEstimates:
             ],
         }
 
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}",
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}"
+        ).respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): analyst_recommendations_data},
                 "errors": {},
-            },
+            }
         )
 
         resp = await fetch_analyst_recommendations_from_company_id(
@@ -492,19 +484,19 @@ class TestEstimates:
     async def test_fetch_analyst_recommendations_api_returns_error(
         self,
         httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx2_mock,
     ) -> None:
         """
         WHEN the analyst recommendations API returns an error (no data available)
         THEN the error is extracted and surfaced in the response
         """
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}",
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}"
+        ).respond(
             json={
                 "results": {},
                 "errors": {"errors": "No analyst recommendations found."},
-            },
+            }
         )
 
         expected_resp = GetAnalystRecommendationsFromIdentifiersResp(
@@ -524,7 +516,7 @@ class TestEstimates:
     async def test_get_analyst_recommendations_from_identifiers(
         self,
         httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx2_mock,
     ) -> None:
         """
         WHEN we request analyst recommendations for SPGI and a non-existent company
@@ -539,13 +531,13 @@ class TestEstimates:
             ],
         }
 
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}",
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/estimates/analyst_recommendations/{SPGI_ID_TRIPLE.company_id}"
+        ).respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): analyst_recommendations_data},
                 "errors": {},
-            },
+            }
         )
 
         resp = await get_analyst_recommendations_from_identifiers(

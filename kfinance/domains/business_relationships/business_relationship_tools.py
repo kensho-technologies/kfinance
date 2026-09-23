@@ -1,7 +1,7 @@
 from textwrap import dedent
 from typing import Type
 
-import httpx
+import httpx2 as httpx
 from pydantic import BaseModel
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks

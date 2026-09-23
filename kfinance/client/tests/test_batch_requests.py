@@ -5,9 +5,9 @@ from typing import Any, Dict
 from unittest import TestCase
 from unittest.mock import PropertyMock, patch
 
+import httpx2
 import pytest
-import requests
-import requests_mock
+from respx import Router
 
 from kfinance.client.batch_request_handling import MAX_WORKERS_CAP
 from kfinance.client.fetch import KFinanceApiClient
@@ -25,6 +25,11 @@ def mock_method():
 
 
 class TestTradingItem(TestCase):
+    @pytest.fixture(autouse=True)
+    def _httpx2_mock(self, httpx2_mock: Router) -> None:
+        # TestCase methods can't take fixtures as args
+        self.httpx2_mock = httpx2_mock
+
     def setUp(self):
         self.kfinance_api_client = KFinanceApiClient(refresh_token="fake_refresh_token")
         self.kfinance_api_client_with_thread_pool = KFinanceApiClient(
@@ -35,8 +40,7 @@ class TestTradingItem(TestCase):
     def company_object_keys_as_company_id(self, company_dict: Dict[Company, Any]):
         return dict(map(lambda company: (company.company_id, company_dict[company]), company_dict))
 
-    @requests_mock.Mocker()
-    def test_batch_request_property(self, m):
+    def test_batch_request_property(self):
         """GIVEN a kfinance group object like Companies
         WHEN we batch request a property for each object in the group
         THEN the batch request completes successfully, and we get back a mapping of
@@ -47,15 +51,13 @@ class TestTradingItem(TestCase):
         the threadpool on __exit__ and prevented further tasks from getting submitted.
         """
 
-        m.get(
-            "https://kfinance.kensho.com/api/v1/info/1001",
+        self.httpx2_mock.get("https://kfinance.kensho.com/api/v1/info/1001").respond(
             json={
                 "name": "Mock Company A, Inc.",
                 "city": "Mock City A",
             },
         )
-        m.get(
-            "https://kfinance.kensho.com/api/v1/info/1002",
+        self.httpx2_mock.get("https://kfinance.kensho.com/api/v1/info/1002").respond(
             json={
                 "name": "Mock Company B, Inc.",
                 "city": "Mock City B",
@@ -70,15 +72,15 @@ class TestTradingItem(TestCase):
             expected_id_based_result = {1001: "Mock City A", 1002: "Mock City B"}
             self.assertDictEqual(id_based_result, expected_id_based_result)
 
-    @requests_mock.Mocker()
-    def test_batch_request_function(self, m):
+    def test_batch_request_function(self):
         """GIVEN a kfinance group object like TradingItems
         WHEN we batch request a function for each object in the group
         THEN the batch request completes successfully and we get back a mapping of
         trading item objects to the corresponding values."""
 
-        m.get(
-            "https://kfinance.kensho.com/api/v1/pricing/2/none/none/day/adjusted",
+        self.httpx2_mock.get(
+            "https://kfinance.kensho.com/api/v1/pricing/2/none/none/day/adjusted"
+        ).respond(
             json={
                 "currency": "USD",
                 "prices": [
@@ -93,8 +95,9 @@ class TestTradingItem(TestCase):
                 ],
             },
         )
-        m.get(
-            "https://kfinance.kensho.com/api/v1/pricing/3/none/none/day/adjusted",
+        self.httpx2_mock.get(
+            "https://kfinance.kensho.com/api/v1/pricing/3/none/none/day/adjusted"
+        ).respond(
             json={
                 "currency": "USD",
                 "prices": [
@@ -150,15 +153,13 @@ class TestTradingItem(TestCase):
         result = trading_items.history()
         assert result == expected_result
 
-    @requests_mock.Mocker()
-    def test_large_batch_request_property(self, m):
+    def test_large_batch_request_property(self):
         """GIVEN a kfinance group object like Companies with a very large size
         WHEN we batch request a property for each object in the group
         THEN the batch request completes successfully and we get back a mapping of
         company objects to the corresponding values."""
 
-        m.get(
-            "https://kfinance.kensho.com/api/v1/info/1000",
+        self.httpx2_mock.get("https://kfinance.kensho.com/api/v1/info/1000").respond(
             json={
                 "name": "Test Inc.",
                 "city": "Test City",
@@ -171,8 +172,7 @@ class TestTradingItem(TestCase):
         expected_result = ["Test City"] * BATCH_SIZE
         self.assertEqual(result, expected_result)
 
-    @requests_mock.Mocker()
-    def test_batch_request_property_404(self, m):
+    def test_batch_request_property_404(self):
         """GIVEN a kfinance group object like Companies
         WHEN we batch request a property for each object in the group and one of the
         property requests returns a 404
@@ -180,14 +180,15 @@ class TestTradingItem(TestCase):
         company objects to the corresponding property value or None when the request for
         that property returns a 404"""
 
-        m.get(
-            "https://kfinance.kensho.com/api/v1/info/1001",
+        self.httpx2_mock.get("https://kfinance.kensho.com/api/v1/info/1001").respond(
             json={
                 "name": "Mock Company A, Inc.",
                 "city": "Mock City A",
             },
         )
-        m.get("https://kfinance.kensho.com/api/v1/info/1002", status_code=404)
+        self.httpx2_mock.get("https://kfinance.kensho.com/api/v1/info/1002").respond(
+            status_code=404
+        )
 
         companies = Companies(self.kfinance_api_client, [1001, 1002])
         result = companies.city
@@ -196,21 +197,21 @@ class TestTradingItem(TestCase):
         expected_id_based_result = {1001: "Mock City A", 1002: None}
         self.assertDictEqual(id_based_result, expected_id_based_result)
 
-    @requests_mock.Mocker()
-    def test_batch_request_400(self, m):
+    def test_batch_request_400(self):
         """GIVEN a kfinance group object like Companies
         WHEN we batch request a property for each object in the group and one of the
         property requests returns a 400
         THEN the batch request returns a 400"""
 
-        m.get(
-            "https://kfinance.kensho.com/api/v1/info/1001",
+        self.httpx2_mock.get("https://kfinance.kensho.com/api/v1/info/1001").respond(
             json={
                 "name": "Mock Company A, Inc.",
                 "city": "Mock City A",
             },
         )
-        m.get("https://kfinance.kensho.com/api/v1/info/1002", status_code=400)
+        self.httpx2_mock.get("https://kfinance.kensho.com/api/v1/info/1002").respond(
+            status_code=400
+        )
 
         companies = Companies(self.kfinance_api_client, [1001, 1002])
         result = companies.city
@@ -219,38 +220,36 @@ class TestTradingItem(TestCase):
         expected_id_based_result = {1001: "Mock City A", 1002: None}
         self.assertDictEqual(id_based_result, expected_id_based_result)
 
-    @requests_mock.Mocker()
-    def test_batch_request_500(self, m):
+    def test_batch_request_500(self):
         """GIVEN a kfinance group object like Companies
         WHEN we batch request a property for each object in the group and one of the
         property requests returns a 500
         THEN the batch request returns a 500"""
 
-        m.get(
-            "https://kfinance.kensho.com/api/v1/info/1001",
+        self.httpx2_mock.get("https://kfinance.kensho.com/api/v1/info/1001").respond(
             json={
                 "name": "Mock Company A, Inc.",
                 "city": "Mock City A",
             },
         )
-        m.get("https://kfinance.kensho.com/api/v1/info/1002", status_code=500)
+        self.httpx2_mock.get("https://kfinance.kensho.com/api/v1/info/1002").respond(
+            status_code=500
+        )
 
-        with self.assertRaises(requests.exceptions.HTTPError) as e:
+        with self.assertRaises(httpx2.HTTPStatusError) as e:
             companies = Companies(self.kfinance_api_client, [1001, 1002])
             _ = companies.city
 
         self.assertEqual(e.exception.response.status_code, 500)
 
-    @requests_mock.Mocker()
-    def test_batch_request_property_with_thread_pool(self, m):
+    def test_batch_request_property_with_thread_pool(self):
         """GIVEN a kfinance group object like Companies and an api client instantiated
         with a passed-in ThreadPool
         WHEN we batch request a property for each object in the group
         THEN the batch request completes successfully and we get back a mapping of
         company objects to corresponding values"""
 
-        m.get(
-            "https://kfinance.kensho.com/api/v1/info/1001",
+        self.httpx2_mock.get("https://kfinance.kensho.com/api/v1/info/1001").respond(
             json={
                 "name": "Mock Company A, Inc.",
                 "city": "Mock City A",

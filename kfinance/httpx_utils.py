@@ -5,8 +5,8 @@ from contextvars import ContextVar
 from queue import Queue
 from typing import Any, Generator
 
-import httpx
-from httpx import Request, Response
+import httpx2 as httpx
+from httpx2 import Request, Response
 
 from kfinance.client.fetch import KFinanceApiClient
 

@@ -1,8 +1,7 @@
 from datetime import datetime
 
-import httpx
+import httpx2 as httpx
 import pytest
-from pytest_httpx import HTTPXMock
 import time_machine
 
 from kfinance.conftest import SPGI_ID_TRIPLE
@@ -18,11 +17,11 @@ from kfinance.domains.earnings.earning_tools import (
 
 class TestEarnings:
     @pytest.fixture
-    def add_spgi_earnings_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+    def add_spgi_earnings_mock_resp(self, httpx2_mock) -> None:
         """Add mock response for SPGI earnings."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_ID_TRIPLE.company_id}",
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/earnings/{SPGI_ID_TRIPLE.company_id}"
+        ).respond(
             json={
                 "earnings": [
                     {
@@ -36,15 +35,11 @@ class TestEarnings:
                         "key_dev_id": 12345,
                     },
                 ]
-            },
-            is_optional=True,
+            }
         )
         # private company without earnings
-        httpx_mock.add_response(
-            method="GET",
-            url="https://kfinance.kensho.com/api/v1/earnings/1",
-            json={"earnings": []},
-            is_optional=True,
+        httpx2_mock.get("https://kfinance.kensho.com/api/v1/earnings/1").respond(
+            json={"earnings": []}
         )
 
     @pytest.mark.asyncio
@@ -175,11 +170,9 @@ class TestEarnings:
 
 class TestTranscript:
     @pytest.fixture
-    def add_transcript_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+    def add_transcript_mock_resp(self, httpx2_mock) -> None:
         """Add mock response for transcript."""
-        httpx_mock.add_response(
-            method="GET",
-            url="https://kfinance.kensho.com/api/v1/transcript/12345",
+        httpx2_mock.get("https://kfinance.kensho.com/api/v1/transcript/12345").respond(
             json={
                 "transcript": [
                     {
@@ -193,8 +186,7 @@ class TestTranscript:
                         "component_type": "speech",
                     },
                 ]
-            },
-            is_optional=True,
+            }
         )
 
     @pytest.mark.asyncio

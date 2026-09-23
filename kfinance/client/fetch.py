@@ -5,8 +5,8 @@ from time import time
 from typing import Any, Callable, Generator, Optional
 from uuid import uuid4
 
+import httpx2
 import jwt
-import requests
 
 from kfinance.client.industry_models import IndustryClassification
 from kfinance.client.models.date_and_period_models import (
@@ -182,7 +182,7 @@ class KFinanceApiClient:
 
     def _get_access_token_via_refresh_token(self) -> str:
         """Get an access token via oauth by submitting a refresh token."""
-        response = requests.get(
+        response = httpx2.get(
             f"{self.api_host}/oauth2/refresh?refresh_token={self.refresh_token}",
             timeout=60,
         )
@@ -203,7 +203,7 @@ class KFinanceApiClient:
             self.private_key,
             algorithm="RS256",
         )
-        response = requests.post(
+        response = httpx2.post(
             f"{self.okta_host}/oauth2/{self.okta_auth_server}/v1/token",
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -261,7 +261,7 @@ class KFinanceApiClient:
                 {"Kfinance-Batch-Id": self._batch_id, "Kfinance-Batch-Size": self._batch_size}
             )
 
-        response = requests.request(
+        response = httpx2.request(
             method=method,
             url=url,
             headers=headers,
@@ -465,7 +465,7 @@ class KFinanceApiClient:
             f"{'adjusted' if is_adjusted else 'unadjusted'}"
         )
 
-        response = requests.get(
+        response = httpx2.get(
             url,
             headers={
                 "Content-Type": "image/png",

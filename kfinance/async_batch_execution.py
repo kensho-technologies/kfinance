@@ -3,7 +3,7 @@ from collections.abc import Hashable
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Generic, TypeVar
 
-from httpx import HTTPStatusError
+from httpx2 import HTTPStatusError
 
 
 ResultKeyT = TypeVar("ResultKeyT", bound=Hashable)

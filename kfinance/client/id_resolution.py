@@ -1,4 +1,4 @@
-import httpx
+import httpx2 as httpx
 
 from kfinance.domains.companies.company_models import UnifiedIdTripleResponse
 

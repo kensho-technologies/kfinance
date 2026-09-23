@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from pydantic import ValidationError
 import pytest
-from requests_mock import Mocker
+from respx import Router
 
 from kfinance.client.fetch import KFinanceApiClient
 from kfinance.client.kfinance import Client
@@ -586,7 +586,7 @@ class TestMarketCap:
 
 
 class TestFetchCompaniesFromBusinessRelationship:
-    def test_fetch_business_relationships(self, requests_mock: Mocker, mock_client: Client) -> None:
+    def test_fetch_business_relationships(self, httpx2_mock: Router, mock_client: Client) -> None:
         """
         GIVEN a business relationship request
         WHEN the api returns a response
@@ -609,10 +609,9 @@ class TestFetchCompaniesFromBusinessRelationship:
             ],
         )
 
-        requests_mock.get(
-            url=f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{BusinessRelationshipType.supplier}",
-            json=http_resp,
-        )
+        httpx2_mock.get(
+            f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{BusinessRelationshipType.supplier}",
+        ).respond(json=http_resp)
 
         resp = mock_client.kfinance_api_client.fetch_companies_from_business_relationship(
             company_id=SPGI_COMPANY_ID, relationship_type=BusinessRelationshipType.supplier
@@ -621,7 +620,7 @@ class TestFetchCompaniesFromBusinessRelationship:
 
 
 class TestFetchCompanyDescriptions:
-    def test_fetch_company_descriptions(self, requests_mock: Mocker, mock_client: Client) -> None:
+    def test_fetch_company_descriptions(self, httpx2_mock: Router, mock_client: Client) -> None:
         """
         GIVEN a request to fetch company descriptions
         WHEN the api returns a response
@@ -639,10 +638,9 @@ class TestFetchCompanyDescriptions:
             description="S&P Global Inc. (S&P Global), together... [description]",
         )
 
-        requests_mock.get(
-            url=f"{mock_client.kfinance_api_client.url_base}info/{SPGI_COMPANY_ID}/descriptions",
-            json=http_resp,
-        )
+        httpx2_mock.get(
+            f"{mock_client.kfinance_api_client.url_base}info/{SPGI_COMPANY_ID}/descriptions",
+        ).respond(json=http_resp)
 
         resp = mock_client.kfinance_api_client.fetch_company_descriptions(
             company_id=SPGI_COMPANY_ID
@@ -651,7 +649,7 @@ class TestFetchCompanyDescriptions:
 
 
 class TestFetchCompanyOtherNames:
-    def test_fetch_company_other_names(self, requests_mock: Mocker, mock_client: Client) -> None:
+    def test_fetch_company_other_names(self, httpx2_mock: Router, mock_client: Client) -> None:
         """
         GIVEN a request to fetch a company's other names (alternate, historical, and native)
         WHEN the api returns a response
@@ -682,10 +680,9 @@ class TestFetchCompanyOtherNames:
             native_names=native_names,
         )
 
-        requests_mock.get(
-            url=f"{mock_client.kfinance_api_client.url_base}info/{SPGI_COMPANY_ID}/names",
-            json=http_resp,
-        )
+        httpx2_mock.get(
+            f"{mock_client.kfinance_api_client.url_base}info/{SPGI_COMPANY_ID}/names",
+        ).respond(json=http_resp)
 
         resp = mock_client.kfinance_api_client.fetch_company_other_names(company_id=SPGI_COMPANY_ID)
 
@@ -693,7 +690,7 @@ class TestFetchCompanyOtherNames:
 
 
 class TestFetchIssuerRatings:
-    def test_fetch_issuer_ratings(self, requests_mock: Mocker, mock_client: Client) -> None:
+    def test_fetch_issuer_ratings(self, httpx2_mock: Router, mock_client: Client) -> None:
         """
         GIVEN a request to fetch issuer ratings for entity IDs
         WHEN the API returns a response
@@ -750,10 +747,9 @@ class TestFetchIssuerRatings:
 
         expected_resp = IssuerRatingsResp.model_validate(http_resp)
 
-        requests_mock.post(
-            url=f"{mock_client.kfinance_api_client.url_base}ratings/issuer_ratings/",
-            json=http_resp,
-        )
+        httpx2_mock.post(
+            f"{mock_client.kfinance_api_client.url_base}ratings/issuer_ratings/",
+        ).respond(json=http_resp)
 
         resp = mock_client.kfinance_api_client.fetch_issuer_ratings(entity_ids=entity_ids)
 
@@ -765,7 +761,7 @@ class TestFetchIssuerRatings:
 
 
 class TestFetchSecurityRatings:
-    def test_fetch_security_ratings(self, requests_mock: Mocker, mock_client: Client) -> None:
+    def test_fetch_security_ratings(self, httpx2_mock: Router, mock_client: Client) -> None:
         """
         GIVEN a request to fetch ratings for security IDs
         WHEN the API returns a response
@@ -818,10 +814,9 @@ class TestFetchSecurityRatings:
 
         expected_resp = SecurityRatingsResp.model_validate(http_resp)
 
-        requests_mock.post(
-            url=f"{mock_client.kfinance_api_client.url_base}ratings/security_ratings/",
-            json=http_resp,
-        )
+        httpx2_mock.post(
+            f"{mock_client.kfinance_api_client.url_base}ratings/security_ratings/",
+        ).respond(json=http_resp)
 
         resp = mock_client.kfinance_api_client.fetch_security_ratings(security_ids=security_ids)
 

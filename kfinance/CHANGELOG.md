@@ -1,5 +1,8 @@
 # Changelog
 
+## v7.3.0
+- Replace `requests` and `httpx` with `httpx2`. HTTP errors from `KFinanceApiClient` are now raised as `httpx2.HTTPStatusError` instead of `requests.exceptions.HTTPError`.
+
 ## v7.2.3
 - Add RatingsPermission.
 

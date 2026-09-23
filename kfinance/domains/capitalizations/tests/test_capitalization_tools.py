@@ -2,9 +2,8 @@ from copy import deepcopy
 from datetime import date
 from decimal import Decimal
 
-import httpx
+import httpx2 as httpx
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.client.models.decimal_with_unit import Money, Shares
 from kfinance.conftest import (
@@ -47,13 +46,11 @@ CAPITALIZATION_RESP = {
 
 
 @pytest.fixture
-def add_spgi_capitalizations_mock_resp(httpx_mock: HTTPXMock) -> None:
+def add_spgi_capitalizations_mock_resp(httpx2_mock) -> None:
     """Add mock response for SPGI capitalization data."""
-    httpx_mock.add_response(
-        method="GET",
-        url=f"https://kfinance.kensho.com/api/v1/market_cap/{SPGI_COMPANY_ID}/none/none",
-        json=CAPITALIZATION_RESP,
-    )
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/market_cap/{SPGI_COMPANY_ID}/none/none"
+    ).respond(json=CAPITALIZATION_RESP)
 
 
 class TestCapitalizationParamCoercion:
@@ -144,7 +141,7 @@ class TestCapitalizations:
 
     @pytest.mark.asyncio
     async def test_get_capitalizations_from_identifiers_truncation(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we fetch market caps for more than one company without start or end dates
@@ -152,11 +149,9 @@ class TestCapitalizations:
         """
 
         for company_id in [1, 2]:
-            httpx_mock.add_response(
-                method="GET",
-                url=f"https://kfinance.kensho.com/api/v1/market_cap/{company_id}/none/none",
-                json=CAPITALIZATION_RESP,
-            )
+            httpx2_mock.get(
+                f"https://kfinance.kensho.com/api/v1/market_cap/{company_id}/none/none"
+            ).respond(json=CAPITALIZATION_RESP)
 
         expected_company_resp = deepcopy(self.expected_capitalizations_response)
         # truncate expected response to only include the last available day.

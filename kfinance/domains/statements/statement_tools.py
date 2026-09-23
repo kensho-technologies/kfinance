@@ -1,7 +1,7 @@
 from textwrap import dedent
 from typing import Annotated, Any, Literal, Type, cast
 
-import httpx
+import httpx2 as httpx
 from pydantic import BaseModel, BeforeValidator, Field, model_validator
 
 from kfinance.client.id_resolution import unified_fetch_id_triples

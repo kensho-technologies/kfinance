@@ -1,8 +1,7 @@
 from decimal import Decimal
 
-import httpx
+import httpx2 as httpx
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import FAKE_COMPANY_1_ID_TRIPLE, FAKE_COMPANY_2_ID_TRIPLE, SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
@@ -137,14 +136,11 @@ class TestRoundsOfFunding:
     }
 
     @pytest.fixture
-    def add_spgi_rounds_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+    def add_spgi_rounds_mock_resp(self, httpx2_mock) -> None:
         """Add mock response for SPGI rounds of funding."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundingrounds/target/{SPGI_ID_TRIPLE.company_id}",
-            json=self.rounds_of_funding_response,
-            is_optional=True,
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundingrounds/target/{SPGI_ID_TRIPLE.company_id}"
+        ).respond(json=self.rounds_of_funding_response)
 
     @pytest.mark.asyncio
     async def test_fetch_rounds_of_funding_from_company_id(
@@ -197,7 +193,7 @@ class TestRoundsOfFunding:
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_from_transaction_ids_complete_data(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we request funding round info for a transaction with complete advisor data
@@ -288,28 +284,20 @@ class TestRoundsOfFunding:
         )
 
         # Mock the main funding round API call
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}",
-            json=self.funding_round_response,
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}"
+        ).respond(json=self.funding_round_response)
 
         # Mock advisor API calls with actual advisor data
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/target",
-            json=self.target_advisors_response,
-        )
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{67890}",
-            json=self.investor_advisors_response,
-        )
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{98765}",
-            json={"advisors": []},  # No advisors for this investor
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/target"
+        ).respond(json=self.target_advisors_response)
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{67890}"
+        ).respond(json=self.investor_advisors_response)
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{98765}"
+        ).respond(json={"advisors": []})
 
         result = await get_rounds_of_funding_info_from_transaction_ids(
             transaction_ids=[transaction_id],
@@ -320,7 +308,7 @@ class TestRoundsOfFunding:
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_with_mixed_advisor_data(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN some advisor API calls return data and others return empty lists
@@ -394,28 +382,20 @@ class TestRoundsOfFunding:
         )
 
         # Mock the main funding round API call
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}",
-            json=self.funding_round_response,
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}"
+        ).respond(json=self.funding_round_response)
 
         # Mock advisor API calls - mixed results
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/target",
-            json={"advisors": []},
-        )
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{67890}",
-            json=self.investor_advisors_response,  # Successful call with data
-        )
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{98765}",
-            json={"advisors": []},
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/target"
+        ).respond(json={"advisors": []})
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{67890}"
+        ).respond(json=self.investor_advisors_response)
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{98765}"
+        ).respond(json={"advisors": []})
 
         result = await get_rounds_of_funding_info_from_transaction_ids(
             transaction_ids=[transaction_id],
@@ -428,7 +408,7 @@ class TestRoundsOfFunding:
     async def test_get_funding_summary_from_identifiers(
         self,
         httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx2_mock,
     ) -> None:
         """
         WHEN we request funding summary for multiple companies
@@ -439,18 +419,14 @@ class TestRoundsOfFunding:
 
         # Mock the rounds of funding responses for both companies
         for company_id in company_ids:
-            httpx_mock.add_response(
-                method="GET",
-                url=f"https://kfinance.kensho.com/api/v1/fundingrounds/target/{company_id}",
-                json=self.funding_summary_rounds_response,
-            )
+            httpx2_mock.get(
+                f"https://kfinance.kensho.com/api/v1/fundingrounds/target/{company_id}"
+            ).respond(json=self.funding_summary_rounds_response)
 
         # Mock the detailed round info for the transaction (multiple times for multiple companies)
         for _ in range(2):  # Two companies will make this call
-            httpx_mock.add_response(
-                method="GET",
-                url="https://kfinance.kensho.com/api/v1/fundinground/info/789012",
-                json=self.funding_round_response,
+            httpx2_mock.get("https://kfinance.kensho.com/api/v1/fundinground/info/789012").respond(
+                json=self.funding_round_response
             )
 
         expected_summary = FundingSummary(
@@ -485,7 +461,7 @@ class TestRoundsOfFunding:
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_http_404(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the server returns a 404 for a non-existent transaction_id
@@ -493,11 +469,9 @@ class TestRoundsOfFunding:
         """
         transaction_id = 999999
 
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}",
-            status_code=404,
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}"
+        ).respond(status_code=404)
 
         expected_result = GetRoundsOfFundingInfoFromTransactionIdsResp(
             results={},
@@ -513,7 +487,7 @@ class TestRoundsOfFunding:
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_advisor_endpoints_404(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the advisor endpoints return 404
@@ -521,28 +495,20 @@ class TestRoundsOfFunding:
         """
         transaction_id = 111111
 
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}",
-            json=self.funding_round_response,
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}"
+        ).respond(json=self.funding_round_response)
         # Target advisors returns 404
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/target",
-            status_code=404,
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/target"
+        ).respond(status_code=404)
         # Investor advisors return 404
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{67890}",
-            status_code=404,
-        )
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{98765}",
-            status_code=404,
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{67890}"
+        ).respond(status_code=404)
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/fundinground/info/{transaction_id}/advisors/investor/{98765}"
+        ).respond(status_code=404)
 
         expected_result = GetRoundsOfFundingInfoFromTransactionIdsResp(
             results={

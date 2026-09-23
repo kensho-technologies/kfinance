@@ -2,7 +2,7 @@ from datetime import date
 from textwrap import dedent
 from typing import Any, Type
 
-import httpx
+import httpx2 as httpx
 from pydantic import BaseModel, Field, model_validator
 
 from kfinance.client.id_resolution import unified_fetch_id_triples

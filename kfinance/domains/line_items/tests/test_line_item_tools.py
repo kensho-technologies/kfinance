@@ -1,7 +1,6 @@
-import httpx
+import httpx2 as httpx
 from langchain_core.utils.function_calling import convert_to_openai_tool
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.client.kfinance import Client
 from kfinance.client.models.response_models import PostResponse
@@ -45,13 +44,10 @@ class TestGetFinancialLineItemFromIdentifiers:
     }
 
     @pytest.fixture
-    def add_spgi_line_item_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+    def add_spgi_line_item_mock_resp(self, httpx2_mock) -> None:
         """Add mock response for SPGI line items."""
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/",
-            json={"results": {str(SPGI_ID_TRIPLE.company_id): self.line_item_resp}, "errors": {}},
-            is_optional=True,
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/line_item/").respond(
+            json={"results": {str(SPGI_ID_TRIPLE.company_id): self.line_item_resp}, "errors": {}}
         )
 
     @pytest.mark.asyncio
@@ -132,19 +128,17 @@ class TestGetFinancialLineItemFromIdentifiers:
 
     @pytest.mark.asyncio
     async def test_api_returns_error_for_company(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns an error in the errors dict for a company_id
         THEN the error is mapped back to the identifier and included in the response
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/line_item/").respond(
             json={
                 "results": {},
                 "errors": {str(SPGI_ID_TRIPLE.company_id): "No results found."},
-            },
+            }
         )
 
         expected_resp = GetFinancialLineItemFromIdentifiersResp(
@@ -164,9 +158,7 @@ class TestGetFinancialLineItemFromIdentifiers:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-    ) -> None:
+    async def test_most_recent_request(self, httpx_client: httpx.AsyncClient, httpx2_mock) -> None:
         """
         WHEN we request most recent line items for multiple companies
         THEN we only get back the most recent line item for each company
@@ -175,10 +167,8 @@ class TestGetFinancialLineItemFromIdentifiers:
         company_ids = [1, 2]
 
         # Mock the line_item response for both companies
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/",
-            json={"results": {"1": self.line_item_resp, "2": self.line_item_resp}, "errors": {}},
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/line_item/").respond(
+            json={"results": {"1": self.line_item_resp, "2": self.line_item_resp}, "errors": {}}
         )
 
         line_item_resp = LineItemResp.model_validate(

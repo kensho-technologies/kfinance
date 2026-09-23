@@ -1,6 +1,5 @@
-import httpx
+import httpx2 as httpx
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.professionals.professionals_models import (
@@ -80,43 +79,31 @@ MOCK_PERSON_RESP = PersonProfessionalsResp(
 
 
 @pytest.fixture
-def add_spgi_board_mock_resp(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        method="GET",
-        url=f"https://kfinance.kensho.com/api/v1/professionals/company/{SPGI_COMPANY_ID}/board_members/all",
-        json=MOCK_BOARD_RESP.model_dump(mode="json"),
-        is_reusable=True,
-    )
+def add_spgi_board_mock_resp(httpx2_mock) -> None:
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/professionals/company/{SPGI_COMPANY_ID}/board_members/all"
+    ).respond(json=MOCK_BOARD_RESP.model_dump(mode="json"))
 
 
 @pytest.fixture
-def add_spgi_employee_mock_resp(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        method="GET",
-        url=f"https://kfinance.kensho.com/api/v1/professionals/company/{SPGI_COMPANY_ID}/employees/current",
-        json=MOCK_EMPLOYEE_RESP.model_dump(mode="json"),
-        is_reusable=True,
-    )
+def add_spgi_employee_mock_resp(httpx2_mock) -> None:
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/professionals/company/{SPGI_COMPANY_ID}/employees/current"
+    ).respond(json=MOCK_EMPLOYEE_RESP.model_dump(mode="json"))
 
 
 @pytest.fixture
-def add_spgi_past_employee_mock_resp(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        method="GET",
-        url=f"https://kfinance.kensho.com/api/v1/professionals/company/{SPGI_COMPANY_ID}/employees/prior",
-        json=MOCK_EMPLOYEE_RESP.model_dump(mode="json"),
-        is_reusable=True,
-    )
+def add_spgi_past_employee_mock_resp(httpx2_mock) -> None:
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/professionals/company/{SPGI_COMPANY_ID}/employees/prior"
+    ).respond(json=MOCK_EMPLOYEE_RESP.model_dump(mode="json"))
 
 
 @pytest.fixture
-def add_spgi_person_mock_resp(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        method="GET",
-        url=f"https://kfinance.kensho.com/api/v1/professionals/person/{SPGI_CEO_PERSON_ID}",
-        json=MOCK_PERSON_RESP.model_dump(mode="json"),
-        is_reusable=True,
-    )
+def add_spgi_person_mock_resp(httpx2_mock) -> None:
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/professionals/person/{SPGI_CEO_PERSON_ID}"
+    ).respond(json=MOCK_PERSON_RESP.model_dump(mode="json"))
 
 
 class TestBuildName:
@@ -413,17 +400,15 @@ class TestGetProfessionalsFromPersonIds:
     async def test_get_multiple_persons(
         self,
         httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx2_mock,
         add_spgi_person_mock_resp: None,
     ) -> None:
         """
         WHEN we fetch professional history for multiple person_ids and one returns a 404
         THEN we get back results for the successful one and an error for the failed one.
         """
-        httpx_mock.add_response(
-            method="GET",
-            url="https://kfinance.kensho.com/api/v1/professionals/person/99999",
-            status_code=404,
+        httpx2_mock.get("https://kfinance.kensho.com/api/v1/professionals/person/99999").respond(
+            status_code=404
         )
         resp = await get_professionals_from_person_ids(
             person_ids=[SPGI_CEO_PERSON_ID, 99999],

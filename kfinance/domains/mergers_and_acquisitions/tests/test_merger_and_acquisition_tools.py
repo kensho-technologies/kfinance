@@ -1,8 +1,7 @@
 from datetime import date
 
-import httpx
+import httpx2 as httpx
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.client.tests.test_objects import (
     MERGERS_RESP,
@@ -23,15 +22,12 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools impo
 
 class TestMergersAndAcquisitions:
     @pytest.fixture
-    def add_spgi_mergers_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+    def add_spgi_mergers_mock_resp(self, httpx2_mock) -> None:
         """Add mock response for SPGI mergers."""
         merger_data = MERGERS_RESP.model_dump(mode="json")
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/mergers/{SPGI_ID_TRIPLE.company_id}/none/none",
-            json=merger_data,
-            is_optional=True,
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/mergers/{SPGI_ID_TRIPLE.company_id}/none/none"
+        ).respond(json=merger_data)
 
     @pytest.mark.asyncio
     async def test_fetch_mergers_from_company_id(
@@ -54,7 +50,7 @@ class TestMergersAndAcquisitions:
 
     @pytest.mark.asyncio
     async def test_fetch_mergers_from_company_id_with_date_range(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we request SPGI's mergers for a specific date range,
@@ -70,11 +66,9 @@ class TestMergersAndAcquisitions:
             seller=[MERGERS_RESP.seller[0]],
         )
 
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/mergers/{SPGI_ID_TRIPLE.company_id}/{start_date.isoformat()}/{end_date.isoformat()}",
-            json=expected_resp.model_dump(mode="json", by_alias=True),
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/mergers/{SPGI_ID_TRIPLE.company_id}/{start_date.isoformat()}/{end_date.isoformat()}"
+        ).respond(json=expected_resp.model_dump(mode="json", by_alias=True))
 
         resp = await fetch_mergers_from_company_id(
             company_id=SPGI_ID_TRIPLE.company_id,
@@ -115,7 +109,7 @@ class TestMergersAndAcquisitions:
     async def test_get_mergers_info_from_transaction_ids(
         self,
         httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx2_mock,
     ) -> None:
         """
         WHEN we request merger info for multiple transactions
@@ -195,14 +189,14 @@ class TestMergersAndAcquisitions:
 
         error_resp = f"No merger found for transaction_id: {error_transaction_id}"
 
-        httpx_mock.add_response(
-            method="POST",
-            url=f"https://kfinance.kensho.com/api/v1/mergers/info",
-            match_json={
+        httpx2_mock.post(
+            f"https://kfinance.kensho.com/api/v1/mergers/info",
+            json={
                 "transaction_ids": [transaction_id, error_transaction_id],
                 "include_advisors": True,
                 "include_comments": True,
             },
+        ).respond(
             json={
                 "results": {
                     transaction_id: {
@@ -213,7 +207,7 @@ class TestMergersAndAcquisitions:
                     },
                     error_transaction_id: {"error": error_resp},
                 }
-            },
+            }
         )
 
         expected_response = MergersInfo.model_validate(

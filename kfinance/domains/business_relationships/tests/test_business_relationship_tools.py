@@ -1,4 +1,4 @@
-import httpx
+import httpx2 as httpx
 import pytest
 
 from kfinance.conftest import SPGI_ID_TRIPLE

@@ -1,6 +1,5 @@
-import httpx
+import httpx2 as httpx
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
@@ -55,16 +54,14 @@ SEGMENTS_RESP = {
 class TestFetchSegmentsFromCompanyIdsVa:
     @pytest.mark.asyncio
     async def test_data_source_absent_from_payload(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we fetch segments via the Visible Alpha function
         THEN data_source_type is not sent in the request body
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/segments/visible_alpha",
-            json={"results": {str(SPGI_ID_TRIPLE.company_id): SEGMENTS_RESP}, "errors": {}},
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/segments/visible_alpha").respond(
+            json={"results": {str(SPGI_ID_TRIPLE.company_id): SEGMENTS_RESP}, "errors": {}}
         )
 
         resp = await fetch_visible_alpha_segments_from_company_ids(
@@ -74,20 +71,17 @@ class TestFetchSegmentsFromCompanyIdsVa:
         )
 
         assert str(SPGI_ID_TRIPLE.company_id) in resp.results
-        assert "data_source_type" not in httpx_mock.get_requests()[-1].content.decode()
+        assert "data_source_type" not in httpx2_mock.calls[-1].request.content.decode()
 
 
 class TestGetSegmentsFromIdentifiersVa:
     @pytest.fixture
-    def add_spgi_segments_va_mock(self, httpx_mock: HTTPXMock) -> None:
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/segments/visible_alpha",
+    def add_spgi_segments_va_mock(self, httpx2_mock) -> None:
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/segments/visible_alpha").respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): SEGMENTS_RESP},
                 "errors": {},
-            },
-            is_optional=True,
+            }
         )
 
     @pytest.mark.asyncio
@@ -133,19 +127,17 @@ class TestGetSegmentsFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_api_error_mapped_back_to_identifier(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns an error keyed by company_id
         THEN it is mapped back to the original identifier
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/segments/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/segments/visible_alpha").respond(
             json={
                 "results": {},
                 "errors": {str(SPGI_ID_TRIPLE.company_id): "Company not found in Visible Alpha."},
-            },
+            }
         )
 
         resp = await get_visible_alpha_segments_from_identifiers(
@@ -159,7 +151,7 @@ class TestGetSegmentsFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_fiscal_note_added_for_fiscal_calendar_type(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN calendar_type is fiscal
@@ -167,10 +159,8 @@ class TestGetSegmentsFromIdentifiersVa:
         """
         from kfinance.domains.line_items.line_item_models import CalendarType
 
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/segments/visible_alpha",
-            json={"results": {str(SPGI_ID_TRIPLE.company_id): SEGMENTS_RESP}, "errors": {}},
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/segments/visible_alpha").respond(
+            json={"results": {str(SPGI_ID_TRIPLE.company_id): SEGMENTS_RESP}, "errors": {}}
         )
 
         resp = await get_visible_alpha_segments_from_identifiers(
@@ -185,19 +175,17 @@ class TestGetSegmentsFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_most_recent_trimmed_for_multi_company(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN requesting multiple companies with no date filters
         THEN only the most recent period is kept per company
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/segments/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/segments/visible_alpha").respond(
             json={
                 "results": {"1": SEGMENTS_RESP, "2": SEGMENTS_RESP},
                 "errors": {},
-            },
+            }
         )
 
         resp = await get_visible_alpha_segments_from_identifiers(

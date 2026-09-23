@@ -63,9 +63,10 @@ def test_run_notebook(jupyter_kernel_name: str) -> None:
         api_client._access_token = "foo"
         api_client._access_token_expiry = datetime(2100, 1, 1).timestamp()
 
-        # Mock out all necessary requests with requests_mock
-        import requests_mock
-        mocker = requests_mock.Mocker()
+        # Mock out all necessary requests with respx
+        import pytest_httpx2  # noqa: F401 - registers respx's httpcore2 mocker
+        import respx
+        mocker = respx.mock(using="httpcore2", assert_all_called=False)
         mocker.start()
 
         id_triple_resp = {
@@ -75,13 +76,11 @@ def test_run_notebook(jupyter_kernel_name: str) -> None:
         }
 
         # spgi = kfinance_client.ticker("SPGI")
-        mocker.get(
-            url="https://kfinance.kensho.com/api/v1/id/SPGI",
+        mocker.get("https://kfinance.kensho.com/api/v1/id/SPGI").respond(
             json=id_triple_resp
         )
 
-        mocker.get(
-            url="https://kfinance.kensho.com/api/v1/info/21719",
+        mocker.get("https://kfinance.kensho.com/api/v1/info/21719").respond(
             json={"name": "S&P Global Inc."}
         )
 
@@ -116,8 +115,7 @@ def test_run_notebook(jupyter_kernel_name: str) -> None:
         }
 
         # spgi.balance_sheet() and spgi.balance_sheet(period_type=PeriodType.annual, start_year=2010, end_year=2019)
-        mocker.post(
-            url="https://kfinance.kensho.com/api/v1/statements/",
+        mocker.post("https://kfinance.kensho.com/api/v1/statements/").respond(
             json={
                 "results": {
                     "21719": balance_sheet_resp
@@ -129,14 +127,12 @@ def test_run_notebook(jupyter_kernel_name: str) -> None:
         # kfinance_client.ticker("JPM").balance_sheet()
         # (leads to fetching SPGI balance sheet when requesting JPM because they return the same
         # company id)
-        mocker.get(
-            url="https://kfinance.kensho.com/api/v1/id/JPM",
+        mocker.get("https://kfinance.kensho.com/api/v1/id/JPM").respond(
             json=id_triple_resp
         )
 
         # spgi.net_income(period_type=PeriodType.annual, start_year=2010, end_year=2019)
-        mocker.post(
-            url="https://kfinance.kensho.com/api/v1/line_item/",
+        mocker.post("https://kfinance.kensho.com/api/v1/line_item/").respond(
             json={
                 "results": {
                     "21719": {
@@ -173,8 +169,7 @@ def test_run_notebook(jupyter_kernel_name: str) -> None:
         }
 
         # spgi.history()
-        mocker.get(
-            url="https://kfinance.kensho.com/api/v1/pricing/2629108/none/none/day/adjusted",
+        mocker.get("https://kfinance.kensho.com/api/v1/pricing/2629108/none/none/day/adjusted").respond(
             json=prices_resp
         )
 
@@ -184,8 +179,7 @@ def test_run_notebook(jupyter_kernel_name: str) -> None:
         #     start_date="2010-01-01",
         #     end_date="2019-12-31"
         # )
-        mocker.get(
-            url="https://kfinance.kensho.com/api/v1/pricing/2629108/2010-01-01/2019-12-31/month/unadjusted",
+        mocker.get("https://kfinance.kensho.com/api/v1/pricing/2629108/2010-01-01/2019-12-31/month/unadjusted").respond(
             json=prices_resp
         )
 
@@ -195,8 +189,7 @@ def test_run_notebook(jupyter_kernel_name: str) -> None:
         #     start_date="2010-01-01",
         #     end_date="2019-12-31"
         # )
-        mocker.get(
-            url='https://kfinance.kensho.com/api/v1/price_chart/2629108/2010-01-01/2019-12-31/month/unadjusted',
+        mocker.get('https://kfinance.kensho.com/api/v1/price_chart/2629108/2010-01-01/2019-12-31/month/unadjusted').respond(
             content=b"",
             headers={'Content-Type': 'image/png'}
         )

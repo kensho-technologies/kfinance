@@ -2,7 +2,7 @@ import json
 from textwrap import dedent
 from typing import Any, Type
 
-import httpx
+import httpx2 as httpx
 from pydantic import BaseModel, Field, field_validator
 
 from kfinance.client.permission_models import Permission
