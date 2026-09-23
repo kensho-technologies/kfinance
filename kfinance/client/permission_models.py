@@ -26,3 +26,12 @@ class Permission(StrEnum):
         "PrivateCompanyFinancialsPermissionExcludeRedistribution"
     )
     RatingsPermission = "RatingsPermission"
+    GI10YearHistoryPermission = "GI10YearHistoryPermission"
+    GICurrentPermission = "GICurrentPermission"
+    GIFullHistoryPermission = "GIFullHistoryPermission"
+    PF10YearHistoryPermission = "PF10YearHistoryPermission"
+    PFCurrentPermission = "PFCurrentPermission"
+    PFFullHistoryPermission = "PFFullHistoryPermission"
+    SF10YearHistoryPermission = "SF10YearHistoryPermission"
+    SFCurrentPermission = "SFCurrentPermission"
+    SFFullHistoryPermission = "SFFullHistoryPermission"
