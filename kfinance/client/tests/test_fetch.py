@@ -830,9 +830,15 @@ class TestFetchSecurityRatings:
 class TestFetchRedirects:
     def test_fetch_follows_redirects(self, httpx2_mock: Router, mock_client: Client) -> None:
         """
-        GIVEN an endpoint that redirects
+        GIVEN an endpoint that responds with a redirect (here a 307 to the same path plus a
+            trailing slash)
         WHEN fetch is called
-        THEN the redirect is followed (matching the old requests-based behavior)
+        THEN the redirect is followed and the final response is returned
+
+        The client used to be built on requests, which follows redirects by default. httpx2
+        does not (follow_redirects defaults to False), and its raise_for_status() raises
+        on a 3xx. Without follow_redirects=True in fetch.py, this call would raise
+        httpx2.HTTPStatusError, where it used to succeed.
         """
         url_base = mock_client.kfinance_api_client.url_base
         httpx2_mock.get(f"{url_base}info/{SPGI_COMPANY_ID}").respond(
