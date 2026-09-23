@@ -1,7 +1,7 @@
 # Changelog
 
-## v7.3.0
-- Replace `requests` and `httpx` with `httpx2`. HTTP errors from `KFinanceApiClient` are now raised as `httpx2.HTTPStatusError` instead of `requests.exceptions.HTTPError`.
+## v8.0.0
+- **Breaking:** Replace `requests` and `httpx` with `httpx2`. HTTP errors from `KFinanceApiClient` (and so from the object API, e.g. `Ticker`, `Company`, group objects, and token refresh) are now raised as `httpx2.HTTPStatusError` instead of `requests.exceptions.HTTPError`. Network errors change the same way (e.g. `requests.ConnectionError` -> `httpx2.ConnectError`). LLM tool calling is unaffected.
 
 ## v7.2.3
 - Add RatingsPermission.
