@@ -107,7 +107,7 @@ class ClientAccessTokenDispenser(ABC):
 
 
 class RefreshTokenDispenser(ClientAccessTokenDispenser):
-    """Exchanges a refresh token via GET {url}?refresh_token={token} -> {"access_token": "..."}."""
+    """Exchanges a refresh token via POST {url} {"refresh_token": token} -> {"access_token": "..."}."""
 
     def __init__(
         self,
@@ -123,9 +123,12 @@ class RefreshTokenDispenser(ClientAccessTokenDispenser):
         self._http_client = httpx2.Client(timeout=60)
 
     def refresh_access_token(self) -> ClientAccessToken:
-        """Exchange the refresh token for a new access token via HTTP GET."""
-        response = self._http_client.get(
-            f"{self._refresh_url}?refresh_token={self._refresh_token}",
+        """Exchange the refresh token for a new access token via HTTP POST."""
+        # The token goes in the body, not the query string, so it stays out of access logs
+        # and httpx2's INFO request log line (which includes the full URL).
+        response = self._http_client.post(
+            self._refresh_url,
+            json={"refresh_token": self._refresh_token},
         )
         response.raise_for_status()
         token = response.json()["access_token"]

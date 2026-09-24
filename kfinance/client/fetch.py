@@ -223,8 +223,11 @@ class KFinanceApiClient:
 
     def _get_access_token_via_refresh_token(self) -> str:
         """Get an access token via oauth by submitting a refresh token."""
-        response = self._http_client.get(
-            f"{self.api_host}/oauth2/refresh?refresh_token={self.refresh_token}",
+        # The token goes in the body, not the query string, so it stays out of access logs
+        # and httpx2's INFO request log line (which includes the full URL).
+        response = self._http_client.post(
+            f"{self.api_host}/oauth2/refresh",
+            json={"refresh_token": self.refresh_token},
         )
         response.raise_for_status()
         return response.json().get("access_token")
