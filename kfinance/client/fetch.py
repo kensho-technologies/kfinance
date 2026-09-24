@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from http.cookiejar import CookieJar, DefaultCookiePolicy
 import logging
+import threading
 from time import time
 from typing import Any, Callable, Generator, Optional
 from uuid import uuid4
@@ -135,6 +136,12 @@ class KFinanceApiClient:
         self._batch_id: str | None = None
         self._batch_size: str | None = None
         self._user_permissions: set[Permission] | None = None
+        # Serializes token refreshes across batch request threads. Re-entrant as a safety net:
+        # a refresh calls _refresh_user_permissions -> fetch, which reads access_token again
+        # on the same thread. That read normally sees the new token and skips the lock, but
+        # if the new token already counts as expiring (exp within 60s, or no exp), it
+        # re-enters. A plain Lock would then hang instead of failing.
+        self._access_token_lock = threading.RLock()
         # One client for all requests so connections get pooled and reused.
         # httpx2.Client is documented as safe to share between threads ("It can be shared
         # between threads", httpx2/_client.py), and httpcore2's connection pool only mutates
@@ -192,18 +199,27 @@ class KFinanceApiClient:
         """Returns the client access token.
 
         If the token is not set or has expired, a new token gets fetched and returned.
+        Safe to call from the batch request threads: only one of them refreshes, and the
+        others reuse its token.
         """
-        if self._access_token is None or time() + 60 > self._access_token_expiry:
-            self._access_token = self._access_token_refresh_func()
-            self._access_token_expiry = jwt.decode(
-                self._access_token,
-                # nosemgrep:  python.jwt.security.unverified-jwt-decode.unverified-jwt-decode
-                options={"verify_signature": False},
-            ).get("exp", 0)
-            # When the access token gets refreshed, also refresh user permissions in case they
-            # have been updated.
-            self._refresh_user_permissions()
+        if self._access_token_needs_refresh():
+            with self._access_token_lock:
+                # Another thread may have refreshed the token while this one waited.
+                if self._access_token_needs_refresh():
+                    self._access_token = self._access_token_refresh_func()
+                    self._access_token_expiry = jwt.decode(
+                        self._access_token,
+                        # nosemgrep:  python.jwt.security.unverified-jwt-decode.unverified-jwt-decode
+                        options={"verify_signature": False},
+                    ).get("exp", 0)
+                    # When the access token gets refreshed, also refresh user permissions in
+                    # case they have been updated.
+                    self._refresh_user_permissions()
+        assert self._access_token is not None
         return self._access_token
+
+    def _access_token_needs_refresh(self) -> bool:
+        return self._access_token is None or time() + 60 > self._access_token_expiry
 
     def _get_access_token_via_refresh_token(self) -> str:
         """Get an access token via oauth by submitting a refresh token."""

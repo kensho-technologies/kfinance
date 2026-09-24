@@ -1,6 +1,10 @@
+from datetime import datetime
+import threading
+import time
 from unittest import TestCase
 from unittest.mock import MagicMock
 
+import jwt
 from pydantic import ValidationError
 import pytest
 from respx import Router
@@ -880,3 +884,46 @@ class TestHttpClientLifecycle:
         mock_client.kfinance_api_client.fetch_info(company_id=2)
 
         assert "cookie" not in second.calls.last.request.headers
+
+
+class TestAccessTokenRefresh:
+    def test_concurrent_reads_refresh_once(self, httpx2_mock: Router) -> None:
+        """
+        GIVEN an expired access token
+        WHEN 10 threads read access_token at the same time (as batch requests do)
+        THEN the token is refreshed exactly once and every thread gets the new token
+
+        Without the lock, every thread refreshes. The refresh also re-fetches permissions
+        (mocked below), which reads access_token again on the refreshing thread. The join
+        timeout makes a deadlock fail the test instead of hanging the suite.
+        """
+        api_client = KFinanceApiClient(refresh_token="fake_refresh_token")
+        new_token = jwt.encode(
+            {"exp": int(datetime(2100, 1, 1).timestamp())},
+            "test-secret-at-least-32-bytes-long",
+            algorithm="HS256",
+        )
+        refresh_calls = 0
+
+        def slow_refresh() -> str:
+            nonlocal refresh_calls
+            refresh_calls += 1
+            time.sleep(0.05)  # give the other threads time to pile up behind the refresh
+            return new_token
+
+        api_client._access_token_refresh_func = slow_refresh  # noqa: SLF001
+        httpx2_mock.get(f"{api_client.url_base}users/permissions").respond(json={"permissions": []})
+
+        tokens: list[str] = []
+        threads = [
+            threading.Thread(target=lambda: tokens.append(api_client.access_token), daemon=True)
+            for _ in range(10)
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=5)
+
+        assert not any(thread.is_alive() for thread in threads), "access_token deadlocked"
+        assert refresh_calls == 1
+        assert tokens == [new_token] * 10
