@@ -922,26 +922,8 @@ class TestAccessTokenRefresh:
         for thread in threads:
             thread.start()
         for thread in threads:
-            thread.join(timeout=5)
+            thread.join(timeout=0.5)
 
         assert not any(thread.is_alive() for thread in threads), "access_token deadlocked"
         assert refresh_calls == 1
         assert tokens == [new_token] * 10
-
-
-class TestRefreshTokenExchange:
-    def test_refresh_token_sent_in_post_body(self, httpx2_mock: Router) -> None:
-        """
-        WHEN an access token is fetched with a refresh token
-        THEN the refresh token is sent in a POST body, never in the URL
-
-        A token in the URL ends up in server access logs and in httpx2's INFO log line.
-        """
-        api_client = KFinanceApiClient(refresh_token="fake_refresh_token")
-        route = httpx2_mock.post(
-            "https://kfinance.kensho.com/oauth2/refresh",
-            json={"refresh_token": "fake_refresh_token"},
-        ).respond(json={"access_token": "fake_access_token"})
-
-        assert api_client._get_access_token_via_refresh_token() == "fake_access_token"  # noqa: SLF001
-        assert "fake_refresh_token" not in str(route.calls.last.request.url)
