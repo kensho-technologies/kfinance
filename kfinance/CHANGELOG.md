@@ -1,5 +1,8 @@
 # Changelog
 
+## v8.0.2
+- Reject non-string `line_item` values in `get_financial_line_item_from_identifiers` before they reach `.lower()`. A list now returns a clear "one line item per call" validation error instead of an `AttributeError` crash (KFINANCE-MCP-5D).
+
 ## v8.0.1
 - Add source link note to VA estimates tool response so LLMs format values with sources as clickable links.
 
