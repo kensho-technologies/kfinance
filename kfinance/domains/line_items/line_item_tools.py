@@ -142,6 +142,14 @@ class GetFinancialLineItemFromIdentifiersArgs(BaseFinancialLineItemFromIdentifie
         """Custom validator that provides intelligent suggestions for invalid line items."""
         if isinstance(values, dict) and "line_item" in values:
             line_item = values["line_item"]
+            if isinstance(line_item, list):
+                raise ValueError(
+                    "line_item takes one line item per call. Call this tool once per line item."
+                )
+            if not isinstance(line_item, str):
+                raise ValueError(
+                    f"line_item must be a string, got {type(line_item).__name__}"
+                )
             # Use the helper function to validate and provide suggestions
             _smart_line_item_validator(line_item)
         return values

@@ -1,5 +1,8 @@
 # Changelog
 
+## v8.0.1
+- Reject non-string `line_item` values in `get_financial_line_item_from_identifiers` before they reach `.lower()`. A list now returns a clear "one line item per call" validation error instead of an `AttributeError` crash (KFINANCE-MCP-5D).
+
 ## v8.0.0
 - **Breaking:** Replace `requests` and `httpx` with `httpx2`. HTTP errors from `KFinanceApiClient` (and so from the object API, e.g. `Ticker`, `Company`, group objects, and token refresh) are now raised as `httpx2.HTTPStatusError` instead of `requests.exceptions.HTTPError`. Network errors change the same way (e.g. `requests.ConnectionError` -> `httpx2.ConnectError`). LLM tool calling is unaffected.
 - Send the refresh token to `/oauth2/refresh` in a POST body instead of the URL query string, so it no longer appears in access logs or in httpx2's INFO request logs. This also applies to the proxy MCP server; a custom `AUTH_REFRESH_URL` must accept POST.
