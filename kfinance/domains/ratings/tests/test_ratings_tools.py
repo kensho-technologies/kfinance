@@ -1,8 +1,7 @@
 from datetime import datetime, timezone
 
-import httpx
+import httpx2
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.domains.ratings.ratings_models import (
     EntityInfo,
@@ -32,11 +31,9 @@ SPGI_ENTITY_INFO = EntityInfo(
 
 
 @pytest.fixture
-def add_spgi_resolve_entities_mock_resp(httpx_mock: HTTPXMock) -> None:
+def add_spgi_resolve_entities_mock_resp(httpx2_mock) -> None:
     """Add mock response for resolving SPGI identifier."""
-    httpx_mock.add_response(
-        method="POST",
-        url="https://kfinance.kensho.com/api/v1/ratings/resolve_entities/",
+    httpx2_mock.post("https://kfinance.kensho.com/api/v1/ratings/resolve_entities/").respond(
         json={
             "data": {
                 "SPGI": {
@@ -49,17 +46,14 @@ def add_spgi_resolve_entities_mock_resp(httpx_mock: HTTPXMock) -> None:
                     "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
                 },
             }
-        },
-        is_optional=True,
+        }
     )
 
 
 @pytest.fixture
-def add_spgi_ratings_mock_resp(httpx_mock: HTTPXMock) -> None:
+def add_spgi_ratings_mock_resp(httpx2_mock) -> None:
     """Add mock response for SPGI issuer ratings."""
-    httpx_mock.add_response(
-        method="POST",
-        url="https://kfinance.kensho.com/api/v1/ratings/issuer_ratings/",
+    httpx2_mock.post("https://kfinance.kensho.com/api/v1/ratings/issuer_ratings/").respond(
         json={
             "results": {
                 "21719": {
@@ -84,17 +78,14 @@ def add_spgi_ratings_mock_resp(httpx_mock: HTTPXMock) -> None:
                 }
             },
             "errors": {},
-        },
-        is_optional=True,
+        }
     )
 
 
 @pytest.fixture
-def add_security_ratings_mock_resp(httpx_mock: HTTPXMock) -> None:
+def add_security_ratings_mock_resp(httpx2_mock) -> None:
     """Add mock response for security ratings."""
-    httpx_mock.add_response(
-        method="POST",
-        url="https://kfinance.kensho.com/api/v1/ratings/security_ratings/",
+    httpx2_mock.post("https://kfinance.kensho.com/api/v1/ratings/security_ratings/").respond(
         json={
             "results": {
                 "123456789": {
@@ -117,8 +108,7 @@ def add_security_ratings_mock_resp(httpx_mock: HTTPXMock) -> None:
                 }
             },
             "errors": {},
-        },
-        is_optional=True,
+        }
     )
 
 
@@ -146,7 +136,7 @@ class TestRatings:
 
     @pytest.mark.asyncio
     async def test_fetch_issuer_ratings_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_spgi_ratings_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_ratings_mock_resp: None
     ) -> None:
         """
         WHEN we request SPGI's issuer ratings (using entity_id)
@@ -164,7 +154,7 @@ class TestRatings:
     @pytest.mark.asyncio
     async def test_get_issuer_ratings_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_resolve_entities_mock_resp: None,
         add_spgi_ratings_mock_resp: None,
     ) -> None:
@@ -191,17 +181,15 @@ class TestRatings:
     @pytest.mark.asyncio
     async def test_get_issuer_ratings_with_api_error(
         self,
-        httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx_client: httpx2.AsyncClient,
+        httpx2_mock,
     ) -> None:
         """
         WHEN the ratings API returns an error
         THEN the error identifies what the original identifier resolved to.
         """
         # Mock entity resolution
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/ratings/resolve_entities/",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/ratings/resolve_entities/").respond(
             json={
                 "data": {
                     "USA": {
@@ -211,17 +199,15 @@ class TestRatings:
                         "country": "USA",
                     }
                 }
-            },
+            }
         )
 
         # Mock ratings API error
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/ratings/issuer_ratings/",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/ratings/issuer_ratings/").respond(
             json={
                 "results": {},
                 "errors": {"4217533": "No results found."},
-            },
+            }
         )
 
         expected_resp = GetIssuerRatingsFromIdentifiersResp.create(
@@ -243,23 +229,21 @@ class TestRatings:
     @pytest.mark.asyncio
     async def test_all_identifiers_fail_resolution(
         self,
-        httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx_client: httpx2.AsyncClient,
+        httpx2_mock,
     ) -> None:
         """
         WHEN all identifiers fail resolution
         THEN we get back an empty results dict and errors.
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/ratings/resolve_entities/",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/ratings/resolve_entities/").respond(
             json={
                 "data": {
                     "non-existent": {
                         "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
                     }
                 }
-            },
+            }
         )
 
         expected_resp = GetIssuerRatingsFromIdentifiersResp.create(
@@ -279,7 +263,7 @@ class TestRatings:
 
     @pytest.mark.asyncio
     async def test_fetch_security_ratings_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_security_ratings_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_security_ratings_mock_resp: None
     ) -> None:
         """
         WHEN we request security ratings (using security_id)
@@ -316,16 +300,14 @@ class TestRatings:
     @pytest.mark.asyncio
     async def test_get_security_ratings_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx_client: httpx2.AsyncClient,
+        httpx2_mock,
     ) -> None:
         """
         WHEN we request ratings for a security and a non-existent identifier
         THEN we get back the security's ratings and an error for the non-existent identifier.
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/ratings/security_ratings/",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/ratings/security_ratings/").respond(
             json={
                 "results": {
                     "123456789": {
@@ -348,7 +330,7 @@ class TestRatings:
                     }
                 },
                 "errors": {"invalid-id": "No ratings found for identifier invalid-id"},
-            },
+            }
         )
 
         expected_ratings = SecurityRatings(

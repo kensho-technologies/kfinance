@@ -1,7 +1,7 @@
 from textwrap import dedent
 from typing import Annotated, Any, Literal, Type, cast
 
-import httpx
+import httpx2
 from pydantic import BaseModel, BeforeValidator, Field, model_validator
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
@@ -140,7 +140,7 @@ class GetFinancialStatementFromIdentifiers(KfinanceTool):
 async def get_financial_statement_from_identifiers(
     identifiers: list[str],
     statement: StatementType,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     period_type: PeriodType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,
@@ -221,7 +221,7 @@ async def get_financial_statement_from_identifiers(
 async def fetch_statements_from_company_ids(
     company_ids: list[int],
     statement_type: str,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     period_type: PeriodType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,

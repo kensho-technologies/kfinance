@@ -1,6 +1,5 @@
-import httpx
+import httpx2
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.client.models.response_models import PostResponse
 from kfinance.conftest import FAKE_COMPANY_1_ID_TRIPLE, FAKE_COMPANY_2_ID_TRIPLE, SPGI_ID_TRIPLE
@@ -85,19 +84,16 @@ class TestStatements:
     }
 
     @pytest.fixture
-    def add_spgi_statements_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+    def add_spgi_statements_mock_resp(self, httpx2_mock) -> None:
         """Add mock response for SPGI statements."""
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/statements/",
-            json={"results": {str(SPGI_ID_TRIPLE.company_id): self.statement_resp}, "errors": {}},
-            is_optional=True,
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/statements/").respond(
+            json={"results": {str(SPGI_ID_TRIPLE.company_id): self.statement_resp}, "errors": {}}
         )
 
     @pytest.mark.asyncio
     async def test_fetch_statements_from_company_ids(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_statements_mock_resp: None,
     ) -> None:
         """
@@ -122,7 +118,7 @@ class TestStatements:
     @pytest.mark.asyncio
     async def test_get_financial_statement_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_statements_mock_resp: None,
     ) -> None:
         """
@@ -149,19 +145,17 @@ class TestStatements:
 
     @pytest.mark.asyncio
     async def test_api_returns_error_for_company(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns an error in the errors dict for a company_id
         THEN the error is mapped back to the identifier and included in the response
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/statements/",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/statements/").respond(
             json={
                 "results": {},
                 "errors": {str(SPGI_ID_TRIPLE.company_id): "No results found."},
-            },
+            }
         )
 
         expected_resp = GetFinancialStatementFromIdentifiersResp(
@@ -180,9 +174,7 @@ class TestStatements:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-    ) -> None:
+    async def test_most_recent_request(self, httpx_client: httpx2.AsyncClient, httpx2_mock) -> None:
         """
         WHEN we request most recent statements for multiple companies
         THEN we only get back the most recent statement for each company
@@ -191,10 +183,8 @@ class TestStatements:
         company_ids = [1, 2]
 
         # Mock the statements response for both companies
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/statements/",
-            json={"results": {"1": self.statement_resp, "2": self.statement_resp}, "errors": {}},
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/statements/").respond(
+            json={"results": {"1": self.statement_resp, "2": self.statement_resp}, "errors": {}}
         )
 
         expected_single_company_response = StatementsResp.model_validate(
@@ -230,7 +220,7 @@ class TestStatements:
     @pytest.mark.asyncio
     async def test_all_identifiers_fail_resolution(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
     ) -> None:
         """
         WHEN all identifiers fail resolution

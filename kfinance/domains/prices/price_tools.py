@@ -2,7 +2,7 @@ from datetime import date
 from textwrap import dedent
 from typing import Type
 
-import httpx
+import httpx2
 from pydantic import BaseModel, Field
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
@@ -109,7 +109,7 @@ class GetHistoryMetadataFromIdentifiers(KfinanceTool):
 
 async def get_prices_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     start_date: date | None = None,
     end_date: date | None = None,
     periodicity: Periodicity = Periodicity.day,
@@ -163,7 +163,7 @@ async def get_prices_from_identifiers(
 
 async def fetch_price_history_from_trading_item_id(
     trading_item_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     start_date: date | None = None,
     end_date: date | None = None,
     periodicity: Periodicity = Periodicity.day,
@@ -182,7 +182,7 @@ async def fetch_price_history_from_trading_item_id(
 
 async def get_history_metadata_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetHistoryMetadataFromIdentifiersResp:
     """Fetch history metadata for all identifiers."""
 
@@ -222,7 +222,7 @@ async def get_history_metadata_from_identifiers(
 
 async def fetch_history_metadata_from_trading_item_id(
     trading_item_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> HistoryMetadataResp:
     """Fetch history metadata for one trading_item_id."""
     url = f"/pricing/{trading_item_id}/metadata"

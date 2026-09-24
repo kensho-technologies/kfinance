@@ -5,8 +5,7 @@ from contextvars import ContextVar
 from queue import Queue
 from typing import Any, Generator
 
-import httpx
-from httpx import Request, Response
+import httpx2
 
 from kfinance.client.fetch import KFinanceApiClient
 
@@ -17,19 +16,21 @@ _endpoint_tracker_queue: ContextVar[Queue[str] | None] = ContextVar(
 )
 
 
-class KfinanceBearerAuth(httpx.Auth):
+class KfinanceBearerAuth(httpx2.Auth):
     def __init__(self, api_client: KFinanceApiClient) -> None:
         """"""
         self._api_client = api_client
 
-    def auth_flow(self, request: httpx.Request) -> Generator[Request, Response, None]:
+    def auth_flow(
+        self, request: httpx2.Request
+    ) -> Generator[httpx2.Request, httpx2.Response, None]:
         """Inject access token into auth header"""
         request.headers["Authorization"] = f"Bearer {self._api_client.access_token}"
         yield request
 
 
-class KfinanceHttpxClient(httpx.AsyncClient):
-    """httpx.AsyncClient subclass that automatically prefixes URLs with a base URL and includes endpoint tracking."""
+class KfinanceHttpxClient(httpx2.AsyncClient):
+    """httpx2.AsyncClient subclass that automatically prefixes URLs with a base URL and includes endpoint tracking."""
 
     def __init__(self, api_client: KFinanceApiClient) -> None:
         """"""
@@ -81,7 +82,7 @@ class KfinanceHttpxClient(httpx.AsyncClient):
             return url
         return f"{self._kfinance_base_url}/{url.lstrip('/')}"
 
-    async def request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:  # type: ignore[override]
+    async def request(self, method: str, url: str, **kwargs: Any) -> httpx2.Response:  # type: ignore[override]
         """Override request to prepend base_url to relative URLs and track endpoints."""
         full_url = self._build_url(url)
 

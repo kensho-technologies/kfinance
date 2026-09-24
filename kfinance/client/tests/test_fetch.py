@@ -1,9 +1,13 @@
+from datetime import datetime
+import threading
+import time
 from unittest import TestCase
 from unittest.mock import MagicMock
 
+import jwt
 from pydantic import ValidationError
 import pytest
-from requests_mock import Mocker
+from respx import Router
 
 from kfinance.client.fetch import KFinanceApiClient
 from kfinance.client.kfinance import Client
@@ -586,7 +590,7 @@ class TestMarketCap:
 
 
 class TestFetchCompaniesFromBusinessRelationship:
-    def test_fetch_business_relationships(self, requests_mock: Mocker, mock_client: Client) -> None:
+    def test_fetch_business_relationships(self, httpx2_mock: Router, mock_client: Client) -> None:
         """
         GIVEN a business relationship request
         WHEN the api returns a response
@@ -609,10 +613,9 @@ class TestFetchCompaniesFromBusinessRelationship:
             ],
         )
 
-        requests_mock.get(
-            url=f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{BusinessRelationshipType.supplier}",
-            json=http_resp,
-        )
+        httpx2_mock.get(
+            f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{BusinessRelationshipType.supplier}",
+        ).respond(json=http_resp)
 
         resp = mock_client.kfinance_api_client.fetch_companies_from_business_relationship(
             company_id=SPGI_COMPANY_ID, relationship_type=BusinessRelationshipType.supplier
@@ -621,7 +624,7 @@ class TestFetchCompaniesFromBusinessRelationship:
 
 
 class TestFetchCompanyDescriptions:
-    def test_fetch_company_descriptions(self, requests_mock: Mocker, mock_client: Client) -> None:
+    def test_fetch_company_descriptions(self, httpx2_mock: Router, mock_client: Client) -> None:
         """
         GIVEN a request to fetch company descriptions
         WHEN the api returns a response
@@ -639,10 +642,9 @@ class TestFetchCompanyDescriptions:
             description="S&P Global Inc. (S&P Global), together... [description]",
         )
 
-        requests_mock.get(
-            url=f"{mock_client.kfinance_api_client.url_base}info/{SPGI_COMPANY_ID}/descriptions",
-            json=http_resp,
-        )
+        httpx2_mock.get(
+            f"{mock_client.kfinance_api_client.url_base}info/{SPGI_COMPANY_ID}/descriptions",
+        ).respond(json=http_resp)
 
         resp = mock_client.kfinance_api_client.fetch_company_descriptions(
             company_id=SPGI_COMPANY_ID
@@ -651,7 +653,7 @@ class TestFetchCompanyDescriptions:
 
 
 class TestFetchCompanyOtherNames:
-    def test_fetch_company_other_names(self, requests_mock: Mocker, mock_client: Client) -> None:
+    def test_fetch_company_other_names(self, httpx2_mock: Router, mock_client: Client) -> None:
         """
         GIVEN a request to fetch a company's other names (alternate, historical, and native)
         WHEN the api returns a response
@@ -682,10 +684,9 @@ class TestFetchCompanyOtherNames:
             native_names=native_names,
         )
 
-        requests_mock.get(
-            url=f"{mock_client.kfinance_api_client.url_base}info/{SPGI_COMPANY_ID}/names",
-            json=http_resp,
-        )
+        httpx2_mock.get(
+            f"{mock_client.kfinance_api_client.url_base}info/{SPGI_COMPANY_ID}/names",
+        ).respond(json=http_resp)
 
         resp = mock_client.kfinance_api_client.fetch_company_other_names(company_id=SPGI_COMPANY_ID)
 
@@ -693,7 +694,7 @@ class TestFetchCompanyOtherNames:
 
 
 class TestFetchIssuerRatings:
-    def test_fetch_issuer_ratings(self, requests_mock: Mocker, mock_client: Client) -> None:
+    def test_fetch_issuer_ratings(self, httpx2_mock: Router, mock_client: Client) -> None:
         """
         GIVEN a request to fetch issuer ratings for entity IDs
         WHEN the API returns a response
@@ -750,10 +751,9 @@ class TestFetchIssuerRatings:
 
         expected_resp = IssuerRatingsResp.model_validate(http_resp)
 
-        requests_mock.post(
-            url=f"{mock_client.kfinance_api_client.url_base}ratings/issuer_ratings/",
-            json=http_resp,
-        )
+        httpx2_mock.post(
+            f"{mock_client.kfinance_api_client.url_base}ratings/issuer_ratings/",
+        ).respond(json=http_resp)
 
         resp = mock_client.kfinance_api_client.fetch_issuer_ratings(entity_ids=entity_ids)
 
@@ -765,7 +765,7 @@ class TestFetchIssuerRatings:
 
 
 class TestFetchSecurityRatings:
-    def test_fetch_security_ratings(self, requests_mock: Mocker, mock_client: Client) -> None:
+    def test_fetch_security_ratings(self, httpx2_mock: Router, mock_client: Client) -> None:
         """
         GIVEN a request to fetch ratings for security IDs
         WHEN the API returns a response
@@ -818,10 +818,9 @@ class TestFetchSecurityRatings:
 
         expected_resp = SecurityRatingsResp.model_validate(http_resp)
 
-        requests_mock.post(
-            url=f"{mock_client.kfinance_api_client.url_base}ratings/security_ratings/",
-            json=http_resp,
-        )
+        httpx2_mock.post(
+            f"{mock_client.kfinance_api_client.url_base}ratings/security_ratings/",
+        ).respond(json=http_resp)
 
         resp = mock_client.kfinance_api_client.fetch_security_ratings(security_ids=security_ids)
 
@@ -830,3 +829,101 @@ class TestFetchSecurityRatings:
         assert "123456789" in resp.results
         assert "XXXXX" in resp.results
         assert resp.errors == {}
+
+
+class TestFetchRedirects:
+    def test_fetch_follows_redirects(self, httpx2_mock: Router, mock_client: Client) -> None:
+        """
+        GIVEN an endpoint that responds with a redirect (here a 307 to the same path plus a
+            trailing slash)
+        WHEN fetch is called
+        THEN the redirect is followed and the final response is returned
+
+        The client used to be built on requests, which follows redirects by default. httpx2
+        does not (follow_redirects defaults to False), and its raise_for_status() raises
+        on a 3xx. Without follow_redirects=True in fetch.py, this call would raise
+        httpx2.HTTPStatusError, where it used to succeed.
+        """
+        url_base = mock_client.kfinance_api_client.url_base
+        httpx2_mock.get(f"{url_base}info/{SPGI_COMPANY_ID}").respond(
+            status_code=307, headers={"location": f"{url_base}info/{SPGI_COMPANY_ID}/"}
+        )
+        httpx2_mock.get(f"{url_base}info/{SPGI_COMPANY_ID}/").respond(json={"name": "S&P Global"})
+
+        assert mock_client.kfinance_api_client.fetch_info(company_id=SPGI_COMPANY_ID) == {
+            "name": "S&P Global"
+        }
+
+
+class TestHttpClientLifecycle:
+    def test_context_manager_closes_http_client(self) -> None:
+        """
+        WHEN a KFinanceApiClient is used as a context manager
+        THEN its pooled HTTP client is closed on exit
+        """
+        with KFinanceApiClient(refresh_token="fake_refresh_token") as api_client:
+            assert not api_client._http_client.is_closed  # noqa: SLF001
+        assert api_client._http_client.is_closed  # noqa: SLF001
+
+    def test_cookies_do_not_persist(self, httpx2_mock: Router, mock_client: Client) -> None:
+        """
+        GIVEN a response that sets a cookie
+        WHEN the next request is made with the same client
+        THEN the cookie is not sent back
+
+        The old requests-based client used a fresh session per request, so cookies never
+        carried over. A shared httpx2.Client would keep them unless told not to.
+        """
+        url_base = mock_client.kfinance_api_client.url_base
+        httpx2_mock.get(f"{url_base}info/1").respond(
+            json={}, headers={"set-cookie": "sticky=1; Path=/"}
+        )
+        second = httpx2_mock.get(f"{url_base}info/2").respond(json={})
+
+        mock_client.kfinance_api_client.fetch_info(company_id=1)
+        mock_client.kfinance_api_client.fetch_info(company_id=2)
+
+        assert "cookie" not in second.calls.last.request.headers
+
+
+class TestAccessTokenRefresh:
+    def test_concurrent_reads_refresh_once(self, httpx2_mock: Router) -> None:
+        """
+        GIVEN an expired access token
+        WHEN 10 threads read access_token at the same time (as batch requests do)
+        THEN the token is refreshed exactly once and every thread gets the new token
+
+        Without the lock, every thread refreshes. The refresh also re-fetches permissions
+        (mocked below), which reads access_token again on the refreshing thread. The join
+        timeout makes a deadlock fail the test instead of hanging the suite.
+        """
+        api_client = KFinanceApiClient(refresh_token="fake_refresh_token")
+        new_token = jwt.encode(
+            {"exp": int(datetime(2100, 1, 1).timestamp())},
+            "test-secret-at-least-32-bytes-long",
+            algorithm="HS256",
+        )
+        refresh_calls = 0
+
+        def slow_refresh() -> str:
+            nonlocal refresh_calls
+            refresh_calls += 1
+            time.sleep(0.05)  # give the other threads time to pile up behind the refresh
+            return new_token
+
+        api_client._access_token_refresh_func = slow_refresh  # noqa: SLF001
+        httpx2_mock.get(f"{api_client.url_base}users/permissions").respond(json={"permissions": []})
+
+        tokens: list[str] = []
+        threads = [
+            threading.Thread(target=lambda: tokens.append(api_client.access_token), daemon=True)
+            for _ in range(10)
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=0.5)
+
+        assert not any(thread.is_alive() for thread in threads), "access_token deadlocked"
+        assert refresh_calls == 1
+        assert tokens == [new_token] * 10

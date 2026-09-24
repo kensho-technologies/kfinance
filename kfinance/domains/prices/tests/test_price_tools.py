@@ -1,6 +1,5 @@
-import httpx
+import httpx2
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.client.models.date_and_period_models import Periodicity
 from kfinance.conftest import (
@@ -45,19 +44,16 @@ class TestPrices:
     }
 
     @pytest.fixture
-    def add_spgi_prices_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+    def add_spgi_prices_mock_resp(self, httpx2_mock) -> None:
         """Add mock response for SPGI prices."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/none/none/day/adjusted",
-            json=self.prices_resp,
-            is_optional=True,
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/none/none/day/adjusted"
+        ).respond(json=self.prices_resp)
 
     @pytest.mark.asyncio
     async def test_fetch_price_history_from_trading_item_id(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_prices_mock_resp: None,
     ) -> None:
         """
@@ -76,7 +72,7 @@ class TestPrices:
     @pytest.mark.asyncio
     async def test_get_prices_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_prices_mock_resp: None,
     ) -> None:
         """
@@ -100,9 +96,7 @@ class TestPrices:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-    ) -> None:
+    async def test_most_recent_request(self, httpx_client: httpx2.AsyncClient, httpx2_mock) -> None:
         """
         WHEN we request most recent prices for multiple companies
         THEN we only get back the most recent prices for each company
@@ -112,11 +106,9 @@ class TestPrices:
 
         # Mock the price response for both companies
         for trading_item_id in company_ids:
-            httpx_mock.add_response(
-                method="GET",
-                url=f"https://kfinance.kensho.com/api/v1/pricing/{trading_item_id}/none/none/day/adjusted",
-                json=self.prices_resp,
-            )
+            httpx2_mock.get(
+                f"https://kfinance.kensho.com/api/v1/pricing/{trading_item_id}/none/none/day/adjusted"
+            ).respond(json=self.prices_resp)
 
         expected_single_company_response = PriceHistory.model_validate(
             {
@@ -151,8 +143,8 @@ class TestPrices:
     @pytest.mark.asyncio
     async def test_get_prices_with_date_range(
         self,
-        httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx_client: httpx2.AsyncClient,
+        httpx2_mock,
     ) -> None:
         """
         WHEN we request prices with a specific date range and periodicity
@@ -164,11 +156,9 @@ class TestPrices:
         end_date = date(2024, 4, 30)
         periodicity = Periodicity.week
 
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/2024-04-01/2024-04-30/week/unadjusted",
-            json=self.prices_resp,
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/2024-04-01/2024-04-30/week/unadjusted"
+        ).respond(json=self.prices_resp)
 
         resp = await fetch_price_history_from_trading_item_id(
             trading_item_id=SPGI_TRADING_ITEM_ID,
@@ -193,19 +183,16 @@ class TestHistoryMetadata:
     }
 
     @pytest.fixture
-    def add_spgi_metadata_mock_resp(self, httpx_mock: HTTPXMock) -> None:
+    def add_spgi_metadata_mock_resp(self, httpx2_mock) -> None:
         """Add mock response for SPGI history metadata."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/metadata",
-            json=self.metadata_resp,
-            is_optional=True,
-        )
+        httpx2_mock.get(
+            f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/metadata"
+        ).respond(json=self.metadata_resp)
 
     @pytest.mark.asyncio
     async def test_fetch_history_metadata_from_trading_item_id(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_metadata_mock_resp: None,
     ) -> None:
         """
@@ -224,7 +211,7 @@ class TestHistoryMetadata:
     @pytest.mark.asyncio
     async def test_get_history_metadata_from_identifiers(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_metadata_mock_resp: None,
     ) -> None:
         """

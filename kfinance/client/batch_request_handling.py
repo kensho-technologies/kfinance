@@ -4,7 +4,7 @@ import functools
 import threading
 from typing import Any, Callable, Hashable, Iterable, Protocol, Sized, Type, TypeVar
 
-from requests.exceptions import HTTPError
+from httpx2 import HTTPStatusError
 
 from kfinance.client.fetch import KFinanceApiClient
 
@@ -156,7 +156,7 @@ def resolve_future_with_error_handling(future: Future) -> Any:
     """
     try:
         return future.result()
-    except HTTPError as http_err:
+    except HTTPStatusError as http_err:
         error_code = http_err.response.status_code
         if error_code == 400:
             return None

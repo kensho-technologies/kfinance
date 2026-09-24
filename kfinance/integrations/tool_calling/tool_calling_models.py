@@ -3,7 +3,7 @@ import json
 from typing import Annotated, Any, Callable, Coroutine, Dict, Generic, Literal, Type, TypeVar
 
 from asyncer import syncify
-from httpx import HTTPStatusError
+from httpx2 import HTTPStatusError
 from langchain_core.tools import BaseTool
 from pydantic import (
     BaseModel,

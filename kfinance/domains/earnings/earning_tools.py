@@ -1,7 +1,7 @@
 from textwrap import dedent
 from typing import Type
 
-import httpx
+import httpx2
 from pydantic import BaseModel, Field
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
@@ -153,7 +153,7 @@ class GetNextEarningsFromIdentifiers(KfinanceTool):
 
 async def get_earnings_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetEarningsFromIdentifiersResp:
     """Fetch earnings for all identifiers."""
 
@@ -192,7 +192,7 @@ async def get_earnings_from_identifiers(
 
 async def get_latest_earnings_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetNextOrLatestEarningsFromIdentifiersResp:
     """Fetch the latest (most recent) earnings call for all identifiers."""
     earnings_responses = await get_earnings_from_identifiers(
@@ -215,7 +215,7 @@ async def get_latest_earnings_from_identifiers(
 
 async def get_next_earnings_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetNextOrLatestEarningsFromIdentifiersResp:
     """Fetch the next scheduled earnings call for all identifiers."""
     earnings_responses = await get_earnings_from_identifiers(
@@ -238,7 +238,7 @@ async def get_next_earnings_from_identifiers(
 
 async def fetch_earnings_from_company_id(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> EarningsCallResp:
     """Fetch earnings for one company_id."""
     url = f"/earnings/{company_id}"
@@ -249,7 +249,7 @@ async def fetch_earnings_from_company_id(
 
 async def get_transcript_from_key_dev_id(
     key_dev_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetTranscriptFromKeyDevIdResp:
     """Fetch raw transcript text for a key_dev_id."""
     url = f"/transcript/{key_dev_id}"

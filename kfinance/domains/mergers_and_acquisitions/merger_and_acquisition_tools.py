@@ -2,7 +2,7 @@ from datetime import date
 from textwrap import dedent
 from typing import Type
 
-import httpx
+import httpx2
 from pydantic import BaseModel, Field
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
@@ -139,7 +139,7 @@ class GetMergersInfoFromTransactionIds(KfinanceTool):
 
 async def get_mergers_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     start_date: date | None = None,
     end_date: date | None = None,
 ) -> GetMergersFromIdentifiersResp:
@@ -182,7 +182,7 @@ async def get_mergers_from_identifiers(
 
 async def fetch_mergers_from_company_id(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     start_date: date | None = None,
     end_date: date | None = None,
 ) -> MergersResp:
@@ -200,7 +200,7 @@ async def get_mergers_info_from_transaction_ids(
     transaction_ids: list[int],
     include_advisors: bool,
     include_comments: bool,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> MergersInfo:
     """Fetch detailed merger info for a transaction ID."""
     resp = await httpx_client.post(
