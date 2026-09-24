@@ -78,6 +78,7 @@ DEFAULT_API_VERSION: int = 1
 DEFAULT_OKTA_HOST: str = "https://kensho.okta.com"
 DEFAULT_OKTA_AUTH_SERVER: str = "default"
 DEFAULT_MAX_WORKERS: int = 10
+DEFAULT_KEYPAIR_TOKEN_EXPIRY_MINUTES: int = 60
 
 
 class KFinanceApiClient:
@@ -91,6 +92,7 @@ class KFinanceApiClient:
         api_version: int = DEFAULT_API_VERSION,
         okta_host: str = DEFAULT_OKTA_HOST,
         okta_auth_server: str = DEFAULT_OKTA_AUTH_SERVER,
+        keypair_token_expiry_minutes: int = DEFAULT_KEYPAIR_TOKEN_EXPIRY_MINUTES,
     ):
         """Configuration of KFinance Client.
 
@@ -112,6 +114,9 @@ class KFinanceApiClient:
         :type okta_host: str
         :param okta_auth_server: the okta route for authentication
         :type okta_auth_server: str
+        :param keypair_token_expiry_minutes: how long the client-assertion JWT used for keypair
+        auth is valid for, in minutes
+        :type keypair_token_expiry_minutes: int
         """
         if refresh_token is not None:
             self.refresh_token = refresh_token
@@ -128,6 +133,7 @@ class KFinanceApiClient:
         self.api_version = api_version
         self.okta_host = okta_host
         self.okta_auth_server = okta_auth_server
+        self.keypair_token_expiry_minutes = keypair_token_expiry_minutes
         self._thread_pool = thread_pool
         self.url_base = f"{self.api_host}/api/v{self.api_version}/"
         self._access_token_expiry: Any = 0
@@ -238,7 +244,7 @@ class KFinanceApiClient:
         encoded = jwt.encode(
             {
                 "aud": f"{self.okta_host}/oauth2/{self.okta_auth_server}/v1/token",
-                "exp": iat + (60 * 60),  # expire in 60 minutes
+                "exp": iat + (self.keypair_token_expiry_minutes * 60),
                 "iat": iat,
                 "sub": self.client_id,
                 "iss": self.client_id,

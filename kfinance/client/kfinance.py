@@ -20,6 +20,7 @@ from kfinance.client.batch_request_handling import add_methods_of_singular_class
 from kfinance.client.fetch import (
     DEFAULT_API_HOST,
     DEFAULT_API_VERSION,
+    DEFAULT_KEYPAIR_TOKEN_EXPIRY_MINUTES,
     DEFAULT_OKTA_AUTH_SERVER,
     DEFAULT_OKTA_HOST,
     KFinanceApiClient,
@@ -1807,6 +1808,7 @@ class Client:
         api_version: int = DEFAULT_API_VERSION,
         okta_host: str = DEFAULT_OKTA_HOST,
         okta_auth_server: str = DEFAULT_OKTA_AUTH_SERVER,
+        keypair_token_expiry_minutes: int = DEFAULT_KEYPAIR_TOKEN_EXPIRY_MINUTES,
     ):
         """Initialization of the client.
 
@@ -1828,6 +1830,9 @@ class Client:
         :type okta_host: str
         :param okta_auth_server: the okta route for authentication
         :type okta_auth_server: str
+        :param keypair_token_expiry_minutes: how long the client-assertion JWT used for keypair
+        auth is valid for, in minutes
+        :type keypair_token_expiry_minutes: int
         """
 
         # method 1 refresh token
@@ -1849,6 +1854,7 @@ class Client:
                 okta_host=okta_host,
                 okta_auth_server=okta_auth_server,
                 thread_pool=thread_pool,
+                keypair_token_expiry_minutes=keypair_token_expiry_minutes,
             )
         # method 3 automatic login getting a refresh token
         else:
