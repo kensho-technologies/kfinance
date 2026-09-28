@@ -16,7 +16,10 @@ from kfinance.domains.estimates.estimates_tools import (
     BaseEstimatesFromIdentifiersArgs,
 )
 from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata, CalendarType
-from kfinance.domains.line_items.response_notes import insert_fiscal_period_notes
+from kfinance.domains.line_items.response_notes import (
+    insert_fiscal_period_notes,
+    insert_source_link_note,
+)
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolRespWithIdInfoAndErrors,
@@ -229,6 +232,8 @@ async def get_visible_alpha_estimates_from_identifiers(
         metadata=metadata,
         data_source="Visible Alpha",
     )
+
+    insert_source_link_note(resp_model)
 
     insert_fiscal_period_notes(
         calendar_type=calendar_type,
