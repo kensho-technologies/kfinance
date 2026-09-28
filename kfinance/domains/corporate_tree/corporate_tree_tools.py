@@ -2,7 +2,7 @@ from collections import Counter
 from textwrap import dedent
 from typing import Type
 
-import httpx
+import httpx2
 from pydantic import BaseModel, Field
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
@@ -80,7 +80,7 @@ class GetUltimateParentPathsFromIdentifiers(KfinanceTool):
 
 async def get_ultimate_parent_paths_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     max_levels_up: int | None = None,
 ) -> GetUltimateParentPathsFromIdentifiersResp:
     """Fetch the ultimate parent paths for all identifiers."""
@@ -121,7 +121,7 @@ async def get_ultimate_parent_paths_from_identifiers(
 
 async def fetch_ultimate_parent_paths(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> UltimateParentPathsResponse:
     """Fetch every path from a single company up to its ultimate parents."""
     resp = await httpx_client.get(url=f"/corporate_tree/{company_id}/ultimate_parent_paths")
@@ -162,7 +162,7 @@ def _cap_paths(
 
 async def fetch_and_cap_ultimate_parent_paths(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     max_levels_up: int | None = None,
 ) -> UltimateParentPathsResponse:
     """Fetch the ultimate parent paths for a single company and cap how far up they run.
@@ -270,7 +270,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
 
 async def search_corporate_tree_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     relationship_type: list[TreeRelationshipType] | None = None,
     country_iso_code: list[str] | None = None,
     name_contains: list[str] | None = None,
@@ -346,7 +346,7 @@ def _node_matches(
 
 async def fetch_and_search_corporate_tree(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     relationship_type: list[TreeRelationshipType] | None = None,
     country_iso_code: list[str] | None = None,
     name_contains: list[str] | None = None,
@@ -402,7 +402,7 @@ async def fetch_and_search_corporate_tree(
 
 async def fetch_corporate_tree(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     include_prior: bool = False,
     max_depth: int | None = None,
 ) -> CorporateTreeResponse:

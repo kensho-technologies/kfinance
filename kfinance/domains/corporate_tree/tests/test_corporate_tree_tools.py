@@ -1,9 +1,9 @@
-import httpx
+import httpx2
 from pydantic import ValidationError
 import pytest
-from pytest_httpx import HTTPXMock
+from respx import Router
 
-from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
+from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE, optional_route
 from kfinance.domains.corporate_tree.corporate_tree_models import TreeRelationshipType
 from kfinance.domains.corporate_tree.corporate_tree_tools import (
     GetUltimateParentPathsFromIdentifiersArgs,
@@ -284,13 +284,11 @@ ULTIMATE_PARENT_PATHS_URL = f"{CORPORATE_TREE_URL}/ultimate_parent_paths"
 class TestFetchCorporateTree:
     @pytest.mark.asyncio
     async def test_fetch_corporate_tree(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN we fetch a corporate tree THEN we get a valid CorporateTreeResponse."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=false",
-            json=SAMPLE_TREE_RESPONSE,
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false").respond(
+            json=SAMPLE_TREE_RESPONSE
         )
 
         resp = await fetch_corporate_tree(
@@ -307,13 +305,11 @@ class TestFetchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_fetch_corporate_tree_with_include_prior_and_max_depth(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN include_prior and max_depth are given THEN both reach the request URL."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=true&max_depth=1",
-            json=SAMPLE_TREE_RESPONSE_TRUNCATED,
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true&max_depth=1").respond(
+            json=SAMPLE_TREE_RESPONSE_TRUNCATED
         )
 
         resp = await fetch_corporate_tree(
@@ -330,14 +326,12 @@ class TestFetchCorporateTree:
 class TestFetchUltimateParentPaths:
     @pytest.mark.asyncio
     async def test_fetch_ultimate_parent_paths(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN we fetch ultimate parent paths THEN each path runs company-first, parent-last."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{API_BASE}/corporate_tree/{MCGRAW_HILL_EDUCATION}/ultimate_parent_paths",
-            json=MULTI_PATHS_RESPONSE,
-        )
+        httpx2_mock.get(
+            f"{API_BASE}/corporate_tree/{MCGRAW_HILL_EDUCATION}/ultimate_parent_paths"
+        ).respond(json=MULTI_PATHS_RESPONSE)
 
         resp = await fetch_ultimate_parent_paths(
             company_id=MCGRAW_HILL_EDUCATION,
@@ -360,16 +354,14 @@ class TestCapUltimateParentPaths:
     """max_levels_up is applied client-side, so these exercise the capping directly."""
 
     @pytest.fixture
-    def multi_paths(self, httpx_mock: HTTPXMock) -> None:
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{API_BASE}/corporate_tree/{MCGRAW_HILL_EDUCATION}/ultimate_parent_paths",
-            json=MULTI_PATHS_RESPONSE,
-        )
+    def multi_paths(self, httpx2_mock: Router) -> None:
+        httpx2_mock.get(
+            f"{API_BASE}/corporate_tree/{MCGRAW_HILL_EDUCATION}/ultimate_parent_paths"
+        ).respond(json=MULTI_PATHS_RESPONSE)
 
     @pytest.mark.asyncio
     async def test_no_max_levels_up_returns_whole_paths(
-        self, httpx_client: httpx.AsyncClient, multi_paths: None
+        self, httpx_client: httpx2.AsyncClient, multi_paths: None
     ) -> None:
         """WHEN max_levels_up is omitted THEN paths run all the way to the ultimate parent."""
         resp = await fetch_and_cap_ultimate_parent_paths(
@@ -381,7 +373,7 @@ class TestCapUltimateParentPaths:
 
     @pytest.mark.asyncio
     async def test_max_levels_up_of_one_returns_the_immediate_parent(
-        self, httpx_client: httpx.AsyncClient, multi_paths: None
+        self, httpx_client: httpx2.AsyncClient, multi_paths: None
     ) -> None:
         """WHEN max_levels_up=1 THEN each path holds the company and whoever directly owns it."""
         resp = await fetch_and_cap_ultimate_parent_paths(
@@ -395,7 +387,7 @@ class TestCapUltimateParentPaths:
 
     @pytest.mark.asyncio
     async def test_max_levels_up_of_two_keeps_both_chains(
-        self, httpx_client: httpx.AsyncClient, multi_paths: None
+        self, httpx_client: httpx2.AsyncClient, multi_paths: None
     ) -> None:
         """WHEN the cut falls above where the chains diverge THEN both paths are returned."""
         resp = await fetch_and_cap_ultimate_parent_paths(
@@ -409,7 +401,7 @@ class TestCapUltimateParentPaths:
 
     @pytest.mark.asyncio
     async def test_a_cut_path_keeps_the_edge_leading_further_up(
-        self, httpx_client: httpx.AsyncClient, multi_paths: None
+        self, httpx_client: httpx2.AsyncClient, multi_paths: None
     ) -> None:
         """WHEN a path is cut short THEN its last element still points above the returned portion.
 
@@ -427,7 +419,7 @@ class TestCapUltimateParentPaths:
 
     @pytest.mark.asyncio
     async def test_max_levels_up_past_the_top_returns_whole_paths(
-        self, httpx_client: httpx.AsyncClient, multi_paths: None
+        self, httpx_client: httpx2.AsyncClient, multi_paths: None
     ) -> None:
         """WHEN max_levels_up exceeds the chain length THEN nothing is cut and nothing collapses."""
         resp = await fetch_and_cap_ultimate_parent_paths(
@@ -439,12 +431,10 @@ class TestCapUltimateParentPaths:
 
     @pytest.mark.asyncio
     async def test_a_company_that_is_its_own_ultimate_parent_is_unaffected(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN a company has no controlling parent THEN its one-element path survives capping."""
-        httpx_mock.add_response(
-            method="GET", url=ULTIMATE_PARENT_PATHS_URL, json=SINGLE_PATH_RESPONSE
-        )
+        httpx2_mock.get(ULTIMATE_PARENT_PATHS_URL).respond(json=SINGLE_PATH_RESPONSE)
 
         resp = await fetch_and_cap_ultimate_parent_paths(
             company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, max_levels_up=1
@@ -456,13 +446,11 @@ class TestCapUltimateParentPaths:
 
     @pytest.mark.asyncio
     async def test_chains_differing_only_by_relationship_type_are_both_kept(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN two chains share their companies but not their relationships THEN both remain."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{API_BASE}/corporate_tree/{KENSHO}/ultimate_parent_paths",
-            json=DUAL_RELATIONSHIP_PATHS_RESPONSE,
+        httpx2_mock.get(f"{API_BASE}/corporate_tree/{KENSHO}/ultimate_parent_paths").respond(
+            json=DUAL_RELATIONSHIP_PATHS_RESPONSE
         )
 
         resp = await fetch_and_cap_ultimate_parent_paths(
@@ -493,12 +481,10 @@ class TestGetUltimateParentPathsArgs:
 class TestGetUltimateParentPaths:
     @pytest.mark.asyncio
     async def test_get_ultimate_parent_paths_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN the tool is called THEN identifiers resolve and the wire model is returned."""
-        httpx_mock.add_response(
-            method="GET", url=ULTIMATE_PARENT_PATHS_URL, json=MULTI_PATHS_RESPONSE
-        )
+        httpx2_mock.get(ULTIMATE_PARENT_PATHS_URL).respond(json=MULTI_PATHS_RESPONSE)
 
         resp = await get_ultimate_parent_paths_from_identifiers(
             identifiers=["SPGI"], httpx_client=httpx_client
@@ -510,12 +496,10 @@ class TestGetUltimateParentPaths:
 
     @pytest.mark.asyncio
     async def test_get_ultimate_parent_paths_for_company_with_no_parent(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN a company has no controlling parent THEN a single one-element path is returned."""
-        httpx_mock.add_response(
-            method="GET", url=ULTIMATE_PARENT_PATHS_URL, json=SINGLE_PATH_RESPONSE
-        )
+        httpx2_mock.get(ULTIMATE_PARENT_PATHS_URL).respond(json=SINGLE_PATH_RESPONSE)
 
         resp = await get_ultimate_parent_paths_from_identifiers(
             identifiers=["SPGI"], httpx_client=httpx_client
@@ -530,12 +514,10 @@ class TestGetUltimateParentPaths:
 
     @pytest.mark.asyncio
     async def test_get_ultimate_parent_paths_with_max_levels_up(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN max_levels_up is passed to the tool THEN the returned paths are cut and deduped."""
-        httpx_mock.add_response(
-            method="GET", url=ULTIMATE_PARENT_PATHS_URL, json=MULTI_PATHS_RESPONSE
-        )
+        httpx2_mock.get(ULTIMATE_PARENT_PATHS_URL).respond(json=MULTI_PATHS_RESPONSE)
 
         resp = await get_ultimate_parent_paths_from_identifiers(
             identifiers=["SPGI"], httpx_client=httpx_client, max_levels_up=1
@@ -549,12 +531,10 @@ class TestGetUltimateParentPaths:
 
     @pytest.mark.asyncio
     async def test_paths_serialize_company_ids_with_the_company_prefix(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN a path is dumped THEN its company ids carry the re-queryable C_ prefix."""
-        httpx_mock.add_response(
-            method="GET", url=ULTIMATE_PARENT_PATHS_URL, json=MULTI_PATHS_RESPONSE
-        )
+        httpx2_mock.get(ULTIMATE_PARENT_PATHS_URL).respond(json=MULTI_PATHS_RESPONSE)
 
         resp = await get_ultimate_parent_paths_from_identifiers(
             identifiers=["SPGI"], httpx_client=httpx_client
@@ -568,7 +548,7 @@ class TestGetUltimateParentPaths:
 
     @pytest.mark.asyncio
     async def test_get_ultimate_parent_paths_with_unresolvable_identifier(
-        self, httpx_client: httpx.AsyncClient
+        self, httpx_client: httpx2.AsyncClient
     ) -> None:
         """WHEN an identifier cannot be resolved THEN the error is reported and no call is made."""
         resp = await get_ultimate_parent_paths_from_identifiers(
@@ -581,18 +561,14 @@ class TestGetUltimateParentPaths:
 
 class TestSearchCorporateTree:
     @pytest.fixture
-    def add_tree_mock(self, httpx_mock: HTTPXMock) -> None:
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=false",
-            json=SAMPLE_TREE_RESPONSE,
-            is_optional=True,
-            is_reusable=True,
+    def add_tree_mock(self, httpx2_mock: Router) -> None:
+        optional_route(httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false")).respond(
+            json=SAMPLE_TREE_RESPONSE
         )
 
     @pytest.mark.asyncio
     async def test_search_without_filters_returns_every_edge(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN no filters are given THEN every relationship is returned, one row per edge."""
         result = await fetch_and_search_corporate_tree(
@@ -613,7 +589,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_never_matches_the_root(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN the filter matches only the queried company THEN there are no matches."""
         result = await fetch_and_search_corporate_tree(
@@ -628,7 +604,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_by_relationship_type(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN relationship_type is given THEN only edges of that type match."""
         result = await fetch_and_search_corporate_tree(
@@ -646,7 +622,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_by_multiple_relationship_types(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN several relationship types are given THEN edges matching ANY of them match."""
         result = await fetch_and_search_corporate_tree(
@@ -664,7 +640,7 @@ class TestSearchCorporateTree:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("country_iso_code", ["GBR", "gbr"])
     async def test_search_by_country_iso_code_is_case_insensitive(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None, country_iso_code: str
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None, country_iso_code: str
     ) -> None:
         """WHEN an ISO alpha-3 code is given in any case THEN the same edges match."""
         result = await fetch_and_search_corporate_tree(
@@ -681,7 +657,7 @@ class TestSearchCorporateTree:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("country_iso_code", ["United Kingdom", "GB", "UK"])
     async def test_search_by_country_iso_code_ignores_full_names_and_other_codes(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None, country_iso_code: str
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None, country_iso_code: str
     ) -> None:
         """WHEN anything but an alpha-3 code is given THEN it matches nothing."""
         result = await fetch_and_search_corporate_tree(
@@ -695,14 +671,11 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_by_country_iso_code_excludes_companies_with_no_country(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN a company has no iso_country THEN a country_iso_code filter never matches it."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=false",
-            json=SAMPLE_TREE_RESPONSE_NO_COUNTRY,
-            is_reusable=True,
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false").respond(
+            json=SAMPLE_TREE_RESPONSE_NO_COUNTRY
         )
 
         filtered = await fetch_and_search_corporate_tree(
@@ -719,7 +692,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_by_multiple_country_iso_codes(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN several countries are given THEN edges in ANY of them match."""
         result = await fetch_and_search_corporate_tree(
@@ -730,7 +703,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_by_name_substring(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN a name substring is given THEN it matches company names case-insensitively."""
         result = await fetch_and_search_corporate_tree(
@@ -746,7 +719,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_by_multiple_names(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN several name substrings are given THEN companies matching ANY of them match."""
         result = await fetch_and_search_corporate_tree(
@@ -759,7 +732,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_combines_filters_with_and_logic(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN several filter types are given THEN a match must satisfy all of them."""
         result = await fetch_and_search_corporate_tree(
@@ -776,7 +749,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_with_contradictory_filters_returns_nothing(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN filters cannot be satisfied together THEN no matches are returned."""
         result = await fetch_and_search_corporate_tree(
@@ -791,7 +764,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_reports_a_company_once_per_parent(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN a company has several parents THEN it is returned once per parent."""
         result = await fetch_and_search_corporate_tree(
@@ -804,7 +777,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_limit_truncates_matches_but_not_the_totals(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN limit is below the match count THEN matches are capped but total_matches is not."""
         result = await fetch_and_search_corporate_tree(
@@ -819,7 +792,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_flattens_company_fields_onto_each_match(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN a match is returned THEN the nested company fields are flattened onto it."""
         result = await fetch_and_search_corporate_tree(
@@ -837,13 +810,11 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_sends_max_depth_and_include_prior(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN max_depth and include_prior are given THEN both reach the request URL."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=true&max_depth=1",
-            json=SAMPLE_TREE_RESPONSE_TRUNCATED,
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true&max_depth=1").respond(
+            json=SAMPLE_TREE_RESPONSE_TRUNCATED
         )
 
         result = await fetch_and_search_corporate_tree(
@@ -860,13 +831,11 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_result_serializes_company_ids_with_the_company_prefix(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN the result is dumped THEN every company id carries the re-queryable C_ prefix."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=false&max_depth=1",
-            json=SAMPLE_TREE_RESPONSE_TRUNCATED,
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false&max_depth=1").respond(
+            json=SAMPLE_TREE_RESPONSE_TRUNCATED
         )
 
         result = await fetch_and_search_corporate_tree(
@@ -880,13 +849,11 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_orders_level_keys_numerically(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN a tree is deeper than 9 levels THEN level keys are ordered numerically."""
-        httpx_mock.add_response(
-            method="GET",
-            url=f"{CORPORATE_TREE_URL}?include_prior=false",
-            json=SAMPLE_DEEP_TREE_RESPONSE,
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false").respond(
+            json=SAMPLE_DEEP_TREE_RESPONSE
         )
 
         result = await fetch_and_search_corporate_tree(
@@ -897,7 +864,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_corporate_tree_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_tree_mock: None
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
         """WHEN the full tool function is called THEN identifiers resolve and trees are searched."""
         resp = await search_corporate_tree_from_identifiers(
@@ -910,7 +877,7 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     async def test_search_corporate_tree_with_unresolvable_identifier(
-        self, httpx_client: httpx.AsyncClient
+        self, httpx_client: httpx2.AsyncClient
     ) -> None:
         """WHEN an identifier cannot be resolved THEN the error is reported and no call is made."""
         resp = await search_corporate_tree_from_identifiers(
