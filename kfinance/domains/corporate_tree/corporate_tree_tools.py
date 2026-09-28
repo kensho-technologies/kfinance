@@ -50,11 +50,10 @@ class GetUltimateParentPathsFromIdentifiers(KfinanceTool):
         - A company can be owned through more than one chain, so more than one path may be returned.
         - Each element's relationship_type describes how that element is owned by the next element in the path. The ultimate parent ending a path has a null parent_company_id and a null relationship_type.
         - A company with no controlling parent is its own ultimate parent, returned as a single path holding only that company.
-        - Only controlling relationships are included: a parent appears only where it holds a controlling interest, so minority stakes and other non-controlling investments never appear. A company missing from the results may be owned non-controllingly rather than not owned at all.
+        - Only controlling relationships are included: a parent appears only where it holds a controlling interest, so minority stakes and other non-controlling investments don't appear.
         - Only current relationships are followed; prior/historical ownership is never included.
-        - Only companies and similar institutions can be queried. The identifier space also holds indexes, funds, commodities, yield curves and assets/products; querying one of those returns an error in `errors` listing the supported company types. Retrying the same identifier will not help.
-        - Each element reports its company_type. A path can run up through an entity of any type, so a company_type may appear that would not be accepted as a query identifier.
-        - Use max_levels_up to stop short of the ultimate parent, e.g. max_levels_up=1 to ask only who directly owns the company. A path cut short this way does NOT end at an ultimate parent: its last element keeps a non-null parent_company_id and relationship_type, showing that the chain continues above the returned portion. Call again with a larger max_levels_up, or omit it, to see the rest.
+        - Only companies and similar institutions can be queried. The identifier space also holds indexes, funds, commodities, yield curves and assets/products; querying one of those returns an error listing the supported company types.
+        - Use max_levels_up to limit how far up the parent chain to go, e.g. max_levels_up=1 to ask only who directly owns the company. If the parent chain is cut short, the last element will not be the ultimate parent.
         - Cutting paths short can make two chains that only differ higher up identical, and identical paths are returned once, so fewer paths may come back than the company has ownership chains.
 
         Examples:
@@ -229,10 +228,8 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         - Set max_depth to limit how deep to search. E.g. max_depth=1 searches direct children only. Omit it to search the whole tree.
         - When max_depth cuts the search short, `summary.search_was_depth_limited` is true and the `summary.companies_searched`/`relationships_searched`/`deepest_level_searched` counts describe only the searched portion, not the whole tree. To see deeper, call again with a larger max_depth or omit it entirely.
         - By default only current relationships are searched. Pass relationship_status=["prior"] for historical relationships that are no longer active, or relationship_status=["current", "prior"] for both. Each match reports its own relationship_status.
-        - Including prior relationships also makes the search traverse through them, so companies reachable only through a historical relationship are searched too. The `summary.companies_searched`/`relationships_searched`/`deepest_level_searched` counts describe everything traversed, not just the statuses kept, so a prior-only search can report far more searched than it returns.
-        - Only controlling relationships are included: a parent appears only where it holds a controlling interest, so minority stakes and other non-controlling investments never appear. A company missing from the results may be owned non-controllingly rather than not owned at all.
-        - Only companies and similar institutions can be queried. The identifier space also holds indexes, funds, commodities, yield curves and assets/products; querying one of those returns an error in `errors` listing the supported company types. Retrying the same identifier will not help.
-        - Each match reports its company_type. Children of any type are searched, so a match may carry a company_type that would not be accepted as a query identifier.
+        - Only controlling relationships are included: a parent appears only where it holds a controlling interest, so minority stakes and other non-controlling investments don't appear.
+        - Only companies and similar institutions can be queried. The identifier space also holds indexes, funds, commodities, yield curves and assets/products; querying one of those returns an error listing the supported company types.
         - A company owned through several parents appears once per parent, each with its own parent_company_id. `summary.distinct_companies` counts the underlying companies.
         - country_iso_code takes ISO 3166-1 alpha-3 codes only. Convert country names to codes before calling, e.g. Germany -> DEU.
 

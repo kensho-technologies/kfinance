@@ -44,9 +44,8 @@ class CompanyType(StrEnum):
 class TreeRelationshipType(StrEnum):
     """The type of parent-child relationship in the corporate tree.
 
-    Every relationship in the corporate tree is a controlling one, whatever its type: a parent
-    appears only where it holds a controlling interest, so minority and other non-controlling
-    stakes are absent from the tree and from the ultimate parent paths.
+    Every relationship in the corporate tree is a controlling one. Minority and other
+    non-controlling stakes are absent from the tree and from the ultimate parent paths.
     """
 
     subsidiary_or_operating_unit = "subsidiary_or_operating_unit"
