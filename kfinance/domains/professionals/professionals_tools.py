@@ -1,7 +1,7 @@
 from textwrap import dedent
 from typing import Type
 
-import httpx
+import httpx2
 from pydantic import BaseModel, Field
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
@@ -138,7 +138,7 @@ class GetProfessionalsFromPersonIds(KfinanceTool):
 
 async def get_professionals_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     professional_type: ProfessionalType,
     timeframe: Timeframe = Timeframe.all,
     include_compensation: bool = False,
@@ -189,7 +189,7 @@ async def get_professionals_from_identifiers(
 
 async def get_professionals_from_person_ids(
     person_ids: list[int],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     include_compensation: bool = False,
     include_biography: bool = False,
 ) -> GetProfessionalsFromPersonIdsResp:
@@ -230,7 +230,7 @@ async def get_professionals_from_person_ids(
 
 async def fetch_professionals_company(
     company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     professional_type: ProfessionalType,
     timeframe: Timeframe = Timeframe.all,
 ) -> CompanyProfessionalsResp:
@@ -243,7 +243,7 @@ async def fetch_professionals_company(
 
 async def fetch_professionals_person(
     person_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> PersonProfessionalsResp:
     """Fetch professional history for one person_id."""
     url = f"/professionals/person/{person_id}"

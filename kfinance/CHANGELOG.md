@@ -1,7 +1,17 @@
 # Changelog
 
-## v7.3.0
+## v8.1.0
 - Add corporate tree tools: `get_ultimate_parent_paths_from_identifiers` and `search_corporate_tree_from_identifiers`.
+
+## v8.0.0
+- **Breaking:** Replace `requests` and `httpx` with `httpx2`. HTTP errors from `KFinanceApiClient` (and so from the object API, e.g. `Ticker`, `Company`, group objects, and token refresh) are now raised as `httpx2.HTTPStatusError` instead of `requests.exceptions.HTTPError`. Network errors change the same way (e.g. `requests.ConnectionError` -> `httpx2.ConnectError`). LLM tool calling is unaffected.
+- Send the refresh token to `/oauth2/refresh` in a POST body instead of the URL query string, so it no longer appears in access logs or in httpx2's INFO request logs. This also applies to the proxy MCP server; a custom `AUTH_REFRESH_URL` must accept POST.
+
+## v7.2.3
+- Add RatingsPermission.
+
+## v7.2.2
+- Add source to estimate line item response object.
 
 ## v7.2.1
 - Coerce common incorrect param values like cash_flow -> cashflow

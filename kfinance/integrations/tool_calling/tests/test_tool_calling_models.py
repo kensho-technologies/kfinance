@@ -6,7 +6,6 @@ from typing import Any
 
 from pydantic import BaseModel, ValidationError
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE, SPGI_TICKER
@@ -62,7 +61,7 @@ class TestIdentifiersCoercion:
 class TestGetEndpointsFromToolCallsWithGrounding:
     @pytest.mark.asyncio
     async def test_get_info_from_identifier_with_grounding(
-        self, mock_client: Client, httpx_mock: HTTPXMock
+        self, mock_client: Client, httpx2_mock
     ) -> None:
         """
         GIVEN a KfinanceTool tool
@@ -89,18 +88,13 @@ class TestGetEndpointsFromToolCallsWithGrounding:
         del resp_data["ticker"]
 
         # Mock the /ids endpoint
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/ids",
-            match_json={"identifiers": ["SPGI"]},
-            json={"data": {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")}},
-        )
+        httpx2_mock.post(
+            "https://kfinance.kensho.com/api/v1/ids", json={"identifiers": ["SPGI"]}
+        ).respond(json={"data": {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")}})
 
         # Mock the /info endpoint
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}",
-            json=resp_data,
+        httpx2_mock.get(f"https://kfinance.kensho.com/api/v1/info/{SPGI_COMPANY_ID}").respond(
+            json=resp_data
         )
 
         tool = GetInfoFromIdentifiers(kfinance_client=mock_client)

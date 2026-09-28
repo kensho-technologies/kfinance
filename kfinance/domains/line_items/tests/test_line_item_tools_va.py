@@ -1,6 +1,5 @@
-import httpx
+import httpx2
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
@@ -44,20 +43,18 @@ VA_METADATA = {
 class TestFetchLineItemFromCompanyIdsVa:
     @pytest.mark.asyncio
     async def test_data_source_absent_from_payload(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we fetch a line item via the Visible Alpha function
         THEN data_source_type is not sent in the request body
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/line_item/visible_alpha").respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): LINE_ITEM_RESP},
                 "errors": {},
                 "metadata": {},
-            },
+            }
         )
 
         resp = await fetch_visible_alpha_line_item_from_company_ids(
@@ -67,24 +64,20 @@ class TestFetchLineItemFromCompanyIdsVa:
         )
 
         assert str(SPGI_ID_TRIPLE.company_id) in resp.results
-        assert "data_source_type" not in httpx_mock.get_requests()[-1].content.decode()
+        assert "data_source_type" not in httpx2_mock.calls[-1].request.content.decode()
 
     @pytest.mark.asyncio
-    async def test_returns_metadata(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-    ) -> None:
+    async def test_returns_metadata(self, httpx_client: httpx2.AsyncClient, httpx2_mock) -> None:
         """
         WHEN the API returns metadata with alternatives
         THEN the metadata is parsed into AlternativeLineItemMetadata
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/line_item/visible_alpha").respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): LINE_ITEM_RESP},
                 "errors": {},
                 "metadata": {str(SPGI_ID_TRIPLE.company_id): VA_METADATA},
-            },
+            }
         )
 
         resp = await fetch_visible_alpha_line_item_from_company_ids(
@@ -101,22 +94,19 @@ class TestFetchLineItemFromCompanyIdsVa:
 
 class TestGetFinancialLineItemFromIdentifiersVa:
     @pytest.fixture
-    def add_spgi_line_item_va_mock(self, httpx_mock: HTTPXMock) -> None:
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
+    def add_spgi_line_item_va_mock(self, httpx2_mock) -> None:
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/line_item/visible_alpha").respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): LINE_ITEM_RESP},
                 "errors": {},
                 "metadata": {},
-            },
-            is_optional=True,
+            }
         )
 
     @pytest.mark.asyncio
     async def test_maps_result_back_to_identifier(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_line_item_va_mock: None,
     ) -> None:
         """
@@ -137,7 +127,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_unknown_identifier_surfaces_as_error(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_line_item_va_mock: None,
     ) -> None:
         """
@@ -156,20 +146,18 @@ class TestGetFinancialLineItemFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_api_error_mapped_back_to_identifier(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns an error keyed by company_id
         THEN it is mapped back to the original identifier in the response
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/line_item/visible_alpha").respond(
             json={
                 "results": {},
                 "errors": {str(SPGI_ID_TRIPLE.company_id): "Company not found in Visible Alpha."},
                 "metadata": {},
-            },
+            }
         )
 
         resp = await get_visible_alpha_financial_line_item_from_identifiers(
@@ -183,20 +171,18 @@ class TestGetFinancialLineItemFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_metadata_alternative_note_added(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns metadata
         THEN a note reminding the LLM to check alternatives is appended
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/line_item/visible_alpha").respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): LINE_ITEM_RESP},
                 "errors": {},
                 "metadata": {str(SPGI_ID_TRIPLE.company_id): VA_METADATA},
-            },
+            }
         )
 
         resp = await get_visible_alpha_financial_line_item_from_identifiers(
@@ -210,7 +196,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_no_metadata_no_alternative_note(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_line_item_va_mock: None,
     ) -> None:
         """
@@ -228,7 +214,7 @@ class TestGetFinancialLineItemFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_source_link_note_always_present(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_line_item_va_mock: None,
     ) -> None:
         """
@@ -245,20 +231,18 @@ class TestGetFinancialLineItemFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_most_recent_trimmed_for_multi_company(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN requesting multiple companies with no date filters
         THEN only the most recent period is kept per company
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/line_item/visible_alpha").respond(
             json={
                 "results": {"1": LINE_ITEM_RESP, "2": LINE_ITEM_RESP},
                 "errors": {},
                 "metadata": {},
-            },
+            }
         )
 
         resp = await get_visible_alpha_financial_line_item_from_identifiers(
@@ -272,20 +256,18 @@ class TestGetFinancialLineItemFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_metadata_keyed_by_identifier(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns metadata keyed by company_id
         THEN the response metadata is re-keyed to the original identifier
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/line_item/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/line_item/visible_alpha").respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): LINE_ITEM_RESP},
                 "errors": {},
                 "metadata": {str(SPGI_ID_TRIPLE.company_id): VA_METADATA},
-            },
+            }
         )
 
         resp = await get_visible_alpha_financial_line_item_from_identifiers(
