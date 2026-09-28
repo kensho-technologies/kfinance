@@ -15,6 +15,7 @@ from kfinance.domains.corporate_tree.corporate_tree_models import (
     ParentPathElement,
     SearchMatch,
     SearchSummary,
+    TreeRelationshipStatus,
     TreeRelationshipType,
     UltimateParentPathsResponse,
 )
@@ -49,7 +50,10 @@ class GetUltimateParentPathsFromIdentifiers(KfinanceTool):
         - A company can be owned through more than one chain, so more than one path may be returned.
         - Each element's relationship_type describes how that element is owned by the next element in the path. The ultimate parent ending a path has a null parent_company_id and a null relationship_type.
         - A company with no controlling parent is its own ultimate parent, returned as a single path holding only that company.
+        - Only controlling relationships are included: a parent appears only where it holds a controlling interest, so minority stakes and other non-controlling investments never appear. A company missing from the results may be owned non-controllingly rather than not owned at all.
         - Only current relationships are followed; prior/historical ownership is never included.
+        - Only companies and similar institutions can be queried. The identifier space also holds indexes, funds, commodities, yield curves and assets/products; querying one of those returns an error in `errors` listing the supported company types. Retrying the same identifier will not help.
+        - Each element reports its company_type. A path can run up through an entity of any type, so a company_type may appear that would not be accepted as a query identifier.
         - Use max_levels_up to stop short of the ultimate parent, e.g. max_levels_up=1 to ask only who directly owns the company. A path cut short this way does NOT end at an ultimate parent: its last element keeps a non-null parent_company_id and relationship_type, showing that the chain continues above the returned portion. Call again with a larger max_levels_up, or omit it, to see the rest.
         - Cutting paths short can make two chains that only differ higher up identical, and identical paths are returned once, so fewer paths may come back than the company has ownership chains.
 
@@ -193,9 +197,9 @@ class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
         description="How many levels below the company to search. Omit to search the entire tree. Use max_depth=1 to search direct relationships only.",
         ge=0,
     )
-    include_prior: bool = Field(
-        default=False,
-        description="If true, include prior/historical relationships in the tree. By default only current relationships are included.",
+    relationship_status: list[TreeRelationshipStatus] = Field(
+        default=[TreeRelationshipStatus.current],
+        description="Relationship statuses to include. Defaults to current relationships only. Pass ['prior'] for historical relationships only, or ['current', 'prior'] for both.",
     )
     limit: int = Field(
         default=50,
@@ -224,7 +228,11 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         - The queried company itself is never a match; only the companies below it are searched.
         - Set max_depth to limit how deep to search. E.g. max_depth=1 searches direct children only. Omit it to search the whole tree.
         - When max_depth cuts the search short, `summary.search_was_depth_limited` is true and the `summary.companies_searched`/`relationships_searched`/`deepest_level_searched` counts describe only the searched portion, not the whole tree. To see deeper, call again with a larger max_depth or omit it entirely.
-        - Set include_prior=true to also include historical relationships that are no longer active.
+        - By default only current relationships are searched. Pass relationship_status=["prior"] for historical relationships that are no longer active, or relationship_status=["current", "prior"] for both. Each match reports its own relationship_status.
+        - Including prior relationships also makes the search traverse through them, so companies reachable only through a historical relationship are searched too. The `summary.companies_searched`/`relationships_searched`/`deepest_level_searched` counts describe everything traversed, not just the statuses kept, so a prior-only search can report far more searched than it returns.
+        - Only controlling relationships are included: a parent appears only where it holds a controlling interest, so minority stakes and other non-controlling investments never appear. A company missing from the results may be owned non-controllingly rather than not owned at all.
+        - Only companies and similar institutions can be queried. The identifier space also holds indexes, funds, commodities, yield curves and assets/products; querying one of those returns an error in `errors` listing the supported company types. Retrying the same identifier will not help.
+        - Each match reports its company_type. Children of any type are searched, so a match may carry a company_type that would not be accepted as a query identifier.
         - A company owned through several parents appears once per parent, each with its own parent_company_id. `summary.distinct_companies` counts the underlying companies.
         - country_iso_code takes ISO 3166-1 alpha-3 codes only. Convert country names to codes before calling, e.g. Germany -> DEU.
 
@@ -240,6 +248,9 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
 
         Query: "Find all subsidiaries and investment arms of S&P Global in the US, UK, and India"
         Function: search_corporate_tree_from_identifiers(identifiers=["SPGI"], relationship_type=["subsidiary_or_operating_unit", "investment_arm"], country_iso_code=["USA", "GBR", "IND"])
+
+        Query: "What companies did S&P Global used to own?"
+        Function: search_corporate_tree_from_identifiers(identifiers=["SPGI"], relationship_status=["prior"])
     """).strip()
     args_schema: Type[BaseModel] = SearchCorporateTreeFromIdentifiersArgs
     # TODO: Specify permissions
@@ -252,7 +263,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         country_iso_code: list[str] | None = None,
         name_contains: list[str] | None = None,
         max_depth: int | None = None,
-        include_prior: bool = False,
+        relationship_status: list[TreeRelationshipStatus] | None = None,
         limit: int = 50,
     ) -> SearchCorporateTreeFromIdentifiersResp:
         """"""
@@ -262,7 +273,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
             country_iso_code=country_iso_code,
             name_contains=name_contains,
             max_depth=max_depth,
-            include_prior=include_prior,
+            relationship_status=relationship_status,
             limit=limit,
             httpx_client=self.kfinance_client.httpx_client,
         )
@@ -275,7 +286,7 @@ async def search_corporate_tree_from_identifiers(
     country_iso_code: list[str] | None = None,
     name_contains: list[str] | None = None,
     max_depth: int | None = None,
-    include_prior: bool = False,
+    relationship_status: list[TreeRelationshipStatus] | None = None,
     limit: int = 50,
 ) -> SearchCorporateTreeFromIdentifiersResp:
     """Search corporate trees for all identifiers."""
@@ -295,7 +306,7 @@ async def search_corporate_tree_from_identifiers(
                 country_iso_code=country_iso_code,
                 name_contains=name_contains,
                 max_depth=max_depth,
-                include_prior=include_prior,
+                relationship_status=relationship_status,
                 limit=limit,
             ),
             result_key=identifier,
@@ -321,11 +332,15 @@ async def search_corporate_tree_from_identifiers(
 
 def _node_matches(
     node: CorporateTreeNode,
+    relationship_statuses: list[TreeRelationshipStatus],
     relationship_types: list[TreeRelationshipType] | None,
     country_iso_codes: list[str] | None,
     name_substrings: list[str] | None,
 ) -> bool:
     """Whether a node satisfies every supplied filter. Country and name matching is case-insensitive."""
+    if node.relationship_status not in relationship_statuses:
+        return False
+
     if relationship_types is not None and node.relationship_type not in relationship_types:
         return False
 
@@ -351,14 +366,17 @@ async def fetch_and_search_corporate_tree(
     country_iso_code: list[str] | None = None,
     name_contains: list[str] | None = None,
     max_depth: int | None = None,
-    include_prior: bool = False,
+    relationship_status: list[TreeRelationshipStatus] | None = None,
     limit: int = 50,
 ) -> CorporateTreeSearchResult:
     """Fetch the corporate tree for a single company and search it."""
+    statuses = relationship_status or [TreeRelationshipStatus.current]
     response = await fetch_corporate_tree(
         company_id=company_id,
         httpx_client=httpx_client,
-        include_prior=include_prior,
+        # The endpoint is all-or-nothing, so prior relationships have to be fetched before
+        # they can be filtered on.
+        include_prior=TreeRelationshipStatus.prior in statuses,
         max_depth=max_depth,
     )
 
@@ -366,7 +384,13 @@ async def fetch_and_search_corporate_tree(
     matches = [
         node
         for node in response.nodes
-        if _node_matches(node, relationship_type, country_iso_code, name_contains)
+        if _node_matches(
+            node,
+            relationship_statuses=statuses,
+            relationship_types=relationship_type,
+            country_iso_codes=country_iso_code,
+            name_substrings=name_contains,
+        )
     ]
 
     return CorporateTreeSearchResult(
@@ -375,6 +399,7 @@ async def fetch_and_search_corporate_tree(
             SearchMatch(
                 company_id=node.company.company_id,
                 company_name=node.company.company_name,
+                company_type=node.company.company_type,
                 country=node.company.country,
                 iso_country=node.company.iso_country,
                 parent_company_id=node.parent_company_id,

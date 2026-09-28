@@ -4,8 +4,50 @@ from strenum import StrEnum
 from kfinance.domains.companies.company_models import CompanyId
 
 
+class CompanyType(StrEnum):
+    """What kind of entity a company in the corporate tree is.
+
+    This spans every type the API can return, including entities that are not companies in
+    the ordinary sense, such as indexes, funds, commodities and rate or yield curve profiles.
+    Those show up as children in a tree but cannot themselves be used as a tree root.
+    """
+
+    public_investment_firm = "public_investment_firm"
+    private_investment_firm = "private_investment_firm"
+    assets_products = "assets_products"
+    public_company = "public_company"
+    private_company = "private_company"
+    corporate_investment_arm = "corporate_investment_arm"
+    financial_service_investment_arm = "financial_service_investment_arm"
+    index = "index"  # type: ignore[assignment]  # shadows str.index, which is never used here
+    private_fund = "private_fund"
+    fund_family = "fund_family"
+    currency_rate = "currency_rate"
+    public_fund = "public_fund"
+    interest_rate = "interest_rate"
+    educational_institution = "educational_institution"
+    arts_institution = "arts_institution"
+    labor_union = "labor_union"
+    government_institution = "government_institution"
+    religious_institution = "religious_institution"
+    trade_association = "trade_association"
+    foundation_charitable_institution = "foundation_charitable_institution"
+    industry = "industry"
+    commodity = "commodity"
+    rate_group = "rate_group"
+    yield_curve = "yield_curve"
+    gcp_industry = "gcp_industry"
+    corporate_yield_curve_all_tenor_profile = "corporate_yield_curve_all_tenor_profile"
+    corporate_yield_curve_tenor_profile = "corporate_yield_curve_tenor_profile"
+
+
 class TreeRelationshipType(StrEnum):
-    """The type of parent-child relationship in the corporate tree."""
+    """The type of parent-child relationship in the corporate tree.
+
+    Every relationship in the corporate tree is a controlling one, whatever its type: a parent
+    appears only where it holds a controlling interest, so minority and other non-controlling
+    stakes are absent from the tree and from the ultimate parent paths.
+    """
 
     subsidiary_or_operating_unit = "subsidiary_or_operating_unit"
     merged_entity = "merged_entity"
@@ -25,6 +67,7 @@ class CompanyInfo(BaseModel):
 
     company_id: CompanyId
     company_name: str
+    company_type: CompanyType | None = None
     country: str | None = None
     iso_country: str | None = None
 
@@ -74,6 +117,7 @@ class ParentPathElement(BaseModel):
 
     company_id: CompanyId
     company_name: str
+    company_type: CompanyType | None = None
     country: str | None = None
     iso_country: str | None = None
     parent_company_id: CompanyId | None = None
@@ -95,6 +139,7 @@ class SearchMatch(BaseModel):
 
     company_id: CompanyId
     company_name: str
+    company_type: CompanyType | None = None
     country: str | None = None
     iso_country: str | None = None
     parent_company_id: CompanyId
