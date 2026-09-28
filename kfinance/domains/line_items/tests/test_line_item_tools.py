@@ -9,6 +9,7 @@ from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp, LineItemScore
 from kfinance.domains.line_items.line_item_tools import (
     GetFinancialLineItemFromIdentifiers,
+    GetFinancialLineItemFromIdentifiersArgs,
     GetFinancialLineItemFromIdentifiersResp,
     _find_similar_line_items,
     fetch_line_item_from_company_ids,
@@ -348,6 +349,18 @@ class TestFindSimilarLineItems:
             assert isinstance(item.score, float)
             assert item.name in self.TEST_DESCRIPTORS
             assert item.description == self.TEST_DESCRIPTORS[item.name]
+
+
+class TestValidateLineItemType:
+    def test_list_rejected_with_per_call_message(self) -> None:
+        with pytest.raises(ValueError, match="one line item per call"):
+            GetFinancialLineItemFromIdentifiersArgs(
+                identifiers=["SPGI"], line_item=["ebitda", "total_debt"]
+            )
+
+    def test_non_string_non_list_rejected(self) -> None:
+        with pytest.raises(ValueError, match="must be a string, got int"):
+            GetFinancialLineItemFromIdentifiersArgs(identifiers=["SPGI"], line_item=42)
 
 
 def test_sale_line_item_dataitemids_not_swapped() -> None:
