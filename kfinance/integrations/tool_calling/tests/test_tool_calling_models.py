@@ -10,13 +10,6 @@ from pytest_httpx import HTTPXMock
 
 from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE, SPGI_TICKER
-from kfinance.domains.business_relationships.business_relationship_models import (
-    BusinessRelationshipType,
-)
-from kfinance.domains.business_relationships.business_relationship_tools import (
-    GetBusinessRelationshipFromIdentifiers,
-    GetBusinessRelationshipFromIdentifiersArgs,
-)
 from kfinance.domains.companies.company_models import (
     COMPANY_ID_PREFIX,
     IdentificationTripleWithCompanyInfo,
@@ -24,6 +17,11 @@ from kfinance.domains.companies.company_models import (
 from kfinance.domains.companies.company_tools import (
     GetInfoFromIdentifiers,
     GetInfoFromIdentifiersResp,
+)
+from kfinance.domains.relationships.relationship_models import RelationshipType
+from kfinance.domains.relationships.relationship_tools import (
+    GetRelationshipFromIdentifiers,
+    GetRelationshipFromIdentifiersArgs,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     IdentifierInfoWithResult,
@@ -155,9 +153,9 @@ class TestRunSyncAndAsync:
         THEN all calls return the same results without erroring out.
         """
 
-        args = GetBusinessRelationshipFromIdentifiersArgs(
+        args = GetRelationshipFromIdentifiersArgs(
             identifiers=["SPGI"],
-            business_relationship=BusinessRelationshipType.supplier,
+            relationship_type=RelationshipType.supplier,
         )
 
         sync_client = Client(refresh_token="foo")
@@ -171,12 +169,12 @@ class TestRunSyncAndAsync:
         )
 
         def run_sync() -> Any:
-            tool = GetBusinessRelationshipFromIdentifiers(kfinance_client=sync_client)
+            tool = GetRelationshipFromIdentifiers(kfinance_client=sync_client)
             sync_resp = tool.run(args.model_dump(mode="json"))
             return sync_resp
 
         async def run_async_twice() -> Any:
-            tool = GetBusinessRelationshipFromIdentifiers(kfinance_client=async_client)
+            tool = GetRelationshipFromIdentifiers(kfinance_client=async_client)
             async_resp1 = await tool.ainvoke(args.model_dump(mode="json"))
             async_resp2 = await tool.ainvoke(args.model_dump(mode="json"))
             return async_resp1, async_resp2

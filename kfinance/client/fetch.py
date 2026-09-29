@@ -17,10 +17,6 @@ from kfinance.client.models.date_and_period_models import (
 )
 from kfinance.client.models.response_models import PostResponse, SingleResultResp
 from kfinance.client.permission_models import Permission
-from kfinance.domains.business_relationships.business_relationship_models import (
-    BusinessRelationshipType,
-    RelationshipResponse,
-)
 from kfinance.domains.capitalizations.capitalization_models import Capitalizations
 from kfinance.domains.companies.company_models import (
     AuditorEntry,
@@ -52,6 +48,10 @@ from kfinance.domains.professionals.professionals_models import (
     Timeframe,
 )
 from kfinance.domains.ratings.ratings_models import IssuerRatingsResp, SecurityRatingsResp
+from kfinance.domains.relationships.relationship_models import (
+    RelationshipResponse,
+    RelationshipType,
+)
 from kfinance.domains.rounds_of_funding.rounds_of_funding_models import (
     AdvisorsResp,
     RoundOfFundingInfo,
@@ -716,18 +716,18 @@ class KFinanceApiClient:
             url = f"{self.url_base}ticker_groups/filters/geo/{str(country_iso_code).lower()}/{str(state_iso_code).lower()}/simple/{str(simple_industry).lower()}/exchange/{str(exchange_code).lower()}"
             return self._tickers_response_to_id_triple(self.fetch(url))
 
-    def fetch_companies_from_business_relationship(
-        self, company_id: int, relationship_type: BusinessRelationshipType
+    def fetch_companies_from_relationship(
+        self, company_id: int, relationship_type: RelationshipType
     ) -> RelationshipResponse:
-        """Fetches a dictionary of current and previous company IDs and names associated with a given company ID based on the specified relationship type.
+        """Fetches company IDs and names associated with a given company ID based on the specified relationship type, grouped by relationship status.
 
-        Example: fetch_companies_from_business_relationship(company_id=1234, relationship_type="distributor") returns a dictionary of company 1234's current and previous distributors.
+        Example: fetch_companies_from_relationship(company_id=1234, relationship_type="distributor") returns company 1234's current and previous distributors.
 
         :param company_id: The ID of the company for which associated companies are being fetched.
         :type company_id: int
-        :param relationship_type: The type of relationship to filter by. Valid relationship types are defined in the BusinessRelationshipType class.
-        :type relationship_type: BusinessRelationshipType
-        :return: A dictionary containing lists of current and previous company IDs and names that have the specified relationship with the given company_id.
+        :param relationship_type: The type of relationship to filter by. Valid relationship types are defined in the RelationshipType class.
+        :type relationship_type: RelationshipType
+        :return: Lists of current, previous, pending, and cancelled company IDs and names that have the specified relationship with the given company_id.
         :rtype: RelationshipResponse
         """
         url = f"{self.url_base}relationship/{company_id}/{relationship_type}"

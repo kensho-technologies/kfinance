@@ -10,10 +10,6 @@ from kfinance.client.kfinance import Client
 from kfinance.client.models.date_and_period_models import EstimateType, Periodicity, PeriodType
 from kfinance.client.models.response_models import SingleResultResp
 from kfinance.conftest import SPGI_COMPANY_ID
-from kfinance.domains.business_relationships.business_relationship_models import (
-    BusinessRelationshipType,
-    RelationshipResponse,
-)
 from kfinance.domains.companies.company_models import (
     CompanyDescriptions,
     CompanyIdAndName,
@@ -27,6 +23,10 @@ from kfinance.domains.estimates.estimates_models import (
 )
 from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType
 from kfinance.domains.ratings.ratings_models import IssuerRatingsResp, SecurityRatingsResp
+from kfinance.domains.relationships.relationship_models import (
+    RelationshipResponse,
+    RelationshipType,
+)
 from kfinance.domains.segments.segment_models import SegmentType
 
 
@@ -585,10 +585,10 @@ class TestMarketCap:
         client.fetch.assert_called_with(expected_fetch_url)
 
 
-class TestFetchCompaniesFromBusinessRelationship:
-    def test_fetch_business_relationships(self, requests_mock: Mocker, mock_client: Client) -> None:
+class TestFetchCompaniesFromRelationship:
+    def test_fetch_relationships(self, requests_mock: Mocker, mock_client: Client) -> None:
         """
-        GIVEN a business relationship request
+        GIVEN a relationship request
         WHEN the api returns a response
         THEN the response can successfully be parsed.
         """
@@ -610,12 +610,45 @@ class TestFetchCompaniesFromBusinessRelationship:
         )
 
         requests_mock.get(
-            url=f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{BusinessRelationshipType.supplier}",
+            url=f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{RelationshipType.supplier}",
             json=http_resp,
         )
 
-        resp = mock_client.kfinance_api_client.fetch_companies_from_business_relationship(
-            company_id=SPGI_COMPANY_ID, relationship_type=BusinessRelationshipType.supplier
+        resp = mock_client.kfinance_api_client.fetch_companies_from_relationship(
+            company_id=SPGI_COMPANY_ID, relationship_type=RelationshipType.supplier
+        )
+        assert resp == expected_result
+
+    def test_fetch_relationships_with_cr_only_statuses(
+        self, requests_mock: Mocker, mock_client: Client
+    ) -> None:
+        """
+        GIVEN a request for a Company Relationships-only relationship type
+        WHEN the api returns pending and cancelled relationships
+        THEN those statuses are parsed too.
+        """
+
+        http_resp = {
+            "current": [{"company_name": "foo", "company_id": 1}],
+            "previous": [{"company_name": "bar", "company_id": 2}],
+            "pending": [{"company_name": "baz", "company_id": 3}],
+            "cancelled": [{"company_name": "qux", "company_id": 4}],
+        }
+
+        expected_result = RelationshipResponse(
+            current=[CompanyIdAndName(company_name="foo", company_id=1)],
+            previous=[CompanyIdAndName(company_name="bar", company_id=2)],
+            pending=[CompanyIdAndName(company_name="baz", company_id=3)],
+            cancelled=[CompanyIdAndName(company_name="qux", company_id=4)],
+        )
+
+        requests_mock.get(
+            url=f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{RelationshipType.sponsored_fund}",
+            json=http_resp,
+        )
+
+        resp = mock_client.kfinance_api_client.fetch_companies_from_relationship(
+            company_id=SPGI_COMPANY_ID, relationship_type=RelationshipType.sponsored_fund
         )
         assert resp == expected_result
 

@@ -229,3 +229,19 @@ def add_spgi_supplier_mock_resp(httpx_mock: HTTPXMock) -> None:
         },
         is_reusable=True,
     )
+
+
+@pytest.fixture
+def add_spgi_sponsored_fund_mock_resp(httpx_mock: HTTPXMock) -> None:
+    """Add mock response for SPGI sponsored_fund relationship."""
+    httpx_mock.add_response(
+        method="GET",
+        url=f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/sponsored_fund",
+        json={
+            "current": [{"company_id": 1, "company_name": "Company 1"}],
+            "previous": [{"company_id": 2, "company_name": "Company 2"}],
+            "pending": [{"company_id": 3, "company_name": "Company 3"}],
+            "cancelled": [{"company_id": 4, "company_name": "Company 4"}],
+        },
+        is_reusable=True,
+    )

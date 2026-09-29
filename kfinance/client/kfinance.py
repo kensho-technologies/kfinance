@@ -1383,21 +1383,25 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         return self.primary_trading_item.price_chart(periodicity, adjusted, start_date, end_date)
 
 
-class BusinessRelationships(NamedTuple):
-    """Business relationships object that represents the current and previous companies of a given Company object.
+class Relationships(NamedTuple):
+    """Relationships object that represents the companies related to a given Company object.
 
     :param current: A Companies set that represents the current company_ids.
     :param previous: A Companies set that represents the previous company_ids.
+    :param pending: A Companies set that represents the pending company_ids.
+    :param cancelled: A Companies set that represents the cancelled company_ids.
     """
 
     current: Companies
     previous: Companies
+    pending: Companies
+    cancelled: Companies
 
     def __str__(self) -> str:
-        """String representation for the BusinessRelationships object"""
+        """String representation for the Relationships object"""
         dictionary = {
-            "current": [company.company_id for company in self.current],
-            "previous": [company.company_id for company in self.previous],
+            status: [company.company_id for company in companies]
+            for status, companies in self._asdict().items()
         }
         return f"{type(self).__module__}.{type(self).__qualname__} of {str(dictionary)}"
 
@@ -1882,16 +1886,17 @@ class Client:
 
         if self._tools is None:
             self._tools = []
+            user_permissions = self.kfinance_api_client.user_permissions
             # Add tool to _tools if the user has permissions to use it.
             for tool_cls in ALL_TOOLS:
                 tool = tool_cls(kfinance_client=self)  # type: ignore[call-arg]
                 if (
                     tool.accepted_permissions is None
                     # if one or more of the required permission for a tool is a permission the user has
-                    or tool.accepted_permissions.intersection(
-                        self.kfinance_api_client.user_permissions
-                    )
+                    or tool.accepted_permissions.intersection(user_permissions)
                 ):
+                    # Let the tool narrow its surface according to user entitlements.
+                    tool.apply_user_permissions(user_permissions)
                     self._tools.append(tool)
 
         return self._tools
