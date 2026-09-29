@@ -4,7 +4,7 @@ The kFinance Python library provides a simple interface for the LLM-ready API, s
 
 For a complete overview of the functions, usage, and features of the kFinance Python library, please refer to documentation [here](https://kensho-kfinance.readthedocs.io/en/stable/).
 
-Any questions or suggestions can be sent to the [kFinance Maintainers](kfinance-maintainers@kensho.com).
+Any questions or suggestions can be sent to the [kFinance Maintainers](mailto:kfinance-maintainers@kensho.com).
 
 # Setup
 
@@ -14,9 +14,9 @@ You can install kFinance on [PyPI](https://pypi.org/project/kensho-kfinance/) vi
 
 # Getting started
 
-To receive access, please email [S&P Global Market Intelligence](market.intelligence@spglobal.com) for information on free trials and pricing.
+To receive access, please email [S&P Global Market Intelligence](mailto:market.intelligence@spglobal.com) for information on free trials and pricing.
 
-Once access is obtained, get started using the [Authentication Guide](https://docs.kensho.com/llmreadyapi/kf-authentication) and [Usage Guide](https://docs.kensho.com/llmreadyapi/usage).
+Once access is obtained, get started using the [Authentication Guide](https://docs.kensho.com/llmreadyapi/python-library/kf-authentication) and [Usage Guide](https://docs.kensho.com/llmreadyapi/python-library/usage).
 
 To get started, we provide some notebooks:
 
