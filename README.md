@@ -39,12 +39,12 @@ This function initializes and starts an MCP server that exposes the kFinance too
 
 The server's full signature is as follows:
 
-`kfinance.mcp [--stdio|-s|--sse|--streamable-http] --refresh-token <refresh-token> --client-id <client-id> --private-key <private-key>`
+`kfinance.mcp [--stdio|-s|--sse|--streamable-http] --refresh-token <refresh-token> --client-id <client-id> --private-key <private-key> --kid <kid>`
 
 Authentication Methods (in order of precedence):
 
 1. Refresh Token: Uses an existing refresh token for authentication. The `--refresh-token <refresh-token>` argument must be provided.
-2. Key Pair: Uses client ID and private key for authentication. Both the `--client-id <client-id>` and `--private-key <private-key>` arguments must be provided.
+2. Key Pair: Uses client ID and private key for authentication. Both the `--client-id <client-id>` and `--private-key <private-key>` arguments must be provided. Add `--kid <kid>` when more than one public key is registered, since Okta rejects an assertion without a key ID in that case.
 3. Browser: Falls back to browser-based authentication flow. This occurs if no auth arguments are provided.
 
 Transport Layers:
@@ -75,6 +75,9 @@ AUTH_REFRESH_TOKEN=<token> python -m kfinance.proxy_mcp
 
 # Using a key pair (for production)
 AUTH_CLIENT_ID=<client-id> AUTH_PRIVATE_KEY=<private-key> python -m kfinance.proxy_mcp
+
+# Add AUTH_KID when more than one public key is registered
+AUTH_CLIENT_ID=<client-id> AUTH_PRIVATE_KEY=<private-key> AUTH_KID=<kid> python -m kfinance.proxy_mcp
 ```
 
 The server starts on `http://127.0.0.1:8000/mcp` by default. Use `--host` and `--port` to configure binding.

@@ -146,6 +146,7 @@ class PrivateKeyBasedAccessTokenDispenser(ClientAccessTokenDispenser):
         cache: Cache[ClientAccessToken],
         access_token_cache_key: str,
         okta_host: str,
+        kid: str | None = None,
         token_refresh_buffer: timedelta | None = None,
     ) -> None:
         """Initialize with client credentials and Okta host for JWT-based auth."""
@@ -158,6 +159,7 @@ class PrivateKeyBasedAccessTokenDispenser(ClientAccessTokenDispenser):
         self._client_id = client_id
         self._private_key = private_key
         self._okta_host = okta_host
+        self._kid = kid
 
     def refresh_access_token(self) -> ClientAccessToken:
         """Acquire a fresh access token via client_credentials grant with a signed JWT assertion."""
@@ -172,6 +174,7 @@ class PrivateKeyBasedAccessTokenDispenser(ClientAccessTokenDispenser):
             },
             self._private_key,
             algorithm="RS256",
+            headers={"kid": self._kid} if self._kid else None,
         )
         response = httpx2.post(
             f"{self._okta_host}/oauth2/default/v1/token",

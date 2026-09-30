@@ -22,6 +22,7 @@ All configuration is via environment variables (powered by pydantic-settings).
 | `BACKEND_URL` | No | `https://kfinance.kensho.com/integrations/mcp` | Remote MCP server URL |
 | `AUTH_CLIENT_ID` | Yes* | — | Client ID for key pair authentication |
 | `AUTH_PRIVATE_KEY` | Yes* | — | Private key for key pair authentication |
+| `AUTH_KID` | No | — | Key ID of the registered public key, required when more than one key is active |
 | `AUTH_OKTA_HOST` | No | `https://kensho.okta.com` | Okta host URL |
 | `AUTH_REFRESH_TOKEN` | Yes* | — | Refresh token for obtaining access tokens (local dev fallback) |
 | `AUTH_REFRESH_URL` | No | `https://kfinance.kensho.com/oauth2/refresh` | Token refresh endpoint |
