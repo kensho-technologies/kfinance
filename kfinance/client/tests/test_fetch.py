@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+import httpx2
 import jwt
 from pydantic import ValidationError
 import pytest
@@ -951,8 +952,7 @@ class TestKeypairAssertionKid:
             client_id="testapp", private_key=self._private_key_pem(), kid=kid
         )
         client._get_access_token_via_keypair()  # noqa: SLF001
-        request_body = route.calls.last.request.content.decode()
-        return dict(pair.split("=", 1) for pair in request_body.split("&"))["client_assertion"]
+        return httpx2.QueryParams(route.calls.last.request.content.decode())["client_assertion"]
 
     def test_assertion_stamps_kid_header(self, httpx2_mock: Router) -> None:
         assertion = self._captured_assertion(httpx2_mock, kid="my-key-id")
@@ -961,3 +961,8 @@ class TestKeypairAssertionKid:
     def test_assertion_omits_kid_header_when_unset(self, httpx2_mock: Router) -> None:
         assertion = self._captured_assertion(httpx2_mock, kid=None)
         assert "kid" not in jwt.get_unverified_header(assertion)
+
+    def test_client_passes_kid_to_api_client(self) -> None:
+        """A kid given to Client reaches the api client that builds the assertion."""
+        client = Client(client_id="testapp", private_key=self._private_key_pem(), kid="my-key-id")
+        assert client.kfinance_api_client.kid == "my-key-id"
