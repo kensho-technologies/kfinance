@@ -225,6 +225,21 @@ class KFinanceApiClient:
     def _access_token_needs_refresh(self) -> bool:
         return self._access_token is None or time() + 60 > self._access_token_expiry
 
+    def _raise_for_status(self, response: httpx2.Response) -> None:
+        """Like response.raise_for_status(), but the error message includes the response body."""
+        try:
+            response.raise_for_status()
+        except httpx2.HTTPStatusError as e:
+            error_message = f"{e.response.status_code} {e.response.reason_phrase}"
+            if e.response.text:
+                error_message += f": {e.response.text}"
+
+            raise httpx2.HTTPStatusError(
+                message=error_message,
+                request=e.request,
+                response=e.response,
+            )
+
     def _get_access_token_via_refresh_token(self) -> str:
         """Get an access token via oauth by submitting a refresh token."""
         # The token goes in the body, not the query string, so it stays out of access logs
@@ -233,7 +248,7 @@ class KFinanceApiClient:
             f"{self.api_host}/oauth2/refresh",
             json={"refresh_token": self.refresh_token},
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json().get("access_token")
 
     def _get_access_token_via_keypair(self) -> str:
@@ -264,7 +279,7 @@ class KFinanceApiClient:
                 "client_assertion": encoded,
             },
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json().get("access_token")
 
     @property
@@ -314,7 +329,7 @@ class KFinanceApiClient:
             headers=headers,
             json=request_body,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json()
 
     def fetch_permissions(self) -> dict[str, list[str]]:
@@ -518,7 +533,7 @@ class KFinanceApiClient:
                 "Authorization": f"Bearer {self.access_token}",
             },
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.content
 
     def fetch_statement(
