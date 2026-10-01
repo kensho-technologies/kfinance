@@ -1,5 +1,8 @@
 # Changelog
 
+## v7.2.4
+- Add source link note to VA estimates tool response so LLMs format values with sources as clickable links.
+
 ## v7.2.3
 - Add RatingsPermission.
 
