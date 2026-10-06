@@ -1,5 +1,8 @@
 # Changelog
 
+## v9.0.0
+- **Breaking:** Collapse `get_latest_earnings_from_identifiers` and `get_next_earnings_from_identifiers` into `get_earnings_from_identifiers` via a new `earnings_timeframe` argument (`all` (default), `latest`, `next`).
+
 ## v8.1.0
 - Add optional `kid` parameter to `Client`, stamped on the private-key-JWT client assertion so
   users with more than one active public key (e.g. mid key-rotation) can authenticate. Also
