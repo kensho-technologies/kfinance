@@ -37,20 +37,24 @@ class GetUltimateParentPathsFromIdentifiers(KfinanceTool):
         Get the corporate ownership paths leading from each of the provided identifiers up to its ultimate parent companies.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - Pass a ticker as given. Otherwise pass the company's full name with its legal suffix.
         - Each path is ordered from the queried company first to its ultimate parent last.
         - A company can be owned through more than one chain, so more than one path may be returned.
         - Each element's relationship_type describes how that element is owned by the next element in the path. The ultimate parent ending a path has a null parent_company_id and a null relationship_type.
         - A company with no controlling parent is its own ultimate parent, returned as a single path holding only that company.
         - Only controlling relationships are included: a parent appears only where it holds a controlling interest, so minority stakes and other non-controlling investments don't appear.
-        - Only current relationships are followed; prior/historical ownership is never included.
+        - Only current relationships are followed; prior/historical ownership is never included. To check whether a company is still under a given parent, call this tool on the company. To check whether it used to be owned by that parent, call search_corporate_tree_from_identifiers instead, using name_contains and relationship_status=["current", "prior"].
         - Only companies and similar institutions can be queried. The identifier space also holds indexes, funds, commodities, yield curves and assets/products; querying one of those returns an error listing the supported company types.
 
         Examples:
         Query: "Who is the ultimate parent of Instagram?"
         Function: get_ultimate_parent_paths_from_identifiers(identifiers=["Instagram"])
 
-        Query: "Show the ownership chain for YouTube and WhatsApp"
+        Query: "Show the direct and the top-level owners of YouTube and WhatsApp"
         Function: get_ultimate_parent_paths_from_identifiers(identifiers=["YouTube", "WhatsApp"])
+
+        Query: "Is Instagram still owned by Meta?"
+        Function: get_ultimate_parent_paths_from_identifiers(identifiers=["Instagram"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     # TODO: Specify permissions
@@ -116,7 +120,7 @@ async def fetch_ultimate_parent_paths(
 class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
     relationship_type: list[TreeRelationshipType] | None = Field(
         default=None,
-        description="Filter by relationship type(s). Nodes matching ANY of the listed types are included.",
+        description="Filter by relationship type(s). Nodes matching ANY of the listed types are included. When the question names a kind of entity (subsidiaries, merged businesses, investment arms, government entities), pass the matching type, also for prior relationships. Omit it when every entity is wanted, e.g. a full tree or all companies.",
     )
     country_iso_code: list[str] | None = Field(
         default=None,
@@ -124,7 +128,7 @@ class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
     name_contains: list[str] | None = Field(
         default=None,
-        description="Substring(s) to match against company names (case-insensitive). Nodes matching ANY of the listed substrings are included.",
+        description="Substring(s) to match against company names (case-insensitive). Nodes matching ANY of the listed substrings are included. For entities described by a business word, pass its stem (e.g. 'insurance units' -> ['insur']).",
     )
     max_depth: int | None = Field(
         default=None,
@@ -133,7 +137,7 @@ class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
     relationship_status: list[TreeRelationshipStatus] = Field(
         default=[TreeRelationshipStatus.current],
-        description="Relationship statuses to include. Defaults to current relationships only. Pass ['prior'] for historical relationships only, or ['current', 'prior'] for both.",
+        description="Relationship statuses to include. Defaults to ['current'] relationships only. Pass ['prior'] when former, previous, prior, divested or sold entities that are no longer under the company are asked for. Pass ['current', 'prior'] for current and historical relationships.",
     )
     limit: int = Field(
         default=50,
@@ -157,32 +161,33 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         Filters are combined with AND logic across filter types. When a filter contains multiple values, a node matches if it matches ANY value in the list (OR within a filter).
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - Pass a ticker as given. Otherwise pass the company's full name with its legal suffix.
         - Returns up to `limit` matches per identifier (default 50) in `matches`. `summary.total_matches` reports how many matched in total. There is no pagination.
         - `queried_company` echoes the company whose tree was searched. It is the top of the searched tree, not necessarily an ultimate parent; use get_ultimate_parent_paths_from_identifiers to look upward from it.
         - The queried company itself is never a match; only the companies below it are searched.
         - Set max_depth to limit how deep to search. E.g. max_depth=1 searches direct children only. Omit it to search the whole tree.
         - When max_depth cuts the search short, `summary.search_was_depth_limited` is true and the `summary.companies_searched`/`relationships_searched`/`deepest_level_searched` counts describe only the searched portion, not the whole tree. To see deeper, call again with a larger max_depth or omit it entirely.
-        - By default only current relationships are searched. Pass relationship_status=["prior"] for historical relationships that are no longer active, or relationship_status=["current", "prior"] for both. Each match reports its own relationship_status.
+        - By default only current relationships are searched. Pass relationship_status=["prior"] for former relationships that are no longer active, or relationship_status=["current", "prior"] to check whether a company was ever under the parent. Each match reports its own relationship_status.
         - Only controlling relationships are included: a parent appears only where it holds a controlling interest, so minority stakes and other non-controlling investments don't appear.
         - Only companies and similar institutions can be queried. The identifier space also holds indexes, funds, commodities, yield curves and assets/products; querying one of those returns an error listing the supported company types.
         - A company owned through several parents appears once per parent, each with its own parent_company_id. `summary.distinct_companies` counts the underlying companies.
         - country_iso_code takes ISO 3166-1 alpha-3 codes only. Convert country names to codes before calling, e.g. Germany -> DEU.
-
+        
         Examples:
         Query: "What subsidiaries does Microsoft have in Germany?"
         Function: search_corporate_tree_from_identifiers(identifiers=["Microsoft"], country_iso_code=["DEU"], relationship_type=["subsidiary_or_operating_unit"])
 
         Query: "Find all entities named 'Capital' or 'Global' under JPMorgan"
-        Function: search_corporate_tree_from_identifiers(identifiers=["JPM"], name_contains=["Capital", "Global"])
+        Function: search_corporate_tree_from_identifiers(identifiers=["JPM"], name_contains=["capital", "global"])
 
-        Query: "List the direct subsidiaries of Apple"
-        Function: search_corporate_tree_from_identifiers(identifiers=["Apple"], max_depth=1, relationship_type=["subsidiary_or_operating_unit"])
+        Query: "Which subsidiaries has Pfizer divested?"
+        Function: search_corporate_tree_from_identifiers(identifiers=["PFE"], relationship_type=["subsidiary_or_operating_unit"], relationship_status=["prior"])
 
-        Query: "Find all subsidiaries and investment arms of S&P Global in the US, UK, and India"
-        Function: search_corporate_tree_from_identifiers(identifiers=["SPGI"], relationship_type=["subsidiary_or_operating_unit", "investment_arm"], country_iso_code=["USA", "GBR", "IND"])
+        Query: "Which businesses has Oracle absorbed directly?"
+        Function: search_corporate_tree_from_identifiers(identifiers=["ORCL"], relationship_type=["merged_entity"], max_depth=1)
 
-        Query: "What companies did S&P Global used to own?"
-        Function: search_corporate_tree_from_identifiers(identifiers=["SPGI"], relationship_status=["prior"])
+        Query: "Was Motorola Mobility ever part of Alphabet?"
+        Function: search_corporate_tree_from_identifiers(identifiers=["GOOGL"], name_contains=["motorola"], relationship_status=["current", "prior"])
     """).strip()
     args_schema: Type[BaseModel] = SearchCorporateTreeFromIdentifiersArgs
     # TODO: Specify permissions
