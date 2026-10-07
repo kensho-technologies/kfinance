@@ -37,11 +37,11 @@ class BaseEstimatesFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=None, description="The period type (annual, semi-annual, or quarterly)."
     )
     num_periods_forward: NumPeriodsForward | None = Field(
-        default=None, description="The number of periods forward from today (1-99)."
+        default=None, description="The number of periods forward from today (0-99)."
     )
     num_periods_backward: NumPeriodsBackward | None = Field(
         default=None,
-        description="The number of periods to look back from today (1-99).",
+        description="The number of periods to look back from today (0-99).",
     )
 
 
