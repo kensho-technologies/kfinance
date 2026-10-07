@@ -127,8 +127,14 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
         Query: "EBITDA consensus estimates for Apple using Capital IQ data."
         Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"])
 
-        Query: "SAP consensus revenue estimates for fiscal 2027 through 2029 using Capital IQ data.
+        Query: "SAP consensus revenue estimates for fiscal 2027 through 2029 using Capital IQ data."
         Function: get_consensus_estimates_from_identifiers(identifiers=["SAP"], period_type="annual", start_year=2027, end_year=2029)
+
+        Query: "SAP consensus revenue estimates for the current quarter using Capital IQ data."
+        Function: get_consensus_estimates_from_identifiers(identifiers=["SAP"], period_type="quarterly", num_periods_backward=0, num_periods_forward=0)
+
+        Query: "Apple consensus EPS estimates for the last quarter using Capital IQ data."
+        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], period_type="quarterly", num_periods_backward=1)
     """).strip()
 
     @property
@@ -152,11 +158,10 @@ class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
         Function: get_guidance_from_identifiers(identifiers=["AAPL"], period_type="annual", start_year=2026, end_year=2026)
 
         Query: "Get revenue guidance for AAPL for the next 2 years using Capital IQ data."
-        Function: get_guidance_from_identifiers(identifiers=["AAPL"], period_type="annual", num_periods_forward=2)
+        Function: get_guidance_from_identifiers(identifiers=["AAPL"], period_type="annual", num_periods_backward=0, num_periods_forward=2)
 
-        Query: "Get revenue guidance for AAPL for the next 2 quarters using Capital IQ data."
-        Function: get_guidance_from_identifiers(identifiers=["AAPL"], period_type="quarterly", num_periods_forward=2)
-
+        Query: "Get revenue guidance for AAPL for the previous quarter using Capital IQ data."
+        Function: get_guidance_from_identifiers(identifiers=["AAPL"], period_type="quarterly", num_periods_backward=1, num_periods_forward=0)
     """).strip()
 
     @property
