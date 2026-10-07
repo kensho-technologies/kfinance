@@ -172,7 +172,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         - Only companies and similar institutions can be queried. The identifier space also holds indexes, funds, commodities, yield curves and assets/products; querying one of those returns an error listing the supported company types.
         - A company owned through several parents appears once per parent, each with its own parent_company_id. `summary.distinct_companies` counts the underlying companies.
         - country_iso_code takes ISO 3166-1 alpha-3 codes only. Convert country names to codes before calling, e.g. Germany -> DEU.
-        
+
         Examples:
         Query: "What subsidiaries does Microsoft have in Germany?"
         Function: search_corporate_tree_from_identifiers(identifiers=["Microsoft"], country_iso_code=["DEU"], relationship_type=["subsidiary_or_operating_unit"])
