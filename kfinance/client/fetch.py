@@ -86,6 +86,7 @@ class KFinanceApiClient:
         refresh_token: Optional[str] = None,
         client_id: Optional[str] = None,
         private_key: Optional[str] = None,
+        kid: Optional[str] = None,
         thread_pool: Optional[ThreadPoolExecutor] = None,
         api_host: str = DEFAULT_API_HOST,
         api_version: int = DEFAULT_API_VERSION,
@@ -100,6 +101,8 @@ class KFinanceApiClient:
         :type client_id: str, Optional
         :param private_key: users private key that corresponds to the registered public sent to support@kensho.com
         :type private_key: str, Optional
+        :param kid: key ID of the registered public key, required when more than one key is active
+        :type kid: str, Optional
         :param thread_pool: the thread pool used to execute batch requests. The number of concurrent requests is
         capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when batch
         requests are made.
@@ -121,6 +124,7 @@ class KFinanceApiClient:
         elif client_id is not None and private_key is not None:
             self.client_id = client_id
             self.private_key = private_key
+            self.kid = kid
             self._access_token_refresh_func = self._get_access_token_via_keypair
         else:
             raise RuntimeError("No credentials for any authentication strategy were provided")
@@ -221,6 +225,21 @@ class KFinanceApiClient:
     def _access_token_needs_refresh(self) -> bool:
         return self._access_token is None or time() + 60 > self._access_token_expiry
 
+    def _raise_for_status(self, response: httpx2.Response) -> None:
+        """Like response.raise_for_status(), but the error message includes the response body."""
+        try:
+            response.raise_for_status()
+        except httpx2.HTTPStatusError as e:
+            error_message = f"{e.response.status_code} {e.response.reason_phrase}"
+            if e.response.text:
+                error_message += f": {e.response.text}"
+
+            raise httpx2.HTTPStatusError(
+                message=error_message,
+                request=e.request,
+                response=e.response,
+            )
+
     def _get_access_token_via_refresh_token(self) -> str:
         """Get an access token via oauth by submitting a refresh token."""
         # The token goes in the body, not the query string, so it stays out of access logs
@@ -229,7 +248,7 @@ class KFinanceApiClient:
             f"{self.api_host}/oauth2/refresh",
             json={"refresh_token": self.refresh_token},
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json().get("access_token")
 
     def _get_access_token_via_keypair(self) -> str:
@@ -245,6 +264,7 @@ class KFinanceApiClient:
             },
             self.private_key,
             algorithm="RS256",
+            headers={"kid": self.kid} if self.kid else None,
         )
         response = self._http_client.post(
             f"{self.okta_host}/oauth2/{self.okta_auth_server}/v1/token",
@@ -259,7 +279,7 @@ class KFinanceApiClient:
                 "client_assertion": encoded,
             },
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json().get("access_token")
 
     @property
@@ -309,7 +329,7 @@ class KFinanceApiClient:
             headers=headers,
             json=request_body,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json()
 
     def fetch_permissions(self) -> dict[str, list[str]]:
@@ -513,7 +533,7 @@ class KFinanceApiClient:
                 "Authorization": f"Bearer {self.access_token}",
             },
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.content
 
     def fetch_statement(

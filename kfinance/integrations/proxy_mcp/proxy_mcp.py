@@ -28,6 +28,7 @@ def _build_dispenser() -> ClientAccessTokenDispenser:
         return PrivateKeyBasedAccessTokenDispenser(
             client_id=settings.auth.client_id,
             private_key=settings.auth.private_key,
+            kid=settings.auth.kid,
             cache=cache,
             access_token_cache_key="proxy_mcp_token",
             okta_host=settings.auth.okta_host,

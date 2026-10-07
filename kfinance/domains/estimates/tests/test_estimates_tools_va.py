@@ -11,6 +11,7 @@ from kfinance.domains.line_items.line_item_models import AlternativeLineItemMeta
 from kfinance.domains.line_items.response_notes import (
     FISCAL_PERIOD_WARNING,
     FISCAL_YEAR_TERMINOLOGY_WARNING,
+    SOURCE_LINK_NOTE,
 )
 
 
@@ -238,6 +239,23 @@ class TestGetEstimatesFromIdentifiersVa:
         )
 
         assert all("estimate_search" not in note for note in resp.notes)
+
+    @pytest.mark.asyncio
+    async def test_source_link_note_always_present(
+        self,
+        httpx_client: httpx2.AsyncClient,
+        add_spgi_estimates_va_mock: None,
+    ) -> None:
+        """
+        WHEN we get a valid Visible Alpha estimates result
+        THEN the source link note is always included so the LLM formats sources as links
+        """
+        resp = await get_visible_alpha_estimates_from_identifiers(
+            identifiers=["SPGI"],
+            httpx_client=httpx_client,
+        )
+
+        assert SOURCE_LINK_NOTE in resp.notes
 
     @pytest.mark.asyncio
     async def test_fiscal_period_notes_always_present(

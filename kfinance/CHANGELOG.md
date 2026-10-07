@@ -1,7 +1,18 @@
 # Changelog
 
-## v8.1.0
+## v8.2.0
 - Add corporate tree tools: `get_ultimate_parent_paths_from_identifiers` and `search_corporate_tree_from_identifiers`.
+
+## v8.1.0
+- Add optional `kid` parameter to `Client`, stamped on the private-key-JWT client assertion so
+  users with more than one active public key (e.g. mid key-rotation) can authenticate. Also
+  available as `--kid` on the local MCP server and as `AUTH_KID` on the proxy MCP server.
+
+## v8.0.2
+- Reject non-string `line_item` values in `get_financial_line_item_from_identifiers` before they reach `.lower()`. A list now returns a clear "one line item per call" validation error instead of an `AttributeError` crash (KFINANCE-MCP-5D).
+
+## v8.0.1
+- Add source link note to VA estimates tool response so LLMs format values with sources as clickable links.
 
 ## v8.0.0
 - **Breaking:** Replace `requests` and `httpx` with `httpx2`. HTTP errors from `KFinanceApiClient` (and so from the object API, e.g. `Ticker`, `Company`, group objects, and token refresh) are now raised as `httpx2.HTTPStatusError` instead of `requests.exceptions.HTTPError`. Network errors change the same way (e.g. `requests.ConnectionError` -> `httpx2.ConnectError`). LLM tool calling is unaffected.
