@@ -1,5 +1,8 @@
 # Changelog
 
+## v8.1.1
+- Surface `requested_line_item` in tool responses for CIQ line items, VA line items, and VA estimates. The field echoes back the line item (or estimate) the caller asked for. Prefers the server's value when available, falls back to the tool input.
+
 ## v8.1.0
 - Add optional `kid` parameter to `Client`, stamped on the private-key-JWT client assertion so
   users with more than one active public key (e.g. mid key-rotation) can authenticate. Also

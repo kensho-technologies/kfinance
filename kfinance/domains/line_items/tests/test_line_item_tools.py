@@ -3,7 +3,7 @@ from langchain_core.utils.function_calling import convert_to_openai_tool
 import pytest
 
 from kfinance.client.kfinance import Client
-from kfinance.client.models.response_models import PostResponse
+from kfinance.client.models.response_models import PostResponseWithLineItemMetadata
 from kfinance.conftest import FAKE_COMPANY_1_ID_TRIPLE, FAKE_COMPANY_2_ID_TRIPLE, SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
 from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp, LineItemScore
@@ -68,7 +68,7 @@ class TestGetFinancialLineItemFromIdentifiers:
             },
             "errors": {},
         }
-        expected_resp = PostResponse[LineItemResp].model_validate(expected_resp_data)
+        expected_resp = PostResponseWithLineItemMetadata[LineItemResp].model_validate(expected_resp_data)
 
         resp = await fetch_line_item_from_company_ids(
             company_ids=[SPGI_ID_TRIPLE.company_id],
@@ -115,6 +115,7 @@ class TestGetFinancialLineItemFromIdentifiers:
             ],
             notes=expected_notes,
             data_source="Capital IQ",
+            requested_line_item="revenue",
         )
 
         resp = await get_financial_line_item_from_identifiers(
@@ -148,6 +149,7 @@ class TestGetFinancialLineItemFromIdentifiers:
             errors=["SPGI: No results found."],
             notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
             data_source="Capital IQ",
+            requested_line_item="revenue",
         )
 
         resp = await get_financial_line_item_from_identifiers(
@@ -189,6 +191,7 @@ class TestGetFinancialLineItemFromIdentifiers:
             identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
             notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
             data_source="Capital IQ",
+            requested_line_item="revenue",
         )
 
         resp = await get_financial_line_item_from_identifiers(
