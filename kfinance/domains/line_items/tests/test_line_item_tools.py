@@ -68,7 +68,9 @@ class TestGetFinancialLineItemFromIdentifiers:
             },
             "errors": {},
         }
-        expected_resp = PostResponseWithLineItemMetadata[LineItemResp].model_validate(expected_resp_data)
+        expected_resp = PostResponseWithLineItemMetadata[LineItemResp].model_validate(
+            expected_resp_data
+        )
 
         resp = await fetch_line_item_from_company_ids(
             company_ids=[SPGI_ID_TRIPLE.company_id],
