@@ -1,5 +1,8 @@
 # Changelog
 
+## v8.2.0
+- Add corporate tree tools: `get_ultimate_parent_paths_from_identifiers` and `search_corporate_tree_from_identifiers`.
+
 ## v8.1.0
 - Add optional `kid` parameter to `Client`, stamped on the private-key-JWT client assertion so
   users with more than one active public key (e.g. mid key-rotation) can authenticate. Also

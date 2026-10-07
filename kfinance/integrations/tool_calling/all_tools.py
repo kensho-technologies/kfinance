@@ -10,6 +10,10 @@ from kfinance.domains.companies.company_tools import (
     GetInfoFromIdentifiers,
 )
 from kfinance.domains.competitors.competitor_tools import GetCompetitorsFromIdentifiers
+from kfinance.domains.corporate_tree.corporate_tree_tools import (
+    GetUltimateParentPathsFromIdentifiers,
+    SearchCorporateTreeFromIdentifiers,
+)
 from kfinance.domains.cusip_and_isin.cusip_and_isin_tools import (
     GetCusipFromIdentifiers,
     GetIsinFromIdentifiers,
@@ -121,4 +125,7 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     # Ratings
     GetIssuerRatingsFromIdentifiers,
     GetSecurityRatingsFromIdentifiers,
+    # Corporate Tree
+    GetUltimateParentPathsFromIdentifiers,
+    SearchCorporateTreeFromIdentifiers,
 ]

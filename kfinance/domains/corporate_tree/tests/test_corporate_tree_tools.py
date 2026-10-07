@@ -1,0 +1,987 @@
+import httpx2
+from pydantic import ValidationError
+import pytest
+from respx import Router
+
+from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE, optional_route
+from kfinance.domains.corporate_tree.corporate_tree_models import (
+    CompanyType,
+    TreeRelationshipStatus,
+    TreeRelationshipType,
+)
+from kfinance.domains.corporate_tree.corporate_tree_tools import (
+    SearchCorporateTreeFromIdentifiersArgs,
+    fetch_and_search_corporate_tree,
+    fetch_corporate_tree,
+    fetch_ultimate_parent_paths,
+    get_ultimate_parent_paths_from_identifiers,
+    search_corporate_tree_from_identifiers,
+)
+
+
+SNL = 34482
+IHS_MARKIT = 13651733
+NJ_DATA_CENTER = 267302130
+JD_POWER = 1532723
+JUVENILE_RETAIL = 8536775
+OSTTRA = 1805062246
+KENSHO = 251994106
+MCGRAW_HILL_EDUCATION = 1067110
+
+_USA = {"country": "United States", "iso_country": "USA"}
+_GBR = {"country": "United Kingdom", "iso_country": "GBR"}
+
+SPGI_ROOT = {
+    "company_id": SPGI_COMPANY_ID,
+    "company_name": "S&P Global Inc.",
+    "company_type": "public_company",
+    **_USA,
+}
+
+SAMPLE_TREE_RESPONSE = {
+    "root": SPGI_ROOT,
+    "nodes": [
+        {
+            "company": {
+                "company_id": SNL,
+                "company_name": "SNL Financial LC",
+                "company_type": "private_company",
+                **_USA,
+            },
+            "level": 1,
+            "parent_company_id": SPGI_COMPANY_ID,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {"company_id": IHS_MARKIT, "company_name": "IHS Markit Ltd.", **_GBR},
+            "level": 1,
+            "parent_company_id": SPGI_COMPANY_ID,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {
+                "company_id": NJ_DATA_CENTER,
+                "company_name": "McGraw Hill Financial, Inc., New Jersey Data Center",
+                **_USA,
+            },
+            "level": 1,
+            "parent_company_id": SPGI_COMPANY_ID,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {
+                "company_id": NJ_DATA_CENTER,
+                "company_name": "McGraw Hill Financial, Inc., New Jersey Data Center",
+                **_USA,
+            },
+            "level": 1,
+            "parent_company_id": SPGI_COMPANY_ID,
+            "relationship_status": "current",
+            "relationship_type": "merged_entity",
+        },
+        {
+            "company": {"company_id": JD_POWER, "company_name": "J.D. Power", **_USA},
+            "level": 2,
+            "parent_company_id": SNL,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {
+                "company_id": JUVENILE_RETAIL,
+                "company_name": "The McGraw-Hill Companies, Juvenile Retail Publishing Businesses",
+                **_USA,
+            },
+            "level": 2,
+            "parent_company_id": SNL,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {"company_id": OSTTRA, "company_name": "Osttra Group Ltd.", **_GBR},
+            "level": 2,
+            "parent_company_id": IHS_MARKIT,
+            "relationship_status": "current",
+            "relationship_type": "investment_arm",
+        },
+        {
+            "company": {
+                "company_id": JUVENILE_RETAIL,
+                "company_name": "The McGraw-Hill Companies, Juvenile Retail Publishing Businesses",
+                **_USA,
+            },
+            "level": 2,
+            "parent_company_id": NJ_DATA_CENTER,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {"company_id": KENSHO, "company_name": "Kensho Technologies, Inc.", **_USA},
+            "level": 2,
+            "parent_company_id": NJ_DATA_CENTER,
+            "relationship_status": "current",
+            "relationship_type": "merged_entity",
+        },
+        {
+            "company": {"company_id": KENSHO, "company_name": "Kensho Technologies, Inc.", **_USA},
+            "level": 2,
+            "parent_company_id": NJ_DATA_CENTER,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {"company_id": IHS_MARKIT, "company_name": "IHS Markit Ltd.", **_GBR},
+            "level": 3,
+            "parent_company_id": JD_POWER,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {
+                "company_id": MCGRAW_HILL_EDUCATION,
+                "company_name": "McGraw-Hill Education, Inc.",
+                **_USA,
+            },
+            "level": 3,
+            "parent_company_id": JUVENILE_RETAIL,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+    ],
+    "summary": {"max_depth": 3, "total_companies": 9, "total_edges": 12},
+}
+
+# The same tree fetched with max_depth=1: the three level-1 companies are reported as truncated.
+SAMPLE_TREE_RESPONSE_TRUNCATED = {
+    "root": SPGI_ROOT,
+    "nodes": SAMPLE_TREE_RESPONSE["nodes"][:4],
+    "summary": {"max_depth": 1, "total_companies": 4, "total_edges": 4},
+    "truncation": {"truncated_company_ids": [SNL, IHS_MARKIT, NJ_DATA_CENTER]},
+}
+
+# A tree whose single subsidiary has no country recorded.
+SAMPLE_TREE_RESPONSE_NO_COUNTRY = {
+    "root": SPGI_ROOT,
+    "nodes": [
+        {
+            "company": {
+                "company_id": KENSHO,
+                "company_name": "Kensho Technologies, Inc.",
+                "country": None,
+                "iso_country": None,
+            },
+            "level": 1,
+            "parent_company_id": SPGI_COMPANY_ID,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        }
+    ],
+    "summary": {"max_depth": 1, "total_companies": 2, "total_edges": 1},
+}
+
+# A tree holding both current and prior relationships, so status filtering has something to
+# bite on. The API only returns prior edges when include_prior=true, so this is what the
+# prior-inclusive request comes back with.
+SAMPLE_MIXED_STATUS_TREE_RESPONSE = {
+    "root": SPGI_ROOT,
+    "nodes": [
+        {
+            "company": {"company_id": SNL, "company_name": "SNL Financial LC", **_USA},
+            "level": 1,
+            "parent_company_id": SPGI_COMPANY_ID,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {"company_id": IHS_MARKIT, "company_name": "IHS Markit Ltd.", **_GBR},
+            "level": 1,
+            "parent_company_id": SPGI_COMPANY_ID,
+            "relationship_status": "prior",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {"company_id": KENSHO, "company_name": "Kensho Technologies, Inc.", **_USA},
+            "level": 1,
+            "parent_company_id": SPGI_COMPANY_ID,
+            "relationship_status": "prior",
+            "relationship_type": "investment_arm",
+        },
+        # Only reachable by traversing the prior IHS Markit edge above.
+        {
+            "company": {"company_id": OSTTRA, "company_name": "Osttra Group Ltd.", **_GBR},
+            "level": 2,
+            "parent_company_id": IHS_MARKIT,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+    ],
+    "summary": {"max_depth": 2, "total_companies": 5, "total_edges": 4},
+}
+
+# A tree reaching level 10, used to check that level keys are ordered numerically rather than
+# lexicographically ("10" must not sort before "2").
+SAMPLE_DEEP_TREE_RESPONSE = {
+    "root": SPGI_ROOT,
+    "nodes": [
+        {
+            "company": {"company_id": 1000 + level, "company_name": f"Sub {level}", **_USA},
+            "level": level,
+            "parent_company_id": SPGI_COMPANY_ID if level == 1 else 1000 + level - 1,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        }
+        for level in range(1, 11)
+    ],
+    "summary": {"max_depth": 10, "total_companies": 11, "total_edges": 10},
+}
+
+MULTI_PATHS_RESPONSE = {
+    "paths": [
+        [
+            {
+                "company_id": MCGRAW_HILL_EDUCATION,
+                "company_name": "McGraw-Hill Education, Inc.",
+                **_USA,
+                "parent_company_id": JUVENILE_RETAIL,
+                "relationship_type": "subsidiary_or_operating_unit",
+            },
+            {
+                "company_id": JUVENILE_RETAIL,
+                "company_name": "The McGraw-Hill Companies, Juvenile Retail Publishing Businesses",
+                **_USA,
+                "parent_company_id": SNL,
+                "relationship_type": "subsidiary_or_operating_unit",
+            },
+            {
+                "company_id": SNL,
+                "company_name": "SNL Financial LC",
+                **_USA,
+                "parent_company_id": SPGI_COMPANY_ID,
+                "relationship_type": "subsidiary_or_operating_unit",
+            },
+            {
+                **SPGI_ROOT,
+                "parent_company_id": None,
+                "relationship_type": None,
+            },
+        ],
+        [
+            {
+                "company_id": MCGRAW_HILL_EDUCATION,
+                "company_name": "McGraw-Hill Education, Inc.",
+                **_USA,
+                "parent_company_id": JUVENILE_RETAIL,
+                "relationship_type": "subsidiary_or_operating_unit",
+            },
+            {
+                "company_id": JUVENILE_RETAIL,
+                "company_name": "The McGraw-Hill Companies, Juvenile Retail Publishing Businesses",
+                **_USA,
+                "parent_company_id": NJ_DATA_CENTER,
+                "relationship_type": "subsidiary_or_operating_unit",
+            },
+            {
+                "company_id": NJ_DATA_CENTER,
+                "company_name": "McGraw Hill Financial, Inc., New Jersey Data Center",
+                **_USA,
+                "parent_company_id": SPGI_COMPANY_ID,
+                "relationship_type": "subsidiary_or_operating_unit",
+            },
+            {
+                **SPGI_ROOT,
+                "parent_company_id": None,
+                "relationship_type": None,
+            },
+        ],
+    ]
+}
+
+SINGLE_PATH_RESPONSE = {
+    "paths": [[{**SPGI_ROOT, "parent_company_id": None, "relationship_type": None}]]
+}
+
+# The API refuses to build a tree for an entity that is not company-like, and says which types
+# it will accept.
+UNSUPPORTED_ROOT_ERROR = {
+    "error": (
+        "Company has company type 'assets_products', which is not supported as a corporate "
+        "tree root."
+    ),
+    "details": {
+        "company_type": "assets_products",
+        "supported_company_types": [
+            "public_company",
+            "private_company",
+            "public_investment_firm",
+            "private_investment_firm",
+        ],
+    },
+}
+
+API_BASE = "https://kfinance.kensho.com/api/v1"
+CORPORATE_TREE_URL = f"{API_BASE}/corporate_tree/{SPGI_COMPANY_ID}"
+ULTIMATE_PARENT_PATHS_URL = f"{CORPORATE_TREE_URL}/ultimate_parent_paths"
+
+
+class TestFetchCorporateTree:
+    @pytest.mark.asyncio
+    async def test_fetch_corporate_tree(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN we fetch a corporate tree THEN we get a valid CorporateTreeResponse."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false").respond(
+            json=SAMPLE_TREE_RESPONSE
+        )
+
+        resp = await fetch_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+        )
+
+        assert resp.root.company_id == SPGI_COMPANY_ID
+        assert len(resp.nodes) == 12
+        assert resp.summary.total_companies == 9
+        assert resp.summary.total_edges == 12
+        # The API omits the key entirely when nothing was truncated.
+        assert resp.truncation is None
+
+    @pytest.mark.asyncio
+    async def test_fetch_corporate_tree_with_include_prior_and_max_depth(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN include_prior and max_depth are given THEN both reach the request URL."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true&max_depth=1").respond(
+            json=SAMPLE_TREE_RESPONSE_TRUNCATED
+        )
+
+        resp = await fetch_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            include_prior=True,
+            max_depth=1,
+        )
+
+        assert resp.truncation is not None
+        assert resp.truncation.truncated_company_ids == [SNL, IHS_MARKIT, NJ_DATA_CENTER]
+
+
+class TestFetchUltimateParentPaths:
+    @pytest.mark.asyncio
+    async def test_fetch_ultimate_parent_paths(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN we fetch ultimate parent paths THEN each path runs company-first, parent-last."""
+        httpx2_mock.get(
+            f"{API_BASE}/corporate_tree/{MCGRAW_HILL_EDUCATION}/ultimate_parent_paths"
+        ).respond(json=MULTI_PATHS_RESPONSE)
+
+        resp = await fetch_ultimate_parent_paths(
+            company_id=MCGRAW_HILL_EDUCATION,
+            httpx_client=httpx_client,
+        )
+
+        assert len(resp.paths) == 2
+        for path in resp.paths:
+            assert path[0].company_id == MCGRAW_HILL_EDUCATION
+            assert path[-1].company_id == SPGI_COMPANY_ID
+            # The ultimate parent terminates the path, so it has no parent and no relationship.
+            assert path[-1].parent_company_id is None
+            assert path[-1].relationship_type is None
+        # The two chains diverge above The McGraw-Hill Companies.
+        assert resp.paths[0][1].parent_company_id == SNL
+        assert resp.paths[1][1].parent_company_id == NJ_DATA_CENTER
+
+
+class TestSearchCorporateTreeArgs:
+    def test_relationship_status_defaults_to_none(self) -> None:
+        args = SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"])
+        assert args.relationship_status is None
+
+    def test_relationship_status_accepts_prior_only(self) -> None:
+        args = SearchCorporateTreeFromIdentifiersArgs(
+            identifiers=["SPGI"], relationship_status=["prior"]
+        )
+        assert args.relationship_status == [TreeRelationshipStatus.prior]
+
+    def test_relationship_status_rejects_an_unknown_status(self) -> None:
+        with pytest.raises(ValidationError):
+            SearchCorporateTreeFromIdentifiersArgs(
+                identifiers=["SPGI"], relationship_status=["former"]
+            )
+
+    def test_max_depth_rejects_a_negative_depth(self) -> None:
+        with pytest.raises(ValidationError):
+            SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"], max_depth=-1)
+
+
+class TestGetUltimateParentPaths:
+    @pytest.mark.asyncio
+    async def test_get_ultimate_parent_paths_from_identifiers(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN the tool is called THEN identifiers resolve and the wire model is returned."""
+        httpx2_mock.get(ULTIMATE_PARENT_PATHS_URL).respond(json=MULTI_PATHS_RESPONSE)
+
+        resp = await get_ultimate_parent_paths_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client
+        )
+
+        assert resp.errors == []
+        assert resp.identifier_info == {"SPGI": SPGI_ID_TRIPLE}
+        assert len(resp.identifier_results["SPGI"].paths) == 2
+
+    @pytest.mark.asyncio
+    async def test_get_ultimate_parent_paths_for_company_with_no_parent(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN a company has no controlling parent THEN a single one-element path is returned."""
+        httpx2_mock.get(ULTIMATE_PARENT_PATHS_URL).respond(json=SINGLE_PATH_RESPONSE)
+
+        resp = await get_ultimate_parent_paths_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client
+        )
+
+        paths = resp.identifier_results["SPGI"].paths
+        assert len(paths) == 1
+        assert len(paths[0]) == 1
+        assert paths[0][0].company_id == SPGI_COMPANY_ID
+        assert paths[0][0].parent_company_id is None
+        assert paths[0][0].relationship_type is None
+
+    @pytest.mark.asyncio
+    async def test_paths_serialize_company_ids_with_the_company_prefix(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN a path is dumped THEN its company ids carry the re-queryable C_ prefix."""
+        httpx2_mock.get(ULTIMATE_PARENT_PATHS_URL).respond(json=MULTI_PATHS_RESPONSE)
+
+        resp = await get_ultimate_parent_paths_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client
+        )
+        dumped = resp.identifier_results["SPGI"].model_dump()
+
+        assert dumped["paths"][0][0]["company_id"] == f"C_{MCGRAW_HILL_EDUCATION}"
+        assert dumped["paths"][0][0]["parent_company_id"] == f"C_{JUVENILE_RETAIL}"
+        # The ultimate parent terminating the path keeps a null parent rather than a prefixed one.
+        assert dumped["paths"][0][-1]["parent_company_id"] is None
+
+    @pytest.mark.asyncio
+    async def test_paths_report_company_type(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN the API supplies a company_type THEN it survives onto the path elements, and
+        elements without one report None rather than being dropped."""
+        httpx2_mock.get(ULTIMATE_PARENT_PATHS_URL).respond(json=MULTI_PATHS_RESPONSE)
+
+        resp = await get_ultimate_parent_paths_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client
+        )
+        path = resp.identifier_results["SPGI"].paths[0]
+
+        assert path[-1].company_type is CompanyType.public_company
+        # The fixture omits company_type on the elements below the ultimate parent.
+        assert path[0].company_type is None
+        assert resp.identifier_results["SPGI"].model_dump()["paths"][0][-1]["company_type"] == (
+            "public_company"
+        )
+
+    @pytest.mark.asyncio
+    async def test_unsupported_root_error_reaches_the_tool_response(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN a company type cannot be a corporate tree root THEN the API's 400 explaining that
+        is surfaced in errors, so the caller learns which types are supported."""
+        httpx2_mock.get(ULTIMATE_PARENT_PATHS_URL).respond(
+            status_code=400, json=UNSUPPORTED_ROOT_ERROR
+        )
+
+        resp = await get_ultimate_parent_paths_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client
+        )
+
+        assert resp.identifier_results == {}
+        assert len(resp.errors) == 1
+        assert "not supported as a corporate tree root" in resp.errors[0]
+        assert "public_company" in resp.errors[0]
+
+    @pytest.mark.asyncio
+    async def test_get_ultimate_parent_paths_with_unresolvable_identifier(
+        self, httpx_client: httpx2.AsyncClient
+    ) -> None:
+        """WHEN an identifier cannot be resolved THEN the error is reported and no call is made."""
+        resp = await get_ultimate_parent_paths_from_identifiers(
+            identifiers=["non-existent"], httpx_client=httpx_client
+        )
+
+        assert resp.identifier_results == {}
+        assert len(resp.errors) == 1
+
+
+class TestSearchCorporateTree:
+    @pytest.fixture
+    def add_tree_mock(self, httpx2_mock: Router) -> None:
+        optional_route(httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false")).respond(
+            json=SAMPLE_TREE_RESPONSE
+        )
+
+    @pytest.mark.asyncio
+    async def test_search_without_filters_returns_every_edge(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN no filters are given THEN every relationship is returned, one row per edge."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
+        )
+
+        assert result.queried_company.company_id == SPGI_COMPANY_ID
+        assert result.summary.total_matches == 12
+        assert result.summary.distinct_companies == 8
+        assert result.summary.showing == 12
+        assert len(result.matches) == 12
+        assert result.summary.matches_by_level == {"1": 4, "2": 6, "3": 2}
+        assert result.summary.companies_searched == 9
+        assert result.summary.relationships_searched == 12
+        assert result.summary.deepest_level_searched == 3
+        # The API omits the truncation key when the whole tree was returned.
+        assert result.summary.search_was_depth_limited is False
+
+    @pytest.mark.asyncio
+    async def test_search_never_matches_the_root(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN the filter matches only the queried company THEN there are no matches."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name_contains=["S&P Global"]
+        )
+
+        assert result.summary.total_matches == 0
+        assert result.matches == []
+        assert result.summary.matches_by_level == {}
+        # The root is still reported so the caller knows whose tree was searched.
+        assert result.queried_company.company_name == "S&P Global Inc."
+
+    @pytest.mark.asyncio
+    async def test_search_by_relationship_type(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN relationship_type is given THEN only edges of that type match."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_type=[TreeRelationshipType.merged_entity],
+        )
+
+        assert result.summary.total_matches == 2
+        assert {match.company_id for match in result.matches} == {NJ_DATA_CENTER, KENSHO}
+        assert all(
+            match.relationship_type is TreeRelationshipType.merged_entity
+            for match in result.matches
+        )
+
+    @pytest.mark.asyncio
+    async def test_search_by_multiple_relationship_types(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN several relationship types are given THEN edges matching ANY of them match."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_type=[
+                TreeRelationshipType.merged_entity,
+                TreeRelationshipType.investment_arm,
+            ],
+        )
+
+        assert result.summary.total_matches == 3
+        assert {match.company_id for match in result.matches} == {NJ_DATA_CENTER, KENSHO, OSTTRA}
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("country_iso_code", ["GBR", "gbr"])
+    async def test_search_by_country_iso_code_is_case_insensitive(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None, country_iso_code: str
+    ) -> None:
+        """WHEN an ISO alpha-3 code is given in any case THEN the same edges match."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            country_iso_code=[country_iso_code],
+        )
+
+        # IHS Markit is reached at level 1 and again at level 3, so 3 edges over 2 companies.
+        assert result.summary.total_matches == 3
+        assert result.summary.distinct_companies == 2
+        assert {match.company_id for match in result.matches} == {IHS_MARKIT, OSTTRA}
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("country_iso_code", ["United Kingdom", "GB", "UK"])
+    async def test_search_by_country_iso_code_ignores_full_names_and_other_codes(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None, country_iso_code: str
+    ) -> None:
+        """WHEN anything but an alpha-3 code is given THEN it matches nothing."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            country_iso_code=[country_iso_code],
+        )
+
+        assert result.summary.total_matches == 0
+        assert result.matches == []
+
+    @pytest.mark.asyncio
+    async def test_search_by_country_iso_code_excludes_companies_with_no_country(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN a company has no iso_country THEN a country_iso_code filter never matches it."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false").respond(
+            json=SAMPLE_TREE_RESPONSE_NO_COUNTRY
+        )
+
+        filtered = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, country_iso_code=["USA"]
+        )
+        assert filtered.summary.total_matches == 0
+
+        # Without the filter the same company is still returned.
+        unfiltered = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
+        )
+        assert unfiltered.summary.total_matches == 1
+        assert unfiltered.matches[0].iso_country is None
+
+    @pytest.mark.asyncio
+    async def test_search_by_multiple_country_iso_codes(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN several countries are given THEN edges in ANY of them match."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, country_iso_code=["GBR", "USA"]
+        )
+
+        assert result.summary.total_matches == 12
+
+    @pytest.mark.asyncio
+    async def test_search_by_name_substring(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN a name substring is given THEN it matches company names case-insensitively."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name_contains=["mcgraw"]
+        )
+
+        assert result.summary.distinct_companies == 3
+        assert {match.company_id for match in result.matches} == {
+            NJ_DATA_CENTER,
+            JUVENILE_RETAIL,
+            MCGRAW_HILL_EDUCATION,
+        }
+
+    @pytest.mark.asyncio
+    async def test_search_by_multiple_names(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN several name substrings are given THEN companies matching ANY of them match."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            name_contains=["Kensho", "Osttra"],
+        )
+
+        assert {match.company_id for match in result.matches} == {KENSHO, OSTTRA}
+
+    @pytest.mark.asyncio
+    async def test_search_combines_filters_with_and_logic(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN several filter types are given THEN a match must satisfy all of them."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            country_iso_code=["GBR"],
+            relationship_type=[TreeRelationshipType.subsidiary_or_operating_unit],
+        )
+
+        # Osttra is in GBR but is an investment arm, so only the two IHS Markit edges match.
+        assert result.summary.total_matches == 2
+        assert result.summary.distinct_companies == 1
+        assert {match.company_id for match in result.matches} == {IHS_MARKIT}
+
+    @pytest.mark.asyncio
+    async def test_search_with_contradictory_filters_returns_nothing(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN filters cannot be satisfied together THEN no matches are returned."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            country_iso_code=["USA"],
+            relationship_type=[TreeRelationshipType.investment_arm],
+        )
+
+        assert result.summary.total_matches == 0
+        assert result.matches == []
+
+    @pytest.mark.asyncio
+    async def test_search_reports_a_company_once_per_parent(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN a company has several parents THEN it is returned once per parent."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name_contains=["Juvenile Retail"]
+        )
+
+        assert result.summary.total_matches == 2
+        assert result.summary.distinct_companies == 1
+        assert {match.parent_company_id for match in result.matches} == {SNL, NJ_DATA_CENTER}
+
+    @pytest.mark.asyncio
+    async def test_search_limit_truncates_matches_but_not_the_totals(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN limit is below the match count THEN matches are capped but total_matches is not."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, limit=3
+        )
+
+        assert result.summary.total_matches == 12
+        assert result.summary.showing == 3
+        assert len(result.matches) == 3
+        # matches_by_level describes every match, not just the ones shown.
+        assert sum(result.summary.matches_by_level.values()) == 12
+
+    @pytest.mark.asyncio
+    async def test_search_flattens_company_fields_onto_each_match(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN a match is returned THEN the nested company fields are flattened onto it."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name_contains=["Osttra"]
+        )
+
+        (match,) = result.matches
+        assert match.company_id == OSTTRA
+        assert match.company_name == "Osttra Group Ltd."
+        assert match.country == "United Kingdom"
+        assert match.iso_country == "GBR"
+        assert match.parent_company_id == IHS_MARKIT
+        assert match.level == 2
+        assert match.relationship_type is TreeRelationshipType.investment_arm
+
+    @pytest.mark.asyncio
+    async def test_search_sends_max_depth_and_prior_status(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN max_depth is given and prior is requested THEN both reach the request URL."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true&max_depth=1").respond(
+            json=SAMPLE_TREE_RESPONSE_TRUNCATED
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            max_depth=1,
+            relationship_status=[
+                TreeRelationshipStatus.current,
+                TreeRelationshipStatus.prior,
+            ],
+        )
+
+        assert result.summary.total_matches == 4
+        assert result.summary.matches_by_level == {"1": 4}
+        # The fixture carries a truncation key, so the search is reported as depth-limited.
+        assert result.summary.search_was_depth_limited is True
+
+    @pytest.mark.asyncio
+    async def test_search_defaults_to_current_relationships_only(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN relationship_status is omitted THEN prior edges are neither fetched nor returned."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false").respond(
+            json=SAMPLE_TREE_RESPONSE
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
+        )
+
+        assert result.summary.total_matches == 12
+        assert {match.relationship_status for match in result.matches} == {
+            TreeRelationshipStatus.current
+        }
+
+    @pytest.mark.asyncio
+    async def test_search_for_current_only_does_not_request_prior(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN only current is requested THEN include_prior stays false."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false").respond(
+            json=SAMPLE_TREE_RESPONSE
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_status=[TreeRelationshipStatus.current],
+        )
+
+        assert result.summary.total_matches == 12
+
+    @pytest.mark.asyncio
+    async def test_search_for_prior_only_fetches_prior_then_filters_out_current(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN only prior is requested THEN the prior-inclusive tree is fetched and the current
+        edges in it are filtered out, while the summary still counts everything traversed."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true").respond(
+            json=SAMPLE_MIXED_STATUS_TREE_RESPONSE
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_status=[TreeRelationshipStatus.prior],
+        )
+
+        assert [match.company_id for match in result.matches] == [IHS_MARKIT, KENSHO]
+        assert {match.relationship_status for match in result.matches} == {
+            TreeRelationshipStatus.prior
+        }
+        # The traversal followed the prior edges, so the counts describe the whole prior-inclusive
+        # tree rather than only the two matches returned.
+        assert result.summary.total_matches == 2
+        assert result.summary.companies_searched == 5
+        assert result.summary.relationships_searched == 4
+
+    @pytest.mark.asyncio
+    async def test_search_for_both_statuses_returns_both(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN both statuses are requested THEN every edge of the prior-inclusive tree matches."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true").respond(
+            json=SAMPLE_MIXED_STATUS_TREE_RESPONSE
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_status=[TreeRelationshipStatus.current, TreeRelationshipStatus.prior],
+        )
+
+        assert result.summary.total_matches == 4
+        assert {match.relationship_status for match in result.matches} == {
+            TreeRelationshipStatus.current,
+            TreeRelationshipStatus.prior,
+        }
+
+    @pytest.mark.asyncio
+    async def test_status_filter_combines_with_the_other_filters(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN a status filter is combined with another filter THEN both have to match."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true").respond(
+            json=SAMPLE_MIXED_STATUS_TREE_RESPONSE
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_status=[TreeRelationshipStatus.prior],
+            relationship_type=[TreeRelationshipType.investment_arm],
+        )
+
+        assert [match.company_id for match in result.matches] == [KENSHO]
+
+    @pytest.mark.asyncio
+    async def test_search_reports_company_type_where_the_api_supplies_one(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN the API supplies a company_type THEN it reaches the queried company and matches,
+        and companies without one report None rather than being dropped."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
+        )
+
+        assert result.queried_company.company_type is CompanyType.public_company
+        by_id = {match.company_id: match for match in result.matches}
+        assert by_id[SNL].company_type is CompanyType.private_company
+        # The fixture omits company_type on every other node.
+        assert by_id[IHS_MARKIT].company_type is None
+
+    @pytest.mark.asyncio
+    async def test_unsupported_root_error_reaches_the_tool_response(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN a company type cannot be a corporate tree root THEN the API's 400 explaining that
+        is surfaced in errors, so the caller learns which types are supported."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false").respond(
+            status_code=400, json=UNSUPPORTED_ROOT_ERROR
+        )
+
+        resp = await search_corporate_tree_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client
+        )
+
+        assert resp.identifier_results == {}
+        assert len(resp.errors) == 1
+        assert "not supported as a corporate tree root" in resp.errors[0]
+        assert "public_company" in resp.errors[0]
+
+    @pytest.mark.asyncio
+    async def test_search_result_serializes_company_ids_with_the_company_prefix(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN the result is dumped THEN every company id carries the re-queryable C_ prefix."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false&max_depth=1").respond(
+            json=SAMPLE_TREE_RESPONSE_TRUNCATED
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, max_depth=1
+        )
+        dumped = result.model_dump()
+
+        assert dumped["queried_company"]["company_id"] == f"C_{SPGI_COMPANY_ID}"
+        assert dumped["matches"][0]["company_id"] == f"C_{SNL}"
+        assert dumped["matches"][0]["parent_company_id"] == f"C_{SPGI_COMPANY_ID}"
+
+    @pytest.mark.asyncio
+    async def test_search_orders_level_keys_numerically(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN a tree is deeper than 9 levels THEN level keys are ordered numerically."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false").respond(
+            json=SAMPLE_DEEP_TREE_RESPONSE
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
+        )
+
+        assert list(result.summary.matches_by_level) == [str(level) for level in range(1, 11)]
+
+    @pytest.mark.asyncio
+    async def test_search_corporate_tree_from_identifiers(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN the full tool function is called THEN identifiers resolve and trees are searched."""
+        resp = await search_corporate_tree_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client, country_iso_code=["GBR"]
+        )
+
+        assert resp.errors == []
+        assert resp.identifier_info == {"SPGI": SPGI_ID_TRIPLE}
+        assert resp.identifier_results["SPGI"].summary.distinct_companies == 2
+
+    @pytest.mark.asyncio
+    async def test_search_corporate_tree_with_unresolvable_identifier(
+        self, httpx_client: httpx2.AsyncClient
+    ) -> None:
+        """WHEN an identifier cannot be resolved THEN the error is reported and no call is made."""
+        resp = await search_corporate_tree_from_identifiers(
+            identifiers=["non-existent"], httpx_client=httpx_client
+        )
+
+        assert resp.identifier_results == {}
+        assert len(resp.errors) == 1
