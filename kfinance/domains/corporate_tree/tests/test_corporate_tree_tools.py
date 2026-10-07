@@ -396,11 +396,9 @@ class TestFetchUltimateParentPaths:
 
 
 class TestSearchCorporateTreeArgs:
-    def test_relationship_status_defaults_to_current_only(self) -> None:
-        """The default has to match the one in the search functions, since a tool call that omits
-        an argument falls through to the function signature rather than to the pydantic default."""
+    def test_relationship_status_defaults_to_none(self) -> None:
         args = SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"])
-        assert args.relationship_status == [TreeRelationshipStatus.current]
+        assert args.relationship_status is None
 
     def test_relationship_status_accepts_prior_only(self) -> None:
         args = SearchCorporateTreeFromIdentifiersArgs(
@@ -413,6 +411,10 @@ class TestSearchCorporateTreeArgs:
             SearchCorporateTreeFromIdentifiersArgs(
                 identifiers=["SPGI"], relationship_status=["former"]
             )
+
+    def test_max_depth_rejects_a_negative_depth(self) -> None:
+        with pytest.raises(ValidationError):
+            SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"], max_depth=-1)
 
 
 class TestGetUltimateParentPaths:

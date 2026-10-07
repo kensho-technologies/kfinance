@@ -1,7 +1,18 @@
+from typing import Annotated
+
 from pydantic import BaseModel, Field
 from strenum import StrEnum
 
 from kfinance.domains.companies.company_models import CompanyId
+
+
+MaxTreeDepth = Annotated[
+    int,
+    Field(
+        ge=0,
+        description="How many levels below the company to search. Omit to search the entire tree. Use max_depth=1 to search direct relationships only.",
+    ),
+]
 
 
 class CompanyType(StrEnum):

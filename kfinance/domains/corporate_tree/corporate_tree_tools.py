@@ -12,6 +12,7 @@ from kfinance.domains.corporate_tree.corporate_tree_models import (
     CorporateTreeNode,
     CorporateTreeResponse,
     CorporateTreeSearchResult,
+    MaxTreeDepth,
     SearchMatch,
     SearchSummary,
     TreeRelationshipStatus,
@@ -57,8 +58,7 @@ class GetUltimateParentPathsFromIdentifiers(KfinanceTool):
         Function: get_ultimate_parent_paths_from_identifiers(identifiers=["Instagram"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
-    # TODO: Specify permissions
-    accepted_permissions: set[Permission] | None = None
+    accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
 
     async def _arun(self, identifiers: list[str]) -> GetUltimateParentPathsFromIdentifiersResp:
         """"""
@@ -130,13 +130,12 @@ class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=None,
         description="Substring(s) to match against company names (case-insensitive). Nodes matching ANY of the listed substrings are included. For entities described by a business word, pass its stem (e.g. 'insurance units' -> ['insur']).",
     )
-    max_depth: int | None = Field(
+    max_depth: MaxTreeDepth | None = Field(
         default=None,
         description="How many levels below the company to search. Omit to search the entire tree. Use max_depth=1 to search direct relationships only.",
-        ge=0,
     )
-    relationship_status: list[TreeRelationshipStatus] = Field(
-        default=[TreeRelationshipStatus.current],
+    relationship_status: list[TreeRelationshipStatus] | None = Field(
+        default=None,
         description="Relationship statuses to include. Defaults to ['current'] relationships only. Pass ['prior'] when former, previous, prior, divested or sold entities that are no longer under the company are asked for. Pass ['current', 'prior'] for current and historical relationships.",
     )
     limit: int = Field(
@@ -190,8 +189,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         Function: search_corporate_tree_from_identifiers(identifiers=["GOOGL"], name_contains=["motorola"], relationship_status=["current", "prior"])
     """).strip()
     args_schema: Type[BaseModel] = SearchCorporateTreeFromIdentifiersArgs
-    # TODO: Specify permissions
-    accepted_permissions: set[Permission] | None = None
+    accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
 
     async def _arun(
         self,

@@ -124,8 +124,8 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetAnalystRecommendationsFromIdentifiers,
     # Ratings
     GetIssuerRatingsFromIdentifiers,
+    GetSecurityRatingsFromIdentifiers,
     # Corporate Tree
     GetUltimateParentPathsFromIdentifiers,
     SearchCorporateTreeFromIdentifiers,
-    GetSecurityRatingsFromIdentifiers,
 ]
