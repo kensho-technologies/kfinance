@@ -97,7 +97,9 @@ def run_mcp(
         kfinance_client = Client(refresh_token=refresh_token, api_host=api_host)
     elif client_id and private_key:
         logger.info("The client will be authenticated using a key pair")
-        kfinance_client = Client(client_id=client_id, private_key=private_key, kid=kid, api_host=api_host)
+        kfinance_client = Client(
+            client_id=client_id, private_key=private_key, kid=kid, api_host=api_host
+        )
     else:
         logger.info("The client will be authenticated using a browser")
         kfinance_client = Client(api_host=api_host)
