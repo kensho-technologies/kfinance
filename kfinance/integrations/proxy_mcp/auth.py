@@ -4,7 +4,7 @@ import logging
 import time
 from typing import Generator, Generic, TypeVar
 
-import httpx
+import httpx2
 from jwt import decode as jwt_decode, encode
 
 
@@ -107,7 +107,7 @@ class ClientAccessTokenDispenser(ABC):
 
 
 class RefreshTokenDispenser(ClientAccessTokenDispenser):
-    """Exchanges a refresh token via GET {url}?refresh_token={token} -> {"access_token": "..."}."""
+    """Exchanges a refresh token via POST {url} {"refresh_token": token} -> {"access_token": "..."}."""
 
     def __init__(
         self,
@@ -120,12 +120,15 @@ class RefreshTokenDispenser(ClientAccessTokenDispenser):
         super().__init__(cache=cache, access_token_cache_key=access_token_cache_key)
         self._refresh_token = refresh_token
         self._refresh_url = refresh_url
-        self._http_client = httpx.Client(timeout=60)
+        self._http_client = httpx2.Client(timeout=60)
 
     def refresh_access_token(self) -> ClientAccessToken:
-        """Exchange the refresh token for a new access token via HTTP GET."""
-        response = self._http_client.get(
-            f"{self._refresh_url}?refresh_token={self._refresh_token}",
+        """Exchange the refresh token for a new access token via HTTP POST."""
+        # The token goes in the body, not the query string, so it stays out of access logs
+        # and httpx2's INFO request log line (which includes the full URL).
+        response = self._http_client.post(
+            self._refresh_url,
+            json={"refresh_token": self._refresh_token},
         )
         response.raise_for_status()
         token = response.json()["access_token"]
@@ -143,6 +146,7 @@ class PrivateKeyBasedAccessTokenDispenser(ClientAccessTokenDispenser):
         cache: Cache[ClientAccessToken],
         access_token_cache_key: str,
         okta_host: str,
+        kid: str | None = None,
         token_refresh_buffer: timedelta | None = None,
     ) -> None:
         """Initialize with client credentials and Okta host for JWT-based auth."""
@@ -155,6 +159,7 @@ class PrivateKeyBasedAccessTokenDispenser(ClientAccessTokenDispenser):
         self._client_id = client_id
         self._private_key = private_key
         self._okta_host = okta_host
+        self._kid = kid
 
     def refresh_access_token(self) -> ClientAccessToken:
         """Acquire a fresh access token via client_credentials grant with a signed JWT assertion."""
@@ -169,8 +174,9 @@ class PrivateKeyBasedAccessTokenDispenser(ClientAccessTokenDispenser):
             },
             self._private_key,
             algorithm="RS256",
+            headers={"kid": self._kid} if self._kid else None,
         )
-        response = httpx.post(
+        response = httpx2.post(
             f"{self._okta_host}/oauth2/default/v1/token",
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -189,14 +195,16 @@ class PrivateKeyBasedAccessTokenDispenser(ClientAccessTokenDispenser):
         return ClientAccessToken(token=token_str)
 
 
-class DynamicBearerAuth(httpx.Auth):
+class DynamicBearerAuth(httpx2.Auth):
     """httpx Auth that injects a fresh Bearer token from a dispenser on every request."""
 
     def __init__(self, dispenser: ClientAccessTokenDispenser) -> None:
         """Initialize with a token dispenser."""
         self._dispenser = dispenser
 
-    def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
+    def auth_flow(
+        self, request: httpx2.Request
+    ) -> Generator[httpx2.Request, httpx2.Response, None]:
         """Inject the current Bearer token into the request Authorization header."""
         request.headers["Authorization"] = f"Bearer {self._dispenser.access_token.token}"
         yield request

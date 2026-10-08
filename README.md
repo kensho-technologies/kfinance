@@ -4,7 +4,7 @@ The kFinance Python library provides a simple interface for the LLM-ready API, s
 
 For a complete overview of the functions, usage, and features of the kFinance Python library, please refer to documentation [here](https://kensho-kfinance.readthedocs.io/en/stable/).
 
-Any questions or suggestions can be sent to the [kFinance Maintainers](kfinance-maintainers@kensho.com).
+Any questions or suggestions can be sent to the [kFinance Maintainers](mailto:kfinance-maintainers@kensho.com).
 
 # Setup
 
@@ -14,9 +14,9 @@ You can install kFinance on [PyPI](https://pypi.org/project/kensho-kfinance/) vi
 
 # Getting started
 
-To receive access, please email [S&P Global Market Intelligence](market.intelligence@spglobal.com) for information on free trials and pricing.
+To receive access, please email [S&P Global Market Intelligence](mailto:market.intelligence@spglobal.com) for information on free trials and pricing.
 
-Once access is obtained, get started using the [Authentication Guide](https://docs.kensho.com/llmreadyapi/kf-authentication) and [Usage Guide](https://docs.kensho.com/llmreadyapi/usage).
+Once access is obtained, get started using the [Authentication Guide](https://docs.kensho.com/llmreadyapi/python-library/kf-authentication) and [Usage Guide](https://docs.kensho.com/llmreadyapi/python-library/usage).
 
 To get started, we provide some notebooks:
 
@@ -39,12 +39,12 @@ This function initializes and starts an MCP server that exposes the kFinance too
 
 The server's full signature is as follows:
 
-`kfinance.mcp [--stdio|-s|--sse|--streamable-http] --refresh-token <refresh-token> --client-id <client-id> --private-key <private-key>`
+`kfinance.mcp [--stdio|-s|--sse|--streamable-http] --refresh-token <refresh-token> --client-id <client-id> --private-key <private-key> --kid <kid>`
 
 Authentication Methods (in order of precedence):
 
 1. Refresh Token: Uses an existing refresh token for authentication. The `--refresh-token <refresh-token>` argument must be provided.
-2. Key Pair: Uses client ID and private key for authentication. Both the `--client-id <client-id>` and `--private-key <private-key>` arguments must be provided.
+2. Key Pair: Uses client ID and private key for authentication. Both the `--client-id <client-id>` and `--private-key <private-key>` arguments must be provided. Add `--kid <kid>` when more than one public key is registered, since Okta rejects an assertion without a key ID in that case.
 3. Browser: Falls back to browser-based authentication flow. This occurs if no auth arguments are provided.
 
 Transport Layers:
@@ -75,6 +75,9 @@ AUTH_REFRESH_TOKEN=<token> python -m kfinance.proxy_mcp
 
 # Using a key pair (for production)
 AUTH_CLIENT_ID=<client-id> AUTH_PRIVATE_KEY=<private-key> python -m kfinance.proxy_mcp
+
+# Add AUTH_KID when more than one public key is registered
+AUTH_CLIENT_ID=<client-id> AUTH_PRIVATE_KEY=<private-key> AUTH_KID=<kid> python -m kfinance.proxy_mcp
 ```
 
 The server starts on `http://127.0.0.1:8000/mcp` by default. Use `--host` and `--port` to configure binding.

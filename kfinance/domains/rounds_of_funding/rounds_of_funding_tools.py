@@ -2,7 +2,7 @@ from datetime import date
 from textwrap import dedent
 from typing import Literal, Type
 
-import httpx
+import httpx2
 from pydantic import BaseModel, Field
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
@@ -321,7 +321,7 @@ class GetFundingSummaryFromIdentifiers(KfinanceTool):
 async def get_rounds_of_funding_from_identifiers(
     identifiers: list[str],
     role: RoundsOfFundingRole,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     start_date: date | None = None,
     end_date: date | None = None,
     limit: int | None = None,
@@ -374,7 +374,7 @@ async def get_rounds_of_funding_from_identifiers(
 async def fetch_rounds_of_funding_from_company_id(
     company_id: int,
     role: RoundsOfFundingRole,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> RoundsOfFundingResp:
     """Fetch rounds of funding for one company_id."""
     if role is RoundsOfFundingRole.company_raising_funds:
@@ -389,7 +389,7 @@ async def fetch_rounds_of_funding_from_company_id(
 
 async def get_rounds_of_funding_info_from_transaction_ids(
     transaction_ids: list[int],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetRoundsOfFundingInfoFromTransactionIdsResp:
     """Fetch detailed round of funding info for transaction IDs."""
 
@@ -475,7 +475,7 @@ async def get_rounds_of_funding_info_from_transaction_ids(
 
 async def fetch_rounds_of_funding_info_from_transaction_id(
     transaction_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> RoundOfFundingInfo:
     """Fetch detailed round of funding info for one transaction_id."""
     url = f"/fundinground/info/{transaction_id}"
@@ -486,7 +486,7 @@ async def fetch_rounds_of_funding_info_from_transaction_id(
 
 async def fetch_advisors_for_company_raising_round_of_funding(
     transaction_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> AdvisorsResp:
     """Fetch advisors for the target company raising funds in a round."""
     url = f"/fundinground/info/{transaction_id}/advisors/target"
@@ -498,7 +498,7 @@ async def fetch_advisors_for_company_raising_round_of_funding(
 async def fetch_advisors_for_company_investing_in_round_of_funding(
     transaction_id: int,
     advised_company_id: int,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> AdvisorsResp:
     """Fetch advisors for an investing company in a round of funding."""
     url = f"/fundinground/info/{transaction_id}/advisors/investor/{advised_company_id}"
@@ -509,7 +509,7 @@ async def fetch_advisors_for_company_investing_in_round_of_funding(
 
 async def get_funding_summary_from_identifiers(
     identifiers: list[str],
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetFundingSummaryFromIdentifiersResp:
     """Fetch funding summaries for all identifiers."""
 

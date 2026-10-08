@@ -1,6 +1,5 @@
-import httpx
+import httpx2
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import CompanyIdAndName
@@ -16,17 +15,15 @@ from kfinance.domains.competitors.competitor_tools import (
 
 
 @pytest.fixture
-def add_spgi_competitors_mock_resp(httpx_mock: HTTPXMock) -> None:
+def add_spgi_competitors_mock_resp(httpx2_mock) -> None:
     """Add mock response for SPGI competitors."""
-    httpx_mock.add_response(
-        method="GET",
-        url=f"https://kfinance.kensho.com/api/v1/competitors/{SPGI_COMPANY_ID}",
+    httpx2_mock.get(f"https://kfinance.kensho.com/api/v1/competitors/{SPGI_COMPANY_ID}").respond(
         json={
             "competitors": [
                 {"company_id": 35352, "company_name": "The Descartes Systems Group Inc."},
                 {"company_id": 4003514, "company_name": "London Stock Exchange Group plc"},
             ]
-        },
+        }
     )
 
 
@@ -40,7 +37,7 @@ class TestCompetitors:
 
     @pytest.mark.asyncio
     async def test_fetch_competitors_from_company_id(
-        self, httpx_client: httpx.AsyncClient, add_spgi_competitors_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_competitors_mock_resp: None
     ) -> None:
         """
         WHEN we request SPGI's competitors (using SPGI's company id)
@@ -56,7 +53,7 @@ class TestCompetitors:
 
     @pytest.mark.asyncio
     async def test_get_competitors_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_spgi_competitors_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_competitors_mock_resp: None
     ) -> None:
         """
         WHEN we fetch competitors for SPGI and a non-existent company

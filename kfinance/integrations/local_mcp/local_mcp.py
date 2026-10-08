@@ -1,12 +1,12 @@
 from typing import Literal, Optional
 
 import click
+from fastmcp import FastMCP
 from fastmcp.tools import FunctionTool
 from fastmcp.utilities.logging import get_logger
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from kfinance.client.kfinance import Client
-from kfinance.integrations.local_mcp.kfinance_mcp import KfinanceMcp
 from kfinance.integrations.tool_calling.tool_calling_models import KfinanceTool
 
 
@@ -49,11 +49,13 @@ def build_mcp_tool_from_kfinance_tool(kfinance_tool: KfinanceTool) -> FunctionTo
 @click.option("--refresh-token", required=False)
 @click.option("--client-id", required=False)
 @click.option("--private-key", required=False)
+@click.option("--kid", required=False)
 def run_mcp(
     transport: Literal["stdio", "sse", "streamable-http"],
     refresh_token: Optional[str] = None,
     client_id: Optional[str] = None,
     private_key: Optional[str] = None,
+    kid: Optional[str] = None,
 ) -> None:
     """Run the Kfinance MCP server with specified configuration.
 
@@ -74,6 +76,8 @@ def run_mcp(
     :type client_id: str
     :param private_key: Private key for key-pair authentication.
     :type private_key: str
+    :param kid: Key ID of the registered public key, required when more than one key is active.
+    :type kid: str
     """
     logger.info("Server will run with %s transport", transport)
     if refresh_token:
@@ -81,12 +85,12 @@ def run_mcp(
         kfinance_client = Client(refresh_token=refresh_token)
     elif client_id and private_key:
         logger.info("The client will be authenticated using a key pair")
-        kfinance_client = Client(client_id=client_id, private_key=private_key)
+        kfinance_client = Client(client_id=client_id, private_key=private_key, kid=kid)
     else:
         logger.info("The client will be authenticated using a browser")
         kfinance_client = Client()
 
-    kfinance_mcp: KfinanceMcp = KfinanceMcp("Kfinance")
+    kfinance_mcp: FastMCP = FastMCP("Kfinance")
     for langchain_tool in kfinance_client.langchain_tools:
         logger.info("Adding %s to server", langchain_tool.name)
         kfinance_mcp.add_tool(build_mcp_tool_from_kfinance_tool(langchain_tool))
