@@ -617,9 +617,8 @@ class TestFetchCompaniesFromRelationship:
         )
 
         httpx2_mock.get(
-            f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{RelationshipType.supplier}",
-            json=http_resp,
-        )
+            f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{RelationshipType.supplier}"
+        ).respond(json=http_resp)
 
         resp = mock_client.kfinance_api_client.fetch_companies_from_relationship(
             company_id=SPGI_COMPANY_ID, relationship_type=RelationshipType.supplier
@@ -627,7 +626,7 @@ class TestFetchCompaniesFromRelationship:
         assert resp == expected_result
 
     def test_fetch_relationships_with_cr_only_statuses(
-        self, requests_mock: Mocker, mock_client: Client
+        self, httpx2_mock: Router, mock_client: Client
     ) -> None:
         """
         GIVEN a request for a Company Relationships-only relationship type
@@ -649,8 +648,8 @@ class TestFetchCompaniesFromRelationship:
             cancelled=[CompanyIdAndName(company_name="qux", company_id=4)],
         )
 
-        requests_mock.get(
-            url=f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{RelationshipType.sponsored_fund}",
+        httpx2_mock.get(
+            f"{mock_client.kfinance_api_client.url_base}relationship/{SPGI_COMPANY_ID}/{RelationshipType.sponsored_fund}"
         ).respond(json=http_resp)
 
         resp = mock_client.kfinance_api_client.fetch_companies_from_relationship(

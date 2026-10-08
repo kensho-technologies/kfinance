@@ -1,5 +1,13 @@
 # Changelog
 
+## v9.0.0
+- **Breaking:** Unify "business relationships" into "relationships". The tool
+  `get_business_relationship_from_identifiers` is now `get_relationship_from_identifiers`, and its
+  `business_relationship` parameter is now `relationship_type`.
+- Adds new relationships types to the relationship tools: `fund_sponsor`, `sponsored_fund`, `fund_family`, `fund_family_member`,
+  `fund_distributor`, `distributed_fund`, `fund_investment_advisor`, `advised_fund`; and two new
+  response statuses: `pending` and `cancelled`.
+
 ## v8.1.0
 - Add optional `kid` parameter to `Client`, stamped on the private-key-JWT client assertion so
   users with more than one active public key (e.g. mid key-rotation) can authenticate. Also

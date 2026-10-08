@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 import pytest
 
 from kfinance.client.permission_models import Permission
@@ -29,7 +29,7 @@ class TestRelationships:
 
     @pytest.mark.asyncio
     async def test_fetch_relationship_from_company_id(
-        self, httpx_client: httpx.AsyncClient, add_spgi_supplier_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_supplier_mock_resp: None
     ) -> None:
         """
         WHEN we fetch SPGI's supplier using SPGI's company id
@@ -46,7 +46,7 @@ class TestRelationships:
 
     @pytest.mark.asyncio
     async def test_get_relationship_from_identifiers(
-        self, httpx_client: httpx.AsyncClient, add_spgi_supplier_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_supplier_mock_resp: None
     ) -> None:
         """
         WHEN we fetch suppliers for SPGI and a non-existent company
@@ -71,7 +71,7 @@ class TestRelationships:
 
     @pytest.mark.asyncio
     async def test_get_relationship_omits_absent_statuses(
-        self, httpx_client: httpx.AsyncClient, add_spgi_supplier_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_supplier_mock_resp: None
     ) -> None:
         """
         GIVEN a response without the Company Relationships-only statuses
@@ -90,7 +90,7 @@ class TestRelationships:
 
     @pytest.mark.asyncio
     async def test_get_relationship_includes_cr_only_statuses(
-        self, httpx_client: httpx.AsyncClient, add_spgi_sponsored_fund_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_sponsored_fund_mock_resp: None
     ) -> None:
         """
         GIVEN a fund relationship response that includes all four statuses

@@ -2,7 +2,7 @@ from functools import lru_cache
 from textwrap import dedent
 from typing import Type
 
-import httpx
+import httpx2
 from pydantic import BaseModel, create_model
 from strenum import StrEnum
 
@@ -112,7 +112,7 @@ class GetRelationshipFromIdentifiers(KfinanceTool):
 async def get_relationship_from_identifiers(
     identifiers: list[str],
     relationship_type: RelationshipType,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetRelationshipFromIdentifiersResp:
     """Fetch relationships for all identifiers.
 
@@ -179,7 +179,7 @@ async def get_relationship_from_identifiers(
 async def fetch_relationship_from_company_id(
     company_id: int,
     relationship_type: RelationshipType,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> RelationshipResponse:
     """Fetch and return a relationship for one identifier."""
     resp = await httpx_client.get(url=f"/relationship/{company_id}/{relationship_type}")
