@@ -2,6 +2,7 @@
 
 ## v8.1.1
 - Surface `requested_line_item` in tool responses for CIQ line items, VA line items, and VA estimates. The field echoes back the line item (or estimate) the caller asked for. Prefers the server's value when available, falls back to the tool input.
+- Add `last_close_tev_to_ebit`, `last_close_tev_to_ebitda`, `ev_to_employees`, and `ev_to_total_revenue` line items.
 
 ## v8.1.0
 - Add optional `kid` parameter to `Client`, stamped on the private-key-JWT client assertion so
