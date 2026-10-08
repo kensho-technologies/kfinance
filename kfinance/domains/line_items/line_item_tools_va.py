@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import EstimatePeriodType
-from kfinance.client.models.response_models import PostResponseWithMetadata
+from kfinance.client.models.response_models import PostResponseWithLineItemMetadata
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
     AlternativeLineItemMetadata,
@@ -119,7 +119,7 @@ async def fetch_visible_alpha_line_item_from_company_ids(
     num_periods: int | None = None,
     num_periods_back: int | None = None,
     currency: str | None = None,
-) -> PostResponseWithMetadata[LineItemResp]:
+) -> PostResponseWithLineItemMetadata[LineItemResp]:
     """Fetch line items for a list of company IDs using Visible Alpha as the data source."""
     params: dict[str, Any] = {
         "company_ids": company_ids,
@@ -148,7 +148,7 @@ async def fetch_visible_alpha_line_item_from_company_ids(
     resp = await httpx_client.post(url="/line_item/visible_alpha", json=params)
     resp.raise_for_status()
 
-    return PostResponseWithMetadata[LineItemResp].model_validate(resp.json())
+    return PostResponseWithLineItemMetadata[LineItemResp].model_validate(resp.json())
 
 
 async def get_visible_alpha_financial_line_item_from_identifiers(
@@ -203,8 +203,10 @@ async def get_visible_alpha_financial_line_item_from_identifiers(
             metadata[original_identifier] = meta
 
         results = identifier_to_results
+        requested_line_item = line_item_resp.requested_line_item or line_item_search
     else:
         results = {}
+        requested_line_item = line_item_search
 
     if (
         start_year is None
@@ -224,6 +226,7 @@ async def get_visible_alpha_financial_line_item_from_identifiers(
         errors=errors,
         metadata=metadata,
         data_source="Visible Alpha",
+        requested_line_item=requested_line_item,
     )
 
     insert_source_link_note(resp_model)
