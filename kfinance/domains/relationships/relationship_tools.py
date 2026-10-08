@@ -1,6 +1,6 @@
 from functools import lru_cache
 from textwrap import dedent
-from typing import Type
+from typing import Type, cast
 
 import httpx2
 from pydantic import BaseModel, create_model
@@ -36,13 +36,14 @@ def build_relationship_args_model(
     enum members are distinct objects from their RelationshipType counterparts but carry
     the same values, so they interpolate into request urls identically.
     """
-    members = {
-        relationship_type.name: relationship_type.value
+    members = [
+        (relationship_type.name, relationship_type.value)
         for relationship_type in RelationshipType
         if relationship_type in permitted
-    }
-    # StrEnum's functional api accepts a name-to-value mapping, which its stub doesn't cover.
-    restricted_enum = StrEnum("RelationshipType", members)  # type: ignore[arg-type]
+    ]
+    # StrEnum's functional api returns a new enum class, but its stub types the call as
+    # returning an instance, which pydantic 2.14's TypeForm-annotated create_model rejects.
+    restricted_enum = cast("type[StrEnum]", StrEnum("RelationshipType", members))
     # pydantic emits the enum docstring as the field description.
     restricted_enum.__doc__ = RelationshipType.__doc__
     return create_model(
