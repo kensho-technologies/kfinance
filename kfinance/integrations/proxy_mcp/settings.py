@@ -6,6 +6,7 @@ class AuthSettings(BaseModel):
     refresh_token: str | None = None
     client_id: str | None = None
     private_key: str | None = None
+    kid: str | None = None
     okta_host: str = "https://kensho.okta.com"
     refresh_url: str = "https://kfinance.kensho.com/oauth2/refresh"
 

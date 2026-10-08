@@ -2,7 +2,7 @@ from difflib import SequenceMatcher
 from textwrap import dedent
 from typing import Any, Literal, Type, cast
 
-import httpx
+import httpx2
 from pydantic import BaseModel, Field, model_validator
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
@@ -142,6 +142,12 @@ class GetFinancialLineItemFromIdentifiersArgs(BaseFinancialLineItemFromIdentifie
         """Custom validator that provides intelligent suggestions for invalid line items."""
         if isinstance(values, dict) and "line_item" in values:
             line_item = values["line_item"]
+            if isinstance(line_item, list):
+                raise ValueError(
+                    "line_item takes one line item per call. Call this tool once per line item."
+                )
+            if not isinstance(line_item, str):
+                raise ValueError(f"line_item must be a string, got {type(line_item).__name__}")
             # Use the helper function to validate and provide suggestions
             _smart_line_item_validator(line_item)
         return values
@@ -223,7 +229,7 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
 async def get_financial_line_item_from_identifiers(
     identifiers: list[str],
     line_item: str,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     period_type: PeriodType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,
@@ -306,7 +312,7 @@ async def get_financial_line_item_from_identifiers(
 async def fetch_line_item_from_company_ids(
     company_ids: list[int],
     line_item: str,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
     period_type: PeriodType | None = None,
     start_year: int | None = None,
     end_year: int | None = None,

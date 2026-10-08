@@ -1,9 +1,8 @@
 from datetime import date, datetime, timezone
 import json
 
-import httpx
+import httpx2
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.key_developments.key_devs_models import (
@@ -20,11 +19,9 @@ from kfinance.domains.key_developments.key_devs_tools import (
 
 
 @pytest.fixture
-def add_spgi_key_devs_mock_resp(httpx_mock: HTTPXMock) -> None:
+def add_spgi_key_devs_mock_resp(httpx2_mock) -> None:
     """Add mock response for SPGI key developments."""
-    httpx_mock.add_response(
-        method="POST",
-        url="https://kfinance.kensho.com/api/v1/key_devs/",
+    httpx2_mock.post("https://kfinance.kensho.com/api/v1/key_devs/").respond(
         json={
             "results": {
                 "Client Announcements": [
@@ -50,8 +47,7 @@ def add_spgi_key_devs_mock_resp(httpx_mock: HTTPXMock) -> None:
             },
             "next_time_band": None,
             "notes": None,
-        },
-        is_optional=True,
+        }
     )
 
 
@@ -103,7 +99,7 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_fetch_key_devs_from_company_id(
-        self, httpx_client: httpx.AsyncClient, add_spgi_key_devs_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_key_devs_mock_resp: None
     ) -> None:
         """
         WHEN we request SPGI's key developments (using SPGI's company id)
@@ -118,16 +114,14 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_fetch_key_devs_with_date_range(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we request key developments with a date range
         THEN the request includes start_date and end_date parameters.
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/key_devs/",
-            json={"results": {}, "next_time_band": None, "notes": None},
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/key_devs/").respond(
+            json={"results": {}, "next_time_band": None, "notes": None}
         )
 
         await fetch_key_devs_from_company_id(
@@ -138,7 +132,7 @@ class TestKeyDevs:
         )
 
         # verify the request was made with correct payload
-        request = httpx_mock.get_request()
+        request = httpx2_mock.calls.last.request
         assert request is not None
 
         payload = json.loads(request.content)
@@ -148,17 +142,15 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_fetch_key_devs_with_category_filter(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we request key developments with a category filter
         THEN the request includes key_dev_category parameter.
         """
 
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/key_devs/",
-            json={"results": {}, "next_time_band": None, "notes": None},
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/key_devs/").respond(
+            json={"results": {}, "next_time_band": None, "notes": None}
         )
 
         await fetch_key_devs_from_company_id(
@@ -168,7 +160,7 @@ class TestKeyDevs:
         )
 
         # verify the request was made with correct payload
-        request = httpx_mock.get_request()
+        request = httpx2_mock.calls.last.request
         assert request is not None
 
         payload = json.loads(request.content)
@@ -177,7 +169,7 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_get_key_devs_from_identifier(
-        self, httpx_client: httpx.AsyncClient, add_spgi_key_devs_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_key_devs_mock_resp: None
     ) -> None:
         """
         WHEN we fetch key developments for SPGI and a non-existent company
@@ -214,21 +206,19 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_get_key_devs_with_api_error(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the key devs API returns an error (e.g. no data available)
         THEN the error is extracted and surfaced in the response
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/key_devs/",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/key_devs/").respond(
             json={
                 "results": {},
                 "next_time_band": None,
                 "notes": None,
                 "errors": [f"There is no data associated with company id {SPGI_COMPANY_ID}"],
-            },
+            }
         )
 
         expected_resp = GetKeyDevsFromIdentifierResp(
@@ -246,15 +236,13 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_key_devs_with_optional_fields_none(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns key developments with optional fields as None
         THEN the response is parsed correctly without validation errors.
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/key_devs/",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/key_devs/").respond(
             json={
                 "results": {
                     "Client Announcements": [
@@ -270,7 +258,7 @@ class TestKeyDevs:
                 },
                 "next_time_band": None,
                 "notes": None,
-            },
+            }
         )
 
         resp = await fetch_key_devs_from_company_id(

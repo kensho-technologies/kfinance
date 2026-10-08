@@ -1,9 +1,10 @@
 from datetime import datetime
+from typing import Generator
 
-import httpx
+import httpx2
 import pytest
-from pytest_httpx import HTTPXMock
-from requests_mock import Mocker
+import respx
+from respx import Route, Router
 
 from kfinance.client.kfinance import Client
 from kfinance.domains.companies.company_models import IdentificationTripleWithCompanyInfo
@@ -43,9 +44,34 @@ FAKE_COMPANY_2_ID_TRIPLE = IdentificationTripleWithCompanyInfo(
     country="USA",
 )
 
+NON_EXISTENT_ERROR = {
+    "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+}
+
+
+def optional_route(route: Route) -> Route:
+    """Allow a mocked route to go uncalled (the equivalent of pytest-httpx's is_optional=True)."""
+    route.optional = True  # type: ignore[attr-defined]
+    return route
+
 
 @pytest.fixture
-def mock_client(requests_mock: Mocker) -> Client:
+def httpx2_mock() -> Generator[Router, None, None]:
+    """Mock all httpx2 requests.
+
+    A request that matches no route fails the test, and so does a route that never gets
+    called, unless it was wrapped in optional_route(). This overrides pytest-httpx2's
+    fixture because respx's assert_all_called covers the whole router, so it can't make
+    only some routes optional.
+    """
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        yield router
+        uncalled = [r for r in router.routes if not r.called and not getattr(r, "optional", False)]
+        assert not uncalled, f"Mocked routes were never called: {uncalled}"
+
+
+@pytest.fixture
+def mock_client(httpx2_mock: Router) -> Client:
     """Create a KFinanceApiClient with a mock response for the SPGI id triple."""
 
     client = Client(refresh_token="foo")
@@ -53,179 +79,107 @@ def mock_client(requests_mock: Mocker) -> Client:
     client.kfinance_api_client._access_token = "foo"  # noqa: SLF001
     client.kfinance_api_client._access_token_expiry = int(datetime(2100, 1, 1).timestamp())  # noqa: SLF001
 
-    requests_mock.get(
-        url="https://kfinance.kensho.com/api/v1/id/SPGI",
-        json=SPGI_ID_TRIPLE.model_dump(mode="json"),
+    optional_route(httpx2_mock.get("https://kfinance.kensho.com/api/v1/id/SPGI")).respond(
+        json=SPGI_ID_TRIPLE.model_dump(mode="json")
     )
-    requests_mock.get(
-        url="https://kfinance.kensho.com/api/v1/id/MSFT",
-        json={"trading_item_id": 2630413, "security_id": 2630412, "company_id": 21835},
+    optional_route(httpx2_mock.get("https://kfinance.kensho.com/api/v1/id/MSFT")).respond(
+        json={"trading_item_id": 2630413, "security_id": 2630412, "company_id": 21835}
     )
 
     # Create mock security id and trading item id for company ids 1 and 2:
     for company_id in [1, 2]:
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/securities/{company_id}/primary",
-            json={"primary_security": company_id},
-        )
-        requests_mock.get(
-            url=f"https://kfinance.kensho.com/api/v1/trading_items/{company_id}/primary",
-            json={"primary_trading_item": company_id},
-        )
+        optional_route(
+            httpx2_mock.get(f"https://kfinance.kensho.com/api/v1/securities/{company_id}/primary")
+        ).respond(json={"primary_security": company_id})
+        optional_route(
+            httpx2_mock.get(
+                f"https://kfinance.kensho.com/api/v1/trading_items/{company_id}/primary"
+            )
+        ).respond(json={"primary_trading_item": company_id})
 
-    # Fetch SPGI
-    requests_mock.post(
-        url="https://kfinance.kensho.com/api/v1/ids",
-        additional_matcher=lambda req: req.json().get("identifiers") == ["SPGI"],
-        json={"data": {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")}},
-    )
-    # Fetch a non-existent company (which will include an error)
-    requests_mock.post(
-        url="https://kfinance.kensho.com/api/v1/ids",
-        additional_matcher=lambda req: req.json().get("identifiers") == ["non-existent"],
-        json={
-            "data": {
-                "non-existent": {
-                    "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                },
-            }
+    ids_url = "https://kfinance.kensho.com/api/v1/ids"
+    ids_responses = {
+        # Fetch SPGI
+        ("SPGI",): {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")},
+        # Fetch a non-existent company (which will include an error)
+        ("non-existent",): {"non-existent": NON_EXISTENT_ERROR},
+        # Fetch a fake company
+        ("C_1",): {"C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json")},
+        # Fetch SPGI and a non-existent company (which will include an error)
+        ("SPGI", "non-existent"): {
+            "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
+            "non-existent": NON_EXISTENT_ERROR,
         },
-    )
-    # Fetch a fake company
-    requests_mock.post(
-        url="https://kfinance.kensho.com/api/v1/ids",
-        additional_matcher=lambda req: req.json().get("identifiers") == ["C_1"],
-        json={
-            "data": {
-                "C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json"),
-            },
+        # Fetch SPGI and a private company (which will only have a company_id but no security or trading item id.)
+        ("SPGI", "private_company"): {
+            "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
+            "private_company": {"company_id": 1, "security_id": None, "trading_item_id": None},
         },
-    )
-    # Fetch SPGI and a non-existent company (which will include an error)
-    requests_mock.post(
-        url="https://kfinance.kensho.com/api/v1/ids",
-        additional_matcher=lambda req: req.json().get("identifiers") == ["SPGI", "non-existent"],
-        json={
-            "data": {
-                "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-                "non-existent": {
-                    "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                },
-            }
+        ("C_1", "C_2"): {
+            "C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json"),
+            "C_2": FAKE_COMPANY_2_ID_TRIPLE.model_dump(mode="json"),
         },
-    )
-    # Fetch SPGI and a private company (which will only have a company_id but no security or trading item id.)
-    requests_mock.post(
-        url="https://kfinance.kensho.com/api/v1/ids",
-        additional_matcher=lambda req: req.json().get("identifiers") == ["SPGI", "private_company"],
-        json={
-            "data": {
-                "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-                "private_company": {"company_id": 1, "security_id": None, "trading_item_id": None},
-            }
-        },
-    )
-
-    requests_mock.post(
-        url="https://kfinance.kensho.com/api/v1/ids",
-        additional_matcher=lambda req: req.json().get("identifiers") == ["C_1", "C_2"],
-        json={
-            "data": {
-                "C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json"),
-                "C_2": FAKE_COMPANY_2_ID_TRIPLE.model_dump(mode="json"),
-            }
-        },
-    )
+    }
+    for identifiers, data in ids_responses.items():
+        optional_route(httpx2_mock.post(ids_url, json={"identifiers": list(identifiers)})).respond(
+            json={"data": data}
+        )
 
     return client
 
 
 @pytest.fixture(scope="function")
-def httpx_client(httpx_mock: HTTPXMock) -> httpx.AsyncClient:
+def httpx_client(httpx2_mock: Router) -> httpx2.AsyncClient:
     """Create an async httpx client with mock responses for id resolution."""
 
-    # Fetch SPGI
-    httpx_mock.add_response(
-        url="https://kfinance.kensho.com/api/v1/ids",
-        match_json={"identifiers": ["SPGI"]},
-        json={"data": {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")}},
-        is_optional=True,
-        is_reusable=True,
-    )
-    # Fetch non-existent company (only includes an error)
-    httpx_mock.add_response(
-        url="https://kfinance.kensho.com/api/v1/ids",
-        match_json={"identifiers": ["non-existent"]},
-        json={
-            "data": {
-                "non-existent": {
-                    "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                },
-            }
+    ids_url = "https://kfinance.kensho.com/api/v1/ids"
+    ids_responses = {
+        # Fetch SPGI
+        ("SPGI",): {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")},
+        # Fetch non-existent company (only includes an error)
+        ("non-existent",): {"non-existent": NON_EXISTENT_ERROR},
+        # Fetch SPGI and a non-existent company (which will include an error)
+        ("SPGI", "non-existent"): {
+            "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
+            "non-existent": NON_EXISTENT_ERROR,
         },
-        is_optional=True,
-    )
-    # Fetch SPGI and a non-existent company (which will include an error)
-    httpx_mock.add_response(
-        url="https://kfinance.kensho.com/api/v1/ids",
-        match_json={"identifiers": ["SPGI", "non-existent"]},
-        json={
-            "data": {
-                "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-                "non-existent": {
-                    "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-                },
-            }
+        # Fetch SPGI and a private company (which will only have a company_id but no security or trading item id.)
+        ("SPGI", "private_company"): {
+            "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
+            "private_company": {
+                "company_id": 1,
+                "security_id": None,
+                "trading_item_id": None,
+                "company_name": "Private Company",
+                "ticker": None,
+                "country": "USA",
+            },
         },
-        is_optional=True,
-    )
-    # Fetch SPGI and a private company (which will only have a company_id but no security or trading item id.)
-    httpx_mock.add_response(
-        url="https://kfinance.kensho.com/api/v1/ids",
-        match_json={"identifiers": ["SPGI", "private_company"]},
-        json={
-            "data": {
-                "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-                "private_company": {
-                    "company_id": 1,
-                    "security_id": None,
-                    "trading_item_id": None,
-                    "company_name": "Private Company",
-                    "ticker": None,
-                    "country": "USA",
-                },
-            }
+        # Fetch C_1 and C_2 (for multi-company testing)
+        ("C_1", "C_2"): {
+            "C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json"),
+            "C_2": FAKE_COMPANY_2_ID_TRIPLE.model_dump(mode="json"),
         },
-        is_optional=True,
-    )
-    # Fetch C_1 and C_2 (for multi-company testing)
-    httpx_mock.add_response(
-        url="https://kfinance.kensho.com/api/v1/ids",
-        match_json={"identifiers": ["C_1", "C_2"]},
-        json={
-            "data": {
-                "C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json"),
-                "C_2": FAKE_COMPANY_2_ID_TRIPLE.model_dump(mode="json"),
-            }
-        },
-        is_optional=True,
-    )
+    }
+    for identifiers, data in ids_responses.items():
+        optional_route(httpx2_mock.post(ids_url, json={"identifiers": list(identifiers)})).respond(
+            json={"data": data}
+        )
 
-    return httpx.AsyncClient(base_url="https://kfinance.kensho.com/api/v1")
+    return httpx2.AsyncClient(base_url="https://kfinance.kensho.com/api/v1")
 
 
 @pytest.fixture
-def add_spgi_supplier_mock_resp(httpx_mock: HTTPXMock) -> None:
+def add_spgi_supplier_mock_resp(httpx2_mock: Router) -> None:
     """Add mock response for SPGI supplier relationship."""
-    httpx_mock.add_response(
-        method="GET",
-        url=f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/supplier",
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/supplier"
+    ).respond(
         json={
             "current": [{"company_id": 883103, "company_name": "CRISIL Limited"}],
             "previous": [
-                {"company_id": 472898, "company_name": "Morgan Stanley"},
-                {"company_id": 8182358, "company_name": "Eloqua, Inc."},
+                {"company_name": "Morgan Stanley", "company_id": 472898},
+                {"company_name": "Eloqua, Inc.", "company_id": 8182358},
             ],
-        },
-        is_reusable=True,
+        }
     )

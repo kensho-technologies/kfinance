@@ -1,6 +1,5 @@
-import httpx
+import httpx2
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.professionals.professionals_models import (
@@ -80,43 +79,31 @@ MOCK_PERSON_RESP = PersonProfessionalsResp(
 
 
 @pytest.fixture
-def add_spgi_board_mock_resp(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        method="GET",
-        url=f"https://kfinance.kensho.com/api/v1/professionals/company/{SPGI_COMPANY_ID}/board_members/all",
-        json=MOCK_BOARD_RESP.model_dump(mode="json"),
-        is_reusable=True,
-    )
+def add_spgi_board_mock_resp(httpx2_mock) -> None:
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/professionals/company/{SPGI_COMPANY_ID}/board_members/all"
+    ).respond(json=MOCK_BOARD_RESP.model_dump(mode="json"))
 
 
 @pytest.fixture
-def add_spgi_employee_mock_resp(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        method="GET",
-        url=f"https://kfinance.kensho.com/api/v1/professionals/company/{SPGI_COMPANY_ID}/employees/current",
-        json=MOCK_EMPLOYEE_RESP.model_dump(mode="json"),
-        is_reusable=True,
-    )
+def add_spgi_employee_mock_resp(httpx2_mock) -> None:
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/professionals/company/{SPGI_COMPANY_ID}/employees/current"
+    ).respond(json=MOCK_EMPLOYEE_RESP.model_dump(mode="json"))
 
 
 @pytest.fixture
-def add_spgi_past_employee_mock_resp(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        method="GET",
-        url=f"https://kfinance.kensho.com/api/v1/professionals/company/{SPGI_COMPANY_ID}/employees/prior",
-        json=MOCK_EMPLOYEE_RESP.model_dump(mode="json"),
-        is_reusable=True,
-    )
+def add_spgi_past_employee_mock_resp(httpx2_mock) -> None:
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/professionals/company/{SPGI_COMPANY_ID}/employees/prior"
+    ).respond(json=MOCK_EMPLOYEE_RESP.model_dump(mode="json"))
 
 
 @pytest.fixture
-def add_spgi_person_mock_resp(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        method="GET",
-        url=f"https://kfinance.kensho.com/api/v1/professionals/person/{SPGI_CEO_PERSON_ID}",
-        json=MOCK_PERSON_RESP.model_dump(mode="json"),
-        is_reusable=True,
-    )
+def add_spgi_person_mock_resp(httpx2_mock) -> None:
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/professionals/person/{SPGI_CEO_PERSON_ID}"
+    ).respond(json=MOCK_PERSON_RESP.model_dump(mode="json"))
 
 
 class TestBuildName:
@@ -229,7 +216,7 @@ class TestBuildName:
 class TestFetchProfessionalsCompany:
     @pytest.mark.asyncio
     async def test_fetch_board_members(
-        self, httpx_client: httpx.AsyncClient, add_spgi_board_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_board_mock_resp: None
     ) -> None:
         """
         WHEN we fetch SPGI's board members using SPGI's company id
@@ -245,7 +232,7 @@ class TestFetchProfessionalsCompany:
 
     @pytest.mark.asyncio
     async def test_fetch_current_employees(
-        self, httpx_client: httpx.AsyncClient, add_spgi_employee_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_employee_mock_resp: None
     ) -> None:
         """
         WHEN we fetch SPGI's current employees using SPGI's company id
@@ -261,7 +248,7 @@ class TestFetchProfessionalsCompany:
 
     @pytest.mark.asyncio
     async def test_fetch_past_employees(
-        self, httpx_client: httpx.AsyncClient, add_spgi_past_employee_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_past_employee_mock_resp: None
     ) -> None:
         """
         WHEN we fetch SPGI's past employees using SPGI's company id
@@ -279,7 +266,7 @@ class TestFetchProfessionalsCompany:
 class TestFetchProfessionalsPerson:
     @pytest.mark.asyncio
     async def test_fetch_person_professionals(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch professional history for a person using their person_id
@@ -293,7 +280,7 @@ class TestFetchProfessionalsPerson:
 
     @pytest.mark.asyncio
     async def test_fetch_person_roles_structure(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch professional history for a person
@@ -315,7 +302,7 @@ class TestFetchProfessionalsPerson:
 class TestGetProfessionalsFromIdentifiers:
     @pytest.mark.asyncio
     async def test_get_board_members(
-        self, httpx_client: httpx.AsyncClient, add_spgi_board_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_board_mock_resp: None
     ) -> None:
         """
         WHEN we fetch board members for SPGI by identifier
@@ -336,7 +323,7 @@ class TestGetProfessionalsFromIdentifiers:
 
     @pytest.mark.asyncio
     async def test_include_compensation_false_strips_compensation(
-        self, httpx_client: httpx.AsyncClient, add_spgi_employee_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_employee_mock_resp: None
     ) -> None:
         """
         WHEN we fetch employees with include_compensation=False
@@ -356,7 +343,7 @@ class TestGetProfessionalsFromIdentifiers:
 
     @pytest.mark.asyncio
     async def test_include_compensation_true_keeps_compensation(
-        self, httpx_client: httpx.AsyncClient, add_spgi_employee_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_employee_mock_resp: None
     ) -> None:
         """
         WHEN we fetch employees with include_compensation=True
@@ -375,7 +362,7 @@ class TestGetProfessionalsFromIdentifiers:
     @pytest.mark.asyncio
     async def test_get_professionals_with_invalid_identifier(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_board_mock_resp: None,
     ) -> None:
         """
@@ -395,7 +382,7 @@ class TestGetProfessionalsFromIdentifiers:
 class TestGetProfessionalsFromPersonIds:
     @pytest.mark.asyncio
     async def test_get_person_professionals(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch professional history for a person by person_id
@@ -412,18 +399,16 @@ class TestGetProfessionalsFromPersonIds:
     @pytest.mark.asyncio
     async def test_get_multiple_persons(
         self,
-        httpx_client: httpx.AsyncClient,
-        httpx_mock: HTTPXMock,
+        httpx_client: httpx2.AsyncClient,
+        httpx2_mock,
         add_spgi_person_mock_resp: None,
     ) -> None:
         """
         WHEN we fetch professional history for multiple person_ids and one returns a 404
         THEN we get back results for the successful one and an error for the failed one.
         """
-        httpx_mock.add_response(
-            method="GET",
-            url="https://kfinance.kensho.com/api/v1/professionals/person/99999",
-            status_code=404,
+        httpx2_mock.get("https://kfinance.kensho.com/api/v1/professionals/person/99999").respond(
+            status_code=404
         )
         resp = await get_professionals_from_person_ids(
             person_ids=[SPGI_CEO_PERSON_ID, 99999],
@@ -434,7 +419,7 @@ class TestGetProfessionalsFromPersonIds:
 
     @pytest.mark.asyncio
     async def test_include_biography_false_strips_biography(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch person professionals with include_biography=False
@@ -449,7 +434,7 @@ class TestGetProfessionalsFromPersonIds:
 
     @pytest.mark.asyncio
     async def test_include_biography_true_keeps_biography(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch person professionals with include_biography=True
@@ -467,7 +452,7 @@ class TestGetProfessionalsFromPersonIds:
 
     @pytest.mark.asyncio
     async def test_include_compensation_false_strips_compensation(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch person professionals with include_compensation=False
@@ -486,7 +471,7 @@ class TestGetProfessionalsFromPersonIds:
 
     @pytest.mark.asyncio
     async def test_include_compensation_true_keeps_compensation(
-        self, httpx_client: httpx.AsyncClient, add_spgi_person_mock_resp: None
+        self, httpx_client: httpx2.AsyncClient, add_spgi_person_mock_resp: None
     ) -> None:
         """
         WHEN we fetch person professionals with include_compensation=True

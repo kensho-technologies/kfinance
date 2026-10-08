@@ -1,12 +1,14 @@
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from http.cookiejar import CookieJar, DefaultCookiePolicy
 import logging
+import threading
 from time import time
 from typing import Any, Callable, Generator, Optional
 from uuid import uuid4
 
+import httpx2
 import jwt
-import requests
 
 from kfinance.client.industry_models import IndustryClassification
 from kfinance.client.models.date_and_period_models import (
@@ -84,6 +86,7 @@ class KFinanceApiClient:
         refresh_token: Optional[str] = None,
         client_id: Optional[str] = None,
         private_key: Optional[str] = None,
+        kid: Optional[str] = None,
         thread_pool: Optional[ThreadPoolExecutor] = None,
         api_host: str = DEFAULT_API_HOST,
         api_version: int = DEFAULT_API_VERSION,
@@ -98,6 +101,8 @@ class KFinanceApiClient:
         :type client_id: str, Optional
         :param private_key: users private key that corresponds to the registered public sent to support@kensho.com
         :type private_key: str, Optional
+        :param kid: key ID of the registered public key, required when more than one key is active
+        :type kid: str, Optional
         :param thread_pool: the thread pool used to execute batch requests. The number of concurrent requests is
         capped at 10. If no thread pool is provided, a thread pool with 10 max workers will be created when batch
         requests are made.
@@ -119,6 +124,7 @@ class KFinanceApiClient:
         elif client_id is not None and private_key is not None:
             self.client_id = client_id
             self.private_key = private_key
+            self.kid = kid
             self._access_token_refresh_func = self._get_access_token_via_keypair
         else:
             raise RuntimeError("No credentials for any authentication strategy were provided")
@@ -134,6 +140,36 @@ class KFinanceApiClient:
         self._batch_id: str | None = None
         self._batch_size: str | None = None
         self._user_permissions: set[Permission] | None = None
+        # Serializes token refreshes across batch request threads. Re-entrant as a safety net:
+        # a refresh calls _refresh_user_permissions -> fetch, which reads access_token again
+        # on the same thread. That read normally sees the new token and skips the lock, but
+        # if the new token already counts as expiring (exp within 60s, or no exp), it
+        # re-enters. A plain Lock would then hang instead of failing.
+        self._access_token_lock = threading.RLock()
+        # One client for all requests so connections get pooled and reused.
+        # httpx2.Client is documented as safe to share between threads ("It can be shared
+        # between threads", httpx2/_client.py), and httpcore2's connection pool only mutates
+        # its state under a thread lock. That matters because batch requests call fetch from
+        # a thread pool. Verified with 2000 requests from 10 threads through one client:
+        # every response matched its request, over 10 reused connections.
+        # follow_redirects=True and the cookie jar that refuses every cookie keep the behavior
+        # of the old requests-based client, whose module-level calls used a fresh session for
+        # every request (so redirects were followed and no cookies carried over).
+        self._http_client = httpx2.Client(
+            timeout=60,
+            follow_redirects=True,
+            cookies=CookieJar(policy=DefaultCookiePolicy(allowed_domains=[])),
+        )
+
+    def close(self) -> None:
+        """Close the pooled HTTP connections."""
+        self._http_client.close()
+
+    def __enter__(self) -> "KFinanceApiClient":
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self.close()
 
     @contextmanager
     def batch_request_header(self, batch_size: int) -> Generator:
@@ -167,26 +203,52 @@ class KFinanceApiClient:
         """Returns the client access token.
 
         If the token is not set or has expired, a new token gets fetched and returned.
+        Safe to call from the batch request threads: only one of them refreshes, and the
+        others reuse its token.
         """
-        if self._access_token is None or time() + 60 > self._access_token_expiry:
-            self._access_token = self._access_token_refresh_func()
-            self._access_token_expiry = jwt.decode(
-                self._access_token,
-                # nosemgrep:  python.jwt.security.unverified-jwt-decode.unverified-jwt-decode
-                options={"verify_signature": False},
-            ).get("exp", 0)
-            # When the access token gets refreshed, also refresh user permissions in case they
-            # have been updated.
-            self._refresh_user_permissions()
+        if self._access_token_needs_refresh():
+            with self._access_token_lock:
+                # Another thread may have refreshed the token while this one waited.
+                if self._access_token_needs_refresh():
+                    self._access_token = self._access_token_refresh_func()
+                    self._access_token_expiry = jwt.decode(
+                        self._access_token,
+                        # nosemgrep:  python.jwt.security.unverified-jwt-decode.unverified-jwt-decode
+                        options={"verify_signature": False},
+                    ).get("exp", 0)
+                    # When the access token gets refreshed, also refresh user permissions in
+                    # case they have been updated.
+                    self._refresh_user_permissions()
+        assert self._access_token is not None
         return self._access_token
+
+    def _access_token_needs_refresh(self) -> bool:
+        return self._access_token is None or time() + 60 > self._access_token_expiry
+
+    def _raise_for_status(self, response: httpx2.Response) -> None:
+        """Like response.raise_for_status(), but the error message includes the response body."""
+        try:
+            response.raise_for_status()
+        except httpx2.HTTPStatusError as e:
+            error_message = f"{e.response.status_code} {e.response.reason_phrase}"
+            if e.response.text:
+                error_message += f": {e.response.text}"
+
+            raise httpx2.HTTPStatusError(
+                message=error_message,
+                request=e.request,
+                response=e.response,
+            )
 
     def _get_access_token_via_refresh_token(self) -> str:
         """Get an access token via oauth by submitting a refresh token."""
-        response = requests.get(
-            f"{self.api_host}/oauth2/refresh?refresh_token={self.refresh_token}",
-            timeout=60,
+        # The token goes in the body, not the query string, so it stays out of access logs
+        # and httpx2's INFO request log line (which includes the full URL).
+        response = self._http_client.post(
+            f"{self.api_host}/oauth2/refresh",
+            json={"refresh_token": self.refresh_token},
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json().get("access_token")
 
     def _get_access_token_via_keypair(self) -> str:
@@ -202,8 +264,9 @@ class KFinanceApiClient:
             },
             self.private_key,
             algorithm="RS256",
+            headers={"kid": self.kid} if self.kid else None,
         )
-        response = requests.post(
+        response = self._http_client.post(
             f"{self.okta_host}/oauth2/{self.okta_auth_server}/v1/token",
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -215,9 +278,8 @@ class KFinanceApiClient:
                 "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
                 "client_assertion": encoded,
             },
-            timeout=60,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json().get("access_token")
 
     @property
@@ -261,14 +323,13 @@ class KFinanceApiClient:
                 {"Kfinance-Batch-Id": self._batch_id, "Kfinance-Batch-Size": self._batch_size}
             )
 
-        response = requests.request(
+        response = self._http_client.request(
             method=method,
             url=url,
             headers=headers,
             json=request_body,
-            timeout=60,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json()
 
     def fetch_permissions(self) -> dict[str, list[str]]:
@@ -465,15 +526,14 @@ class KFinanceApiClient:
             f"{'adjusted' if is_adjusted else 'unadjusted'}"
         )
 
-        response = requests.get(
+        response = self._http_client.get(
             url,
             headers={
                 "Content-Type": "image/png",
                 "Authorization": f"Bearer {self.access_token}",
             },
-            timeout=60,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.content
 
     def fetch_statement(

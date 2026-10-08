@@ -1,6 +1,5 @@
-import httpx
+import httpx2
 import pytest
-from pytest_httpx import HTTPXMock
 
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.estimates.estimates_models import VisibleAlphaEstimates
@@ -12,6 +11,7 @@ from kfinance.domains.line_items.line_item_models import AlternativeLineItemMeta
 from kfinance.domains.line_items.response_notes import (
     FISCAL_PERIOD_WARNING,
     FISCAL_YEAR_TERMINOLOGY_WARNING,
+    SOURCE_LINK_NOTE,
 )
 
 
@@ -48,20 +48,18 @@ VA_METADATA = {
 class TestFetchEstimatesFromCompanyIdsVa:
     @pytest.mark.asyncio
     async def test_data_source_absent_from_payload(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN we fetch estimates via the Visible Alpha function
         THEN data_source_type is not sent in the request body
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/estimates/visible_alpha").respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): ESTIMATES_RESP},
                 "errors": {},
                 "metadata": {},
-            },
+            }
         )
 
         resp = await fetch_visible_alpha_estimates_from_company_ids(
@@ -70,29 +68,29 @@ class TestFetchEstimatesFromCompanyIdsVa:
         )
 
         assert str(SPGI_ID_TRIPLE.company_id) in resp.results
-        assert "data_source_type" not in httpx_mock.get_requests()[-1].content.decode()
+        assert "data_source_type" not in httpx2_mock.calls[-1].request.content.decode()
 
     @pytest.mark.asyncio
     async def test_estimate_search_included_in_payload(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN estimate_search is provided
         THEN it is included in the request payload
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
-            match_json={
+        httpx2_mock.post(
+            "https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
+            json={
                 "company_ids": [SPGI_ID_TRIPLE.company_id],
                 "estimate_type": "consensus",
                 "estimate_search": "iPhone unit sales",
             },
+        ).respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): ESTIMATES_RESP},
                 "errors": {},
                 "metadata": {},
-            },
+            }
         )
 
         resp = await fetch_visible_alpha_estimates_from_company_ids(
@@ -104,21 +102,17 @@ class TestFetchEstimatesFromCompanyIdsVa:
         assert str(SPGI_ID_TRIPLE.company_id) in resp.results
 
     @pytest.mark.asyncio
-    async def test_returns_metadata(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-    ) -> None:
+    async def test_returns_metadata(self, httpx_client: httpx2.AsyncClient, httpx2_mock) -> None:
         """
         WHEN the API returns metadata with ranked alternatives
         THEN the metadata is parsed correctly
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/estimates/visible_alpha").respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): ESTIMATES_RESP},
                 "errors": {},
                 "metadata": {str(SPGI_ID_TRIPLE.company_id): VA_METADATA},
-            },
+            }
         )
 
         resp = await fetch_visible_alpha_estimates_from_company_ids(
@@ -134,22 +128,19 @@ class TestFetchEstimatesFromCompanyIdsVa:
 
 class TestGetEstimatesFromIdentifiersVa:
     @pytest.fixture
-    def add_spgi_estimates_va_mock(self, httpx_mock: HTTPXMock) -> None:
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
+    def add_spgi_estimates_va_mock(self, httpx2_mock) -> None:
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/estimates/visible_alpha").respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): ESTIMATES_RESP},
                 "errors": {},
                 "metadata": {},
-            },
-            is_optional=True,
+            }
         )
 
     @pytest.mark.asyncio
     async def test_maps_result_back_to_identifier(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_estimates_va_mock: None,
     ) -> None:
         """
@@ -169,7 +160,7 @@ class TestGetEstimatesFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_unknown_identifier_surfaces_as_error(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_estimates_va_mock: None,
     ) -> None:
         """
@@ -187,20 +178,18 @@ class TestGetEstimatesFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_api_error_mapped_back_to_identifier(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns an error keyed by company_id
         THEN it is mapped back to the original identifier
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/estimates/visible_alpha").respond(
             json={
                 "results": {},
                 "errors": {str(SPGI_ID_TRIPLE.company_id): "Company not found in Visible Alpha."},
                 "metadata": {},
-            },
+            }
         )
 
         resp = await get_visible_alpha_estimates_from_identifiers(
@@ -213,20 +202,18 @@ class TestGetEstimatesFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_metadata_alternative_note_added(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns metadata
         THEN a note reminding the LLM to check estimate_search alternatives is appended
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/estimates/visible_alpha").respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): ESTIMATES_RESP},
                 "errors": {},
                 "metadata": {str(SPGI_ID_TRIPLE.company_id): VA_METADATA},
-            },
+            }
         )
 
         resp = await get_visible_alpha_estimates_from_identifiers(
@@ -239,7 +226,7 @@ class TestGetEstimatesFromIdentifiersVa:
     @pytest.mark.asyncio
     async def test_no_metadata_no_alternative_note(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_estimates_va_mock: None,
     ) -> None:
         """
@@ -254,9 +241,26 @@ class TestGetEstimatesFromIdentifiersVa:
         assert all("estimate_search" not in note for note in resp.notes)
 
     @pytest.mark.asyncio
+    async def test_source_link_note_always_present(
+        self,
+        httpx_client: httpx2.AsyncClient,
+        add_spgi_estimates_va_mock: None,
+    ) -> None:
+        """
+        WHEN we get a valid Visible Alpha estimates result
+        THEN the source link note is always included so the LLM formats sources as links
+        """
+        resp = await get_visible_alpha_estimates_from_identifiers(
+            identifiers=["SPGI"],
+            httpx_client=httpx_client,
+        )
+
+        assert SOURCE_LINK_NOTE in resp.notes
+
+    @pytest.mark.asyncio
     async def test_fiscal_period_notes_always_present(
         self,
-        httpx_client: httpx.AsyncClient,
+        httpx_client: httpx2.AsyncClient,
         add_spgi_estimates_va_mock: None,
     ) -> None:
         """
@@ -273,20 +277,18 @@ class TestGetEstimatesFromIdentifiersVa:
 
     @pytest.mark.asyncio
     async def test_metadata_keyed_by_identifier(
-        self, httpx_client: httpx.AsyncClient, httpx_mock: HTTPXMock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
     ) -> None:
         """
         WHEN the API returns metadata keyed by company_id
         THEN the response metadata is re-keyed to the original identifier
         """
-        httpx_mock.add_response(
-            method="POST",
-            url="https://kfinance.kensho.com/api/v1/estimates/visible_alpha",
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/estimates/visible_alpha").respond(
             json={
                 "results": {str(SPGI_ID_TRIPLE.company_id): ESTIMATES_RESP},
                 "errors": {},
                 "metadata": {str(SPGI_ID_TRIPLE.company_id): VA_METADATA},
-            },
+            }
         )
 
         resp = await get_visible_alpha_estimates_from_identifiers(

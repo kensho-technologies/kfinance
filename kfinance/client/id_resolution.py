@@ -1,10 +1,10 @@
-import httpx
+import httpx2
 
 from kfinance.domains.companies.company_models import UnifiedIdTripleResponse
 
 
 async def unified_fetch_id_triples(
-    identifiers: list[str], httpx_client: httpx.AsyncClient
+    identifiers: list[str], httpx_client: httpx2.AsyncClient
 ) -> UnifiedIdTripleResponse:
     """Resolve one or more identifiers to id triples using the unified (/ids) endpoint."""
 

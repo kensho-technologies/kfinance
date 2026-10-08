@@ -1,7 +1,7 @@
 from textwrap import dedent
 from typing import Type
 
-import httpx
+import httpx2
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
@@ -57,7 +57,7 @@ class GetCompetitorsFromIdentifiers(KfinanceTool):
 async def get_competitors_from_identifiers(
     identifiers: list[str],
     competitor_source: CompetitorSource,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> GetCompetitorsFromIdentifiersResp:
     """Fetch competitors for all identifiers.
 
@@ -119,7 +119,7 @@ async def get_competitors_from_identifiers(
 async def fetch_competitors_from_company_id(
     company_id: int,
     competitor_source: CompetitorSource,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> CompetitorResponse:
     """Fetch and return competitors for one identifier."""
     url = f"/competitors/{company_id}"
