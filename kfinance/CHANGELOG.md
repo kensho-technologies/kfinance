@@ -1,5 +1,14 @@
 # Changelog
 
+## v9.0.0
+- Handle nullable columns in prices and market cap server responses.
+- Breaking changes:
+  - `HistoryMetadataResp.currency` is now `str | None` (was `str`).
+  - `HistoryMetadataResp.symbol` is now `str | None` (was `str`).
+  - `HistoryMetadataResp.exchange_name` is now `str | None` (was `str`).
+  - `TradingItem.exchange_code` now returns `str | None` (was `str`).
+  - `Ticker.ticker` now returns `str | None` (was `str`).
+
 ## v8.1.3
 - Add `--api-host` option to the local mcp server.
 
