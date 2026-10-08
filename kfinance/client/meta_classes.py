@@ -13,13 +13,11 @@ from kfinance.client.models.date_and_period_models import (
     EstimateType,
     PeriodType,
 )
-from kfinance.domains.business_relationships.business_relationship_models import (
-    BusinessRelationshipType,
-)
 from kfinance.domains.capitalizations.capitalization_models import Capitalization
 from kfinance.domains.companies.company_models import (
     Auditors,
     CompanyDescriptions,
+    CompanyIdAndName,
     CompanyOtherNames,
     NativeName,
 )
@@ -32,11 +30,12 @@ from kfinance.domains.professionals.professionals_models import (
     ProfessionalType,
     Timeframe,
 )
+from kfinance.domains.relationships.relationship_models import RelationshipType
 from kfinance.domains.segments.segment_models import SegmentType
 
 
 if TYPE_CHECKING:
-    from .kfinance import BusinessRelationships, Companies
+    from .kfinance import Companies, Relationships
 
 logger = logging.getLogger(__name__)
 
@@ -315,29 +314,32 @@ class CompanyFunctionsMetaClass:
         )
 
     @cached(cache=LRUCache(maxsize=100))
-    def relationships(self, relationship_type: BusinessRelationshipType) -> "BusinessRelationships":
-        """Returns a BusinessRelationships object that includes the current and previous Companies associated with company_id and filtered by relationship_type. The function calls fetch_companies_from_business_relationship.
+    def relationships(self, relationship_type: RelationshipType) -> "Relationships":
+        """Returns a Relationships object that includes the Companies associated with company_id and filtered by relationship_type. The function calls fetch_companies_from_relationship.
 
-        :param relationship_type: The type of relationship to filter by. Valid relationship types are defined in the BusinessRelationshipType class.
-        :type relationship_type: BusinessRelationshipType
-        :return: A BusinessRelationships object containing a tuple of Companies objects that lists current and previous company IDs that have the specified relationship with the given company_id.
-        :rtype: BusinessRelationships
+        :param relationship_type: The type of relationship to filter by. Valid relationship types are defined in the RelationshipType class.
+        :type relationship_type: RelationshipType
+        :return: A Relationships object containing a tuple of Companies objects that lists the current, previous, pending, and cancelled company IDs that have the specified relationship with the given company_id.
+        :rtype: Relationships
         """
-        from .kfinance import BusinessRelationships, Companies
+        from .kfinance import Companies, Relationships
 
-        relationship_resp = self.kfinance_api_client.fetch_companies_from_business_relationship(
+        relationship_resp = self.kfinance_api_client.fetch_companies_from_relationship(
             company_id=self.company_id,
             relationship_type=relationship_type,
         )
-        return BusinessRelationships(
-            current=Companies(
+
+        def to_companies(companies: list[CompanyIdAndName] | None) -> "Companies":
+            return Companies(
                 kfinance_api_client=self.kfinance_api_client,
-                company_ids=[c.company_id for c in relationship_resp.current],
-            ),
-            previous=Companies(
-                kfinance_api_client=self.kfinance_api_client,
-                company_ids=[c.company_id for c in relationship_resp.previous],
-            ),
+                company_ids=[c.company_id for c in (companies or [])],
+            )
+
+        return Relationships(
+            current=to_companies(relationship_resp.current),
+            previous=to_companies(relationship_resp.previous),
+            pending=to_companies(relationship_resp.pending),
+            cancelled=to_companies(relationship_resp.cancelled),
         )
 
     def market_cap(
@@ -1043,16 +1045,16 @@ class DelegatedCompanyFunctionsMetaClass(CompanyFunctionsMetaClass):
         raise NotImplementedError("child classes must implement company property")
 
 
-for relationship in BusinessRelationshipType:
+for relationship in RelationshipType:
 
-    def _relationship_outer_wrapper(relationship_type: BusinessRelationshipType) -> property:
+    def _relationship_outer_wrapper(relationship_type: RelationshipType) -> property:
         """Creates a property for a relationship type.
 
-        This function returns a property that retrieves the associated company's current and previous
+        This function returns a property that retrieves the associated company's
         relationships of the specified type.
 
         Args:
-            relationship_type (BusinessRelationshipType): The type of relationship to be wrapped.
+            relationship_type (RelationshipType): The type of relationship to be wrapped.
 
         Returns:
             property: A property that calls the inner wrapper to retrieve the relationship data.
@@ -1060,19 +1062,18 @@ for relationship in BusinessRelationshipType:
 
         def relationship_inner_wrapper(
             self: Any,
-        ) -> "BusinessRelationships":
+        ) -> "Relationships":
             """Inner wrapper function for the relationship type.
 
-            This function retrieves the associated company's current and previous relationships
-            of the specified type.
+            This function retrieves the associated company's relationships of the specified type.
 
             Returns:
-                BusinessRelationships: A BusinessRelationships object containing the current and previous companies
-                associated with the relationship type.
+                Relationships: A Relationships object containing the companies associated with
+                the relationship type.
             """
             return self.relationships(relationship_type)
 
-        doc = f"Returns the associated company's current and previous {relationship_type}s"
+        doc = f"Returns the associated company's current, previous, pending and cancelled {relationship_type}s"
         relationship_inner_wrapper.__doc__ = doc
         relationship_inner_wrapper.__name__ = relationship
 

@@ -11,20 +11,16 @@ from PIL.Image import open as image_open
 import time_machine
 
 from kfinance.client.kfinance import (
-    BusinessRelationships,
     Company,
     Earnings,
     ParticipantInMerger,
+    Relationships,
     Security,
     Ticker,
     TradingItem,
     Transcript,
 )
 from kfinance.client.models.response_models import PostResponse, SingleResultResp
-from kfinance.domains.business_relationships.business_relationship_models import (
-    BusinessRelationshipType,
-    RelationshipResponse,
-)
 from kfinance.domains.capitalizations.capitalization_models import Capitalizations
 from kfinance.domains.companies.company_models import CompanyIdAndName, IdentificationTriple
 from kfinance.domains.earnings.earning_models import EarningsCallResp
@@ -42,6 +38,10 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models imp
     MergersResp,
 )
 from kfinance.domains.prices.price_models import HistoryMetadataResp
+from kfinance.domains.relationships.relationship_models import (
+    RelationshipResponse,
+    RelationshipType,
+)
 from kfinance.domains.segments.segment_models import SegmentsResp
 from kfinance.domains.statements.statement_models import StatementsResp
 
@@ -279,12 +279,20 @@ MOCK_COMPANY_DB = {
                 ]
             }
         },
-        BusinessRelationshipType.supplier: RelationshipResponse(
+        RelationshipType.supplier: RelationshipResponse(
             current=[CompanyIdAndName(company_name="foo", company_id=883103)],
             previous=[
                 CompanyIdAndName(company_name="bar", company_id=472898),
                 CompanyIdAndName(company_name="baz", company_id=8182358),
             ],
+        ),
+        # sponsored_fund comes from the Company Relationships dataset, so it also has
+        # pending and cancelled relationships.
+        RelationshipType.sponsored_fund: RelationshipResponse(
+            current=[CompanyIdAndName(company_name="foo", company_id=883103)],
+            previous=[CompanyIdAndName(company_name="bar", company_id=472898)],
+            pending=[CompanyIdAndName(company_name="baz", company_id=8182358)],
+            cancelled=[CompanyIdAndName(company_name="qux", company_id=251994106)],
         ),
     },
     31696: {"info": {"name": "MongoMusic, Inc."}},
@@ -657,8 +665,8 @@ class MockKFinanceApiClient:
             results={str(company_ids[0]): MOCK_COMPANY_DB[company_ids[0]]["segments"]}, errors={}
         )
 
-    def fetch_companies_from_business_relationship(
-        self, company_id: int, relationship_type: BusinessRelationshipType
+    def fetch_companies_from_relationship(
+        self, company_id: int, relationship_type: RelationshipType
     ) -> RelationshipResponse:
         return MOCK_COMPANY_DB[company_id][relationship_type]
 
@@ -881,15 +889,13 @@ class TestCompany(TestCase):
     def test_relationships(self) -> None:
         """
         WHEN we fetch the relationships of a company
-        THEN we get back a BusinessRelationships object.
+        THEN we get back a Relationships object.
         """
 
-        expected_suppliers = MOCK_COMPANY_DB[msft_company_id][BusinessRelationshipType.supplier]
+        expected_suppliers = MOCK_COMPANY_DB[msft_company_id][RelationshipType.supplier]
 
-        suppliers_via_method = self.msft_company.company.relationships(
-            BusinessRelationshipType.supplier
-        )
-        self.assertIsInstance(suppliers_via_method, BusinessRelationships)
+        suppliers_via_method = self.msft_company.company.relationships(RelationshipType.supplier)
+        self.assertIsInstance(suppliers_via_method, Relationships)
         # Company ids should match
         self.assertEqual(
             sorted([c.company_id for c in suppliers_via_method.current]),
@@ -899,10 +905,34 @@ class TestCompany(TestCase):
             sorted([c.company_id for c in suppliers_via_method.previous]),
             sorted([c.company_id for c in expected_suppliers.previous]),
         )
+        # The api omits pending and cancelled for Business Relationships types.
+        self.assertEqual(list(suppliers_via_method.pending), [])
+        self.assertEqual(list(suppliers_via_method.cancelled), [])
 
         # Fetching via property should return the same result
         suppliers_via_property = self.msft_company.company.supplier
         self.assertEqual(suppliers_via_property, suppliers_via_method)
+
+    def test_relationships_with_cr_only_statuses(self) -> None:
+        """
+        WHEN we fetch a Company Relationships-only relationship type
+        THEN the pending and cancelled companies are populated too.
+        """
+
+        expected = MOCK_COMPANY_DB[msft_company_id][RelationshipType.sponsored_fund]
+
+        sponsored_funds = self.msft_company.company.relationships(RelationshipType.sponsored_fund)
+        self.assertEqual(
+            sorted([c.company_id for c in sponsored_funds.pending]),
+            sorted([c.company_id for c in expected.pending]),
+        )
+        self.assertEqual(
+            sorted([c.company_id for c in sponsored_funds.cancelled]),
+            sorted([c.company_id for c in expected.cancelled]),
+        )
+
+        # Fetching via property should return the same result
+        self.assertEqual(self.msft_company.company.sponsored_fund, sponsored_funds)
 
     def test_mergers(self) -> None:
         expected_mergers = MERGERS_RESP.model_dump(mode="json")
