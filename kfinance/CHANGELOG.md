@@ -8,6 +8,9 @@
   `fund_distributor`, `distributed_fund`, `fund_investment_advisor`, `advised_fund`; and two new
   response statuses: `pending` and `cancelled`.
 
+## v8.1.1
+- Add `last_close_tev_to_ebit`, `last_close_tev_to_ebitda`, `ev_to_employees`, and `ev_to_total_revenue` line items.
+
 ## v8.1.0
 - Add optional `kid` parameter to `Client`, stamped on the private-key-JWT client assertion so
   users with more than one active public key (e.g. mid key-rotation) can authenticate. Also
