@@ -6,6 +6,7 @@ from fastmcp.tools import FunctionTool
 from fastmcp.utilities.logging import get_logger
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
+from kfinance.client.fetch import DEFAULT_API_HOST
 from kfinance.client.kfinance import Client
 from kfinance.integrations.tool_calling.tool_calling_models import KfinanceTool
 
@@ -50,12 +51,20 @@ def build_mcp_tool_from_kfinance_tool(kfinance_tool: KfinanceTool) -> FunctionTo
 @click.option("--client-id", required=False)
 @click.option("--private-key", required=False)
 @click.option("--kid", required=False)
+@click.option(
+    "--api-host",
+    required=False,
+    default=DEFAULT_API_HOST,
+    show_default=True,
+    help="The kFinance API host to fetch data from.",
+)
 def run_mcp(
     transport: Literal["stdio", "sse", "streamable-http"],
     refresh_token: Optional[str] = None,
     client_id: Optional[str] = None,
     private_key: Optional[str] = None,
     kid: Optional[str] = None,
+    api_host: str = DEFAULT_API_HOST,
 ) -> None:
     """Run the Kfinance MCP server with specified configuration.
 
@@ -78,17 +87,22 @@ def run_mcp(
     :type private_key: str
     :param kid: Key ID of the registered public key, required when more than one key is active.
     :type kid: str
+    :param api_host: The kFinance API host to fetch data from. Defaults to production.
+    :type api_host: str
     """
     logger.info("Server will run with %s transport", transport)
+    logger.info("The client will fetch data from %s", api_host)
     if refresh_token:
         logger.info("The client will be authenticated using a refresh token")
-        kfinance_client = Client(refresh_token=refresh_token)
+        kfinance_client = Client(refresh_token=refresh_token, api_host=api_host)
     elif client_id and private_key:
         logger.info("The client will be authenticated using a key pair")
-        kfinance_client = Client(client_id=client_id, private_key=private_key, kid=kid)
+        kfinance_client = Client(
+            client_id=client_id, private_key=private_key, kid=kid, api_host=api_host
+        )
     else:
         logger.info("The client will be authenticated using a browser")
-        kfinance_client = Client()
+        kfinance_client = Client(api_host=api_host)
 
     kfinance_mcp: FastMCP = FastMCP("Kfinance")
     for langchain_tool in kfinance_client.langchain_tools:

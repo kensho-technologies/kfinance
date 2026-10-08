@@ -1,5 +1,8 @@
 # Changelog
 
+## v8.1.3
+- Add `--api-host` option to the local mcp server.
+
 ## v8.1.2
 - Surface `requested_line_item` in tool responses for CIQ line items, VA line items, and VA estimates. The field echoes back the line item (or estimate) the caller asked for. Prefers the server's value when available, falls back to the tool input.
 
