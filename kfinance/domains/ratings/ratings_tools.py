@@ -101,7 +101,8 @@ class GetIssuerRatingsFromIdentifiers(KfinanceTool):
         (e.g., FCLONG for foreign currency long-term, STDSHORT for short-term). Each rating includes the current
         rating, rating action, credit watch status, outlook, and historical ratings.
 
-        - Supports multiple identifiers in a single call (tickers, company IDs, company names, country names, ISO alpha-3 codes, ISINs, CUSIPs).
+        - Supports multiple identifiers in a single call (tickers, company IDs, company names, ISO alpha-3 codes, ISINs, CUSIPs).
+        - For country input, default to ISO alpha-3 codes.
         - Works with both corporate entities (e.g., "AAPL", "Microsoft") and sovereign entities (e.g., "USA", "Germany").
         - Returns the latest rating along with full rating history for each entity.
         - Includes outlook (Stable, Positive, Negative) and credit watch information when available.
@@ -114,7 +115,7 @@ class GetIssuerRatingsFromIdentifiers(KfinanceTool):
         Function: get_issuer_ratings_from_identifiers(identifiers=["Microsoft", "Amazon"])
 
         Query: "What is the sovereign credit rating for the United States?"
-        Function: get_issuer_ratings_from_identifiers(identifiers=["United States"])
+        Function: get_issuer_ratings_from_identifiers(identifiers=["USA"])
 
         Query: "Compare ratings for JPMorgan Chase and Bank of America"
         Function: get_issuer_ratings_from_identifiers(identifiers=["JPMorgan Chase", "Bank of America"])

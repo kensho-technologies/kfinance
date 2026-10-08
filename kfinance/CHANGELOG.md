@@ -1,5 +1,7 @@
 # Changelog
 
+## v9.0.1
+- Change issuer ratings tool to prefer ISO code for country inputs.
 ## v9.0.0
 - Handle nullable columns in prices and market cap server responses.
 - Breaking changes:
