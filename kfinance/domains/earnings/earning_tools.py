@@ -22,7 +22,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 class GetTranscriptFromKeyDevIdArgs(BaseModel):
     """Tool argument with a key_dev_id."""
 
-    key_dev_id: int = Field(description="The key_dev_id for the earnings call")
+    key_dev_id: int = Field(description="The key_dev_id of the event")
 
 
 class GetTranscriptFromKeyDevIdResp(BaseModel):
@@ -32,13 +32,7 @@ class GetTranscriptFromKeyDevIdResp(BaseModel):
 class GetTranscriptFromKeyDevId(KfinanceTool):
     name: str = "get_transcript_from_key_dev_id"
     description: str = dedent("""
-        Get the raw transcript text for an earnings call by key_dev_id.
-
-        The key_dev_id is obtained from get_earnings_from_identifiers.
-
-        Example:
-        Query: "Get the transcript for earnings call 12346"
-        Function: get_transcript_from_key_dev_id(key_dev_id=12346)
+        Get the transcript text of a company event by key_dev_id, such as an earnings call, M&A call, investor day or conference presentation (not an exhaustive list). Earnings call ids come from get_earnings_from_identifiers; all other ids come from get_key_devs_from_identifier (has_transcript is true).
     """).strip()
     args_schema: Type[BaseModel] = GetTranscriptFromKeyDevIdArgs
     accepted_permissions: set[Permission] | None = {Permission.TranscriptsPermission}

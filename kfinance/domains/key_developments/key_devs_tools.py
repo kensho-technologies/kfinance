@@ -7,7 +7,11 @@ from pydantic import BaseModel, Field, model_validator
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
-from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType, KeyDevsResp
+from kfinance.domains.key_developments.key_devs_models import (
+    KeyDevCategoryType,
+    KeyDevEventType,
+    KeyDevsResp,
+)
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifier,
@@ -31,15 +35,21 @@ class GetKeyDevsFromIdentifierArgs(ToolArgsWithIdentifier):
 
     start_date: date | None = Field(
         default=None,
-        description="The start date for fetching key developments (inclusive). Use null to get all key developments from the beginning.",
+        description="Earliest announced_date_utc (YYYY-MM-DD, inclusive). Events are announced weeks to months before they happen, so omit it to find a specific call.",
     )
     end_date: date | None = Field(
         default=None,
-        description="The end date for fetching key developments (inclusive). Use null to get all key developments up to the present.",
+        description='Latest announced_date_utc (YYYY-MM-DD, inclusive). Set it when the question names an end, for example "in 2024 and 2025" is 2025-12-31. Use null for no upper bound.',
     )
-    # no description because the description for enum fields comes from the enum docstring.
     key_dev_category: KeyDevCategoryType | None = Field(
         default=None,
+    )
+    event_type: KeyDevEventType | None = Field(
+        default=None,
+    )
+    transcripts_only: bool | None = Field(
+        default=None,
+        description="True returns only events that have a transcript (earnings calls included).",
     )
 
 
@@ -50,26 +60,25 @@ class GetKeyDevsFromIdentifierResp(ToolRespWithIdInfoAndErrors[KeyDevsResp]):
 class GetKeyDevsFromIdentifier(KfinanceTool):
     name: str = "get_key_devs_from_identifier"
     description: str = dedent("""
-        Get key development events for a single identifier within an optional date range.
+        Get key development events (announcements, filings, calls, presentations) for one identifier, grouped by event type. Each event has key_dev_id, situation, announced_date_utc, most_important_date_utc (the event's own date) and has_transcript.
 
-        Key developments include events like client announcements, earnings releases, mergers and acquisitions,
-        management changes, and other significant corporate events. Results are grouped by category.
-
-        - Only one identifier can be queried at a time.
-        - start_date and end_date are optional. Leave null to get all key developments.
-        - Optionally filter by key_dev_category to get only specific types of events.
-        - Results are categorized by event type (e.g., "Client Announcements", "Earnings Releases").
-        - Each event includes a key_dev_id, situation description, dates, source, and company role.
+        - Earnings calls: use get_earnings_from_identifiers. This tool covers all other events.
+        - To find a specific call, omit start_date, match on most_important_date_utc, and pass its key_dev_id to get_transcript_from_key_dev_id.
+        - Long results are cut to the most recent events and next_time_band is set. Page back only if the question needs earlier events.
 
         Examples:
         Query: "What are all the key developments for Apple?"
-        Function: get_key_devs_from_identifier(identifier="Apple", start_date=null, end_date=null)
+        Function: get_key_devs_from_identifier(identifier="Apple")
 
         Query: "What key developments happened at S&P Global between October and November 2025?"
         Function: get_key_devs_from_identifier(identifier="S&P Global", start_date="2025-10-01", end_date="2025-11-30")
 
-        Query: "Get transaction-related key developments for Apple in 2025"
-        Function: get_key_devs_from_identifier(identifier="Apple", start_date="2025-01-01", end_date="2025-12-31", key_dev_category="ANNOUNCED_OR_COMPLETED_TRANSACTIONS")
+        Query: "Get transaction-related key developments for Cisco in 2025"
+        Function: get_key_devs_from_identifier(identifier="Cisco", start_date="2025-01-01", end_date="2025-12-31", key_dev_category="announced_or_completed_transactions")
+
+        Query: "Show what Walgreens said when it updated its outlook in December 2021"
+        Function 1: get_key_devs_from_identifier(identifier="Walgreens", event_type="guidance_update_call", transcripts_only=True)
+        Function 2: get_transcript_from_key_dev_id(key_dev_id=<key_dev_id>)
     """).strip()
     args_schema: Type[BaseModel] = GetKeyDevsFromIdentifierArgs
     accepted_permissions: set[Permission] | None = {Permission.EarningsPermission}
@@ -80,6 +89,8 @@ class GetKeyDevsFromIdentifier(KfinanceTool):
         start_date: date | None = None,
         end_date: date | None = None,
         key_dev_category: KeyDevCategoryType | None = None,
+        event_type: KeyDevEventType | None = None,
+        transcripts_only: bool | None = None,
     ) -> GetKeyDevsFromIdentifierResp:
         """"""
         return await get_key_devs_from_identifier(
@@ -88,6 +99,8 @@ class GetKeyDevsFromIdentifier(KfinanceTool):
             start_date=start_date,
             end_date=end_date,
             key_dev_category=key_dev_category,
+            event_type=event_type,
+            transcripts_only=transcripts_only,
         )
 
 
@@ -97,6 +110,8 @@ async def get_key_devs_from_identifier(
     start_date: date | None = None,
     end_date: date | None = None,
     key_dev_category: KeyDevCategoryType | None = None,
+    event_type: KeyDevEventType | None = None,
+    transcripts_only: bool | None = None,
 ) -> GetKeyDevsFromIdentifierResp:
     """Fetch key developments for a single identifier."""
 
@@ -121,6 +136,8 @@ async def get_key_devs_from_identifier(
         start_date=start_date,
         end_date=end_date,
         key_dev_category=key_dev_category,
+        event_type=event_type,
+        transcripts_only=transcripts_only,
     )
 
     identifier_results = {}
@@ -142,10 +159,12 @@ async def fetch_key_devs_from_company_id(
     start_date: date | None = None,
     end_date: date | None = None,
     key_dev_category: KeyDevCategoryType | None = None,
+    event_type: KeyDevEventType | None = None,
+    transcripts_only: bool | None = None,
 ) -> KeyDevsResp:
     """Fetch key developments for one company_id."""
     url = "/key_devs/"
-    payload: dict[str, str | int] = {
+    payload: dict[str, str | int | bool] = {
         "company_id": company_id,
     }
 
@@ -156,6 +175,10 @@ async def fetch_key_devs_from_company_id(
         payload["end_date"] = end_date.isoformat()
     if key_dev_category is not None:
         payload["key_dev_category"] = key_dev_category.value
+    if event_type is not None:
+        payload["event_type"] = event_type.value
+    if transcripts_only:
+        payload["transcripts_only"] = True
 
     resp = await httpx_client.post(url=url, json=payload)
     resp.raise_for_status()
