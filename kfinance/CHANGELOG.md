@@ -1,7 +1,28 @@
 # Changelog
 
-## v9.0.0
+## v10.0.0
 - **Breaking:** Collapse `get_latest_earnings_from_identifiers` and `get_next_earnings_from_identifiers` into `get_earnings_from_identifiers` via a new `earnings_timeframe` argument (`all` (default), `latest`, `next`).
+
+## v9.0.1
+- Change issuer ratings tool to prefer ISO code for country inputs.
+
+## v9.0.0
+- Handle nullable columns in prices and market cap server responses.
+- Breaking changes:
+  - `HistoryMetadataResp.currency` is now `str | None` (was `str`).
+  - `HistoryMetadataResp.symbol` is now `str | None` (was `str`).
+  - `HistoryMetadataResp.exchange_name` is now `str | None` (was `str`).
+  - `TradingItem.exchange_code` now returns `str | None` (was `str`).
+  - `Ticker.ticker` now returns `str | None` (was `str`).
+
+## v8.1.3
+- Add `--api-host` option to the local mcp server.
+
+## v8.1.2
+- Surface `requested_line_item` in tool responses for CIQ line items, VA line items, and VA estimates. The field echoes back the line item (or estimate) the caller asked for. Prefers the server's value when available, falls back to the tool input.
+
+## v8.1.1
+- Add `last_close_tev_to_ebit`, `last_close_tev_to_ebitda`, `ev_to_employees`, and `ev_to_total_revenue` line items.
 
 ## v8.1.0
 - Add optional `kid` parameter to `Client`, stamped on the private-key-JWT client assertion so

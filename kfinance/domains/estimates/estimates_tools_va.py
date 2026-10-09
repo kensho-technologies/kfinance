@@ -9,7 +9,7 @@ from kfinance.client.models.date_and_period_models import (
     EstimatePeriodType,
     EstimateType,
 )
-from kfinance.client.models.response_models import PostResponseWithMetadata
+from kfinance.client.models.response_models import PostResponseWithLineItemMetadata
 from kfinance.client.permission_models import Permission
 from kfinance.domains.estimates.estimates_models import VisibleAlphaEstimates
 from kfinance.domains.estimates.estimates_tools import (
@@ -31,6 +31,7 @@ class GetVaEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[VisibleAlpha
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
     data_source: str
+    requested_line_item: str | None = None
 
 
 class GetVisibleAlphaEstimatesFromIdentifiersArgs(BaseEstimatesFromIdentifiersArgs):
@@ -136,7 +137,7 @@ async def fetch_visible_alpha_estimates_from_company_ids(
     estimate_search: str | None = None,
     calendar_type: CalendarType | None = None,
     currency: str | None = None,
-) -> PostResponseWithMetadata[VisibleAlphaEstimates]:
+) -> PostResponseWithLineItemMetadata[VisibleAlphaEstimates]:
     """Fetch consensus estimates for a list of company IDs using Visible Alpha as the data source."""
     payload: dict[str, Any] = {
         "company_ids": company_ids,
@@ -167,7 +168,7 @@ async def fetch_visible_alpha_estimates_from_company_ids(
     resp = await httpx_client.post(url="/estimates/visible_alpha", json=payload)
     resp.raise_for_status()
 
-    return PostResponseWithMetadata[VisibleAlphaEstimates].model_validate(resp.json())
+    return PostResponseWithLineItemMetadata[VisibleAlphaEstimates].model_validate(resp.json())
 
 
 async def get_visible_alpha_estimates_from_identifiers(
@@ -222,8 +223,10 @@ async def get_visible_alpha_estimates_from_identifiers(
             metadata[original_identifier] = meta
 
         results = identifier_to_results
+        requested_line_item = estimates_resp.requested_line_item or estimate_search
     else:
         results = {}
+        requested_line_item = estimate_search
 
     resp_model = GetVaEstimatesFromIdentifiersResp(
         identifier_results=results,
@@ -231,6 +234,7 @@ async def get_visible_alpha_estimates_from_identifiers(
         errors=errors,
         metadata=metadata,
         data_source="Visible Alpha",
+        requested_line_item=requested_line_item,
     )
 
     insert_source_link_note(resp_model)

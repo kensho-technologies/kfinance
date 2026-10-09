@@ -131,11 +131,11 @@ class TradingItem:
         return self._history_metadata
 
     @property
-    def exchange_code(self) -> str:
+    def exchange_code(self) -> str | None:
         """Return the exchange_code of the trading item
 
         :return: The exchange code of the trading item.
-        :rtype: str
+        :rtype: str | None
         """
         return self.history_metadata.exchange_name
 
@@ -1327,7 +1327,7 @@ class Ticker(DelegatedCompanyFunctionsMetaClass):
         return metadata
 
     @property
-    def ticker(self) -> str:
+    def ticker(self) -> str | None:
         """Get the ticker if it isn't available from initialization"""
         if self._ticker is not None:
             return self._ticker

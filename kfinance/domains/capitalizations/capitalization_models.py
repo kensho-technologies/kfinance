@@ -71,7 +71,7 @@ class Capitalizations(BaseModel):
             already has "Shares" encoded. However, currencies differ between companies,
             so we need to inject that information.
         """
-        if isinstance(data, dict) and "currency" in data:
+        if isinstance(data, dict) and data.get("currency") is not None:
             data = deepcopy(data)
             currency = data["currency"]
             for capitalization in data["market_caps"]:
