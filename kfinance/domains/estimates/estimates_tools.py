@@ -113,10 +113,28 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
 class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_consensus_estimates_from_identifiers"
     description: str = dedent("""
-        Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a given identifier. Returns Capital IQ data.
+        Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a list of identifiers. Returns Capital IQ data.
+        Returns statistical aggregates including high, low, mean, median, and number of estimates. When periods have ended, actual reported values are also returned with "Actual" in the name. Estimate data is available through 2045.
 
-        Returns statistical aggregates including high, low, mean, median, and number of estimates.
-        When periods have ended, actual reported values are also returned.
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - To fetch the most recent estimates, leave all time parameters as null.
+        - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods_forward, num_periods_backward)—but not both.
+
+        Examples:
+        Query: "Get consensus estimates for AAPL using Capital IQ data."
+        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"])
+
+        Query: "EBITDA consensus estimates for Apple using Capital IQ data."
+        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"])
+
+        Query: "SAP consensus revenue estimates for fiscal 2027 through 2029 using Capital IQ data."
+        Function: get_consensus_estimates_from_identifiers(identifiers=["SAP"], period_type="annual", start_year=2027, end_year=2029)
+
+        Query: "SAP consensus revenue estimates for the current quarter using Capital IQ data."
+        Function: get_consensus_estimates_from_identifiers(identifiers=["SAP"], period_type="quarterly", num_periods_backward=0, num_periods_forward=0)
+
+        Query: "Apple consensus EPS estimates for the last quarter using Capital IQ data."
+        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], period_type="quarterly", num_periods_backward=1)
     """).strip()
 
     @property
@@ -128,9 +146,22 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
 class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_guidance_from_identifiers"
     description: str = dedent("""
-        Get company-issued financial guidance for a given identifier. Returns Capital IQ data.
-
+        Get company-issued financial guidance (EPS, Revenue, EBITDA, etc.) for a list of identifiers. Returns Capital IQ data.
         Returns the most recent guidance provided by the company for future periods, or the final guidance issued before results were reported for past periods.
+
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+        - To fetch the most recent estimates, leave all time parameters as null.
+        - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods_forward, num_periods_backward)—but not both.
+
+        Examples:
+        Query: "Get revenue guidance for AAPL for 2026 using Capital IQ data."
+        Function: get_guidance_from_identifiers(identifiers=["AAPL"], period_type="annual", start_year=2026, end_year=2026)
+
+        Query: "Get revenue guidance for AAPL for the next 2 years using Capital IQ data."
+        Function: get_guidance_from_identifiers(identifiers=["AAPL"], period_type="annual", num_periods_backward=0, num_periods_forward=2)
+
+        Query: "Get revenue guidance for AAPL for the previous quarter using Capital IQ data."
+        Function: get_guidance_from_identifiers(identifiers=["AAPL"], period_type="quarterly", num_periods_backward=1, num_periods_forward=0)
     """).strip()
 
     @property
@@ -146,7 +177,17 @@ class GetConsensusTargetPriceFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Con
 class GetConsensusTargetPriceFromIdentifiers(KfinanceTool):
     name: str = "get_consensus_target_price_from_identifiers"
     description: str = dedent("""
-        Get consensus target price estimates for a given company. Returns Capital IQ data. Returns the current consensus analyst target price including high, low, mean, and median values.
+        Get consensus analyst target price estimates for a list of identifiers. Returns Capital IQ data.
+        Returns the current consensus analyst target price including high, low, mean, median, and standard deviation values.
+
+        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
+
+        Examples:
+        Query: "Get consensus target price for AAPL."
+        Function: get_consensus_target_price_from_identifiers(identifiers=["AAPL"])
+
+        Query: "Get consensus target price for AAPL and MSFT."
+        Function: get_consensus_target_price_from_identifiers(identifiers=["AAPL", "MSFT"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
@@ -170,7 +211,16 @@ class GetAnalystRecommendationsFromIdentifiersResp(
 class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
     name: str = "get_analyst_recommendations_from_identifiers"
     description: str = dedent("""
-        Get analyst recommendations for a given company. Returns Capital IQ data. Returns the current consensus analyst recommendation breakdown including buy, hold, sell counts and overall analyst sentiment. If the user is asking for a company's rating, assume this means credit rating unless the user clearly asks for analyst ratings.
+        Get analyst recommendations for a list of identifiers. Returns Capital IQ data.
+        Returns the current consensus analyst recommendation breakdown including buy, hold, sell counts and overall analyst sentiment.
+        If the user is asking for a company's rating, assume this means credit rating unless the user clearly asks for analyst ratings.
+
+        Examples:
+        Query: "Get analyst recommendations for AAPL."
+        Function: get_analyst_recommendations_from_identifiers(identifiers=["AAPL"])
+
+        Query: "Get analyst recommendations for AAPL and MSFT."
+        Function: get_analyst_recommendations_from_identifiers(identifiers=["AAPL", "MSFT"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
