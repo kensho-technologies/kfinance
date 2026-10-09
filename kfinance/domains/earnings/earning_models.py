@@ -1,6 +1,13 @@
 from datetime import datetime, timezone
 
 from pydantic import AliasPath, BaseModel, Field
+from strenum import StrEnum
+
+
+class EarningsTimeframe(StrEnum):
+    all = "all"
+    latest = "latest"
+    next = "next"
 
 
 class EarningsCall(BaseModel):
