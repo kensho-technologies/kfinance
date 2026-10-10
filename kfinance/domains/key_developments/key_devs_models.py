@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, GetJsonSchemaHandler
+from pydantic import BaseModel, GetJsonSchemaHandler, field_validator
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import core_schema
 from strenum import StrEnum
@@ -16,6 +16,12 @@ class KeyDevelopment(BaseModel):
     source: str | None = None
     company_role: str | None = None
     has_transcript: bool | None = None
+
+    @field_validator("has_transcript")
+    @classmethod
+    def only_true_is_kept(cls, value: bool | None) -> bool | None:
+        """Keep has_transcript only when true, so tool output omits it otherwise."""
+        return True if value else None
 
 
 class KeyDevsResp(BaseModel):

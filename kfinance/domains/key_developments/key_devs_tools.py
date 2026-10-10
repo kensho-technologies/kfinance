@@ -49,7 +49,7 @@ class GetKeyDevsFromIdentifierArgs(ToolArgsWithIdentifier):
     )
     transcripts_only: bool | None = Field(
         default=None,
-        description="True returns only events that have a transcript (earnings calls included).",
+        description="True returns only events that have a transcript (earnings calls included). Needs transcripts access.",
     )
 
 
@@ -60,9 +60,9 @@ class GetKeyDevsFromIdentifierResp(ToolRespWithIdInfoAndErrors[KeyDevsResp]):
 class GetKeyDevsFromIdentifier(KfinanceTool):
     name: str = "get_key_devs_from_identifier"
     description: str = dedent("""
-        Get key development events (announcements, filings, calls, presentations) for one identifier, grouped by event type. Each event has key_dev_id, situation, announced_date_utc, most_important_date_utc (the event's own date) and has_transcript.
+        Get key development events, such as announcements, filings, calls and presentations, for one identifier, grouped by event type. Each event has key_dev_id, situation, announced_date_utc, most_important_date_utc (the event's own date) and, only when a transcript can be fetched, has_transcript.
 
-        - Earnings calls: use get_earnings_from_identifiers. This tool covers all other events.
+        - Covers events like client announcements, earnings releases, mergers and acquisitions and management changes. For the latest or next earnings call use get_earnings_from_identifiers.
         - To find a specific call, omit start_date, match on most_important_date_utc, and pass its key_dev_id to get_transcript_from_key_dev_id.
         - Long results are cut to the most recent events and next_time_band is set. Page back only if the question needs earlier events.
 

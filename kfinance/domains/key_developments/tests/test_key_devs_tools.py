@@ -192,6 +192,20 @@ class TestKeyDevs:
         assert payload["event_type"] == "operating_results_call"
         assert payload["transcripts_only"] is True
 
+    def test_has_transcript_is_kept_only_when_true(self) -> None:
+        """
+        GIVEN key developments with has_transcript true, false and absent
+        WHEN they are dumped the way the tools return them (without nulls)
+        THEN only the true one carries the key
+        """
+        with_transcript = KeyDevelopment(key_dev_id=1, has_transcript=True)
+        without_transcript = KeyDevelopment(key_dev_id=2, has_transcript=False)
+        not_reported = KeyDevelopment(key_dev_id=3)
+
+        assert with_transcript.model_dump(exclude_none=True)["has_transcript"] is True
+        assert "has_transcript" not in without_transcript.model_dump(exclude_none=True)
+        assert "has_transcript" not in not_reported.model_dump(exclude_none=True)
+
     @pytest.mark.asyncio
     async def test_get_key_devs_from_identifier(
         self, httpx_client: httpx2.AsyncClient, add_spgi_key_devs_mock_resp: None
