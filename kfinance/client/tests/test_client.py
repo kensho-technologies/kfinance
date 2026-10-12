@@ -59,9 +59,9 @@ class TestLangchainTools:
             specifically has access to.
         """
 
-        mock_client.kfinance_api_client._user_permissions = {
+        mock_client.kfinance_api_client._user_permissions = {  # noqa: SLF001
             Permission.BusinessRelationshipsPermission
-        }  # noqa: SLF001
+        }
         tool_classes = [type(t) for t in mock_client.langchain_tools]
         # User should have access to GetRelationshipFromIdentifiers
         assert GetRelationshipFromIdentifiers in tool_classes
@@ -189,9 +189,9 @@ class TestApplyUserPermissions:
         WHEN we build langchain tools
         THEN the tool keeps its class-default name and description.
         """
-        mock_client.kfinance_api_client._user_permissions = {
+        mock_client.kfinance_api_client._user_permissions = {  # noqa: SLF001
             Permission.BusinessRelationshipsPermission
-        }  # noqa: SLF001
+        }
         tool = next(tool for tool in mock_client.langchain_tools if isinstance(tool, GetLatest))
 
         assert tool.name == GetLatest.model_fields["name"].default
