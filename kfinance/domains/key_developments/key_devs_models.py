@@ -25,7 +25,7 @@ class KeyDevelopment(BaseModel):
 
 
 class KeyDevsResp(BaseModel):
-    """Response containing key developments grouped by category.
+    """Response containing key developments grouped by event type.
 
     The API returns the following structure:
     {
@@ -38,9 +38,9 @@ class KeyDevsResp(BaseModel):
         "errors": ["There is no data associated with company id <company_id>"]
     }
 
-    - results: Maps category name to a list of KeyDevelopment events
+    - results: Maps event type name to a list of KeyDevelopment events
     - next_time_band: Optional pagination info (start_date and end_date for next query)
-    - notes: Optional message about truncated results or other information
+    - notes: Optional message about truncated results or an ignored argument
     - errors: List of error messages from the API (e.g., no data for company)
     """
 
@@ -112,7 +112,7 @@ class KeyDevCategoryType(DescribedStrEnum):
 
 
 class KeyDevEventType(DescribedStrEnum):
-    """One kind of call or presentation; do not combine with key_dev_category. Earnings calls are not included."""
+    """One kind of call or presentation, all in results_announcements_or_corporate_communications; key_dev_category is ignored when this is set. Earnings calls are not included."""
 
     COMPANY_CONFERENCE_PRESENTATION = ("company_conference_presentation", "investor conferences")
     SHAREHOLDER_ANALYST_CALL = (

@@ -4,6 +4,7 @@
 - **Breaking:** Collapse `get_latest_earnings_from_identifiers` and `get_next_earnings_from_identifiers` into `get_earnings_from_identifiers` via a new `earnings_timeframe` argument (`all` (default), `latest`, `next`). The two tools and their `GetLatestEarningsFromIdentifiers` and `GetNextEarningsFromIdentifiers` classes are removed.
 - Add `event_type` and `transcripts_only` arguments and a `has_transcript` field to `get_key_devs_from_identifier`, so transcripts of events other than earnings calls can be found and fetched with `get_transcript_from_key_dev_id`. `has_transcript` is only present when true and `transcripts_only` needs transcripts access. Needs the matching server release.
 - Accept a future `end_date` in `get_key_devs_from_identifier`.
+- `event_type` takes precedence over `key_dev_category` in `get_key_devs_from_identifier`; the server ignores the category and says so in `notes`.
 - Describe each `key_dev_category` and `event_type` value in the tool schema and shorten the key developments and transcript tool descriptions.
 
 ## v9.0.1

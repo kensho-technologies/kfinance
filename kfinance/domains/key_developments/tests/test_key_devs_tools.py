@@ -70,6 +70,26 @@ class TestKeyDevsParamCoercion:
         assert args.identifier == "MSFT"
 
 
+class TestKeyDevsToolSchema:
+    def test_enum_values_are_explained_next_to_the_fields(self) -> None:
+        """
+        GIVEN the argument schema that is sent to the model
+        WHEN the descriptions of key_dev_category and event_type are read
+        THEN each described value is explained there, and event_type says it wins over the category
+        """
+        defs = GetKeyDevsFromIdentifierArgs.model_json_schema()["$defs"]
+
+        assert (
+            "announced_or_completed_transactions=M&A, buybacks, offerings, IPOs, spin-offs"
+            in defs["KeyDevCategoryType"]["description"]
+        )
+        assert (
+            "company_conference_presentation=investor conferences"
+            in defs["KeyDevEventType"]["description"]
+        )
+        assert "key_dev_category is ignored when this is set" in defs["KeyDevEventType"]["description"]
+
+
 class TestKeyDevs:
     expected_spgi_key_devs_response = KeyDevsResp(
         results={
