@@ -6,7 +6,7 @@ from pydantic import Field, BaseModel
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import EstimatePeriodType, NumPeriodsBackward
-from kfinance.client.models.response_models import PostResponseWithMetadata
+from kfinance.client.models.response_models import PostResponseWithLineItemMetadata
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata, CalendarType
 from kfinance.domains.line_items.response_notes import insert_source_link_note, insert_fiscal_period_notes
@@ -127,7 +127,7 @@ async def fetch_visible_alpha_surprises_from_company_ids(
     num_periods_backward: int | None = None,
     estimate_search: str | None = None,
     calendar_type: CalendarType | None = None,
-) -> PostResponseWithMetadata[VisibleAlphaSurprises]:
+) -> PostResponseWithLineItemMetadata[VisibleAlphaSurprises]:
     """Fetch surprises for a list of company IDs using Visible Alpha as the data source."""
     payload: dict[str, Any] = {
         "company_ids": company_ids,
@@ -153,7 +153,7 @@ async def fetch_visible_alpha_surprises_from_company_ids(
     resp = await httpx_client.post(url="/surprise/visible_alpha", json=payload)
     resp.raise_for_status()
 
-    return PostResponseWithMetadata[VisibleAlphaSurprises].model_validate(resp.json())
+    return PostResponseWithLineItemMetadata[VisibleAlphaSurprises].model_validate(resp.json())
 
 
 async def get_visible_alpha_surprises_from_identifiers(
