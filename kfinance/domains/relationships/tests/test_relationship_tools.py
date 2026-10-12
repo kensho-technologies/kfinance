@@ -1,18 +1,20 @@
 import httpx2
+from pydantic import BaseModel, ValidationError
 import pytest
+from strenum import StrEnum
 
-from kfinance.client.permission_models import Permission
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import CompanyIdAndName
 from kfinance.domains.relationships.relationship_models import (
-    CR_ONLY_RELATIONSHIP_TYPES,
+    BusinessRelationshipType,
+    CompanyRelationshipType,
     RelationshipResponse,
     RelationshipType,
-    permitted_relationship_types,
 )
 from kfinance.domains.relationships.relationship_tools import (
+    GetBusinessRelationshipFromIdentifiersArgs,
+    GetCompanyRelationshipFromIdentifiersArgs,
     GetRelationshipFromIdentifiersResp,
-    build_relationship_args_model,
     fetch_relationship_from_company_id,
     get_relationship_from_identifiers,
 )
@@ -113,60 +115,66 @@ class TestRelationships:
         }
 
 
-class TestRelationshipTypePermissions:
+class TestRelationshipTypeEnums:
+    def test_dataset_enums_partition_relationship_type(self) -> None:
+        """The two dataset enums together cover RelationshipType."""
+        business = {relationship_type.value for relationship_type in BusinessRelationshipType}
+        company = {relationship_type.value for relationship_type in CompanyRelationshipType}
+
+        assert business | company == {
+            relationship_type.value for relationship_type in RelationshipType
+        }
+        assert business & company == {"creditor", "borrower"}
+
     @pytest.mark.parametrize(
-        "permissions, expects_cr_only_types",
+        "args_model, expected_enum, valid_value, invalid_value",
         [
-            pytest.param({Permission.RelationshipPermission}, False, id="relationship only"),
             pytest.param(
-                {Permission.RelationshipPermission, Permission.OnlyStaffPermission},
-                True,
-                id="relationship and staff",
+                GetBusinessRelationshipFromIdentifiersArgs,
+                BusinessRelationshipType,
+                "supplier",
+                "sponsored_fund",
+                id="business relationships only",
+            ),
+            pytest.param(
+                GetCompanyRelationshipFromIdentifiersArgs,
+                CompanyRelationshipType,
+                "sponsored_fund",
+                "supplier",
+                id="company relationships only",
             ),
         ],
     )
-    def test_permitted_relationship_types(
-        self, permissions: set[Permission], expects_cr_only_types: bool
+    def test_dataset_args_models_restrict_relationship_type(
+        self,
+        args_model: type[BaseModel],
+        expected_enum: type[StrEnum],
+        valid_value: str,
+        invalid_value: str,
     ) -> None:
         """
-        GIVEN a set of user permissions
-        WHEN we compute the permitted relationship types
-        THEN the Company Relationships-only types are included only for entitled users.
+        GIVEN an args model for a single dataset
+        WHEN we inspect its json schema and validate a relationship type
+        THEN only that dataset's types are advertised and accepted.
         """
-        permitted = permitted_relationship_types(permissions)
-
-        if expects_cr_only_types:
-            assert permitted == frozenset(RelationshipType)
-        else:
-            assert permitted == frozenset(RelationshipType) - CR_ONLY_RELATIONSHIP_TYPES
-            assert not permitted & CR_ONLY_RELATIONSHIP_TYPES
-            # creditor and borrower live in both datasets, so they stay available.
-            assert {RelationshipType.creditor, RelationshipType.borrower} <= permitted
-
-    def test_build_relationship_args_model_restricts_enum(self) -> None:
-        """
-        WHEN we build an args model from a restricted set of relationship types
-        THEN only those values validate, and the json schema only advertises those values.
-        """
-        permitted = permitted_relationship_types({Permission.RelationshipPermission})
-        args_model = build_relationship_args_model(permitted)
-
         schema = args_model.model_json_schema()
-        enum_values = set(schema["$defs"]["RelationshipType"]["enum"])
-        assert enum_values == {t.value for t in permitted}
-        assert "sponsored_fund" not in enum_values
-
-        args = args_model.model_validate({"identifiers": ["SPGI"], "relationship_type": "supplier"})
-        assert args.relationship_type == RelationshipType.supplier
-
-        with pytest.raises(ValueError):
-            args_model.model_validate(
-                {"identifiers": ["SPGI"], "relationship_type": "sponsored_fund"}
-            )
-
-    def test_build_relationship_args_model_is_cached(self) -> None:
-        """Equal permitted sets reuse the same generated model."""
-        permitted = permitted_relationship_types({Permission.RelationshipPermission})
-        assert build_relationship_args_model(permitted) is build_relationship_args_model(
-            frozenset(permitted)
+        (relationship_type_def,) = (
+            definition
+            for name, definition in schema["$defs"].items()
+            if name.endswith("RelationshipType")
         )
+        assert set(relationship_type_def["enum"]) == {
+            relationship_type.value for relationship_type in expected_enum
+        }
+        # The enum docstring is what pydantic emits as the parameter description.
+        assert relationship_type_def["description"] == "The type of relationship"
+        # creditor and borrower live in both datasets, so they stay available.
+        assert {"creditor", "borrower"} <= set(relationship_type_def["enum"])
+
+        args = args_model.model_validate(
+            {"identifiers": ["SPGI"], "relationship_type": valid_value}
+        )
+        assert args.model_dump(mode="json")["relationship_type"] == valid_value
+
+        with pytest.raises(ValidationError):
+            args_model.model_validate({"identifiers": ["SPGI"], "relationship_type": invalid_value})
