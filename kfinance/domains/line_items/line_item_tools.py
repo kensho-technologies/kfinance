@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import NumPeriods, NumPeriodsBack, PeriodType
-from kfinance.client.models.response_models import PostResponse
+from kfinance.client.models.response_models import PostResponseWithLineItemMetadata
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import (
     LINE_ITEM_NAMES_AND_ALIASES,
@@ -157,6 +157,7 @@ class GetFinancialLineItemFromIdentifiersResp(ToolRespWithIdInfoAndErrors[LineIt
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
     data_source: str
+    requested_line_item: str
 
 
 class GetFinancialLineItemFromIdentifiers(KfinanceTool):
@@ -275,8 +276,10 @@ async def get_financial_line_item_from_identifiers(
             identifier_to_results[original_identifier] = line_item_data
 
         results = identifier_to_results
+        requested_line_item = line_item_resp.requested_line_item or line_item
     else:
         results = {}
+        requested_line_item = line_item
 
     # If no date and multiple companies, only return the most recent value
     if (
@@ -296,6 +299,7 @@ async def get_financial_line_item_from_identifiers(
         identifier_info=id_triple_resp.identifiers_to_id_triples,
         errors=errors,
         data_source="Capital IQ",
+        requested_line_item=requested_line_item,
     )
 
     # Add explanatory notes
@@ -321,7 +325,7 @@ async def fetch_line_item_from_company_ids(
     calendar_type: CalendarType | None = None,
     num_periods: int | None = None,
     num_periods_back: int | None = None,
-) -> PostResponse[LineItemResp]:
+) -> PostResponseWithLineItemMetadata[LineItemResp]:
     """Fetch line items for a list of company IDs."""
     # Build the request payload
     params: dict[str, Any] = {
@@ -349,4 +353,4 @@ async def fetch_line_item_from_company_ids(
     resp = await httpx_client.post(url="/line_item/", json=params)
     resp.raise_for_status()
 
-    return PostResponse[LineItemResp].model_validate(resp.json())
+    return PostResponseWithLineItemMetadata[LineItemResp].model_validate(resp.json())

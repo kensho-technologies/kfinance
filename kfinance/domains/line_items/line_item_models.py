@@ -1943,6 +1943,50 @@ LINE_ITEMS: list[LineItemType] = [
         "spgi_name": "Total Debt/Equity",
         "description": "Total debt divided by total equity.",
     },
+    {
+        "name": "last_close_tev_to_ebit",
+        "aliases": {
+            "ev_to_ebit",
+            "tev_to_ebit",
+            "enterprise_value_to_ebit",
+        },
+        "dataitemid": 100062,
+        "spgi_name": "Last Close TEV / EBIT",
+        "description": "Total enterprise value at the last close divided by EBIT.",
+    },
+    {
+        "name": "last_close_tev_to_ebitda",
+        "aliases": {
+            "ev_to_ebitda",
+            "tev_to_ebitda",
+            "enterprise_value_to_ebitda",
+        },
+        "dataitemid": 100063,
+        "spgi_name": "Last Close TEV / EBITDA",
+        "description": "Total enterprise value at the last close divided by EBITDA.",
+    },
+    {
+        "name": "ev_to_employees",
+        "aliases": {
+            "ev_to_headcount",
+            "tev_to_employees",
+            "enterprise_value_to_employees",
+        },
+        "dataitemid": 100070,
+        "spgi_name": "Last Close TEV / Employees",
+        "description": "Total enterprise value at the last close divided by the number of employees.",
+    },
+    {
+        "name": "ev_to_total_revenue",
+        "aliases": {
+            "tev_to_total_revenue",
+            "last_close_tev_to_total_revenue",
+            "enterprise_value_to_total_revenue",
+        },
+        "dataitemid": 100061,
+        "spgi_name": "Last Close TEV / Total Revenue",
+        "description": "Total enterprise value at the last close divided by total revenue.",
+    },
 ]
 LINE_ITEM_NAMES_AND_ALIASES: list[str] = list(
     chain(*[[line_item["name"]] + list(line_item["aliases"]) for line_item in LINE_ITEMS])

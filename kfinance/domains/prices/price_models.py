@@ -53,7 +53,7 @@ class PriceHistory(BaseModel):
             already has "Shares" encoded. However, currencies differ between companies,
             so we need to inject that information.
         """
-        if isinstance(data, dict) and "currency" in data:
+        if isinstance(data, dict) and data.get("currency") is not None:
             data = deepcopy(data)
             currency = data["currency"]
             for capitalization in data["prices"]:
@@ -64,8 +64,8 @@ class PriceHistory(BaseModel):
 
 
 class HistoryMetadataResp(BaseModel):
-    currency: str
-    symbol: str
-    exchange_name: str
+    currency: str | None = None
+    symbol: str | None = None
+    exchange_name: str | None = None
     instrument_type: str
     first_trade_date: date
