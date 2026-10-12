@@ -69,13 +69,22 @@ class GetVisibleAlphaSurprisesFromIdentifiers(KfinanceTool):
 
         Examples:
         Query: "Get EPS surprise for AAPL"
-        Function: get_visible_alpha_surprises_from_identifiers(identifiers=["AAPL"], estimate_search="EPS")
+        Function: get_visible_alpha_surprises_from_identifiers(identifiers=["AAPL"], estimate_search="EPS", num_periods_backward=4)
 
         Query: "iPhone unit sales surprise for Apple for the last 4 quarters"
         Function: get_visible_alpha_surprises_from_identifiers(identifiers=["AAPL"], estimate_search="iPhone unit sales", period_type="quarterly", num_periods_backward=4)
 
         Query: "SAP revenue surprises for fiscal 2023 through 2025"
         Function: get_visible_alpha_surprises_from_identifiers(identifiers=["SAP"], estimate_search="revenue", period_type="annual", start_year=2023, end_year=2025)
+        
+        Query: "What was the beat/miss of TSLA model 3 revenue over the last 8 quarters?"
+        Function: get_visible_alpha_surprises_from_identifiers(identifiers["TSLA"], estimate_search="model 3 revenue", period_type="quarterly", num_periods_backward=8)
+        
+        Query: "Show me MCD's diluted EPS surprise historically"
+        Function: get_visible_alpha_surprises_from_identifiers(identifiers["MCD"], estimate_search="diluted EPS", num_periods_backward=4)
+        
+        Query: "Are Nvidia’s data center beats accelerating, decelerating, or becoming more volatile over time?"
+        Function: get_visible_alpha_surprises_from_identifiers(identifiers["Nvidia"], estimate_search="data center", num_periods_backward=12)
     """).strip()
     args_schema: Type[BaseModel] = GetVisibleAlphaSurprisesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.VisibleAlphaPermission}
