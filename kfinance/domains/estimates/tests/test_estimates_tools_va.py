@@ -9,8 +9,6 @@ from kfinance.domains.estimates.estimates_tools_va import (
 )
 from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata
 from kfinance.domains.line_items.response_notes import (
-    FISCAL_PERIOD_WARNING,
-    FISCAL_YEAR_TERMINOLOGY_WARNING,
     SOURCE_LINK_NOTE,
 )
 

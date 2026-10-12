@@ -2,17 +2,24 @@ from textwrap import dedent
 from typing import Any, Literal, Type, cast
 
 import httpx2
-from pydantic import Field, BaseModel
+from pydantic import BaseModel, Field
 
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.models.date_and_period_models import EstimatePeriodType, NumPeriodsBackward
 from kfinance.client.models.response_models import PostResponseWithLineItemMetadata
 from kfinance.client.permission_models import Permission
 from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata, CalendarType
-from kfinance.domains.line_items.response_notes import insert_source_link_note, insert_fiscal_period_notes
+from kfinance.domains.line_items.response_notes import (
+    insert_fiscal_period_notes,
+    insert_source_link_note,
+)
 from kfinance.domains.surprise.surprise_models import VisibleAlphaSurprises
-from kfinance.integrations.tool_calling.tool_calling_models import ToolRespWithIdInfoAndErrors, ToolArgsWithIdentifiers, \
-    ValidQuarter, KfinanceTool
+from kfinance.integrations.tool_calling.tool_calling_models import (
+    KfinanceTool,
+    ToolArgsWithIdentifiers,
+    ToolRespWithIdInfoAndErrors,
+    ValidQuarter,
+)
 
 
 class GetVaSurpriseFromIdentifiersResp(ToolRespWithIdInfoAndErrors[VisibleAlphaSurprises]):
@@ -58,7 +65,7 @@ class GetVisibleAlphaSurprisesFromIdentifiersArgs(ToolArgsWithIdentifiers):
 class GetVisibleAlphaSurprisesFromIdentifiers(KfinanceTool):
     name: str = "get_visible_alpha_surprises_from_identifiers"
     description: str = dedent("""
-        Get surprises for a list of identifiers. Returns Visible Alpha data. The surprise is the difference between the estimate just before the reporting date, and the actual reported value. 
+        Get surprises for a list of identifiers. Returns Visible Alpha data. The surprise is the difference between the estimate just before the reporting date, and the actual reported value.
 
         Returns the estimated value, the actual, and the percentage difference between them for each matched metric per period. Surprise data is only available for periods where financials have been reported.
 
@@ -76,13 +83,13 @@ class GetVisibleAlphaSurprisesFromIdentifiers(KfinanceTool):
 
         Query: "SAP revenue surprises for fiscal 2023 through 2025"
         Function: get_visible_alpha_surprises_from_identifiers(identifiers=["SAP"], estimate_search="revenue", period_type="annual", start_year=2023, end_year=2025)
-        
+
         Query: "What was the beat/miss of TSLA model 3 revenue over the last 8 quarters?"
         Function: get_visible_alpha_surprises_from_identifiers(identifiers["TSLA"], estimate_search="model 3 revenue", period_type="quarterly", num_periods_backward=8)
-        
+
         Query: "Show me MCD's diluted EPS surprise historically"
         Function: get_visible_alpha_surprises_from_identifiers(identifiers["MCD"], estimate_search="diluted EPS", num_periods_backward=4)
-        
+
         Query: "Are Nvidia’s data center beats accelerating, decelerating, or becoming more volatile over time?"
         Function: get_visible_alpha_surprises_from_identifiers(identifiers["Nvidia"], estimate_search="data center", num_periods_backward=12)
     """).strip()

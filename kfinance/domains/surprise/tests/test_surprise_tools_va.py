@@ -2,16 +2,14 @@ import httpx2
 import pytest
 
 from kfinance.conftest import SPGI_ID_TRIPLE
+from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata
+from kfinance.domains.line_items.response_notes import (
+    SOURCE_LINK_NOTE,
+)
 from kfinance.domains.surprise.surprise_models import VisibleAlphaSurprises
 from kfinance.domains.surprise.surprise_tools_va import (
     fetch_visible_alpha_surprises_from_company_ids,
     get_visible_alpha_surprises_from_identifiers,
-)
-from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata
-from kfinance.domains.line_items.response_notes import (
-    FISCAL_PERIOD_WARNING,
-    FISCAL_YEAR_TERMINOLOGY_WARNING,
-    SOURCE_LINK_NOTE,
 )
 
 
@@ -31,11 +29,11 @@ SURPRISES_RESP = {
                         "sources": [
                             {
                                 "type": "VA insights",
-                                "url": "https://insights.visiblealpha.com/mex/SPGI_US/NMV/IS?dpid=12752992"
+                                "url": "https://insights.visiblealpha.com/mex/SPGI_US/NMV/IS?dpid=12752992",
                             }
-                        ]
+                        ],
                     }
-                ]
+                ],
             },
             "FY2026Q2": {
                 "period_end_date": "2026-06-30",
@@ -48,13 +46,13 @@ SURPRISES_RESP = {
                         "sources": [
                             {
                                 "type": "VA insights",
-                                "url": "https://insights.visiblealpha.com/mex/SPGI_US/NMV/IS?dpid=12752992"
+                                "url": "https://insights.visiblealpha.com/mex/SPGI_US/NMV/IS?dpid=12752992",
                             }
-                        ]
+                        ],
                     }
-                ]
-            }
-        }
+                ],
+            },
+        },
     }
 }
 
@@ -63,7 +61,7 @@ VA_METADATA = {
         {"parameter_name": "Total revenue", "currency": "USD"},
         {"parameter_name": "Total revenue, YoY", "currency": None},
         {"parameter_name": "Total revenue - Enterprise solution", "currency": "USD"},
-        {"parameter_name": "Revenue per share", "currency": "USD"}
+        {"parameter_name": "Revenue per share", "currency": "USD"},
     ]
 }
 
