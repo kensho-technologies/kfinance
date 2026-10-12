@@ -8,6 +8,7 @@ from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.key_developments.key_devs_models import (
     KeyDevCategoryType,
     KeyDevelopment,
+    KeyDevEventType,
     KeyDevsResp,
 )
 from kfinance.domains.key_developments.key_devs_tools import (
@@ -166,6 +167,44 @@ class TestKeyDevs:
         payload = json.loads(request.content)
         assert payload["company_id"] == SPGI_COMPANY_ID
         assert payload["key_dev_category"] == "announced_or_completed_transactions"
+
+    @pytest.mark.asyncio
+    async def test_fetch_key_devs_with_event_type_and_transcripts_only(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+    ) -> None:
+        """
+        WHEN we request key developments with an event type and transcripts_only
+        THEN the request sends the event type by name, like key_dev_category, and transcripts_only.
+        """
+
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/key_devs/").respond(
+            json={"results": {}, "next_time_band": None, "notes": None}
+        )
+
+        await fetch_key_devs_from_company_id(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            event_type=KeyDevEventType.OPERATING_RESULTS_CALL,
+            transcripts_only=True,
+        )
+
+        payload = json.loads(httpx2_mock.calls.last.request.content)
+        assert payload["event_type"] == "operating_results_call"
+        assert payload["transcripts_only"] is True
+
+    def test_has_transcript_is_kept_only_when_true(self) -> None:
+        """
+        GIVEN key developments with has_transcript true, false and absent
+        WHEN they are dumped the way the tools return them (without nulls)
+        THEN only the true one carries the key
+        """
+        with_transcript = KeyDevelopment(key_dev_id=1, has_transcript=True)
+        without_transcript = KeyDevelopment(key_dev_id=2, has_transcript=False)
+        not_reported = KeyDevelopment(key_dev_id=3)
+
+        assert with_transcript.model_dump(exclude_none=True)["has_transcript"] is True
+        assert "has_transcript" not in without_transcript.model_dump(exclude_none=True)
+        assert "has_transcript" not in not_reported.model_dump(exclude_none=True)
 
     @pytest.mark.asyncio
     async def test_get_key_devs_from_identifier(
