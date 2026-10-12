@@ -14,46 +14,44 @@ from kfinance.domains.surprise.surprise_tools_va import (
 
 
 SURPRISES_RESP = {
-    "21719": {
-        "estimate_type": "revenue",
-        "period_type": "quarterly",
-        "periods": {
-            "FY2026Q1": {
-                "period_end_date": "2026-03-31",
-                "surprises": [
-                    {
-                        "name": "Total revenue",
-                        "estimate_value": "4073777490.701441",
-                        "actual_value": "4171000000.000000",
-                        "pct_changed": "2.386544",
-                        "sources": [
-                            {
-                                "type": "VA insights",
-                                "url": "https://insights.visiblealpha.com/mex/SPGI_US/NMV/IS?dpid=12752992",
-                            }
-                        ],
-                    }
-                ],
-            },
-            "FY2026Q2": {
-                "period_end_date": "2026-06-30",
-                "surprises": [
-                    {
-                        "name": "Total revenue",
-                        "estimate_value": "3888263363.040703",
-                        "actual_value": "3678000000.000000",
-                        "pct_changed": "-5.407642",
-                        "sources": [
-                            {
-                                "type": "VA insights",
-                                "url": "https://insights.visiblealpha.com/mex/SPGI_US/NMV/IS?dpid=12752992",
-                            }
-                        ],
-                    }
-                ],
-            },
+    "estimate_type": "revenue",
+    "period_type": "quarterly",
+    "periods": {
+        "FY2026Q1": {
+            "period_end_date": "2026-03-31",
+            "surprises": [
+                {
+                    "name": "Total revenue",
+                    "estimate_value": "4073777490.701441",
+                    "actual_value": "4171000000.000000",
+                    "pct_changed": "2.386544",
+                    "sources": [
+                        {
+                            "type": "VA insights",
+                            "url": "https://insights.visiblealpha.com/mex/SPGI_US/NMV/IS?dpid=12752992",
+                        }
+                    ],
+                }
+            ],
         },
-    }
+        "FY2026Q2": {
+            "period_end_date": "2026-06-30",
+            "surprises": [
+                {
+                    "name": "Total revenue",
+                    "estimate_value": "3888263363.040703",
+                    "actual_value": "3678000000.000000",
+                    "pct_changed": "-5.407642",
+                    "sources": [
+                        {
+                            "type": "VA insights",
+                            "url": "https://insights.visiblealpha.com/mex/SPGI_US/NMV/IS?dpid=12752992",
+                        }
+                    ],
+                }
+            ],
+        },
+    },
 }
 
 VA_METADATA = {
