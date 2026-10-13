@@ -183,3 +183,18 @@ def add_spgi_supplier_mock_resp(httpx2_mock: Router) -> None:
             ],
         }
     )
+
+
+@pytest.fixture
+def add_spgi_sponsored_fund_mock_resp(httpx2_mock: Router) -> None:
+    """Add mock response for SPGI sponsored_fund relationship."""
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/sponsored_fund"
+    ).respond(
+        json={
+            "current": [{"company_id": 1, "company_name": "Company 1"}],
+            "previous": [{"company_id": 2, "company_name": "Company 2"}],
+            "pending": [{"company_id": 3, "company_name": "Company 3"}],
+            "cancelled": [{"company_id": 4, "company_name": "Company 4"}],
+        }
+    )

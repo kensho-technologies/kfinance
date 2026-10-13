@@ -41,6 +41,13 @@ class KfinanceTool(BaseTool):
 
     model_config = ConfigDict(extra="forbid")
 
+    def apply_user_permissions(self, permissions: set[Permission]) -> None:
+        """Narrow the tool's surface to what the user's `permissions` allow.
+
+        Called once per instance from `Client.langchain_tools`, after the tool has passed
+        `accepted_permissions` filtering, allowing per-user overrides. Defaults to a no-op.
+        """
+
     def run_without_langchain(self, *args: Any, **kwargs: Any) -> dict:
         """Execute a Kfinance tool without langchain (sync version).
 

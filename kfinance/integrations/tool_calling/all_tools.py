@@ -1,6 +1,3 @@
-from kfinance.domains.business_relationships.business_relationship_tools import (
-    GetBusinessRelationshipFromIdentifiers,
-)
 from kfinance.domains.capitalizations.capitalization_tools import GetCapitalizationFromIdentifiers
 from kfinance.domains.companies.company_tools import (
     GetCompanyDescriptionFromIdentifiers,
@@ -50,6 +47,7 @@ from kfinance.domains.ratings.ratings_tools import (
     GetIssuerRatingsFromIdentifiers,
     GetSecurityRatingsFromIdentifiers,
 )
+from kfinance.domains.relationships.relationship_tools import GetRelationshipFromIdentifiers
 from kfinance.domains.rounds_of_funding.rounds_of_funding_tools import (
     GetFundingSummaryFromIdentifiers,
     GetRoundsOfFundingFromIdentifiers,
@@ -68,8 +66,8 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     # Static / no API call tools
     GetLatest,
     GetNQuartersAgo,
-    # Business Relationships
-    GetBusinessRelationshipFromIdentifiers,
+    # Relationships
+    GetRelationshipFromIdentifiers,
     # Capitalizations
     GetCapitalizationFromIdentifiers,
     # Companies
