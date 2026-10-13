@@ -1,9 +1,9 @@
-from collections import Counter
+from collections import Counter, defaultdict, deque
 from textwrap import dedent
 from typing import Type
 
 import httpx2
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
@@ -44,7 +44,7 @@ class GetUltimateParentPathsFromIdentifiers(KfinanceTool):
         - Each element's relationship_type describes how that element is owned by the next element in the path. The ultimate parent ending a path has a null parent_company_id and a null relationship_type.
         - A company with no controlling parent is its own ultimate parent, returned as a single path holding only that company.
         - Only controlling relationships are included: a parent appears only where it holds a controlling interest, so minority stakes and other non-controlling investments don't appear.
-        - Only current relationships are followed; prior/historical ownership is never included. To check whether a company is still under a given parent, call this tool on the company. To check whether it used to be owned by that parent, call search_corporate_tree_from_identifiers instead, using name_contains and relationship_status=["current", "prior"].
+        - Only current relationships are followed; prior/historical ownership is never included. To check whether a company is still under a given parent, call this tool on the company. To check whether it used to be owned by that parent, call search_corporate_tree_from_identifiers on the parent with relationship_status=["current", "prior"] and look for the company among the matches.
         - Only companies and similar institutions can be queried. The identifier space also holds indexes, funds, commodities, yield curves and assets/products; querying one of those returns an error listing the supported company types.
 
         Examples:
@@ -124,11 +124,7 @@ class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
     country_iso_code: list[str] | None = Field(
         default=None,
-        description="Countries to filter by, as ISO 3166-1 alpha-3 codes only (e.g., ['USA', 'GBR', 'DEU']). Nodes in ANY of the listed countries are included.",
-    )
-    name_contains: list[str] | None = Field(
-        default=None,
-        description="Substring(s) to match against company names (case-insensitive). Nodes matching ANY of the listed substrings are included. For entities described by a business word, pass its stem (e.g. 'insurance units' -> ['insur']).",
+        description="Countries to filter by, as ISO 3166-1 alpha-3 codes only (e.g., ['USA', 'GBR', 'DEU']). Nodes in ANY of the listed countries are included. Anything that is not a three-letter code, such as 'DE' or 'Germany', is rejected.",
     )
     max_depth: MaxTreeDepth | None = Field(
         default=None,
@@ -144,6 +140,18 @@ class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
         ge=1,
         le=200,
     )
+
+    @field_validator("country_iso_code")
+    @classmethod
+    def validate_country_iso_code(cls, v: list[str] | None) -> list[str] | None:
+        """Reject invalid codes."""
+        return _validated_alpha_3(v)
+
+    @field_validator("relationship_type", "relationship_status")
+    @classmethod
+    def empty_list_means_omitted(cls, v: list | None) -> list | None:
+        """Treat an empty filter list as if the filter had not been passed."""
+        return v or None
 
 
 class SearchCorporateTreeFromIdentifiersResp(
@@ -167,17 +175,19 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         - Set max_depth to limit how deep to search. E.g. max_depth=1 searches direct children only. Omit it to search the whole tree.
         - When max_depth cuts the search short, `summary.search_was_depth_limited` is true and the `summary.companies_searched`/`relationships_searched`/`deepest_level_searched` counts describe only the searched portion, not the whole tree. To see deeper, call again with a larger max_depth or omit it entirely.
         - By default only current relationships are searched. Pass relationship_status=["prior"] for former relationships that are no longer active, or relationship_status=["current", "prior"] to check whether a company was ever under the parent. Each match reports its own relationship_status.
+        - relationship_status describes a single relationship: the edge from a match up to its own parent_company_id. `still_under_queried_company` is the chain-level fact. A unit below a divested company can be current with still_under_queried_company=false, meaning it is still under its own parent but no longer under the queried company. A current-only search never returns those.
         - Only controlling relationships are included: a parent appears only where it holds a controlling interest, so minority stakes and other non-controlling investments don't appear.
         - Only companies and similar institutions can be queried. The identifier space also holds indexes, funds, commodities, yield curves and assets/products; querying one of those returns an error listing the supported company types.
+        - There is no company name filter: read `company_name` on the matches and pick out the ones the question asks for. When `summary.total_matches` exceeds the number returned, raise limit, or narrow with max_depth, country_iso_code or relationship_type.
         - A company owned through several parents appears once per parent, each with its own parent_company_id. `summary.distinct_companies` counts the underlying companies.
-        - country_iso_code takes ISO 3166-1 alpha-3 codes only. Convert country names to codes before calling, e.g. Germany -> DEU.
+        - country_iso_code takes ISO 3166-1 alpha-3 codes only. Convert country names and two-letter codes before calling, e.g. Germany -> DEU, DE -> DEU, UK -> GBR.
 
         Examples:
         Query: "What subsidiaries does Microsoft have in Germany?"
         Function: search_corporate_tree_from_identifiers(identifiers=["Microsoft"], country_iso_code=["DEU"], relationship_type=["subsidiary_or_operating_unit"])
 
         Query: "Find all entities named 'Capital' or 'Global' under JPMorgan"
-        Function: search_corporate_tree_from_identifiers(identifiers=["JPM"], name_contains=["capital", "global"])
+        Function: search_corporate_tree_from_identifiers(identifiers=["JPM"], limit=200)
 
         Query: "Which subsidiaries has Pfizer divested?"
         Function: search_corporate_tree_from_identifiers(identifiers=["PFE"], relationship_type=["subsidiary_or_operating_unit"], relationship_status=["prior"])
@@ -186,7 +196,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         Function: search_corporate_tree_from_identifiers(identifiers=["ORCL"], relationship_type=["merged_entity"], max_depth=1)
 
         Query: "Was Motorola Mobility ever part of Alphabet?"
-        Function: search_corporate_tree_from_identifiers(identifiers=["GOOGL"], name_contains=["motorola"], relationship_status=["current", "prior"])
+        Function: search_corporate_tree_from_identifiers(identifiers=["GOOGL"], relationship_status=["current", "prior"], limit=200)
     """).strip()
     args_schema: Type[BaseModel] = SearchCorporateTreeFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
@@ -196,7 +206,6 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         identifiers: list[str],
         relationship_type: list[TreeRelationshipType] | None = None,
         country_iso_code: list[str] | None = None,
-        name_contains: list[str] | None = None,
         max_depth: int | None = None,
         relationship_status: list[TreeRelationshipStatus] | None = None,
         limit: int = 50,
@@ -206,7 +215,6 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
             identifiers=identifiers,
             relationship_type=relationship_type,
             country_iso_code=country_iso_code,
-            name_contains=name_contains,
             max_depth=max_depth,
             relationship_status=relationship_status,
             limit=limit,
@@ -219,7 +227,6 @@ async def search_corporate_tree_from_identifiers(
     httpx_client: httpx2.AsyncClient,
     relationship_type: list[TreeRelationshipType] | None = None,
     country_iso_code: list[str] | None = None,
-    name_contains: list[str] | None = None,
     max_depth: int | None = None,
     relationship_status: list[TreeRelationshipStatus] | None = None,
     limit: int = 50,
@@ -239,7 +246,6 @@ async def search_corporate_tree_from_identifiers(
                 httpx_client=httpx_client,
                 relationship_type=relationship_type,
                 country_iso_code=country_iso_code,
-                name_contains=name_contains,
                 max_depth=max_depth,
                 relationship_status=relationship_status,
                 limit=limit,
@@ -265,15 +271,73 @@ async def search_corporate_tree_from_identifiers(
     )
 
 
+def _without_blanks(values: list[str] | None) -> list[str] | None:
+    """Strip each value and drop the blanks. A filter left with nothing is treated as omitted."""
+    if values is None:
+        return None
+    stripped = [value.strip() for value in values if value.strip()]
+    return stripped or None
+
+
+def _validated_alpha_3(codes: list[str] | None) -> list[str] | None:
+    """Reject anything that is not an ISO 3166-1 alpha-3 code, rather than matching nothing."""
+    codes = _without_blanks(codes)
+    if codes is None:
+        return None
+
+    invalid = [code for code in codes if not (len(code) == 3 and code.isascii() and code.isalpha())]
+    if invalid:
+        raise ValueError(
+            f"country_iso_code takes ISO 3166-1 alpha-3 codes (three letters) only; got {invalid}. "
+            "Convert to alpha-3 before calling, e.g. Germany or DE -> DEU, United Kingdom or GB -> GBR."
+        )
+    return codes
+
+
+def _current_chain_company_ids(root_company_id: int, nodes: list[CorporateTreeNode]) -> set[int]:
+    """Company ids reachable from the queried company through current relationships only."""
+    children: dict[int, list[int]] = defaultdict(list)
+    for node in nodes:
+        if node.relationship_status is TreeRelationshipStatus.current:
+            children[node.parent_company_id].append(node.company.company_id)
+
+    reachable = {root_company_id}
+    queue = deque([root_company_id])
+    while queue:
+        for child_id in children[queue.popleft()]:
+            if child_id not in reachable:
+                reachable.add(child_id)
+                queue.append(child_id)
+    return reachable
+
+
+def _still_under_queried_company(
+    node: CorporateTreeNode, current_chain_company_ids: set[int]
+) -> bool:
+    """Whether every relationship from the queried company down to this node is current."""
+    return (
+        node.relationship_status is TreeRelationshipStatus.current
+        and node.parent_company_id in current_chain_company_ids
+    )
+
+
 def _node_matches(
     node: CorporateTreeNode,
     relationship_statuses: list[TreeRelationshipStatus],
+    still_under_queried_company: bool,
     relationship_types: list[TreeRelationshipType] | None,
     country_iso_codes: list[str] | None,
-    name_substrings: list[str] | None,
 ) -> bool:
-    """Whether a node satisfies every supplied filter. Country and name matching is case-insensitive."""
+    """Whether a node satisfies every supplied filter. Country matching is case-insensitive."""
     if node.relationship_status not in relationship_statuses:
+        return False
+
+    # A current relationship below a divested ancestor is no longer under the queried company,
+    # so it is only returned when prior relationships were asked for.
+    if (
+        TreeRelationshipStatus.prior not in relationship_statuses
+        and not still_under_queried_company
+    ):
         return False
 
     if relationship_types is not None and node.relationship_type not in relationship_types:
@@ -286,11 +350,6 @@ def _node_matches(
         if not any(iso_country.casefold() == code.casefold() for code in country_iso_codes):
             return False
 
-    if name_substrings is not None:
-        node_name = node.company.company_name.casefold()
-        if not any(substring.casefold() in node_name for substring in name_substrings):
-            return False
-
     return True
 
 
@@ -299,13 +358,15 @@ async def fetch_and_search_corporate_tree(
     httpx_client: httpx2.AsyncClient,
     relationship_type: list[TreeRelationshipType] | None = None,
     country_iso_code: list[str] | None = None,
-    name_contains: list[str] | None = None,
     max_depth: int | None = None,
     relationship_status: list[TreeRelationshipStatus] | None = None,
     limit: int = 50,
 ) -> CorporateTreeSearchResult:
     """Fetch the corporate tree for a single company and search it."""
     statuses = relationship_status or [TreeRelationshipStatus.current]
+    # Applied here as well as on the args model, so direct callers behave the same way.
+    country_iso_code = _validated_alpha_3(country_iso_code)
+    relationship_type = relationship_type or None
     response = await fetch_corporate_tree(
         company_id=company_id,
         httpx_client=httpx_client,
@@ -315,6 +376,7 @@ async def fetch_and_search_corporate_tree(
         max_depth=max_depth,
     )
 
+    current_chain = _current_chain_company_ids(response.root.company_id, response.nodes)
     # The API already applied max_depth, so there is no depth filtering left to do here.
     matches = [
         node
@@ -322,9 +384,9 @@ async def fetch_and_search_corporate_tree(
         if _node_matches(
             node,
             relationship_statuses=statuses,
+            still_under_queried_company=_still_under_queried_company(node, current_chain),
             relationship_types=relationship_type,
             country_iso_codes=country_iso_code,
-            name_substrings=name_contains,
         )
     ]
 
@@ -341,6 +403,7 @@ async def fetch_and_search_corporate_tree(
                 level=node.level,
                 relationship_type=node.relationship_type,
                 relationship_status=node.relationship_status,
+                still_under_queried_company=_still_under_queried_company(node, current_chain),
             )
             for node in matches[:limit]
         ],

@@ -167,6 +167,9 @@ class SearchMatch(BaseModel):
     level: int
     relationship_type: TreeRelationshipType
     relationship_status: TreeRelationshipStatus
+    still_under_queried_company: bool = Field(
+        description="Whether every relationship from the queried company down to this match is current. False when this relationship, or something above it, has ended: relationship_status describes only this match's own edge to its parent_company_id. Always true when only current relationships were searched."
+    )
 
 
 class SearchSummary(BaseModel):

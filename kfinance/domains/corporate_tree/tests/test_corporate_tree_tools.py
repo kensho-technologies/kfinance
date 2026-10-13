@@ -221,6 +221,29 @@ SAMPLE_MIXED_STATUS_TREE_RESPONSE = {
     "summary": {"max_depth": 2, "total_companies": 5, "total_edges": 4},
 }
 
+# A divested company that had itself divested something: both relationships are prior, and the
+# deeper one is only reachable by traversing the first.
+SAMPLE_NESTED_PRIOR_TREE_RESPONSE = {
+    "root": SPGI_ROOT,
+    "nodes": [
+        {
+            "company": {"company_id": IHS_MARKIT, "company_name": "IHS Markit Ltd.", **_GBR},
+            "level": 1,
+            "parent_company_id": SPGI_COMPANY_ID,
+            "relationship_status": "prior",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {"company_id": OSTTRA, "company_name": "Osttra Group Ltd.", **_GBR},
+            "level": 2,
+            "parent_company_id": IHS_MARKIT,
+            "relationship_status": "prior",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+    ],
+    "summary": {"max_depth": 2, "total_companies": 3, "total_edges": 2},
+}
+
 # A tree reaching level 10, used to check that level keys are ordered numerically rather than
 # lexicographically ("10" must not sort before "2").
 SAMPLE_DEEP_TREE_RESPONSE = {
@@ -416,6 +439,29 @@ class TestSearchCorporateTreeArgs:
         with pytest.raises(ValidationError):
             SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"], max_depth=-1)
 
+    @pytest.mark.parametrize("code", ["DE", "UK", "Germany", "United Kingdom", "US1", "U S"])
+    def test_country_iso_code_rejects_anything_but_alpha_3(self, code: str) -> None:
+        """WHEN a country code is not alpha-3 THEN it is rejected, rather than silently matching
+        nothing, and the error says what to pass instead."""
+        with pytest.raises(ValidationError, match="alpha-3"):
+            SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"], country_iso_code=[code])
+
+    @pytest.mark.parametrize("codes", [["DEU"], ["deu"], ["DEU", "gbr"]])
+    def test_country_iso_code_accepts_alpha_3_in_any_case(self, codes: list[str]) -> None:
+        args = SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"], country_iso_code=codes)
+        assert args.country_iso_code == codes
+
+    def test_a_blank_country_filter_is_treated_as_omitted(self) -> None:
+        """WHEN country_iso_code holds only blanks THEN it is omitted rather than rejected:
+        blanks are stripped before the alpha-3 check."""
+        args = SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"], country_iso_code=[""])
+        assert args.country_iso_code is None
+
+    @pytest.mark.parametrize("filter_name", ["relationship_type", "relationship_status"])
+    def test_an_empty_filter_list_is_treated_as_omitted(self, filter_name: str) -> None:
+        args = SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"], **{filter_name: []})
+        assert getattr(args, filter_name) is None
+
 
 class TestGetUltimateParentPaths:
     @pytest.mark.asyncio
@@ -552,14 +598,12 @@ class TestSearchCorporateTree:
     async def test_search_never_matches_the_root(
         self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
     ) -> None:
-        """WHEN the filter matches only the queried company THEN there are no matches."""
+        """WHEN a tree is searched THEN only the companies below the queried one are matched."""
         result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name_contains=["S&P Global"]
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
         )
 
-        assert result.summary.total_matches == 0
-        assert result.matches == []
-        assert result.summary.matches_by_level == {}
+        assert SPGI_COMPANY_ID not in {match.company_id for match in result.matches}
         # The root is still reported so the caller knows whose tree was searched.
         assert result.queried_company.company_name == "S&P Global Inc."
 
@@ -617,18 +661,17 @@ class TestSearchCorporateTree:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("country_iso_code", ["United Kingdom", "GB", "UK"])
-    async def test_search_by_country_iso_code_ignores_full_names_and_other_codes(
+    async def test_search_by_country_iso_code_rejects_full_names_and_other_codes(
         self, httpx_client: httpx2.AsyncClient, add_tree_mock: None, country_iso_code: str
     ) -> None:
-        """WHEN anything but an alpha-3 code is given THEN it matches nothing."""
-        result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID,
-            httpx_client=httpx_client,
-            country_iso_code=[country_iso_code],
-        )
-
-        assert result.summary.total_matches == 0
-        assert result.matches == []
+        """WHEN anything but an alpha-3 code is given THEN the search raises rather than
+        reporting an empty result that reads as "no such companies"."""
+        with pytest.raises(ValueError, match="alpha-3"):
+            await fetch_and_search_corporate_tree(
+                company_id=SPGI_COMPANY_ID,
+                httpx_client=httpx_client,
+                country_iso_code=[country_iso_code],
+            )
 
     @pytest.mark.asyncio
     async def test_search_by_country_iso_code_excludes_companies_with_no_country(
@@ -661,35 +704,6 @@ class TestSearchCorporateTree:
         )
 
         assert result.summary.total_matches == 12
-
-    @pytest.mark.asyncio
-    async def test_search_by_name_substring(
-        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
-    ) -> None:
-        """WHEN a name substring is given THEN it matches company names case-insensitively."""
-        result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name_contains=["mcgraw"]
-        )
-
-        assert result.summary.distinct_companies == 3
-        assert {match.company_id for match in result.matches} == {
-            NJ_DATA_CENTER,
-            JUVENILE_RETAIL,
-            MCGRAW_HILL_EDUCATION,
-        }
-
-    @pytest.mark.asyncio
-    async def test_search_by_multiple_names(
-        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
-    ) -> None:
-        """WHEN several name substrings are given THEN companies matching ANY of them match."""
-        result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID,
-            httpx_client=httpx_client,
-            name_contains=["Kensho", "Osttra"],
-        )
-
-        assert {match.company_id for match in result.matches} == {KENSHO, OSTTRA}
 
     @pytest.mark.asyncio
     async def test_search_combines_filters_with_and_logic(
@@ -729,12 +743,14 @@ class TestSearchCorporateTree:
     ) -> None:
         """WHEN a company has several parents THEN it is returned once per parent."""
         result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name_contains=["Juvenile Retail"]
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
         )
 
-        assert result.summary.total_matches == 2
-        assert result.summary.distinct_companies == 1
-        assert {match.parent_company_id for match in result.matches} == {SNL, NJ_DATA_CENTER}
+        juvenile_retail = [match for match in result.matches if match.company_id == JUVENILE_RETAIL]
+        assert len(juvenile_retail) == 2
+        assert {match.parent_company_id for match in juvenile_retail} == {SNL, NJ_DATA_CENTER}
+        # Both rows are the same underlying company.
+        assert result.summary.distinct_companies < result.summary.total_matches
 
     @pytest.mark.asyncio
     async def test_search_limit_truncates_matches_but_not_the_totals(
@@ -757,7 +773,9 @@ class TestSearchCorporateTree:
     ) -> None:
         """WHEN a match is returned THEN the nested company fields are flattened onto it."""
         result = await fetch_and_search_corporate_tree(
-            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, name_contains=["Osttra"]
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_type=[TreeRelationshipType.investment_arm],
         )
 
         (match,) = result.matches
@@ -892,6 +910,85 @@ class TestSearchCorporateTree:
         )
 
         assert [match.company_id for match in result.matches] == [KENSHO]
+
+    @pytest.mark.asyncio
+    async def test_a_current_relationship_under_a_divested_parent_is_flagged(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN a current relationship sits below a divested one THEN its own status stays current
+        but still_under_queried_company is false, so it cannot be read as still owned."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true").respond(
+            json=SAMPLE_MIXED_STATUS_TREE_RESPONSE
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_status=[TreeRelationshipStatus.current, TreeRelationshipStatus.prior],
+        )
+
+        by_parent = {(match.company_id, match.parent_company_id): match for match in result.matches}
+        # Still under S&P Global: its own edge is current and so is everything above it.
+        assert by_parent[(SNL, SPGI_COMPANY_ID)].still_under_queried_company is True
+        # Divested outright.
+        assert by_parent[(IHS_MARKIT, SPGI_COMPANY_ID)].still_under_queried_company is False
+        assert by_parent[(KENSHO, SPGI_COMPANY_ID)].still_under_queried_company is False
+        # The case QA reported: a current unit under a divested parent.
+        osttra = by_parent[(OSTTRA, IHS_MARKIT)]
+        assert osttra.relationship_status is TreeRelationshipStatus.current
+        assert osttra.still_under_queried_company is False
+
+    @pytest.mark.asyncio
+    async def test_a_current_only_search_excludes_matches_under_a_divested_parent(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN only current relationships are searched THEN a current relationship whose chain is
+        broken above it is left out, so every match is still under the queried company."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=false").respond(
+            json=SAMPLE_MIXED_STATUS_TREE_RESPONSE
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_status=[TreeRelationshipStatus.current],
+        )
+
+        assert [match.company_id for match in result.matches] == [SNL]
+        assert result.summary.total_matches == 1
+        # The prior-inclusive tree was still traversed, so the counts exceed what is returned.
+        assert result.summary.relationships_searched == 4
+
+    @pytest.mark.asyncio
+    async def test_an_all_current_tree_is_entirely_under_the_queried_company(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN every relationship in the tree is current THEN all matches are flagged as still
+        under the queried company."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
+        )
+
+        assert all(match.still_under_queried_company for match in result.matches)
+
+    @pytest.mark.asyncio
+    async def test_search_for_prior_only_keeps_a_prior_match_under_a_prior_parent(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN a prior relationship sits under another prior one THEN both match, since the
+        status filter tests each relationship's own status."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true").respond(
+            json=SAMPLE_NESTED_PRIOR_TREE_RESPONSE
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_status=[TreeRelationshipStatus.prior],
+        )
+
+        assert [match.company_id for match in result.matches] == [IHS_MARKIT, OSTTRA]
+        assert not any(match.still_under_queried_company for match in result.matches)
 
     @pytest.mark.asyncio
     async def test_search_reports_company_type_where_the_api_supplies_one(
