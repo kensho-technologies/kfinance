@@ -125,6 +125,49 @@ class TestGetFinancialLineItemFromIdentifiersVa:
         assert resp.data_source == "Visible Alpha"
 
     @pytest.mark.asyncio
+    async def test_requested_line_item_from_api(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+    ) -> None:
+        """
+        WHEN the API returns requested_line_item
+        THEN the tool response uses the API value rather than the input parameter
+        """
+        httpx2_mock.post("https://kfinance.kensho.com/api/v1/line_item/visible_alpha").respond(
+            json={
+                "results": {str(SPGI_ID_TRIPLE.company_id): LINE_ITEM_RESP},
+                "errors": {},
+                "metadata": {},
+                "requested_line_item": "iPhone revenue",
+            }
+        )
+
+        resp = await get_visible_alpha_financial_line_item_from_identifiers(
+            identifiers=["SPGI"],
+            line_item_search="iphone rev",
+            httpx_client=httpx_client,
+        )
+
+        assert resp.requested_line_item == "iPhone revenue"
+
+    @pytest.mark.asyncio
+    async def test_requested_line_item_falls_back_to_input(
+        self,
+        httpx_client: httpx2.AsyncClient,
+        add_spgi_line_item_va_mock: None,
+    ) -> None:
+        """
+        WHEN the API does not return requested_line_item (old server)
+        THEN the tool response uses the input parameter as fallback
+        """
+        resp = await get_visible_alpha_financial_line_item_from_identifiers(
+            identifiers=["SPGI"],
+            line_item_search="iPhone revenue",
+            httpx_client=httpx_client,
+        )
+
+        assert resp.requested_line_item == "iPhone revenue"
+
+    @pytest.mark.asyncio
     async def test_unknown_identifier_surfaces_as_error(
         self,
         httpx_client: httpx2.AsyncClient,

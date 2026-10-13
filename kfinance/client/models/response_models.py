@@ -37,10 +37,11 @@ class PostResponse(RespWithErrors, Generic[T]):
     results: dict[str, T]
 
 
-class PostResponseWithMetadata(PostResponse[T]):
+class PostResponseWithLineItemMetadata(PostResponse[T]):
     """PostResponse extended with a top-level metadata dict."""
 
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
+    requested_line_item: str | None = None
 
 
 class SingleResultResp(BaseModel, Generic[T]):
