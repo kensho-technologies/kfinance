@@ -6,13 +6,7 @@ from strenum import StrEnum
 from kfinance.domains.companies.company_models import CompanyId
 
 
-MaxTreeDepth = Annotated[
-    int,
-    Field(
-        ge=0,
-        description="How many levels below the company to search. Omit to search the entire tree. Use max_depth=1 to search direct relationships only.",
-    ),
-]
+MaxTreeDepth = Annotated[int, Field(ge=0)]
 
 
 class CompanyType(StrEnum):
@@ -53,16 +47,12 @@ class CompanyType(StrEnum):
 
 
 class TreeRelationshipType(StrEnum):
-    """The type of parent-child relationship in the corporate tree.
+    """The type of parent-child relationship. Every relationship is a controlling one.
 
-    Every relationship in the corporate tree is a controlling one. Minority and other
-    non-controlling stakes are absent from the tree and from the ultimate parent paths.
-
-    Values:
-      - subsidiary_or_operating_unit: Parent owns 50% or more of a child that remains its own legal entity; includes operating units, business units, joint ventures, and asset managers owned by financial firms. Use it for subsidiaries, operating or business units, and majority-owned companies or majority investments in operating companies.
-      - merged_entity: Child was acquired and fully absorbed into the parent, leaving the parent as the only surviving entity. Use it for merged, absorbed or integrated businesses and for former companies that are now part of the parent; these are current relationships. Not for acquired companies that still exist as separate legal entities.
-      - investment_arm: Corporate parent (including banks and insurers) holds a majority stake in an investment firm that invests for strategic reasons, e.g. a corporate venture arm. Use it when investment arms, venture arms or investment firms are asked for. A financial firm's asset manager and a company's investments in general are subsidiary_or_operating_unit instead, since the tree only holds majority stakes.
-      - affiliated_government_institution: Sovereign or national government controls another government entity, the government version of a subsidiary. Use it for government entities, agencies or institutions under a government.
+    - subsidiary_or_operating_unit: Parent owns 50% or more of a child that remains its own legal entity. Use it for subsidiaries, operating or business units, joint ventures, majority-owned companies and investments, and asset managers owned by financial firms.
+    - merged_entity: Child was acquired and fully absorbed into the parent. Use it for merged, absorbed or integrated businesses, not for acquired companies that remain separate legal entities.
+    - investment_arm: Corporate parent (including banks and insurers) holds a majority stake in an investment firm investing for strategic reasons, e.g. a corporate venture arm. Use it for investment or venture arms; a financial firm's asset manager and general investments are subsidiary_or_operating_unit.
+    - affiliated_government_institution: A government controls another government entity. Use it for government entities, agencies or institutions under a government.
     """
 
     subsidiary_or_operating_unit = "subsidiary_or_operating_unit"
@@ -72,11 +62,10 @@ class TreeRelationshipType(StrEnum):
 
 
 class TreeRelationshipStatus(StrEnum):
-    """Whether the relationship is current or prior/historical.
+    """Whether the relationship is current or prior.
 
-    Values:
-      - current: The child is still under the parent. Merged entities absorbed into the parent are current.
-      - prior: The relationship has ended: the child was sold, divested or spun off and is no longer under the parent.
+    - current: The child is still under the parent, including merged entities absorbed into it.
+    - prior: The child was sold, divested or spun off and is no longer under the parent.
     """
 
     current = "current"
