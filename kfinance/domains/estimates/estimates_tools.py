@@ -114,7 +114,7 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_consensus_estimates_from_identifiers"
     description: str = dedent("""
         Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a list of identifiers. Returns Capital IQ data.
-        Returns statistical aggregates including high, low, mean, median, and number of estimates. When periods have ended, actual reported values are also returned with "Actual" in the name. Estimate data is available through 2045.
+        Returns statistical aggregates including high, low, mean, median, and number of estimates. When periods have ended, actual reported values are also returned with "Actual" in the name.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - If no time parameters are provided, next 4 quarters are retrieved by default.
