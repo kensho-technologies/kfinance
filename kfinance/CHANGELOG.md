@@ -3,6 +3,9 @@
 ## v9.1.0
 - Visible Alpha surprise tool is now available.
 
+## v9.0.2
+- Improve tools descriptions of `get_consensus_estimates_from_identifiers`, `get_guidance_from_identifiers`, `get_consensus_target_price_from_identifiers`, and  `get_analyst_recommendations_from_identifiers` tools.
+
 ## v9.0.1
 - Change issuer ratings tool to prefer ISO code for country inputs.
 
