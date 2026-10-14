@@ -101,6 +101,13 @@ class CiqEstimates(Estimates):
     estimate_type: EstimateType
     periods: dict[str, CiqEstimatesPeriodData]
 
+    def remove_all_periods_other_than_the_most_recent_one(self) -> None:
+        """Remove all period data other than the most recent one."""
+        if self.periods:
+            most_recent_period = max(self.periods.keys())
+            most_recent_period_data = self.periods[most_recent_period]
+            self.periods = {most_recent_period: most_recent_period_data}
+
 
 class VisibleAlphaEstimates(Estimates):
     estimate_type: str

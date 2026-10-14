@@ -13,7 +13,10 @@ from kfinance.client.models.date_and_period_models import (
     NumPeriodsBackward,
     NumPeriodsForward,
 )
-from kfinance.client.models.response_models import SingleResultResp
+from kfinance.client.models.response_models import (
+    PostResponseWithLineItemMetadata,
+    SingleResultResp,
+)
 from kfinance.client.permission_models import Permission
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
@@ -64,6 +67,18 @@ class GetEstimatesFromIdentifiersArgs(BaseEstimatesFromIdentifiersArgs):
     )
 
 
+class GetConsensusEstimatesFromIdentifiersArgs(GetEstimatesFromIdentifiersArgs):
+    line_item: Literal[tuple(CONSENSUS_LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore[valid-type]
+        description="The type of consensus estimate line_item requested"
+    )
+
+
+class GetGuidanceEstimatesFromIdentifiersArgs(GetEstimatesFromIdentifiersArgs):
+    line_item: Literal[tuple(GUIDANCE_LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore[valid-type]
+        description="The type of guidance estimate line_item requested"
+    )
+
+
 class GetCiqEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CiqEstimates]):
     notes: list[str] = Field(default_factory=list)
     metadata: dict[str, AlternativeLineItemMetadata] = Field(default_factory=dict)
@@ -71,7 +86,6 @@ class GetCiqEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CiqEstimate
 
 
 class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
-    args_schema: Type[BaseModel] = GetEstimatesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.EstimatesPermission}
 
     @property
@@ -83,6 +97,7 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
     async def _arun(
         self,
         identifiers: list[str],
+        line_item: str,
         period_type: EstimatePeriodType | None = None,
         fiscal_start_year: int | None = None,
         fiscal_end_year: int | None = None,
@@ -94,6 +109,7 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
         """"""
         return await get_estimates_from_identifiers(
             identifiers=identifiers,
+            line_item=line_item,
             estimate_type=self.estimate_type,
             httpx_client=self.kfinance_client.httpx_client,
             period_type=period_type,
@@ -142,6 +158,8 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
         """The estimate type is consensus."""
         return EstimateType.consensus
 
+    args_schema: Type[BaseModel] = GetConsensusEstimatesFromIdentifiersArgs
+
 
 class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_guidance_from_identifiers"
@@ -168,6 +186,8 @@ class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
     def estimate_type(self) -> EstimateType:
         """The estimate type is guidance."""
         return EstimateType.guidance
+
+    args_schema: Type[BaseModel] = GetGuidanceEstimatesFromIdentifiersArgs
 
 
 class GetConsensusTargetPriceFromIdentifiersResp(ToolRespWithIdInfoAndErrors[ConsensusTargetPrice]):
@@ -237,6 +257,7 @@ class GetAnalystRecommendationsFromIdentifiers(KfinanceTool):
 
 async def get_estimates_from_identifiers(
     identifiers: list[str],
+    line_item: str,
     estimate_type: EstimateType,
     httpx_client: httpx2.AsyncClient,
     period_type: EstimatePeriodType | None = None,
@@ -249,44 +270,55 @@ async def get_estimates_from_identifiers(
 ) -> GetCiqEstimatesFromIdentifiersResp:
     """Fetch estimates for all identifiers."""
 
+    # First resolve identifiers to company IDs
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
     errors: list[str] = list(id_triple_resp.errors.values())
 
-    tasks = [
-        AsyncTask(
-            func=fetch_estimates_from_company_id,
-            kwargs=dict(
-                company_id=id_triple.company_id,
-                estimate_type=estimate_type,
-                httpx_client=httpx_client,
-                period_type=period_type,
-                fiscal_start_year=fiscal_start_year,
-                fiscal_end_year=fiscal_end_year,
-                fiscal_start_quarter=fiscal_start_quarter,
-                fiscal_end_quarter=fiscal_end_quarter,
-                num_periods_forward=num_periods_forward,
-                num_periods_backward=num_periods_backward,
-            ),
-            result_key=identifier,
+    # Fetch line items for all resolved company IDs
+    if id_triple_resp.company_ids:
+        estimates_resp = await fetch_estimates_from_company_id(
+            company_ids=id_triple_resp.company_ids,
+            line_item=line_item,
+            estimate_type=estimate_type,
+            httpx_client=httpx_client,
+            period_type=period_type,
+            fiscal_start_year=fiscal_start_year,
+            fiscal_end_year=fiscal_end_year,
+            fiscal_start_quarter=fiscal_start_quarter,
+            fiscal_end_quarter=fiscal_end_quarter,
+            num_periods_forward=num_periods_forward,
+            num_periods_backward=num_periods_backward,
         )
-        for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items()
-    ]
 
-    await batch_execute_async_tasks(tasks=tasks)
+        # Add any errors from the line item API, mapping company_id keys back to identifiers
+        for company_id_str, error in estimates_resp.errors.items():
+            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            errors.append(f"{original_identifier}: {error}")
 
-    results: dict[str, CiqEstimates] = dict()
-    for task in tasks:
-        if task.error:
-            errors.append(task.error)
-        else:
-            resp: SingleResultResp[CiqEstimates] = task.result
-            if resp.result is not None:
-                results[task.result_key] = resp.result
-            if resp.error is not None:
-                error_msg = f"{task.result_key}: {resp.error}"
-                errors.append(error_msg)
+        # Map results back to original identifiers
+        identifier_to_results = {}
+        for company_id_str, line_item_data in estimates_resp.results.items():
+            original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
+            identifier_to_results[original_identifier] = line_item_data
+
+        results = identifier_to_results
+    else:
+        results = {}
+
+    # If no date and multiple companies, only return the most recent value
+    if (
+        fiscal_start_year is None
+        and fiscal_end_year is None
+        and fiscal_start_quarter is None
+        and fiscal_end_quarter is None
+        and num_periods_forward is None
+        and num_periods_backward is None
+        and len(results) > 1
+    ):
+        for estimates_response in results.values():
+            estimates_response.remove_all_periods_other_than_the_most_recent_one()
 
     resp_model = GetCiqEstimatesFromIdentifiersResp(
         identifier_results=results,
@@ -306,7 +338,8 @@ async def get_estimates_from_identifiers(
 
 
 async def fetch_estimates_from_company_id(
-    company_id: int,
+    company_ids: list[int],
+    line_item: str,
     estimate_type: EstimateType,
     httpx_client: httpx2.AsyncClient,
     period_type: EstimatePeriodType | None = None,
@@ -316,11 +349,12 @@ async def fetch_estimates_from_company_id(
     fiscal_end_quarter: Literal[1, 2, 3, 4] | None = None,
     num_periods_forward: int | None = None,
     num_periods_backward: int | None = None,
-) -> SingleResultResp[CiqEstimates]:
+) -> PostResponseWithLineItemMetadata[CiqEstimates]:
     """Fetch estimates for one company_id."""
     # Build query parameters
     params = {
-        "company_id": company_id,
+        "company_ids": company_ids,
+        "line_item": line_item,
         "estimate_type": estimate_type.value,
     }
 
@@ -341,7 +375,7 @@ async def fetch_estimates_from_company_id(
 
     resp = await httpx_client.post(url="/estimates/", json=params)
     resp.raise_for_status()
-    return SingleResultResp[CiqEstimates].model_validate(resp.json())
+    return PostResponseWithLineItemMetadata[CiqEstimates].model_validate(resp.json())
 
 
 async def get_consensus_target_price_from_identifiers(
