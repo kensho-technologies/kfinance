@@ -1,5 +1,8 @@
 # Changelog
 
+## v9.1.0
+- Add GetOwnersFromIdentifiers, GetHoldingsFromIdentifiers, and GetInsiderTradesFromIdentifiers
+
 ## v9.0.1
 - Change issuer ratings tool to prefer ISO code for country inputs.
 ## v9.0.0
