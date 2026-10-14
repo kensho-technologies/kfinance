@@ -10,15 +10,16 @@ from respx import Router
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.ownership.ownership_models import (
     CompanyOwners,
+    Holdings,
     HoldingsResp,
-    HoldingsResult,
     InsiderTradesResp,
-    InsiderTradesResult,
     OwnersResp,
     OwnersSummaryResp,
     OwnerTypeSummary,
 )
 from kfinance.domains.ownership.ownership_tools import (
+    FIRST_APPEARANCE_NOTE,
+    OWNERSHIP_PCT_OUT_OF_RANGE_NOTE,
     GetHoldingsFromIdentifiersArgs,
     GetHoldingsFromIdentifiersResp,
     GetInsiderTradesFromIdentifiersArgs,
@@ -32,16 +33,6 @@ from kfinance.domains.ownership.ownership_tools import (
     get_holdings_from_identifiers,
     get_insider_trades_from_identifiers,
     get_owners_from_identifiers,
-)
-from kfinance.domains.ownership.response_notes import (
-    FIRST_APPEARANCE_NOTE,
-    MULTI_DAY_TRADE_NOTE,
-    NO_TICKER_NOTE,
-    OWNER_TYPE_BREAKDOWN_NOTE,
-    OWNERSHIP_PCT_OUT_OF_RANGE_NOTE,
-    UNMAPPED_HOLDING_NOTE,
-    holdings_notes,
-    insider_trades_notes,
     owners_notes,
 )
 
@@ -270,7 +261,7 @@ class TestGetOwners:
         GIVEN include_summary is True and limit is 1
         WHEN we fetch owners for SPGI
         THEN we get back SPGI's ownership summary and only its largest owner, with notes only for
-            the returned data
+            the returned owners
         """
         httpx2_mock.post(OWNERS_URL).respond(json=self.spgi_owners_api_resp)
         httpx2_mock.post(OWNERS_SUMMARY_URL).respond(json=self.spgi_owners_summary_api_resp)
@@ -284,7 +275,7 @@ class TestGetOwners:
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             # No FIRST_APPEARANCE_NOTE: BlackRock, the owner without a prior period, is cut by limit.
-            notes=[OWNER_TYPE_BREAKDOWN_NOTE],
+            notes=[],
             errors=[],
         )
 
@@ -316,7 +307,6 @@ class TestGetOwners:
                 "SPGI": CompanyOwners(summary=self.spgi_owners_summary_resp.results, owners=[])
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            notes=[OWNER_TYPE_BREAKDOWN_NOTE],
             errors=["SPGI: No owners found."],
         )
 
@@ -419,7 +409,7 @@ class TestGetHoldings:
 
         expected_resp = GetHoldingsFromIdentifiersResp(
             identifier_results={
-                "SPGI": HoldingsResult(holdings=self.spgi_holdings_resp.results.holdings[:1])
+                "SPGI": Holdings(holdings=self.spgi_holdings_resp.results.holdings[:1])
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             errors=[NON_EXISTENT_ID_ERROR],
@@ -531,7 +521,6 @@ class TestGetInsiderTrades:
         expected_resp = GetInsiderTradesFromIdentifiersResp(
             identifier_results={"SPGI": self.spgi_insider_trades_resp.results},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            notes=[MULTI_DAY_TRADE_NOTE],
             errors=[NON_EXISTENT_ID_ERROR],
         )
 
@@ -608,10 +597,9 @@ class TestGetInsiderTrades:
         assert resp == expected_resp
 
 
-class TestOwnershipNotes:
+class TestOwnersNotes:
     vanguard, blackrock = TestGetOwners.spgi_owners_resp.results.ownership
     spgi_summary = TestGetOwners.spgi_owners_summary_resp.results
-    apple_holding, unmapped_holding = TestGetHoldings.spgi_holdings_resp.results.holdings
 
     def test_owners_notes_for_an_owner_without_a_prior_period(self) -> None:
         """
@@ -630,19 +618,11 @@ class TestOwnershipNotes:
 
     def test_owners_notes_for_a_summary_within_range(self) -> None:
         """
-        WHEN a summary with an owner type breakdown and an in-range ownership percent is returned
-        THEN only the owner type breakdown note is added
-        """
-        notes = owners_notes([CompanyOwners(summary=self.spgi_summary)])
-        assert notes == [OWNER_TYPE_BREAKDOWN_NOTE]
-
-    def test_owners_notes_for_a_summary_without_an_owner_type_breakdown(self) -> None:
-        """
-        WHEN a summary without an owner type breakdown is returned
+        WHEN a summary with an in-range ownership percent and no negative owner type shares is
+            returned
         THEN no notes are added
         """
-        summary = self.spgi_summary.model_copy(update={"by_owner_type": []})
-        assert owners_notes([CompanyOwners(summary=summary)]) == []
+        assert owners_notes([CompanyOwners(summary=self.spgi_summary)]) == []
 
     @pytest.mark.parametrize(
         "update",
@@ -666,39 +646,11 @@ class TestOwnershipNotes:
         THEN the out of range note is added
         """
         summary = self.spgi_summary.model_copy(update=update)
-        assert OWNERSHIP_PCT_OUT_OF_RANGE_NOTE in owners_notes([CompanyOwners(summary=summary)])
+        assert owners_notes([CompanyOwners(summary=summary)]) == [OWNERSHIP_PCT_OUT_OF_RANGE_NOTE]
 
-    def test_holdings_notes_for_an_unmapped_holding_without_a_ticker(self) -> None:
-        """
-        WHEN a holding that isn't mapped to a company and has no ticker is returned
-        THEN the unmapped holding and no ticker notes are added
-        """
-        notes = holdings_notes(
-            [HoldingsResult(holdings=[self.apple_holding, self.unmapped_holding])]
-        )
-        assert notes == [UNMAPPED_HOLDING_NOTE, NO_TICKER_NOTE]
-
-    def test_holdings_notes_for_mapped_holdings_with_tickers(self) -> None:
-        """
-        WHEN only holdings mapped to a company with a ticker are returned
-        THEN no notes are added
-        """
-        assert holdings_notes([HoldingsResult(holdings=[self.apple_holding])]) == []
-
-    def test_insider_trades_notes(self) -> None:
-        """
-        WHEN any insider trades are returned
-        THEN the multi-day trade note is added, since the API can't say which records span days
-        """
-        trades = TestGetInsiderTrades.spgi_insider_trades_resp.results.trades
-        assert insider_trades_notes([InsiderTradesResult(trades=trades)]) == [MULTI_DAY_TRADE_NOTE]
-        assert insider_trades_notes([InsiderTradesResult(trades=[])]) == []
-
-    def test_no_notes_for_no_results(self) -> None:
+    def test_owners_notes_for_no_results(self) -> None:
         """
         WHEN no results are returned
         THEN no notes are added
         """
         assert owners_notes([]) == []
-        assert holdings_notes([]) == []
-        assert insider_trades_notes([]) == []

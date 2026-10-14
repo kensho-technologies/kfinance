@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from datetime import date
 from textwrap import dedent
 from typing import Any, Type
@@ -11,18 +12,13 @@ from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
 from kfinance.domains.ownership.ownership_models import (
     CompanyOwners,
+    Holdings,
     HoldingsResp,
-    HoldingsResult,
     InsiderTrade,
+    InsiderTrades,
     InsiderTradesResp,
-    InsiderTradesResult,
     OwnersResp,
     OwnersSummaryResp,
-)
-from kfinance.domains.ownership.response_notes import (
-    holdings_notes,
-    insider_trades_notes,
-    owners_notes,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -109,8 +105,8 @@ class GetHoldingsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
 
 
-class GetHoldingsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[HoldingsResult]):
-    notes: list[str] = Field(default_factory=list)
+class GetHoldingsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Holdings]):
+    pass
 
 
 class GetHoldingsFromIdentifiers(KfinanceTool):
@@ -177,8 +173,8 @@ class GetInsiderTradesFromIdentifiersArgs(ToolArgsWithIdentifiers):
         return self
 
 
-class GetInsiderTradesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[InsiderTradesResult]):
-    notes: list[str] = Field(default_factory=list)
+class GetInsiderTradesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[InsiderTrades]):
+    pass
 
 
 class GetInsiderTradesFromIdentifiers(KfinanceTool):
@@ -229,6 +225,39 @@ class GetInsiderTradesFromIdentifiers(KfinanceTool):
             end_date=end_date,
             limit=limit,
         )
+
+
+FIRST_APPEARANCE_NOTE = (
+    "When an owner has no prior period to compare against, percent_shares_changed is null and "
+    "shares_changed equals shares_held. This means the owner newly appears in the data, not that "
+    "it bought its whole position during the period."
+)
+
+OWNERSHIP_PCT_OUT_OF_RANGE_NOTE = (
+    "institutional_ownership_pct is not clamped to 0-100, and by_owner_type shares_held can be "
+    "negative: the source data has values above 100 and below 0 for a small number of companies."
+)
+
+
+def owners_notes(results: Iterable[CompanyOwners]) -> list[str]:
+    """Return the notes that apply to the owners and ownership summaries being returned."""
+    results = list(results)
+    owners = [owner for result in results for owner in result.owners]
+    summaries = [result.summary for result in results if result.summary is not None]
+
+    notes: list[str] = []
+    if any(owner.position.percent_shares_changed is None for owner in owners):
+        notes.append(FIRST_APPEARANCE_NOTE)
+    if any(
+        (
+            summary.institutional_ownership_pct is not None
+            and not 0 <= summary.institutional_ownership_pct <= 100
+        )
+        or any(owner_type.shares_held < 0 for owner_type in summary.by_owner_type)
+        for summary in summaries
+    ):
+        notes.append(OWNERSHIP_PCT_OUT_OF_RANGE_NOTE)
+    return notes
 
 
 async def get_owners_from_identifiers(
@@ -330,7 +359,7 @@ async def get_holdings_from_identifiers(
 
     await batch_execute_async_tasks(tasks=tasks)
 
-    results: dict[str, HoldingsResult] = dict()
+    results: dict[str, Holdings] = dict()
     for task in tasks:
         if task.error:
             errors.append(task.error)
@@ -338,12 +367,11 @@ async def get_holdings_from_identifiers(
         resp: HoldingsResp = task.result
         errors.extend(f"{task.result_key}: {error}" for error in resp.errors.values())
         if resp.results.holdings:
-            results[task.result_key] = HoldingsResult(holdings=resp.results.holdings[:limit])
+            results[task.result_key] = Holdings(holdings=resp.results.holdings[:limit])
 
     return GetHoldingsFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        notes=holdings_notes(results.values()),
         errors=errors,
     )
 
@@ -395,7 +423,7 @@ async def get_insider_trades_from_identifiers(
 
     await batch_execute_async_tasks(tasks=tasks)
 
-    results: dict[str, InsiderTradesResult] = dict()
+    results: dict[str, InsiderTrades] = dict()
     for task in tasks:
         if task.error:
             errors.append(task.error)
@@ -403,7 +431,7 @@ async def get_insider_trades_from_identifiers(
         resp: InsiderTradesResp = task.result
         errors.extend(f"{task.result_key}: {error}" for error in resp.errors.values())
         if resp.results.trades:
-            results[task.result_key] = InsiderTradesResult(
+            results[task.result_key] = InsiderTrades(
                 trades=filter_insider_trades(
                     trades=resp.results.trades,
                     start_date=start_date,
@@ -415,7 +443,6 @@ async def get_insider_trades_from_identifiers(
     return GetInsiderTradesFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        notes=insider_trades_notes(results.values()),
         errors=errors,
     )
 

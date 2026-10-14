@@ -10,7 +10,12 @@ from kfinance.domains.companies.company_models import CompanyId
 class OwnerPosition(BaseModel):
     """An owner's position in a company.
 
-    percent_shares_changed is None when there's no prior period to compute a change against.
+    Attributes:
+        shares_held: Shares of the company held by the owner at the end of the period.
+        percent_shares_outstanding: Percent of the company's total shares outstanding held by the owner.
+        shares_changed: Shares bought (positive) or sold (negative) by the owner during the period.
+        percent_shares_changed: shares_changed as a percent of the owner's prior period position.
+        holding_date: The observation date for the position.
     """
 
     shares_held: int
@@ -21,9 +26,13 @@ class OwnerPosition(BaseModel):
 
 
 class Owner(BaseModel):
-    """An institutional owner of a company.
+    """An owner of a company.
 
-    owner_id can be either a company id or a person id.
+    Attributes:
+        owner_id: The id of the company or person that owns the company.
+        owner_name: The name of the company or person that owns the company.
+        institution_type: The type of institution the owner is (e.g. "Investment Adviser").
+        position: The owner's latest position in the company.
     """
 
     owner_id: int
@@ -32,12 +41,16 @@ class Owner(BaseModel):
     position: OwnerPosition
 
 
-class OwnersResult(BaseModel):
+class Owners(BaseModel):
+    """The owners of a company, ordered by shares held, largest first."""
+
     ownership: list[Owner] = Field(default_factory=list)
 
 
 class OwnersResp(RespWithErrors):
-    results: OwnersResult = Field(default_factory=OwnersResult)
+    """The API response for the owners endpoint."""
+
+    results: Owners = Field(default_factory=Owners)
 
 
 class OwnerTypeSummary(BaseModel):
@@ -48,7 +61,20 @@ class OwnerTypeSummary(BaseModel):
 
 
 class OwnersSummary(BaseModel):
-    """Latest-period institutional ownership summary for a company."""
+    """Latest-period institutional ownership summary for a company.
+
+    Attributes:
+        institutional_shares_held: Total shares held by all institutional holders.
+        number_of_holders: Number of distinct institutional holders.
+        shares_bought: Total shares bought by institutions during the period.
+        shares_sold: Total shares sold by institutions during the period.
+        number_of_buyers: Number of institutions that bought shares during the period.
+        number_of_sellers: Number of institutions that sold shares during the period.
+        number_of_new_buyers: Number of institutions that opened a new position during the period.
+        number_of_closed_positions: Number of institutions that fully exited their position.
+        institutional_ownership_pct: Percent of the company's total shares outstanding held by institutions.
+        by_owner_type: Shares held broken down by owner type, ordered by shares held, largest first.
+    """
 
     institutional_shares_held: int
     number_of_holders: int
@@ -63,18 +89,33 @@ class OwnersSummary(BaseModel):
 
 
 class OwnersSummaryResp(RespWithErrors):
+    """The API response for the owners summary endpoint."""
+
     results: OwnersSummary | None = None
 
 
 class CompanyOwners(BaseModel):
-    """The owners of a company, optionally with the company's ownership summary."""
+    """The owners of a company, optionally with the company's ownership summary.
+
+    The per-identifier result of the get_owners_from_identifiers tool, which combines the owners
+    and owners summary endpoints.
+    """
 
     summary: OwnersSummary | None = None
     owners: list[Owner] = Field(default_factory=list)
 
 
 class HoldingPosition(BaseModel):
-    """An owner's position in a single security."""
+    """An owner's position in a single security.
+
+    Attributes:
+        security_id: The id of the security held by the owner.
+        ticker: The ticker of the security held by the owner.
+        shares_held: Shares of the security held by the owner at the end of the period.
+        percent_of_portfolio: Percent of the owner's portfolio represented by the position.
+        percent_shares_outstanding: Percent of the held company's total shares outstanding held by the owner.
+        holding_date: The observation date for the position.
+    """
 
     security_id: int
     ticker: str | None = None
@@ -87,7 +128,7 @@ class HoldingPosition(BaseModel):
 class Holding(BaseModel):
     """A company held by an owner, with the owner's positions in that company's securities.
 
-    held_company_id is None when the security isn't mapped to a company (e.g. ETFs or indices).
+    Positions are ordered by shares held, largest first.
     """
 
     held_company_id: CompanyId | None = None
@@ -95,19 +136,32 @@ class Holding(BaseModel):
     positions: list[HoldingPosition]
 
 
-class HoldingsResult(BaseModel):
+class Holdings(BaseModel):
+    """The holdings of an owner, ordered by largest position, largest first."""
+
     holdings: list[Holding] = Field(default_factory=list)
 
 
 class HoldingsResp(RespWithErrors):
-    results: HoldingsResult = Field(default_factory=HoldingsResult)
+    """The API response for the holdings endpoint."""
+
+    results: Holdings = Field(default_factory=Holdings)
 
 
 class InsiderTrade(BaseModel):
     """A single insider trade.
 
-    shares is negative for dispositions. When a record covers trades over several days,
-    trade_date is the latest date.
+    Attributes:
+        owner_id: The id of the person or company that made the trade.
+        insider_name: The person's full name, or the company's name.
+        transaction_type: The type of transaction (e.g. "Open Market Acquisition", "Sale").
+        security_type: The security traded (e.g. "Common Stock").
+        shares: Shares traded, negative for dispositions.
+        min_price: Minimum transaction price per share.
+        max_price: Maximum transaction price per share.
+        transaction_value_usd: Total transaction value in USD.
+        trade_date: The date of the trade.
+        filing_date: The date the trade was filed with the SEC.
     """
 
     owner_id: int
@@ -122,9 +176,13 @@ class InsiderTrade(BaseModel):
     filing_date: datetime | None = None
 
 
-class InsiderTradesResult(BaseModel):
+class InsiderTrades(BaseModel):
+    """The insider trades of a company, ordered most recent first."""
+
     trades: list[InsiderTrade] = Field(default_factory=list)
 
 
 class InsiderTradesResp(RespWithErrors):
-    results: InsiderTradesResult = Field(default_factory=InsiderTradesResult)
+    """The API response for the insider trades endpoint."""
+
+    results: InsiderTrades = Field(default_factory=InsiderTrades)
