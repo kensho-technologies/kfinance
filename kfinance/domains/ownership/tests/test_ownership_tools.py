@@ -275,7 +275,7 @@ class TestGetOwners:
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             # No FIRST_APPEARANCE_NOTE: BlackRock, the owner without a prior period, is cut by limit.
-            notes=[],
+            notes=None,
             errors=[],
         )
 
@@ -284,6 +284,8 @@ class TestGetOwners:
         )
 
         assert resp == expected_resp
+        # With no notes, the field is left out of the tool output, like an empty errors list.
+        assert "notes" not in resp.model_dump(mode="json", exclude_none=True)
 
     @pytest.mark.asyncio
     async def test_get_owners_from_identifiers_server_errors(
@@ -335,6 +337,25 @@ class TestGetOwners:
 
         assert resp.identifier_results == {}
         assert resp.errors == ["SPGI: Company not found."]
+
+    @pytest.mark.asyncio
+    async def test_get_owners_from_identifiers_dedupes_request_errors(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """
+        GIVEN both the owners and owners_summary requests fail with the same 400 error
+        WHEN we fetch owners for SPGI with include_summary=True
+        THEN we get back no results and the error only once
+        """
+        httpx2_mock.post(OWNERS_URL).respond(status_code=400, text="Invalid request.")
+        httpx2_mock.post(OWNERS_SUMMARY_URL).respond(status_code=400, text="Invalid request.")
+
+        resp = await get_owners_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client, include_summary=True
+        )
+
+        assert resp.identifier_results == {}
+        assert resp.errors == ["Invalid request."]
 
 
 class TestGetHoldings:

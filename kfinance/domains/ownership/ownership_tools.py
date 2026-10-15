@@ -42,7 +42,9 @@ class GetOwnersFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 
 class GetOwnersFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CompanyOwners]):
-    notes: list[str] = Field(default_factory=list)
+    # None rather than an empty list when no notes apply, so that the field is dropped from
+    # tool output (serialized with exclude_none=True) like an empty `errors` list is.
+    notes: list[str] | None = None
 
 
 class GetOwnersFromIdentifiers(KfinanceTool):
@@ -314,24 +316,28 @@ async def get_owners_from_identifiers(
             )
 
     for summary_task in summary_tasks:
+        summary_errors: list[str] = []
         if summary_task.error:
-            errors.append(summary_task.error)
-            continue
-        summary_resp: OwnersSummaryResp = summary_task.result
-        for error in summary_resp.errors.values():
-            # Skip errors like "Company not found." that the owners call already reported.
-            error_msg = f"{summary_task.result_key}: {error}"
+            summary_errors.append(summary_task.error)
+        else:
+            summary_resp: OwnersSummaryResp = summary_task.result
+            summary_errors.extend(
+                f"{summary_task.result_key}: {error}" for error in summary_resp.errors.values()
+            )
+            if summary_resp.results is not None:
+                results.setdefault(
+                    summary_task.result_key, CompanyOwners()
+                ).summary = summary_resp.results
+        for error_msg in summary_errors:
+            # Skip errors that the owners call already reported, like "Company not found." or a
+            # request error that both calls hit.
             if error_msg not in errors:
                 errors.append(error_msg)
-        if summary_resp.results is not None:
-            results.setdefault(
-                summary_task.result_key, CompanyOwners()
-            ).summary = summary_resp.results
 
     return GetOwnersFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        notes=owners_notes(results.values()),
+        notes=owners_notes(results.values()) or None,
         errors=errors,
     )
 
