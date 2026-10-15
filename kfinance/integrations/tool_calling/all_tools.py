@@ -61,6 +61,7 @@ from kfinance.domains.statements.statement_tools import GetFinancialStatementFro
 from kfinance.integrations.tool_calling.static_tools.get_latest import GetLatest
 from kfinance.integrations.tool_calling.static_tools.get_n_quarters_ago import GetNQuartersAgo
 from kfinance.integrations.tool_calling.tool_calling_models import KfinanceTool
+from kfinance.domains.surprise.surprise_tools_va import GetVisibleAlphaSurprisesFromIdentifiers
 
 
 # A list of all available tools
@@ -121,4 +122,6 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     # Ratings
     GetIssuerRatingsFromIdentifiers,
     GetSecurityRatingsFromIdentifiers,
+    # Surprise
+    GetVisibleAlphaSurprisesFromIdentifiers,
 ]

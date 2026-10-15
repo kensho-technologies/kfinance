@@ -71,8 +71,9 @@ class GetVisibleAlphaSurprisesFromIdentifiers(KfinanceTool):
 
         - For a ratio, percentage, or proportion, prefer a pre-computed ratio metric from the results or `top_ranked_alternatives`, if available, over fetching a single raw component.
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - To fetch the surprise for the latest 4 quarters, leave all time parameters as null.
+        - To fetch the surprise for the most recent 4 fiscal quarters, leave all time parameters as null.
         - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods_backward)—but not both.
+        - At most surprise information for 12 time periods can be requested (so num_periods_backwards must be <= 12 and when using absolute date ranges it cannot span more than 12 periods). 
 
         Examples:
         Query: "Get EPS surprise for AAPL"
