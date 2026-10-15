@@ -38,6 +38,11 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools impo
     GetMergersFromIdentifiers,
     GetMergersInfoFromTransactionIds,
 )
+from kfinance.domains.ownership.ownership_tools import (
+    GetHoldingsFromIdentifiers,
+    GetInsiderTradesFromIdentifiers,
+    GetOwnersFromIdentifiers,
+)
 from kfinance.domains.prices.price_tools import (
     GetHistoryMetadataFromIdentifiers,
     GetPricesFromIdentifiers,
@@ -121,4 +126,8 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     # Ratings
     GetIssuerRatingsFromIdentifiers,
     GetSecurityRatingsFromIdentifiers,
+    # Ownership
+    GetOwnersFromIdentifiers,
+    GetHoldingsFromIdentifiers,
+    GetInsiderTradesFromIdentifiers,
 ]
