@@ -1993,11 +1993,11 @@ LINE_ITEM_NAMES_AND_ALIASES: list[str] = list(
 )
 
 
-def _get_line_item_to_descriptions_map() -> dict[str, str]:
+def get_line_item_to_descriptions_map(line_items: list) -> dict[str, str]:
     """Build line item to descriptions mapping from LINE_ITEMS data structure."""
     descriptors = {}
 
-    for item in LINE_ITEMS:
+    for item in line_items:
         name = item["name"]
         description = item.get("description", "")
         if description:  # Only include items with descriptions
@@ -2012,4 +2012,4 @@ def _get_line_item_to_descriptions_map() -> dict[str, str]:
 
 
 # Pre-computed constant to avoid recreating on each validation error
-LINE_ITEM_TO_DESCRIPTIONS_MAP: dict[str, str] = _get_line_item_to_descriptions_map()
+LINE_ITEM_TO_DESCRIPTIONS_MAP: dict[str, str] = get_line_item_to_descriptions_map(LINE_ITEMS)
