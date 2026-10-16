@@ -862,15 +862,20 @@ class TestSearchCorporateTree:
             relationship_status=[TreeRelationshipStatus.prior],
         )
 
-        # Osttra's own edge to IHS Markit is current, but IHS Markit was divested, so Osttra is no
-        # longer under S&P Global and a prior-only search is what surfaces it.
-        assert [match.company_id for match in result.matches] == [IHS_MARKIT, KENSHO, OSTTRA]
+        # IHS Markit and Kensho were divested outright, so their own edges are prior. Osttra's own
+        # edge to IHS Markit is current, but IHS Markit was divested, so Osttra is no longer under
+        # S&P Global and a prior-only search is what surfaces it.
+        assert [
+            (match.company_id, match.relationship_status_to_direct_parent)
+            for match in result.matches
+        ] == [
+            (IHS_MARKIT, TreeRelationshipStatus.prior),
+            (KENSHO, TreeRelationshipStatus.prior),
+            (OSTTRA, TreeRelationshipStatus.current),
+        ]
+        # Relative to S&P Global all three are prior, Osttra included.
         assert {match.relationship_status_to_queried_company for match in result.matches} == {
             TreeRelationshipStatus.prior
-        }
-        assert {match.relationship_status_to_direct_parent for match in result.matches} == {
-            TreeRelationshipStatus.prior,
-            TreeRelationshipStatus.current,
         }
         # The traversal followed the prior edges, so the counts describe the whole prior-inclusive
         # tree rather than only the matches returned.
