@@ -825,7 +825,7 @@ class TestSearchCorporateTree:
         )
 
         assert result.summary.total_matches == 12
-        assert {match.relationship_status for match in result.matches} == {
+        assert {match.relationship_status_to_direct_parent for match in result.matches} == {
             TreeRelationshipStatus.current
         }
 
@@ -847,11 +847,11 @@ class TestSearchCorporateTree:
         assert result.summary.total_matches == 12
 
     @pytest.mark.asyncio
-    async def test_search_for_prior_only_fetches_prior_then_filters_out_current(
+    async def test_search_for_prior_only_returns_everything_no_longer_under_the_company(
         self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
-        """WHEN only prior is requested THEN the prior-inclusive tree is fetched and the current
-        edges in it are filtered out, while the summary still counts everything traversed."""
+        """WHEN only prior is requested THEN the prior-inclusive tree is fetched and everything
+        still under the queried company is filtered out, while the summary counts the traversal."""
         httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true").respond(
             json=SAMPLE_MIXED_STATUS_TREE_RESPONSE
         )
@@ -862,13 +862,19 @@ class TestSearchCorporateTree:
             relationship_status=[TreeRelationshipStatus.prior],
         )
 
-        assert [match.company_id for match in result.matches] == [IHS_MARKIT, KENSHO]
-        assert {match.relationship_status for match in result.matches} == {
+        # Osttra's own edge to IHS Markit is current, but IHS Markit was divested, so Osttra is no
+        # longer under S&P Global and a prior-only search is what surfaces it.
+        assert [match.company_id for match in result.matches] == [IHS_MARKIT, KENSHO, OSTTRA]
+        assert {match.relationship_status_to_queried_company for match in result.matches} == {
             TreeRelationshipStatus.prior
         }
+        assert {match.relationship_status_to_direct_parent for match in result.matches} == {
+            TreeRelationshipStatus.prior,
+            TreeRelationshipStatus.current,
+        }
         # The traversal followed the prior edges, so the counts describe the whole prior-inclusive
-        # tree rather than only the two matches returned.
-        assert result.summary.total_matches == 2
+        # tree rather than only the matches returned.
+        assert result.summary.total_matches == 3
         assert result.summary.companies_searched == 5
         assert result.summary.relationships_searched == 4
 
@@ -888,7 +894,7 @@ class TestSearchCorporateTree:
         )
 
         assert result.summary.total_matches == 4
-        assert {match.relationship_status for match in result.matches} == {
+        assert {match.relationship_status_to_direct_parent for match in result.matches} == {
             TreeRelationshipStatus.current,
             TreeRelationshipStatus.prior,
         }
@@ -916,7 +922,7 @@ class TestSearchCorporateTree:
         self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """WHEN a current relationship sits below a divested one THEN its own status stays current
-        but still_under_queried_company is false, so it cannot be read as still owned."""
+        but relationship_status_to_queried_company is prior, so it cannot be read as still owned."""
         httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true").respond(
             json=SAMPLE_MIXED_STATUS_TREE_RESPONSE
         )
@@ -929,14 +935,23 @@ class TestSearchCorporateTree:
 
         by_parent = {(match.company_id, match.parent_company_id): match for match in result.matches}
         # Still under S&P Global: its own edge is current and so is everything above it.
-        assert by_parent[(SNL, SPGI_COMPANY_ID)].still_under_queried_company is True
+        assert (
+            by_parent[(SNL, SPGI_COMPANY_ID)].relationship_status_to_queried_company
+            is TreeRelationshipStatus.current
+        )
         # Divested outright.
-        assert by_parent[(IHS_MARKIT, SPGI_COMPANY_ID)].still_under_queried_company is False
-        assert by_parent[(KENSHO, SPGI_COMPANY_ID)].still_under_queried_company is False
+        assert (
+            by_parent[(IHS_MARKIT, SPGI_COMPANY_ID)].relationship_status_to_queried_company
+            is TreeRelationshipStatus.prior
+        )
+        assert (
+            by_parent[(KENSHO, SPGI_COMPANY_ID)].relationship_status_to_queried_company
+            is TreeRelationshipStatus.prior
+        )
         # The case QA reported: a current unit under a divested parent.
         osttra = by_parent[(OSTTRA, IHS_MARKIT)]
-        assert osttra.relationship_status is TreeRelationshipStatus.current
-        assert osttra.still_under_queried_company is False
+        assert osttra.relationship_status_to_direct_parent is TreeRelationshipStatus.current
+        assert osttra.relationship_status_to_queried_company is TreeRelationshipStatus.prior
 
     @pytest.mark.asyncio
     async def test_a_current_only_search_excludes_matches_under_a_divested_parent(
@@ -969,14 +984,17 @@ class TestSearchCorporateTree:
             company_id=SPGI_COMPANY_ID, httpx_client=httpx_client
         )
 
-        assert all(match.still_under_queried_company for match in result.matches)
+        assert all(
+            match.relationship_status_to_queried_company is TreeRelationshipStatus.current
+            for match in result.matches
+        )
 
     @pytest.mark.asyncio
     async def test_search_for_prior_only_keeps_a_prior_match_under_a_prior_parent(
         self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
-        """WHEN a prior relationship sits under another prior one THEN both match, since the
-        status filter tests each relationship's own status."""
+        """WHEN a prior relationship sits under another prior one THEN both match, since neither
+        is still under the queried company."""
         httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true").respond(
             json=SAMPLE_NESTED_PRIOR_TREE_RESPONSE
         )
@@ -988,7 +1006,10 @@ class TestSearchCorporateTree:
         )
 
         assert [match.company_id for match in result.matches] == [IHS_MARKIT, OSTTRA]
-        assert not any(match.still_under_queried_company for match in result.matches)
+        assert all(
+            match.relationship_status_to_queried_company is TreeRelationshipStatus.prior
+            for match in result.matches
+        )
 
     @pytest.mark.asyncio
     async def test_search_reports_company_type_where_the_api_supplies_one(

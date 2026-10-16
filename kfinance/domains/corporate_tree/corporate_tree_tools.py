@@ -129,7 +129,7 @@ class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
     relationship_status: list[TreeRelationshipStatus] | None = Field(
         default=None,
-        description="Defaults to ['current']. Pass ['prior'] when former, previous, divested or sold entities are asked for, or ['current', 'prior'] for both.",
+        description="Whether a company is still under the queried company, matched against relationship_status_to_queried_company. Defaults to ['current']. Pass ['prior'] when former, previous, divested or sold entities are asked for, or ['current', 'prior'] for both.",
     )
     limit: int = Field(
         default=50,
@@ -169,7 +169,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         - The queried company is never a match. To look upward from it, use get_ultimate_parent_paths_from_identifiers.
         - There is no name filter: pick matches by company_name. If summary.total_matches exceeds the matches returned, raise limit or narrow the filters.
         - A company with several parents appears once per parent; summary.distinct_companies counts the companies.
-        - relationship_status describes a match's own edge to its parent_company_id. A current unit under a divested company has still_under_queried_company=false.
+        - relationship_status matches relationship_status_to_queried_company, not a match's own edge: a current unit under a divested company counts as prior, since it is no longer under the queried company. relationship_status_to_direct_parent reports that own edge to parent_company_id.
         - When summary.search_was_depth_limited is true, the summary's *_searched counts cover only the searched depth.
 
         Examples:
@@ -298,33 +298,33 @@ def _current_chain_company_ids(root_company_id: int, nodes: list[CorporateTreeNo
     return reachable
 
 
-def _still_under_queried_company(
+def _relationship_status_to_queried_company(
     node: CorporateTreeNode, current_chain_company_ids: set[int]
-) -> bool:
-    """Whether every relationship from the queried company down to this node is current."""
-    return (
+) -> TreeRelationshipStatus:
+    """The status of the whole chain from the queried company down to this node.
+
+    Current only when every relationship along the way is current, so a current relationship
+    hanging below a divested ancestor comes back as prior.
+    """
+    if (
         node.relationship_status is TreeRelationshipStatus.current
         and node.parent_company_id in current_chain_company_ids
-    )
+    ):
+        return TreeRelationshipStatus.current
+    return TreeRelationshipStatus.prior
 
 
 def _node_matches(
     node: CorporateTreeNode,
     relationship_statuses: list[TreeRelationshipStatus],
-    still_under_queried_company: bool,
+    relationship_status_to_queried_company: TreeRelationshipStatus,
     relationship_types: list[TreeRelationshipType] | None,
     country_iso_codes: list[str] | None,
 ) -> bool:
     """Whether a node satisfies every supplied filter. Country matching is case-insensitive."""
-    if node.relationship_status not in relationship_statuses:
-        return False
-
-    # A current relationship below a divested ancestor is no longer under the queried company,
-    # so it is only returned when prior relationships were asked for.
-    if (
-        TreeRelationshipStatus.prior not in relationship_statuses
-        and not still_under_queried_company
-    ):
+    # The status filter tests the chain from the queried company, not the node's own edge, so a
+    # current relationship hanging below a divested ancestor counts as prior.
+    if relationship_status_to_queried_company not in relationship_statuses:
         return False
 
     if relationship_types is not None and node.relationship_type not in relationship_types:
@@ -371,7 +371,9 @@ async def fetch_and_search_corporate_tree(
         if _node_matches(
             node,
             relationship_statuses=statuses,
-            still_under_queried_company=_still_under_queried_company(node, current_chain),
+            relationship_status_to_queried_company=_relationship_status_to_queried_company(
+                node, current_chain
+            ),
             relationship_types=relationship_type,
             country_iso_codes=country_iso_code,
         )
@@ -389,8 +391,10 @@ async def fetch_and_search_corporate_tree(
                 parent_company_id=node.parent_company_id,
                 level=node.level,
                 relationship_type=node.relationship_type,
-                relationship_status=node.relationship_status,
-                still_under_queried_company=_still_under_queried_company(node, current_chain),
+                relationship_status_to_direct_parent=node.relationship_status,
+                relationship_status_to_queried_company=_relationship_status_to_queried_company(
+                    node, current_chain
+                ),
             )
             for node in matches[:limit]
         ],

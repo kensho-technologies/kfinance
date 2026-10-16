@@ -155,9 +155,11 @@ class SearchMatch(BaseModel):
     parent_company_id: CompanyId
     level: int
     relationship_type: TreeRelationshipType
-    relationship_status: TreeRelationshipStatus
-    still_under_queried_company: bool = Field(
-        description="Whether every relationship from the queried company down to this match is current. False when this relationship, or something above it, has ended: relationship_status describes only this match's own edge to its parent_company_id. Always true when only current relationships were searched."
+    relationship_status_to_direct_parent: TreeRelationshipStatus = Field(
+        description="The relationship status of this company in relation to its direct parent"
+    )
+    relationship_status_to_queried_company: TreeRelationshipStatus = Field(
+        description="The relationship status of this company in relation to the queried company. 'current' when every relationship in the chain from the queried company to this company is 'current'; 'prior' otherwise."
     )
 
 
