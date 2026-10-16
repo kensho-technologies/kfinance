@@ -58,6 +58,7 @@ from kfinance.domains.rounds_of_funding.rounds_of_funding_tools import (
 from kfinance.domains.segments.segment_tools import GetSegmentsFromIdentifiers
 from kfinance.domains.segments.segment_tools_va import GetVisibleAlphaSegmentsFromIdentifiers
 from kfinance.domains.statements.statement_tools import GetFinancialStatementFromIdentifiers
+from kfinance.domains.surprise.surprise_tools_va import GetVisibleAlphaSurprisesFromIdentifiers
 from kfinance.integrations.tool_calling.static_tools.get_latest import GetLatest
 from kfinance.integrations.tool_calling.static_tools.get_n_quarters_ago import GetNQuartersAgo
 from kfinance.integrations.tool_calling.tool_calling_models import KfinanceTool
@@ -121,4 +122,6 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     # Ratings
     GetIssuerRatingsFromIdentifiers,
     GetSecurityRatingsFromIdentifiers,
+    # Surprise
+    GetVisibleAlphaSurprisesFromIdentifiers,
 ]

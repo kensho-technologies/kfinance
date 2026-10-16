@@ -8,7 +8,14 @@ from strenum import StrEnum
 NumPeriodsForward = Annotated[
     int,
     Field(
-        ge=0, le=99, description="The number of periods in the future to retrieve estimate data."
+        ge=0,
+        le=99,
+        description=(
+            "The number of future fiscal periods to retrieve estimate data for, counted from the "
+            "company's most recently reported period. Future periods are those the company has "
+            "not yet reported results for. forward=1 returns the next unreported period, forward=2"
+            " adds the period after that, and so on."
+        ),
     ),
 ]
 
@@ -17,7 +24,11 @@ NumPeriodsBackward = Annotated[
     Field(
         ge=0,
         le=99,
-        description="The number of periods in the past to retrieve estimate data.",
+        description=(
+            "The number of past fiscal periods to retrieve estimate data for, counted back from "
+            "and including the company's most recently reported period. backward=1 returns the "
+            "latest reported period, backward=2 adds the period before it, and so on."
+        ),
     ),
 ]
 

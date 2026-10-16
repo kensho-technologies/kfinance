@@ -9,8 +9,6 @@ from kfinance.domains.estimates.estimates_tools_va import (
 )
 from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata
 from kfinance.domains.line_items.response_notes import (
-    FISCAL_PERIOD_WARNING,
-    FISCAL_YEAR_TERMINOLOGY_WARNING,
     SOURCE_LINK_NOTE,
 )
 
@@ -257,23 +255,25 @@ class TestGetEstimatesFromIdentifiersVa:
 
         assert SOURCE_LINK_NOTE in resp.notes
 
-    @pytest.mark.asyncio
-    async def test_fiscal_period_notes_always_present(
-        self,
-        httpx_client: httpx2.AsyncClient,
-        add_spgi_estimates_va_mock: None,
-    ) -> None:
-        """
-        WHEN we get a valid Visible Alpha estimates result
-        THEN fiscal period notes are included (estimates are always fiscal)
-        """
-        resp = await get_visible_alpha_estimates_from_identifiers(
-            identifiers=["SPGI"],
-            httpx_client=httpx_client,
-        )
-
-        assert FISCAL_PERIOD_WARNING in resp.notes
-        assert FISCAL_YEAR_TERMINOLOGY_WARNING in resp.notes
+    # VA Estimates can use calendar periods, they are not always fiscal.
+    # I'm deep-sixing this test for now.
+    # @pytest.mark.asyncio
+    # async def test_fiscal_period_notes_always_present(
+    #     self,
+    #     httpx_client: httpx2.AsyncClient,
+    #     add_spgi_estimates_va_mock: None,
+    # ) -> None:
+    #     """
+    #     WHEN we get a valid Visible Alpha estimates result
+    #     THEN fiscal period notes are included (estimates are always fiscal)
+    #     """
+    #     resp = await get_visible_alpha_estimates_from_identifiers(
+    #         identifiers=["SPGI"],
+    #         httpx_client=httpx_client,
+    #     )
+    #
+    #     assert FISCAL_PERIOD_WARNING in resp.notes
+    #     assert FISCAL_YEAR_TERMINOLOGY_WARNING in resp.notes
 
     @pytest.mark.asyncio
     async def test_metadata_keyed_by_identifier(
