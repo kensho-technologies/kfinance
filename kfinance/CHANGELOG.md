@@ -1,5 +1,8 @@
 # Changelog
 
+## v9.0.3
+- Update `total_debt_to_capital` dataitemid to align with CIQ Pro (4186).
+
 ## v9.0.2
 - Improve tools descriptions of `get_consensus_estimates_from_identifiers`, `get_guidance_from_identifiers`, `get_consensus_target_price_from_identifiers`, and  `get_analyst_recommendations_from_identifiers` tools.
 
