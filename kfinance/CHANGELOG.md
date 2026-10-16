@@ -3,8 +3,12 @@
 ## v9.1.0
 - Add corporate tree tools: `get_ultimate_parent_paths_from_identifiers` and `search_corporate_tree_from_identifiers`.
 
+## v9.0.2
+- Improve tools descriptions of `get_consensus_estimates_from_identifiers`, `get_guidance_from_identifiers`, `get_consensus_target_price_from_identifiers`, and  `get_analyst_recommendations_from_identifiers` tools.
+
 ## v9.0.1
 - Change issuer ratings tool to prefer ISO code for country inputs.
+
 ## v9.0.0
 - Handle nullable columns in prices and market cap server responses.
 - Breaking changes:
