@@ -79,11 +79,13 @@ def _find_similar_line_items(
     return [item for item in scores[:max_suggestions] if item.score > 0.1]
 
 
-def _smart_line_item_validator(v: str) -> str:
+def smart_line_item_validator(
+    v: str, names_and_aliases: list[str], items_to_descriptions: dict[str, str]
+) -> str:
     """Custom validator that provides intelligent suggestions for invalid line items."""
-    if v not in LINE_ITEM_NAMES_AND_ALIASES:
+    if v not in names_and_aliases:
         # Find similar items using pre-computed descriptors
-        suggestions = _find_similar_line_items(v, LINE_ITEM_TO_DESCRIPTIONS_MAP)
+        suggestions = _find_similar_line_items(v, items_to_descriptions)
 
         if suggestions:
             suggestion_text = "\n\nDid you mean one of these?\n"
@@ -149,7 +151,11 @@ class GetFinancialLineItemFromIdentifiersArgs(BaseFinancialLineItemFromIdentifie
             if not isinstance(line_item, str):
                 raise ValueError(f"line_item must be a string, got {type(line_item).__name__}")
             # Use the helper function to validate and provide suggestions
-            _smart_line_item_validator(line_item)
+            smart_line_item_validator(
+                v=line_item,
+                names_and_aliases=LINE_ITEM_NAMES_AND_ALIASES,
+                items_to_descriptions=LINE_ITEM_TO_DESCRIPTIONS_MAP,
+            )
         return values
 
 

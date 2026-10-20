@@ -3,7 +3,7 @@ from textwrap import dedent
 from typing import Literal, Type, cast
 
 import httpx2
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
@@ -19,11 +19,16 @@ from kfinance.client.models.response_models import (
 )
 from kfinance.client.permission_models import Permission
 from kfinance.domains.estimates.estimates_models import (
+    CONSENSUS_LINE_ITEM_NAMES_AND_ALIASES,
+    CONSENSUS_LINE_ITEM_TO_DESCRIPTIONS_MAP,
+    GUIDANCE_LINE_ITEM_NAMES_AND_ALIASES,
+    GUIDANCE_LINE_ITEM_TO_DESCRIPTIONS_MAP,
     AnalystRecommendations,
     CiqEstimates,
     ConsensusTargetPrice,
 )
 from kfinance.domains.line_items.line_item_models import AlternativeLineItemMetadata, CalendarType
+from kfinance.domains.line_items.line_item_tools import smart_line_item_validator
 from kfinance.domains.line_items.response_notes import (
     insert_fiscal_period_notes,
 )
@@ -72,11 +77,51 @@ class GetConsensusEstimatesFromIdentifiersArgs(GetEstimatesFromIdentifiersArgs):
         description="The type of consensus estimate line_item requested"
     )
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_line_item_with_suggestions(cls, values: dict) -> dict:
+        """Custom validator that provides intelligent suggestions for invalid line items."""
+        if isinstance(values, dict) and "line_item" in values:
+            line_item = values["line_item"]
+            if isinstance(line_item, list):
+                raise ValueError(
+                    "line_item takes one line item per call. Call this tool once per line item."
+                )
+            if not isinstance(line_item, str):
+                raise ValueError(f"line_item must be a string, got {type(line_item).__name__}")
+            # Use the helper function to validate and provide suggestions
+            smart_line_item_validator(
+                v=line_item,
+                names_and_aliases=CONSENSUS_LINE_ITEM_NAMES_AND_ALIASES,
+                items_to_descriptions=CONSENSUS_LINE_ITEM_TO_DESCRIPTIONS_MAP,
+            )
+        return values
+
 
 class GetGuidanceEstimatesFromIdentifiersArgs(GetEstimatesFromIdentifiersArgs):
     line_item: Literal[tuple(GUIDANCE_LINE_ITEM_NAMES_AND_ALIASES)] = Field(  # type: ignore[valid-type]
         description="The type of guidance estimate line_item requested"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_line_item_with_suggestions(cls, values: dict) -> dict:
+        """Custom validator that provides intelligent suggestions for invalid line items."""
+        if isinstance(values, dict) and "line_item" in values:
+            line_item = values["line_item"]
+            if isinstance(line_item, list):
+                raise ValueError(
+                    "line_item takes one line item per call. Call this tool once per line item."
+                )
+            if not isinstance(line_item, str):
+                raise ValueError(f"line_item must be a string, got {type(line_item).__name__}")
+            # Use the helper function to validate and provide suggestions
+            smart_line_item_validator(
+                v=line_item,
+                names_and_aliases=GUIDANCE_LINE_ITEM_NAMES_AND_ALIASES,
+                items_to_descriptions=GUIDANCE_LINE_ITEM_TO_DESCRIPTIONS_MAP,
+            )
+        return values
 
 
 class GetCiqEstimatesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CiqEstimates]):
@@ -129,7 +174,7 @@ class GetEstimatesFromIdentifiers(KfinanceTool, ABC):
 class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_consensus_estimates_from_identifiers"
     description: str = dedent("""
-        Get consensus analyst estimates (EPS, Revenue, EBITDA, etc.) for a list of identifiers. Returns Capital IQ data.
+        Get a single consensus analyst estimate (EPS, Revenue, EBITDA, etc.) for a list of identifiers. Returns Capital IQ data.
         Returns statistical aggregates including high, low, mean, median, and number of estimates. When periods have ended, actual reported values are also returned with "Actual" in the name.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
@@ -137,20 +182,17 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
         - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods_forward, num_periods_backward)—but not both.
 
         Examples:
-        Query: "Get consensus estimates for AAPL using Capital IQ data."
-        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"])
-
         Query: "EBITDA consensus estimates for Apple using Capital IQ data."
-        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"])
+        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], line_item="ebitda")
 
         Query: "SAP consensus revenue estimates for fiscal 2027 through 2029 using Capital IQ data."
-        Function: get_consensus_estimates_from_identifiers(identifiers=["SAP"], period_type="annual", start_year=2027, end_year=2029)
+        Function: get_consensus_estimates_from_identifiers(identifiers=["SAP"], line_item="revenue", period_type="annual", start_year=2027, end_year=2029)
 
         Query: "Apple consensus EPS estimates for the most recently announced quarter using Capital IQ data."
-        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], period_type="quarterly", num_periods_backward=1)
+        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], line_item="eps", period_type="quarterly", num_periods_backward=1)
 
         Query: "Apple consensus EPS estimates for last 2 quarters and next 4 quarters using Capital IQ data."
-        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], period_type="quarterly", num_periods_backward=2, num_periods_forward=4)
+        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], line_item="eps", period_type="quarterly", num_periods_backward=2, num_periods_forward=4)
     """).strip()
 
     @property
@@ -164,7 +206,7 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
 class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
     name: str = "get_guidance_from_identifiers"
     description: str = dedent("""
-        Get company-issued financial guidance (EPS, Revenue, EBITDA, etc.) for a list of identifiers. Returns Capital IQ data.
+        Get a single company-issued financial guidance (EPS, Revenue, EBITDA, etc.) for a list of identifiers. Returns Capital IQ data.
         Returns the most recent guidance provided by the company for future periods, or the final guidance issued before results were reported for past periods.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
@@ -173,13 +215,13 @@ class GetGuidanceFromIdentifiers(GetEstimatesFromIdentifiers):
 
         Examples:
         Query: "Get revenue guidance for AAPL for 2026 using Capital IQ data."
-        Function: get_guidance_from_identifiers(identifiers=["AAPL"], period_type="annual", start_year=2026, end_year=2026)
+        Function: get_guidance_from_identifiers(identifiers=["AAPL"], line_item="revenue", period_type="annual", start_year=2026, end_year=2026)
 
         Query: "Get revenue guidance for AAPL for the next 4 years using Capital IQ data."
-        Function: get_guidance_from_identifiers(identifiers=["AAPL"], period_type="annual", num_periods_backward=0, num_periods_forward=4)
+        Function: get_guidance_from_identifiers(identifiers=["AAPL"], line_item="revenue", period_type="annual", num_periods_backward=0, num_periods_forward=4)
 
         Query: "Get revenue guidance for AAPL for the most recently announced quarter using Capital IQ data."
-        Function: get_guidance_from_identifiers(identifiers=["AAPL"], period_type="quarterly", num_periods_backward=1, num_periods_forward=0)
+        Function: get_guidance_from_identifiers(identifiers=["AAPL"], line_item="revenue", period_type="quarterly", num_periods_backward=1, num_periods_forward=0)
     """).strip()
 
     @property

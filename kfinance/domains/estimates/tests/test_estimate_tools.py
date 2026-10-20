@@ -4,7 +4,7 @@ import httpx2
 import pytest
 
 from kfinance.client.models.date_and_period_models import EstimateType
-from kfinance.client.models.response_models import SingleResultResp
+from kfinance.client.models.response_models import SingleResultResp, PostResponseWithLineItemMetadata
 from kfinance.conftest import SPGI_ID_TRIPLE
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
@@ -135,13 +135,20 @@ class TestEstimates:
         """
 
         resp = await fetch_estimates_from_company_id(
-            company_id=SPGI_ID_TRIPLE.company_id,
+            company_ids=[SPGI_ID_TRIPLE.company_id],
+            line_item="book_value_per_share",
             estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
 
-        expected_resp = SingleResultResp[CiqEstimates](
-            result=CiqEstimates.model_validate(self.estimates_data),
+        expected_resp_data = {
+            "results": {
+                str(SPGI_ID_TRIPLE.company_id): CiqEstimates.model_validate(self.estimates_data)
+            },
+            "errors": {},
+        }
+        expected_resp = PostResponseWithLineItemMetadata[CiqEstimates].model_validate(
+            expected_resp_data,
         )
         assert resp == expected_resp
 
@@ -169,6 +176,7 @@ class TestEstimates:
 
         resp = await get_estimates_from_identifiers(
             identifiers=["SPGI", "non-existent"],
+            line_item="book_value_per_share",
             estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
@@ -187,7 +195,7 @@ class TestEstimates:
         THEN the error is extracted and surfaced in the response
         """
         httpx2_mock.post("https://kfinance.kensho.com/api/v1/estimates/").respond(
-            json={"results": {}, "errors": {"errors": "No results found."}}
+            json={"results": {}, "errors": {SPGI_ID_TRIPLE.company_id: "No results found."}}
         )
 
         expected_resp = GetCiqEstimatesFromIdentifiersResp(
@@ -200,6 +208,7 @@ class TestEstimates:
 
         resp = await get_estimates_from_identifiers(
             identifiers=["SPGI"],
+            line_item="book_value_per_share",
             estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
@@ -226,13 +235,20 @@ class TestEstimates:
         )
 
         resp = await fetch_estimates_from_company_id(
-            company_id=SPGI_ID_TRIPLE.company_id,
+            company_ids=[SPGI_ID_TRIPLE.company_id],
+            line_item="book_value_per_share",
             estimate_type=EstimateType.guidance,
             httpx_client=httpx_client,
         )
 
-        expected_resp = SingleResultResp[CiqEstimates](
-            result=CiqEstimates.model_validate(guidance_data),
+        expected_resp_data = {
+            "results": {
+                str(SPGI_ID_TRIPLE.company_id): CiqEstimates.model_validate(guidance_data)
+            },
+            "errors": {},
+        }
+        expected_resp = PostResponseWithLineItemMetadata[CiqEstimates].model_validate(
+            expected_resp_data,
         )
         assert resp == expected_resp
 
