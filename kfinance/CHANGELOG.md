@@ -7,6 +7,9 @@
 - `event_type` takes precedence over `key_dev_category` in `get_key_devs_from_identifier`; the server ignores the category and says so in `notes`.
 - Describe each `key_dev_category` and `event_type` value in the tool schema and shorten the key developments and transcript tool descriptions.
 
+## v9.0.2
+- Improve tools descriptions of `get_consensus_estimates_from_identifiers`, `get_guidance_from_identifiers`, `get_consensus_target_price_from_identifiers`, and  `get_analyst_recommendations_from_identifiers` tools.
+
 ## v9.0.1
 - Change issuer ratings tool to prefer ISO code for country inputs.
 
