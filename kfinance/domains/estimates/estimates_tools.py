@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from textwrap import dedent
-from typing import Literal, Type, cast
+from typing import Any, Literal, Type, cast
 
 import httpx2
 from pydantic import BaseModel, Field, model_validator
@@ -320,7 +320,7 @@ async def get_estimates_from_identifiers(
 
     # Fetch line items for all resolved company IDs
     if id_triple_resp.company_ids:
-        estimates_resp = await fetch_estimates_from_company_id(
+        estimates_resp = await fetch_estimates_from_company_ids(
             company_ids=id_triple_resp.company_ids,
             line_item=line_item,
             estimate_type=estimate_type,
@@ -379,7 +379,7 @@ async def get_estimates_from_identifiers(
     return resp_model
 
 
-async def fetch_estimates_from_company_id(
+async def fetch_estimates_from_company_ids(
     company_ids: list[int],
     line_item: str,
     estimate_type: EstimateType,
@@ -394,7 +394,7 @@ async def fetch_estimates_from_company_id(
 ) -> PostResponseWithLineItemMetadata[CiqEstimates]:
     """Fetch estimates for one company_id."""
     # Build query parameters
-    params = {
+    params: dict[str, Any] = {
         "company_ids": company_ids,
         "line_item": line_item,
         "estimate_type": estimate_type.value,
