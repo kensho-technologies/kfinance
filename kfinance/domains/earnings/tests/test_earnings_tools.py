@@ -4,8 +4,8 @@ import httpx2
 import pytest
 import time_machine
 
-from kfinance.conftest import SPGI_ID_TRIPLE, optional_route
 from kfinance.client.kfinance import Client
+from kfinance.conftest import SPGI_ID_TRIPLE, optional_route
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.earnings.earning_tools import (
     GetEarningsFromIdentifiers,
@@ -170,7 +170,6 @@ class TestEarnings:
         assert next_earnings is not None
         assert next_earnings.name == "SPGI Q1 2025 Earnings Call"
         assert next_earnings.key_dev_id == 12346
-
 
     @time_machine.travel(datetime(2025, 4, 1))
     @pytest.mark.asyncio

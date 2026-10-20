@@ -87,7 +87,9 @@ class TestKeyDevsToolSchema:
             "company_conference_presentation=investor conferences"
             in defs["KeyDevEventType"]["description"]
         )
-        assert "key_dev_category is ignored when this is set" in defs["KeyDevEventType"]["description"]
+        assert (
+            "key_dev_category is ignored when this is set" in defs["KeyDevEventType"]["description"]
+        )
 
 
 class TestKeyDevs:
