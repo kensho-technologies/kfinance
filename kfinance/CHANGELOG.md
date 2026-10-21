@@ -1,5 +1,8 @@
 # Changelog
 
+## v10.0.1
+- Expand line items to support current metrics in CIQ Performance analysis.
+
 ## v10.0.0
 - **Breaking:** `Company.key_developments` takes `key_dev_category` as a `KeyDevCategoryType` instead of a string.
 - **Breaking:** Replace `get_latest_earnings_from_identifiers` and `get_next_earnings_from_identifiers` with `get_earnings_from_identifiers(earnings_timeframe=all|latest|next)`.
