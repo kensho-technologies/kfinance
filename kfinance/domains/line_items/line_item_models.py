@@ -1899,7 +1899,7 @@ LINE_ITEMS: list[LineItemType] = [
     {
         "name": "total_debt_to_capital",
         "aliases": set(),
-        "dataitemid": 43907,
+        "dataitemid": 4186,
         "spgi_name": "Total Debt to Capital (%)",
         "description": "Total debt divided by total capital (debt plus equity).",
     },
