@@ -1,8 +1,9 @@
 # Changelog
 
 ## v10.0.0
+- **Breaking:** `Company.key_developments` takes `key_dev_category` as a `KeyDevCategoryType` instead of a string.
 - **Breaking:** Replace `get_latest_earnings_from_identifiers` and `get_next_earnings_from_identifiers` with `get_earnings_from_identifiers(earnings_timeframe=all|latest|next)`.
-- Add `event_type`, `transcripts_only` and `has_transcript` to `get_key_devs_from_identifier` to find and fetch transcripts of non-earnings events. `event_type` overrides `key_dev_category`. Needs the matching server release.
+- Add `event_type`, `transcripts_only` and `has_transcript` to `get_key_devs_from_identifier` and `Company.key_developments` to find and fetch transcripts of non-earnings events. `event_type` overrides `key_dev_category`. Needs the matching server release.
 - Describe each `key_dev_category` and `event_type` value in the tool schema, and shorten the key devs and transcript tool descriptions.
 
 ## v9.0.2
