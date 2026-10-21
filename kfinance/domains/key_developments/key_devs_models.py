@@ -77,21 +77,24 @@ class DescribedStrEnum(StrEnum):
 
 
 class KeyDevCategoryType(DescribedStrEnum):
-    """Topic filter. Null for broad requests (one call, not one per category)."""
+    """Topic filter, with examples (not a full list). Null for broad requests (one call, not one per category)."""
 
     COMPANY_FORECASTS_AND_RATINGS = ("company_forecasts_and_ratings", "guidance changes")
     ANNOUNCED_OR_COMPLETED_TRANSACTIONS = (
         "announced_or_completed_transactions",
         "M&A, buybacks, offerings, IPOs, spin-offs",
     )
-    POTENTIAL_TRANSACTIONS = ("potential_transactions", "rumors, strategic alternatives")
+    POTENTIAL_TRANSACTIONS = (
+        "potential_transactions",
+        "rumors, strategic alternatives, plans to sell, buy or raise capital, shelf filings",
+    )
     LISTING_OR_TRADING_RELATED = (
         "listing_or_trading_related",
-        "delistings, index, ticker and exchange changes",
+        "delistings, index, ticker and exchange changes, lock-up expiries",
     )
     POTENTIAL_RED_FLAGS_OR_DISTRESS_INDICATORS = (
         "potential_red_flags_or_distress_indicators",
-        "lawsuits, probes, restatements, defaults",
+        "lawsuits, probes, restatements, defaults, going-concern doubts, delayed filings, impairments, downsizings",
     )
     RESULTS_ANNOUNCEMENTS_OR_CORPORATE_COMMUNICATIONS = (
         "results_announcements_or_corporate_communications",
@@ -99,11 +102,11 @@ class KeyDevCategoryType(DescribedStrEnum):
     )
     CUSTOMER_OR_PRODUCT_RELATED = (
         "customer_or_product_related",
-        "client wins, launches, alliances",
+        "client wins, launches, alliances, expansions",
     )
     CORPORATE_STRUCTURE_RELATED = (
         "corporate_structure_related",
-        "executive and board changes, reorganizations",
+        "executive and board changes, reorganizations, bylaw and name changes",
     )
     DIVIDENDS_OR_SPLITS = "dividends_or_splits"
     BANKRUPTCY_UPDATES = "bankruptcy_updates"
