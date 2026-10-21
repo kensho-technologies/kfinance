@@ -16,8 +16,6 @@ from kfinance.domains.cusip_and_isin.cusip_and_isin_tools import (
 )
 from kfinance.domains.earnings.earning_tools import (
     GetEarningsFromIdentifiers,
-    GetLatestEarningsFromIdentifiers,
-    GetNextEarningsFromIdentifiers,
     GetTranscriptFromKeyDevId,
 )
 from kfinance.domains.estimates.estimates_tools import (
@@ -86,8 +84,6 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetIsinFromIdentifiers,
     # Earnings
     GetEarningsFromIdentifiers,
-    GetLatestEarningsFromIdentifiers,
-    GetNextEarningsFromIdentifiers,
     GetTranscriptFromKeyDevId,
     # Key Developments
     GetKeyDevsFromIdentifier,
