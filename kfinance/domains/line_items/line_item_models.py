@@ -2024,7 +2024,7 @@ LINE_ITEMS: list[LineItemType] = [
     },
     {
         "name": "sga_margin",
-        "aliases": set(),
+        "aliases": {"selling_general_and_administrative_margin"},
         "dataitemid": 4375,
         "spgi_name": "SG&A Margin %",
         "description": "Selling general and admin expenses as a percent of total revenues.",
@@ -2052,7 +2052,7 @@ LINE_ITEMS: list[LineItemType] = [
     },
     {
         "name": "earnings_from_continuing_operations_margin",
-        "aliases": set(),
+        "aliases": {"income_from_continuing_operations_margin"},
         "dataitemid": 4181,
         "spgi_name": "Income From Continuing Operations Margin %",
         "description": "Earnings from continuing operations as a percent of total revenues.",
