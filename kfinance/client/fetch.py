@@ -40,7 +40,11 @@ from kfinance.domains.estimates.estimates_models import (
     ConsensusTargetPrice,
     VisibleAlphaEstimates,
 )
-from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType, KeyDevsResp
+from kfinance.domains.key_developments.key_devs_models import (
+    KeyDevCategoryType,
+    KeyDevEventType,
+    KeyDevsResp,
+)
 from kfinance.domains.line_items.line_item_models import CalendarType, LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergersInfo,
@@ -1150,6 +1154,8 @@ class KFinanceApiClient:
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
         key_dev_category: Optional[KeyDevCategoryType] = None,
+        event_type: Optional[KeyDevEventType] = None,
+        transcripts_only: bool = False,
     ) -> KeyDevsResp:
         """Get key development events for a company.
 
@@ -1159,14 +1165,18 @@ class KFinanceApiClient:
         :type start_date: str, Optional
         :param end_date: The end date for key developments (ISO format: YYYY-MM-DD). Optional.
         :type end_date: str, Optional
-        :param key_dev_category: Optional category filter for key developments.
+        :param key_dev_category: Optional category filter for key developments. Ignored by the server when event_type is set.
         :type key_dev_category: KeyDevCategoryType, Optional
+        :param event_type: Optional filter for one kind of call or presentation. Takes precedence over key_dev_category.
+        :type event_type: KeyDevEventType, Optional
+        :param transcripts_only: If True, only return key developments that have a transcript. Needs transcripts access.
+        :type transcripts_only: bool
         :return: Key developments response containing events grouped by category.
         :rtype: KeyDevsResp
         """
         url = f"{self.url_base}key_devs/"
 
-        request_body: dict[str, str | int] = {
+        request_body: dict[str, str | int | bool] = {
             "company_id": company_id,
         }
 
@@ -1177,6 +1187,10 @@ class KFinanceApiClient:
             request_body["end_date"] = end_date
         if key_dev_category is not None:
             request_body["key_dev_category"] = key_dev_category.value
+        if event_type is not None:
+            request_body["event_type"] = event_type.value
+        if transcripts_only:
+            request_body["transcripts_only"] = True
 
         response_data = self.fetch(url, method="POST", request_body=request_body)
         return KeyDevsResp.model_validate(response_data)

@@ -35,6 +35,7 @@ from kfinance.domains.estimates.estimates_models import (
     ConsensusTargetPrice,
     ConsensusTargetPriceItem,
 )
+from kfinance.domains.key_developments.key_devs_models import KeyDevEventType, KeyDevsResp
 from kfinance.domains.line_items.line_item_models import LineItemResp
 from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models import (
     MergerInfo,
@@ -167,6 +168,43 @@ MOCK_COMPANY_DB = {
                 AnalystRecommendationsItem(name="# of Analyst Recommendations - Hold", value="5"),
                 AnalystRecommendationsItem(name="# of Analyst Recommendations - Sell", value="1"),
             ],
+        ),
+        "key_devs": KeyDevsResp.model_validate(
+            {
+                "results": {
+                    "M&A Calls": [
+                        {
+                            "key_dev_id": 1001,
+                            "situation": "Microsoft held a call about its acquisition",
+                            "announced_date_utc": "2024-05-01T12:00:00Z",
+                            "most_important_date_utc": "2024-05-02T12:00:00Z",
+                            "source": "Company Website",
+                            "company_role": "Target",
+                            "has_transcript": True,
+                        },
+                        {
+                            "key_dev_id": 1002,
+                            "situation": "Microsoft held a second call about the acquisition",
+                            "announced_date_utc": "2024-06-01T12:00:00Z",
+                            "most_important_date_utc": "2024-06-02T12:00:00Z",
+                            "source": "Company Website",
+                            "company_role": "Target",
+                            "has_transcript": False,
+                        },
+                    ],
+                    "Client Announcements": [
+                        {
+                            "key_dev_id": 1003,
+                            "situation": "Microsoft announced a new client",
+                            "announced_date_utc": "2024-07-01T12:00:00Z",
+                            "most_important_date_utc": "2024-07-01T12:00:00Z",
+                            "source": "Press Release",
+                            "company_role": "Subject",
+                        }
+                    ],
+                },
+                "next_time_band": None,
+            }
         ),
         "line_items": {
             "revenue": LineItemResp.model_validate(
@@ -599,6 +637,18 @@ class MockKFinanceApiClient:
         analyst_recommendations = MOCK_COMPANY_DB[company_id]["analyst_recommendations"]
         return SingleResultResp[AnalystRecommendations](result=analyst_recommendations)
 
+    def fetch_key_devs(
+        self,
+        company_id,
+        start_date=None,
+        end_date=None,
+        key_dev_category=None,
+        event_type=None,
+        transcripts_only=False,
+    ):
+        """Get key developments"""
+        return MOCK_COMPANY_DB[company_id]["key_devs"]
+
     def fetch_line_item(
         self,
         company_ids,
@@ -849,6 +899,30 @@ class TestCompany(TestCase):
         expected_df.insert(0, "effective_date", analyst_recs.effective_date)
 
         result = self.msft_company.company.analyst_recommendations()
+        pd.testing.assert_frame_equal(expected_df, result)
+
+    def test_key_developments(self) -> None:
+        """test key developments, including the has_transcript column"""
+        key_devs: KeyDevsResp = MOCK_COMPANY_DB[msft_company_id]["key_devs"]
+        events = [
+            (category, event) for category, events in key_devs.results.items() for event in events
+        ]
+        has_transcript = [True, False, False]
+
+        expected_df = pd.DataFrame(
+            [
+                {
+                    "category": category,
+                    **event.model_dump(exclude={"has_transcript"}),
+                    "has_transcript": expected_has_transcript,
+                }
+                for (category, event), expected_has_transcript in zip(events, has_transcript)
+            ]
+        )
+
+        result = self.msft_company.company.key_developments(
+            event_type=KeyDevEventType.MNA_CALL, transcripts_only=True
+        )
         pd.testing.assert_frame_equal(expected_df, result)
 
     def test_revenue(self) -> None:
