@@ -10,6 +10,7 @@ from respx import Router
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.ownership.ownership_models import (
     CompanyOwners,
+    CompanyRelationship,
     Holdings,
     HoldingsResp,
     InsiderTradesResp,
@@ -140,6 +141,11 @@ class TestGetOwners:
                         "percent_shares_changed": 0.33,
                         "holding_date": "2025-06-30T00:00:00",
                     },
+                    "relationship": {
+                        "relationship_type": "Current Investment",
+                        "estimated_percent_ownership": 8.4,
+                        "controlling_interest": False,
+                    },
                 },
                 {
                     "owner_id": 12345,
@@ -151,6 +157,18 @@ class TestGetOwners:
                         "shares_changed": 25000000,
                         "percent_shares_changed": None,
                         "holding_date": "2025-06-30T00:00:00",
+                    },
+                    "relationship": None,
+                },
+                {
+                    "owner_id": 32011,
+                    "owner_name": "Strategic Investor Holdings LLC",
+                    "institution_type": None,
+                    "position": None,
+                    "relationship": {
+                        "relationship_type": "Current Investment",
+                        "estimated_percent_ownership": 3.1,
+                        "controlling_interest": False,
                     },
                 },
             ]
@@ -197,7 +215,18 @@ class TestGetOwners:
 
         assert route.called
         assert resp == self.spgi_owners_resp
-        assert resp.results.ownership[1].position.percent_shares_changed is None
+        vanguard, blackrock, strategic_investor = resp.results.ownership
+        assert vanguard.relationship == CompanyRelationship(
+            relationship_type="Current Investment",
+            estimated_percent_ownership=Decimal("8.4"),
+            controlling_interest=False,
+        )
+        assert blackrock.position is not None
+        assert blackrock.position.percent_shares_changed is None
+        assert blackrock.relationship is None
+        # Owners with only a Company Relationships relationship have no position.
+        assert strategic_investor.position is None
+        assert strategic_investor.relationship is not None
 
     @pytest.mark.asyncio
     async def test_fetch_owners_summary_from_company_id(
@@ -287,6 +316,64 @@ class TestGetOwners:
         # With no notes, the field is left out of the tool output, like an empty errors list.
         assert "notes" not in resp.model_dump(mode="json", exclude_none=True)
 
+    @pytest.mark.parametrize(
+        "min_pct_shares_outstanding, expected_owner_ids",
+        [
+            pytest.param(3, [265933, 12345, 32011], id="all above threshold"),
+            # BlackRock has no percent, so it is never dropped.
+            pytest.param(5, [265933, 12345], id="drops relationship below threshold"),
+            # Vanguard's position percent (9.8) wins over its lower estimated percent (8.4).
+            pytest.param(9, [265933, 12345], id="prefers position percent"),
+            pytest.param(10, [12345], id="drops position below threshold"),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_get_owners_from_identifiers_filters_by_min_pct(
+        self,
+        httpx_client: httpx2.AsyncClient,
+        httpx2_mock: Router,
+        min_pct_shares_outstanding: float,
+        expected_owner_ids: list[int],
+    ) -> None:
+        """
+        GIVEN the server returns owners it couldn't filter by min_pct_shares_outstanding
+        WHEN we fetch owners for SPGI with a min_pct_shares_outstanding threshold
+        THEN owners are filtered by their position's percent of shares outstanding, falling back
+            to their relationship's estimated percent ownership, and owners with neither are kept
+        """
+        httpx2_mock.post(OWNERS_URL).respond(json=self.spgi_owners_api_resp)
+
+        resp = await get_owners_from_identifiers(
+            identifiers=["SPGI"],
+            httpx_client=httpx_client,
+            min_pct_shares_outstanding=min_pct_shares_outstanding,
+        )
+
+        owners = resp.identifier_results["SPGI"].owners
+        assert [owner.owner_id for owner in owners] == expected_owner_ids
+        assert resp.errors == []
+
+    @pytest.mark.asyncio
+    async def test_get_owners_from_identifiers_min_pct_filters_all_owners(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """
+        GIVEN the server only returns an owner with a relationship below the threshold
+        WHEN we fetch owners for SPGI with a min_pct_shares_outstanding threshold
+        THEN we get back no results and the same error the server gives when it filters all owners
+        """
+        strategic_investor = self.spgi_owners_api_resp["results"]["ownership"][2]
+        httpx2_mock.post(OWNERS_URL).respond(
+            json={"results": {"ownership": [strategic_investor]}, "errors": {}}
+        )
+
+        resp = await get_owners_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client, min_pct_shares_outstanding=5
+        )
+
+        assert resp.identifier_results == {}
+        assert resp.errors == ["SPGI: No owners found."]
+
     @pytest.mark.asyncio
     async def test_get_owners_from_identifiers_server_errors(
         self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
@@ -375,6 +462,21 @@ class TestGetHoldings:
                             "holding_date": "2025-06-30T00:00:00",
                         }
                     ],
+                    "relationship": {
+                        "relationship_type": "Current Investment",
+                        "estimated_percent_ownership": 8.4,
+                        "controlling_interest": False,
+                    },
+                },
+                {
+                    "held_company_id": 32012,
+                    "held_company_name": "Privately Held Co.",
+                    "positions": [],
+                    "relationship": {
+                        "relationship_type": "Current Investment",
+                        "estimated_percent_ownership": 40.0,
+                        "controlling_interest": False,
+                    },
                 },
                 {
                     "held_company_id": None,
@@ -389,6 +491,7 @@ class TestGetHoldings:
                             "holding_date": "2025-06-30T00:00:00",
                         }
                     ],
+                    "relationship": None,
                 },
             ]
         },
@@ -403,7 +506,8 @@ class TestGetHoldings:
     ) -> None:
         """
         WHEN we request SPGI's holdings
-        THEN we get back SPGI's holdings, with held company ids serialized with a C_ prefix
+        THEN we get back SPGI's holdings, including their relationships, with held company ids
+            serialized with a C_ prefix
         """
         httpx2_mock.post(HOLDINGS_URL, json={"company_id": SPGI_COMPANY_ID}).respond(
             json=self.spgi_holdings_api_resp
@@ -414,9 +518,20 @@ class TestGetHoldings:
         )
 
         assert resp == self.spgi_holdings_resp
+        apple, privately_held, unmapped = resp.results.holdings
+        assert apple.positions and apple.relationship is not None
+        # Holdings with only a Company Relationships relationship have no positions.
+        assert privately_held.positions == []
+        assert privately_held.relationship == CompanyRelationship(
+            relationship_type="Current Investment",
+            estimated_percent_ownership=Decimal("40.0"),
+            controlling_interest=False,
+        )
+        assert unmapped.relationship is None
         serialized_holdings = resp.model_dump(mode="json")["results"]["holdings"]
         assert serialized_holdings[0]["held_company_id"] == "C_24937"
-        assert serialized_holdings[1]["held_company_id"] is None
+        assert serialized_holdings[1]["held_company_id"] == "C_32012"
+        assert serialized_holdings[2]["held_company_id"] is None
 
     @pytest.mark.asyncio
     async def test_get_holdings_from_identifiers(
@@ -619,7 +734,7 @@ class TestGetInsiderTrades:
 
 
 class TestOwnersNotes:
-    vanguard, blackrock = TestGetOwners.spgi_owners_resp.results.ownership
+    vanguard, blackrock, strategic_investor = TestGetOwners.spgi_owners_resp.results.ownership
     spgi_summary = TestGetOwners.spgi_owners_summary_resp.results
 
     def test_owners_notes_for_an_owner_without_a_prior_period(self) -> None:
@@ -629,6 +744,13 @@ class TestOwnersNotes:
         """
         notes = owners_notes([CompanyOwners(owners=[self.vanguard, self.blackrock])])
         assert notes == [FIRST_APPEARANCE_NOTE]
+
+    def test_owners_notes_for_an_owner_without_a_position(self) -> None:
+        """
+        WHEN an owner with only a relationship and no position is returned
+        THEN no notes are added
+        """
+        assert owners_notes([CompanyOwners(owners=[self.strategic_investor])]) == []
 
     def test_owners_notes_for_owners_with_prior_periods(self) -> None:
         """

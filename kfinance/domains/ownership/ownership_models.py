@@ -7,6 +7,27 @@ from kfinance.client.models.response_models import RespWithErrors
 from kfinance.domains.companies.company_models import CompanyId
 
 
+class CompanyRelationship(BaseModel):
+    """A current ownership relationship from the Company Relationships dataset.
+
+    The relationship is from the owner company to the company it owns: on an Owner, the owner
+    holds a stake in the requested company; on a Holding, the requested company holds a stake in
+    the held company.
+
+    Attributes:
+        relationship_type: The type of relationship: "Current Investment",
+            "Current Subsidiary/Operating Unit" (owners only) or "Current Fund Investor".
+        estimated_percent_ownership: The estimated percent of the owned company held by the owner.
+            It isn't derived from share counts and is less accurate than a position's
+            percent_shares_outstanding.
+        controlling_interest: Whether the owner holds a controlling interest in the owned company.
+    """
+
+    relationship_type: str
+    estimated_percent_ownership: Decimal | None = None
+    controlling_interest: bool
+
+
 class OwnerPosition(BaseModel):
     """An owner's position in a company.
 
@@ -28,21 +49,30 @@ class OwnerPosition(BaseModel):
 class Owner(BaseModel):
     """An owner of a company.
 
+    An owner has a position (from the Ownership dataset), a relationship (from the Company
+    Relationships dataset), or both.
+
     Attributes:
         owner_id: The id of the company or person that owns the company.
         owner_name: The name of the company or person that owns the company.
         institution_type: The type of institution the owner is (e.g. "Investment Adviser").
-        position: The owner's latest position in the company.
+        position: The owner's latest position in the company, if it has one.
+        relationship: The owner's current ownership relationship to the company, if it has one.
     """
 
     owner_id: int
     owner_name: str | None = None
     institution_type: str | None = None
-    position: OwnerPosition
+    position: OwnerPosition | None = None
+    relationship: CompanyRelationship | None = None
 
 
 class Owners(BaseModel):
-    """The owners of a company, ordered by shares held, largest first."""
+    """The owners of a company.
+
+    Ordered with controlling owners first, then owners with a position by shares held (largest
+    first), then owners with only a relationship by estimated percent ownership (largest first).
+    """
 
     ownership: list[Owner] = Field(default_factory=list)
 
@@ -126,18 +156,26 @@ class HoldingPosition(BaseModel):
 
 
 class Holding(BaseModel):
-    """A company held by an owner, with the owner's positions in that company's securities.
+    """A company held by an owner.
 
-    Positions are ordered by shares held, largest first.
+    A holding has positions in the held company's securities (from the Ownership dataset), a
+    relationship (from the Company Relationships dataset), or both. Positions are ordered by
+    percent of portfolio (largest first, nulls last), then shares held (largest first).
     """
 
     held_company_id: CompanyId | None = None
     held_company_name: str | None = None
-    positions: list[HoldingPosition]
+    positions: list[HoldingPosition] = Field(default_factory=list)
+    relationship: CompanyRelationship | None = None
 
 
 class Holdings(BaseModel):
-    """The holdings of an owner, ordered by largest position, largest first."""
+    """The holdings of an owner.
+
+    Ordered with controlling interests first, then holdings with positions by their top position's
+    percent of portfolio (largest first), then holdings with only a relationship by estimated
+    percent ownership (largest first).
+    """
 
     holdings: list[Holding] = Field(default_factory=list)
 

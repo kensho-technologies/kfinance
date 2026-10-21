@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 from datetime import date
+from decimal import Decimal
 from textwrap import dedent
 from typing import Any, Type
 
@@ -17,6 +18,7 @@ from kfinance.domains.ownership.ownership_models import (
     InsiderTrade,
     InsiderTrades,
     InsiderTradesResp,
+    Owner,
     OwnersResp,
     OwnersSummaryResp,
 )
@@ -30,14 +32,16 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 class GetOwnersFromIdentifiersArgs(ToolArgsWithIdentifiers):
     min_pct_shares_outstanding: float | None = Field(
         default=None,
-        description="Only return owners holding at least this percent of shares outstanding (e.g. 5 for 5%). Use null for no threshold.",
+        description="Only return owners holding at least this percent of the company (e.g. 5 for 5%), compared with the position's percent_shares_outstanding, or the relationship's estimated_percent_ownership for owners without one. Owners with neither are kept. Use null for no threshold.",
     )
     include_summary: bool = Field(
         default=False,
         description="Also return the company's aggregate ownership summary (institutional ownership %, number of holders, buyers/sellers, and shares held by owner type).",
     )
     limit: int | None = Field(
-        default=None, description="Limit to the top N owners by shares held", ge=1
+        default=None,
+        description="Limit to the top N owners (controlling owners first, then by shares held)",
+        ge=1,
     )
 
 
@@ -50,12 +54,18 @@ class GetOwnersFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CompanyOwners]):
 class GetOwnersFromIdentifiers(KfinanceTool):
     name: str = "get_owners_from_identifiers"
     description: str = dedent("""
-        Get the institutional owners of a list of companies, ordered by shares held (largest first). Each owner includes the owner name and id, institution type, shares held, percent of shares outstanding, the change in shares since the prior period, and the holding date.
+        Get the owners of a list of companies: institutions and individuals with a position from public filings, plus current investors, parent companies, and fund investors from company relationships (which also cover private companies). Each owner includes the owner name and id, the institution type, and, when available:
+        - position: shares held, percent of shares outstanding, the change in shares since the prior period, and the holding date.
+        - relationship: the relationship type (e.g. "Current Investment", "Current Subsidiary/Operating Unit", "Current Fund Investor"), the estimated percent ownership, and whether the owner has a controlling interest.
+
+        Owners are ordered with controlling owners (e.g. parent companies) first, then owners with a position by shares held (largest first), then owners with only a relationship by estimated percent ownership (largest first).
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - Pass a ticker as given. Otherwise pass the company's full name with its legal suffix (e.g. "Apple Inc." rather than "Apple").
+        - When an owner has both, prefer position.percent_shares_outstanding over relationship.estimated_percent_ownership: the estimate isn't derived from share counts and can differ significantly.
+        - Funds run by an investment manager are not listed separately; their shares are generally reported under the manager.
         - Set include_summary=True for aggregate ownership questions: institutional ownership percentage, number of institutional holders, number of buyers/sellers/new buyers/closed positions, shares bought/sold, or the breakdown of shares held by owner type (e.g. institutions, individuals/insiders, public and other).
-        - Use limit to return only the top N owners, and min_pct_shares_outstanding to return only owners above a percent of shares outstanding threshold.
+        - Use limit to return only the top N owners, and min_pct_shares_outstanding to return only owners above a percent ownership threshold.
         - To find what a company or fund owns (its portfolio), use get_holdings_from_identifiers instead.
 
         Examples:
@@ -103,7 +113,9 @@ class GetOwnersFromIdentifiers(KfinanceTool):
 
 class GetHoldingsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     limit: int | None = Field(
-        default=None, description="Limit to the top N held companies by shares held", ge=1
+        default=None,
+        description="Limit to the top N held companies (controlling interests first, then by percent of portfolio)",
+        ge=1,
     )
 
 
@@ -114,10 +126,15 @@ class GetHoldingsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Holdings]):
 class GetHoldingsFromIdentifiers(KfinanceTool):
     name: str = "get_holdings_from_identifiers"
     description: str = dedent("""
-        Get the portfolio holdings of a list of owners (e.g. asset managers, funds, or other companies). The identifiers are the owners, not the companies being held. Each holding lists the held company and the owner's positions in that company's securities, including ticker, shares held, percent of the owner's portfolio, percent of shares outstanding, and the holding date. Holdings are ordered by shares held (largest first).
+        Get the holdings of a list of owners (e.g. asset managers, funds, or other companies): portfolio positions from public filings, plus current investments and fund investments from company relationships (which also cover stakes in private companies). The identifiers are the owners, not the companies being held. Each holding lists the held company and, when available:
+        - positions: the owner's positions in the held company's securities, including ticker, shares held, percent of the owner's portfolio, percent of shares outstanding, and the holding date. Empty for holdings that only have a relationship.
+        - relationship: the relationship type (e.g. "Current Investment", "Current Fund Investor"), the estimated percent ownership, and whether the owner has a controlling interest.
+
+        Holdings are ordered with controlling interests first, then holdings with positions by percent of portfolio (largest first), then holdings with only a relationship by estimated percent ownership (largest first).
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - Pass a ticker as given. Otherwise pass the owner's full name with its legal suffix (e.g. "The Vanguard Group, Inc." rather than "Vanguard"). Short or informal names of asset managers can resolve to the wrong entity.
+        - When a holding has both, prefer a position's percent_shares_outstanding over relationship.estimated_percent_ownership: the estimate isn't derived from share counts and can differ significantly.
         - Use limit to return only the top N held companies.
         - To find who owns a company, use get_owners_from_identifiers instead.
 
@@ -248,7 +265,10 @@ def owners_notes(results: Iterable[CompanyOwners]) -> list[str]:
     summaries = [result.summary for result in results if result.summary is not None]
 
     notes: list[str] = []
-    if any(owner.position.percent_shares_changed is None for owner in owners):
+    if any(
+        owner.position is not None and owner.position.percent_shares_changed is None
+        for owner in owners
+    ):
         notes.append(FIRST_APPEARANCE_NOTE)
     if any(
         (
@@ -260,6 +280,34 @@ def owners_notes(results: Iterable[CompanyOwners]) -> list[str]:
     ):
         notes.append(OWNERSHIP_PCT_OUT_OF_RANGE_NOTE)
     return notes
+
+
+def owner_percent_ownership(owner: Owner) -> Decimal | None:
+    """Return the owner's percent of the company, preferring its position over its relationship."""
+    if owner.position is not None and owner.position.percent_shares_outstanding is not None:
+        return owner.position.percent_shares_outstanding
+    if owner.relationship is not None:
+        return owner.relationship.estimated_percent_ownership
+    return None
+
+
+def filter_owners_by_min_pct(
+    owners: list[Owner], min_pct_shares_outstanding: float | None
+) -> list[Owner]:
+    """Drop owners known to hold less than min_pct_shares_outstanding percent of the company.
+
+    The server only applies the threshold to positions, so owners with only a relationship come
+    back unfiltered. This also applies it to their estimated percent ownership. Owners with
+    neither percent are kept, like the server does.
+    """
+    if min_pct_shares_outstanding is None:
+        return owners
+    min_pct = Decimal(str(min_pct_shares_outstanding))
+    return [
+        owner
+        for owner in owners
+        if (percent := owner_percent_ownership(owner)) is None or percent >= min_pct
+    ]
 
 
 async def get_owners_from_identifiers(
@@ -310,10 +358,12 @@ async def get_owners_from_identifiers(
             continue
         owners_resp: OwnersResp = owners_task.result
         errors.extend(f"{owners_task.result_key}: {error}" for error in owners_resp.errors.values())
-        if owners_resp.results.ownership:
-            results[owners_task.result_key] = CompanyOwners(
-                owners=owners_resp.results.ownership[:limit]
-            )
+        owners = filter_owners_by_min_pct(owners_resp.results.ownership, min_pct_shares_outstanding)
+        if owners:
+            results[owners_task.result_key] = CompanyOwners(owners=owners[:limit])
+        elif owners_resp.results.ownership:
+            # Match the server's error when its own filter leaves no owners.
+            errors.append(f"{owners_task.result_key}: No owners found.")
 
     for summary_task in summary_tasks:
         summary_errors: list[str] = []
@@ -458,7 +508,7 @@ async def fetch_owners_from_company_id(
     httpx_client: httpx2.AsyncClient,
     min_pct_shares_outstanding: float | None = None,
 ) -> OwnersResp:
-    """Fetch institutional owners for one company_id."""
+    """Fetch owners for one company_id."""
     payload: dict[str, Any] = {"company_id": company_id}
     if min_pct_shares_outstanding is not None:
         payload["min_pct_shares_outstanding"] = min_pct_shares_outstanding
