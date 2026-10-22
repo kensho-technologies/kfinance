@@ -9,6 +9,7 @@
   `fund_distributor`, `distributed_fund`, `fund_investment_advisor`, `advised_fund`; and two new
   response statuses: `pending` and `cancelled`.
 - Add corporate tree tools: `get_ultimate_parent_paths_from_identifiers` and `search_corporate_tree_from_identifiers`.
+- Add ownership tools: GetOwnersFromIdentifiers, GetHoldingsFromIdentifiers, and GetInsiderTradesFromIdentifiers
 
 ## v10.0.0
 - **Breaking:** `Company.key_developments` takes `key_dev_category` as a `KeyDevCategoryType` instead of a string.
