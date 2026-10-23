@@ -1,5 +1,8 @@
 # Changelog
 
+## v10.1.0
+ - Change `get_consensus_estimates_from_identifiers` and `get_guidance_from_identifiers` to work like the line items tool: each tool now requires a specific estimate line item to return data.
+
 ## v10.0.0
 - **Breaking:** `Company.key_developments` takes `key_dev_category` as a `KeyDevCategoryType` instead of a string.
 - **Breaking:** Replace `get_latest_earnings_from_identifiers` and `get_next_earnings_from_identifiers` with `get_earnings_from_identifiers(earnings_timeframe=all|latest|next)`.
