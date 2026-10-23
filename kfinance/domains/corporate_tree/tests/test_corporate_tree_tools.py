@@ -462,6 +462,26 @@ class TestSearchCorporateTreeArgs:
         args = SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"], **{filter_name: []})
         assert getattr(args, filter_name) is None
 
+    def test_limit_defaults_to_50(self) -> None:
+        args = SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"])
+        assert args.limit == 50
+
+    @pytest.mark.parametrize("limit", [1, 200, 1000, 100_000])
+    def test_limit_has_no_upper_bound(self, limit: int) -> None:
+        """WHEN a large limit is passed THEN it is accepted: callers choose their own ceiling."""
+        args = SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"], limit=limit)
+        assert args.limit == limit
+
+    def test_limit_accepts_none_for_every_match(self) -> None:
+        args = SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"], limit=None)
+        assert args.limit is None
+
+    @pytest.mark.parametrize("limit", [0, -1])
+    def test_limit_rejects_a_non_positive_limit(self, limit: int) -> None:
+        """WHEN limit is zero or negative THEN it is rejected, since null is how you ask for all."""
+        with pytest.raises(ValidationError):
+            SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"], limit=limit)
+
 
 class TestGetUltimateParentPaths:
     @pytest.mark.asyncio
@@ -766,6 +786,31 @@ class TestSearchCorporateTree:
         assert len(result.matches) == 3
         # matches_by_level describes every match, not just the ones shown.
         assert sum(result.summary.matches_by_level.values()) == 12
+
+    @pytest.mark.asyncio
+    async def test_a_null_limit_returns_every_match(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN limit is None THEN nothing is truncated and showing equals total_matches."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, limit=None
+        )
+
+        assert len(result.matches) == 12
+        assert result.summary.total_matches == 12
+        assert result.summary.showing == 12
+
+    @pytest.mark.asyncio
+    async def test_a_limit_above_the_match_count_truncates_nothing(
+        self, httpx_client: httpx2.AsyncClient, add_tree_mock: None
+    ) -> None:
+        """WHEN limit exceeds the matches THEN showing reports what came back, not the limit."""
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID, httpx_client=httpx_client, limit=10_000
+        )
+
+        assert len(result.matches) == 12
+        assert result.summary.showing == 12
 
     @pytest.mark.asyncio
     async def test_search_flattens_company_fields_onto_each_match(

@@ -131,11 +131,10 @@ class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=None,
         description="Whether a company is still under the queried company, matched against relationship_status_to_queried_company. Defaults to ['current']. Pass ['prior'] when former, previous, divested or sold entities are asked for, or ['current', 'prior'] for both.",
     )
-    limit: int = Field(
+    limit: int | None = Field(
         default=50,
-        description="Maximum matches to return per identifier.",
+        description="Maximum matches to return per identifier. Pass null for every match, which can be a very large response on a big tree.",
         ge=1,
-        le=200,
     )
 
     @field_validator("country_iso_code")
@@ -167,7 +166,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         - Only controlling relationships are included; minority and other non-controlling stakes are absent.
         - Only companies and similar institutions can be queried; indexes, funds, commodities, yield curves and assets/products return an error.
         - The queried company is never a match. To look upward from it, use get_ultimate_parent_paths_from_identifiers.
-        - There is no name filter: pick matches by company_name. If summary.total_matches exceeds the matches returned, raise limit or narrow the filters.
+        - There is no name filter: pick matches by company_name. If summary.total_matches exceeds the matches returned, raise limit, pass limit=null for all of them, or narrow the filters.
         - A company with several parents appears once per parent; summary.distinct_companies counts the companies.
         - relationship_status matches relationship_status_to_queried_company, not a match's own edge: a current unit under a divested company counts as prior, since it is no longer under the queried company. relationship_status_to_direct_parent reports that own edge to parent_company_id.
         - When summary.search_was_depth_limited is true, the summary's *_searched counts cover only the searched depth.
@@ -183,7 +182,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         Function: search_corporate_tree_from_identifiers(identifiers=["ORCL"], relationship_type=["merged_entity"], max_depth=1)
 
         Query: "Was Motorola Mobility ever part of Alphabet?"
-        Function: search_corporate_tree_from_identifiers(identifiers=["GOOGL"], relationship_status=["current", "prior"], limit=200)
+        Function: search_corporate_tree_from_identifiers(identifiers=["GOOGL"], relationship_status=["current", "prior"], limit=null)
     """).strip()
     args_schema: Type[BaseModel] = SearchCorporateTreeFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
@@ -195,7 +194,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         country_iso_code: list[str] | None = None,
         max_depth: int | None = None,
         relationship_status: list[TreeRelationshipStatus] | None = None,
-        limit: int = 50,
+        limit: int | None = 50,
     ) -> SearchCorporateTreeFromIdentifiersResp:
         """"""
         return await search_corporate_tree_from_identifiers(
@@ -216,7 +215,7 @@ async def search_corporate_tree_from_identifiers(
     country_iso_code: list[str] | None = None,
     max_depth: int | None = None,
     relationship_status: list[TreeRelationshipStatus] | None = None,
-    limit: int = 50,
+    limit: int | None = 50,
 ) -> SearchCorporateTreeFromIdentifiersResp:
     """Search corporate trees for all identifiers."""
 
@@ -347,7 +346,7 @@ async def fetch_and_search_corporate_tree(
     country_iso_code: list[str] | None = None,
     max_depth: int | None = None,
     relationship_status: list[TreeRelationshipStatus] | None = None,
-    limit: int = 50,
+    limit: int | None = 50,
 ) -> CorporateTreeSearchResult:
     """Fetch the corporate tree for a single company and search it."""
     statuses = relationship_status or [TreeRelationshipStatus.current]
@@ -379,6 +378,7 @@ async def fetch_and_search_corporate_tree(
         )
     ]
 
+    shown = matches[:limit]
     return CorporateTreeSearchResult(
         queried_company=response.root,
         matches=[
@@ -396,12 +396,12 @@ async def fetch_and_search_corporate_tree(
                     node, current_chain
                 ),
             )
-            for node in matches[:limit]
+            for node in shown
         ],
         summary=SearchSummary(
             total_matches=len(matches),
             distinct_companies=len({node.company.company_id for node in matches}),
-            showing=min(len(matches), limit),
+            showing=len(shown),
             matches_by_level={
                 str(level): count
                 for level, count in sorted(Counter(node.level for node in matches).items())
