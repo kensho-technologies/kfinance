@@ -174,7 +174,7 @@ class SearchSummary(BaseModel):
     )
     distinct_companies: int = Field(description="Distinct companies among the matches.")
     showing: int = Field(
-        description="Matches included in `matches`, capped by the `limit` argument. When it is below total_matches, narrow the filters to see the rest; there is no way to page through results."
+        description="Matches included in `matches`, capped by the `limit` argument. When it is below total_matches, call again with a larger limit (or limit=null for all of them) or narrow the filters; there is no way to page through results."
     )
     matches_by_level: dict[str, int] = Field(
         description="Count of matches at each level below the queried company, where level 1 is a direct child."
