@@ -7,6 +7,7 @@ from pydantic import ValidationError
 import pytest
 from respx import Router
 
+from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.ownership.ownership_models import (
     CompanyOwners,
@@ -19,12 +20,17 @@ from kfinance.domains.ownership.ownership_models import (
     OwnerTypeSummary,
 )
 from kfinance.domains.ownership.ownership_tools import (
+    DEFAULT_INSIDER_TRADES_LIMIT,
+    DEFAULT_OWNERS_AND_HOLDINGS_LIMIT,
     FIRST_APPEARANCE_NOTE,
     OWNERSHIP_PCT_OUT_OF_RANGE_NOTE,
+    GetHoldingsFromIdentifiers,
     GetHoldingsFromIdentifiersArgs,
     GetHoldingsFromIdentifiersResp,
+    GetInsiderTradesFromIdentifiers,
     GetInsiderTradesFromIdentifiersArgs,
     GetInsiderTradesFromIdentifiersResp,
+    GetOwnersFromIdentifiers,
     GetOwnersFromIdentifiersArgs,
     GetOwnersFromIdentifiersResp,
     fetch_holdings_from_company_id,
@@ -67,19 +73,35 @@ class TestOwnershipToolArgs:
             args_model(identifiers=["SPGI"], limit=limit)
 
     @pytest.mark.parametrize(
-        "args_model",
+        "args_model, expected_limit",
         [
-            GetOwnersFromIdentifiersArgs,
-            GetHoldingsFromIdentifiersArgs,
-            GetInsiderTradesFromIdentifiersArgs,
+            pytest.param(
+                GetOwnersFromIdentifiersArgs, DEFAULT_OWNERS_AND_HOLDINGS_LIMIT, id="owners"
+            ),
+            pytest.param(
+                GetHoldingsFromIdentifiersArgs, DEFAULT_OWNERS_AND_HOLDINGS_LIMIT, id="holdings"
+            ),
+            # The insider trades limit depends on the date range, so it is applied when fetching.
+            pytest.param(GetInsiderTradesFromIdentifiersArgs, None, id="insider trades"),
         ],
     )
-    def test_limit_defaults_to_none(self, args_model: Any) -> None:
+    def test_limit_defaults(self, args_model: Any, expected_limit: int | None) -> None:
         """
         WHEN a tool is called without a limit
+        THEN the owners and holdings tools default to the owners and holdings limit, and the
+            insider trades tool leaves it unset
+        """
+        assert args_model(identifiers=["SPGI"]).limit == expected_limit
+
+    @pytest.mark.parametrize(
+        "args_model", [GetOwnersFromIdentifiersArgs, GetHoldingsFromIdentifiersArgs]
+    )
+    def test_limit_accepts_null(self, args_model: Any) -> None:
+        """
+        WHEN the owners or holdings tool is called with a null limit
         THEN no limit is applied
         """
-        assert args_model(identifiers=["SPGI"]).limit is None
+        assert args_model(identifiers=["SPGI"], limit=None).limit is None
 
     @pytest.mark.parametrize("min_pct_shares_outstanding", [None, -1, 0, 5.5, 100, 100.5])
     def test_min_pct_shares_outstanding_is_unbounded(
@@ -320,7 +342,8 @@ class TestGetOwners:
         "min_pct_shares_outstanding, expected_owner_ids",
         [
             pytest.param(3, [265933, 12345, 32011], id="all above threshold"),
-            # BlackRock has no percent, so it is never dropped.
+            # BlackRock has no percent, so the client keeps it. (The server drops positions without a
+            # percent when given a threshold, so it wouldn't return BlackRock in practice.)
             pytest.param(5, [265933, 12345], id="drops relationship below threshold"),
             # Vanguard's position percent (9.8) wins over its lower estimated percent (8.4).
             pytest.param(9, [265933, 12345], id="prefers position percent"),
@@ -339,7 +362,8 @@ class TestGetOwners:
         GIVEN the server returns owners it couldn't filter by min_pct_shares_outstanding
         WHEN we fetch owners for SPGI with a min_pct_shares_outstanding threshold
         THEN owners are filtered by their position's percent of shares outstanding, falling back
-            to their relationship's estimated percent ownership, and owners with neither are kept
+            to their relationship's estimated percent ownership, and the client keeps owners with
+            neither
         """
         httpx2_mock.post(OWNERS_URL).respond(json=self.spgi_owners_api_resp)
 
@@ -443,6 +467,37 @@ class TestGetOwners:
 
         assert resp.identifier_results == {}
         assert resp.errors == ["Invalid request."]
+
+    @pytest.mark.parametrize(
+        "tool_args, expected_num_owners",
+        [
+            pytest.param({}, DEFAULT_OWNERS_AND_HOLDINGS_LIMIT, id="caps at the default"),
+            pytest.param({"limit": 10}, 10, id="explicit limit overrides the default"),
+            pytest.param({"limit": None}, 350, id="null limit removes the cap"),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_owners_tool_default_limit(
+        self,
+        mock_client: Client,
+        httpx2_mock: Router,
+        tool_args: dict[str, Any],
+        expected_num_owners: int,
+    ) -> None:
+        """
+        GIVEN SPGI has 350 owners
+        WHEN the owners tool runs with or without a limit
+        THEN it caps the owners at the default limit unless a limit or a null limit is given
+        """
+        vanguard = self.spgi_owners_api_resp["results"]["ownership"][0]
+        httpx2_mock.post(OWNERS_URL).respond(
+            json={"results": {"ownership": [vanguard] * 350}, "errors": {}}
+        )
+        tool = GetOwnersFromIdentifiers(kfinance_client=mock_client)
+
+        resp = await tool.arun_without_langchain(identifiers=["SPGI"], **tool_args)
+
+        assert len(resp["results"]["SPGI"]["data"]["owners"]) == expected_num_owners
 
 
 class TestGetHoldings:
@@ -577,6 +632,37 @@ class TestGetHoldings:
 
         assert resp.identifier_results == {}
         assert resp.errors == ["SPGI: No holdings found."]
+
+    @pytest.mark.parametrize(
+        "tool_args, expected_num_holdings",
+        [
+            pytest.param({}, DEFAULT_OWNERS_AND_HOLDINGS_LIMIT, id="caps at the default"),
+            pytest.param({"limit": 10}, 10, id="explicit limit overrides the default"),
+            pytest.param({"limit": None}, 350, id="null limit removes the cap"),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_holdings_tool_default_limit(
+        self,
+        mock_client: Client,
+        httpx2_mock: Router,
+        tool_args: dict[str, Any],
+        expected_num_holdings: int,
+    ) -> None:
+        """
+        GIVEN SPGI has 350 holdings
+        WHEN the holdings tool runs with or without a limit
+        THEN it caps the holdings at the default limit unless a limit or a null limit is given
+        """
+        apple = self.spgi_holdings_api_resp["results"]["holdings"][0]
+        httpx2_mock.post(HOLDINGS_URL).respond(
+            json={"results": {"holdings": [apple] * 350}, "errors": {}}
+        )
+        tool = GetHoldingsFromIdentifiers(kfinance_client=mock_client)
+
+        resp = await tool.arun_without_langchain(identifiers=["SPGI"], **tool_args)
+
+        assert len(resp["results"]["SPGI"]["data"]["holdings"]) == expected_num_holdings
 
 
 class TestGetInsiderTrades:
@@ -731,6 +817,38 @@ class TestGetInsiderTrades:
         )
 
         assert resp == expected_resp
+
+    @pytest.mark.parametrize(
+        "tool_args, expected_num_trades",
+        [
+            pytest.param({}, DEFAULT_INSIDER_TRADES_LIMIT, id="no dates caps at the default"),
+            pytest.param({"limit": 150}, 150, id="explicit limit overrides the default"),
+            pytest.param({"start_date": "2000-01-01"}, 250, id="start_date removes the cap"),
+            pytest.param({"end_date": "2030-01-01"}, 250, id="end_date removes the cap"),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_insider_trades_tool_default_limit(
+        self,
+        mock_client: Client,
+        httpx2_mock: Router,
+        tool_args: dict[str, Any],
+        expected_num_trades: int,
+    ) -> None:
+        """
+        GIVEN SPGI has 250 insider trades
+        WHEN the insider trades tool runs with or without a date range or limit
+        THEN it caps the trades at the default limit only when no date range or limit is given
+        """
+        trade = self.spgi_insider_trades_api_resp["results"]["trades"][0]
+        httpx2_mock.post(INSIDER_TRADES_URL).respond(
+            json={"results": {"trades": [trade] * 250}, "errors": {}}
+        )
+        tool = GetInsiderTradesFromIdentifiers(kfinance_client=mock_client)
+
+        resp = await tool.arun_without_langchain(identifiers=["SPGI"], **tool_args)
+
+        assert len(resp["results"]["SPGI"]["data"]["trades"]) == expected_num_trades
 
 
 class TestOwnersNotes:
