@@ -180,6 +180,7 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - If no time parameters are provided, next 4 quarters are retrieved by default.
         - To filter by time, use either absolute time (start_year, end_year, start_quarter, end_quarter) OR relative time (num_periods_forward, num_periods_backward)—but not both.
+        - 'EPS' by itself usually means 'normalized EPS', but it could also mean 'generally accepted accounting principles EPS' or 'EPS excluding exceptional items and goodwill'.
 
         Examples:
         Query: "EBITDA consensus estimates for Apple using Capital IQ data."
@@ -189,10 +190,10 @@ class GetConsensusEstimatesFromIdentifiers(GetEstimatesFromIdentifiers):
         Function: get_consensus_estimates_from_identifiers(identifiers=["SAP"], line_item="revenue", period_type="annual", start_year=2027, end_year=2029)
 
         Query: "Apple consensus EPS estimates for the most recently announced quarter using Capital IQ data."
-        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], line_item="eps", period_type="quarterly", num_periods_backward=1)
+        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], line_item="eps_normalized", period_type="quarterly", num_periods_backward=1)        
 
         Query: "Apple consensus EPS estimates for last 2 quarters and next 4 quarters using Capital IQ data."
-        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], line_item="eps", period_type="quarterly", num_periods_backward=2, num_periods_forward=4)
+        Function: get_consensus_estimates_from_identifiers(identifiers=["AAPL"], line_item="eps_normalized", period_type="quarterly", num_periods_backward=2, num_periods_forward=4)
     """).strip()
 
     @property
