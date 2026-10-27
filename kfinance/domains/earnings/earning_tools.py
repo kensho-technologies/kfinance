@@ -87,11 +87,11 @@ class GetEarningsFromIdentifiers(KfinanceTool):
     ) -> GetEarningsFromIdentifiersResp:
         """"""
         httpx_client = self.kfinance_client.httpx_client
-        if earnings_timeframe is EarningsTimeframe.latest:
+        if earnings_timeframe == EarningsTimeframe.latest:
             return await get_latest_earnings_from_identifiers(
                 identifiers=identifiers, httpx_client=httpx_client
             )
-        if earnings_timeframe is EarningsTimeframe.next:
+        if earnings_timeframe == EarningsTimeframe.next:
             return await get_next_earnings_from_identifiers(
                 identifiers=identifiers, httpx_client=httpx_client
             )
