@@ -192,7 +192,8 @@ class TestEarnings:
         """
         GIVEN SPGI's Q4 2024 call (past) and Q1 2025 call (upcoming) on 2025-04-01
         WHEN the tool runs with each earnings_timeframe
-        THEN all returns both calls, latest only the past one, and next only the upcoming one
+        THEN all returns both calls, latest only the past one, and next only the upcoming one,
+             each under the same earnings_calls list
         """
         tool = GetEarningsFromIdentifiers(kfinance_client=mock_client)
 
@@ -200,8 +201,7 @@ class TestEarnings:
             identifiers=["SPGI"], earnings_timeframe=earnings_timeframe
         )
 
-        result = resp["results"]["SPGI"]["data"]
-        calls = result["earnings_calls"] if earnings_timeframe == "all" else [result]
+        calls = resp["results"]["SPGI"]["data"]["earnings_calls"]
         assert sorted(call["key_dev_id"] for call in calls) == expected_key_dev_ids
 
     @time_machine.travel(datetime(2025, 5, 1))
