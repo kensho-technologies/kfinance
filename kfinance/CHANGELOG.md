@@ -1,5 +1,8 @@
 # Changelog
 
+## v10.2.0
+- Expand line items to support current metrics in CIQ Performance analysis.
+
 ## v10.1.1
 - Update `get_issuer_ratings_from_identifiers` to explicitly state ISO alpha-3 codes for Germany
 
