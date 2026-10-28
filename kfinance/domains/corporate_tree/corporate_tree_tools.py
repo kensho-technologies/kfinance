@@ -168,7 +168,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         - The queried company is never a match. To look upward from it, use get_ultimate_parent_paths_from_identifiers.
         - There is no name filter: pick matches by company_name. If summary.total_matches exceeds the matches returned, raise limit, pass limit=null for all of them, or narrow the filters.
         - A company with several parents appears once per parent; summary.distinct_companies counts the companies.
-        - relationship_status matches relationship_status_to_queried_company, not a match's own edge: a current unit under a divested company counts as prior, since it is no longer under the queried company. relationship_status_to_direct_parent reports that own edge to parent_company_id.
+        - relationship_status matches relationship_status_to_queried_company. A company moved from one parent to another within the tree stays current for every row, while a current unit under a divested company counts as prior. relationship_status_to_direct_parent reports each row's own edge to parent_company_id, so a re-parented company's row for its old parent shows prior there.
         - When summary.search_was_depth_limited is true, the summary's *_searched counts cover only the searched depth.
 
         Examples:
@@ -300,15 +300,14 @@ def _current_chain_company_ids(root_company_id: int, nodes: list[CorporateTreeNo
 def _relationship_status_to_queried_company(
     node: CorporateTreeNode, current_chain_company_ids: set[int]
 ) -> TreeRelationshipStatus:
-    """The status of the whole chain from the queried company down to this node.
+    """Whether the node's company is still under the queried company.
 
-    Current only when every relationship along the way is current, so a current relationship
-    hanging below a divested ancestor comes back as prior.
+    A company moved from one parent to another inside the tree has a prior row for the old
+    parent and a current row for the new one, and is still under the queried company through
+    the latter. A current relationship hanging below a divested ancestor has no current
+    chain left, so it comes back as prior.
     """
-    if (
-        node.relationship_status is TreeRelationshipStatus.current
-        and node.parent_company_id in current_chain_company_ids
-    ):
+    if node.company.company_id in current_chain_company_ids:
         return TreeRelationshipStatus.current
     return TreeRelationshipStatus.prior
 
@@ -321,8 +320,8 @@ def _node_matches(
     country_iso_codes: list[str] | None,
 ) -> bool:
     """Whether a node satisfies every supplied filter. Country matching is case-insensitive."""
-    # The status filter tests the chain from the queried company, not the node's own edge, so a
-    # current relationship hanging below a divested ancestor counts as prior.
+    # The status filter tests whether the company is still under the queried company, not the
+    # node's own edge: a re-parented company counts as current even on the row for its old parent.
     if relationship_status_to_queried_company not in relationship_statuses:
         return False
 
