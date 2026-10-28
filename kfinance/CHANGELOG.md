@@ -1,5 +1,8 @@
 # Changelog
 
+## v10.1.1
+- Update `get_issuer_ratings_from_identifiers` to explicitly state ISO alpha-3 codes for Germany
+
 ## v10.1.0
 - `get_earnings_from_identifiers` with `earnings_timeframe` `latest` or `next` now returns the same `earnings_calls` list as `all`, holding the one matching call.
 
