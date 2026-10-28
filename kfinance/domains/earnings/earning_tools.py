@@ -155,7 +155,7 @@ async def get_latest_earnings_from_identifiers(
         most_recent_earnings = earnings.most_recent_earnings
         if most_recent_earnings:
             output_model.identifier_results[identifier] = EarningsCallResp(
-                earnings=[most_recent_earnings]
+                earnings_calls=[most_recent_earnings]
             )
         else:
             output_model.errors.append(f"No latest earnings available for {identifier}.")
@@ -179,7 +179,9 @@ async def get_next_earnings_from_identifiers(
     for identifier, earnings in earnings_responses.identifier_results.items():
         next_earnings = earnings.next_earnings
         if next_earnings:
-            output_model.identifier_results[identifier] = EarningsCallResp(earnings=[next_earnings])
+            output_model.identifier_results[identifier] = EarningsCallResp(
+                earnings_calls=[next_earnings]
+            )
         else:
             output_model.errors.append(f"No next earnings available for {identifier}.")
     # Add errors from the earnings fetch

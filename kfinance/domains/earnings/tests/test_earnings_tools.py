@@ -6,7 +6,7 @@ import time_machine
 
 from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_ID_TRIPLE, optional_route
-from kfinance.domains.earnings.earning_models import EarningsCallResp
+from kfinance.domains.earnings.earning_models import EarningsCall, EarningsCallResp
 from kfinance.domains.earnings.earning_tools import (
     GetEarningsFromIdentifiers,
     GetEarningsFromIdentifiersResp,
@@ -223,6 +223,23 @@ class TestEarnings:
 
         assert resp["results"] == {}
         assert "No next earnings available for SPGI." in resp["errors"]
+
+    def test_earnings_call_resp_accepts_field_name_and_api_alias(self) -> None:
+        """
+        GIVEN an earnings call
+        WHEN EarningsCallResp is built by field name and validated from the API-shaped payload
+        THEN both produce equal models
+        """
+        call_dict = {
+            "name": "SPGI Q1 2025 Earnings Call",
+            "datetime": "2025-04-29T12:30:00Z",
+            "key_dev_id": 12346,
+        }
+
+        by_name = EarningsCallResp(earnings_calls=[EarningsCall.model_validate(call_dict)])
+        by_alias = EarningsCallResp.model_validate({"earnings": [call_dict]})
+
+        assert by_name == by_alias
 
 
 class TestTranscript:
