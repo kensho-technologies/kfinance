@@ -1,7 +1,13 @@
 # Changelog
 
-## v10.0.1
+## v10.2.0
 - Expand line items to support current metrics in CIQ Performance analysis.
+
+## v10.1.1
+- Update `get_issuer_ratings_from_identifiers` to explicitly state ISO alpha-3 codes for Germany
+
+## v10.1.0
+- `get_earnings_from_identifiers` with `earnings_timeframe` `latest` or `next` now returns the same `earnings_calls` list as `all`, holding the one matching call.
 
 ## v10.0.0
 - **Breaking:** `Company.key_developments` takes `key_dev_category` as a `KeyDevCategoryType` instead of a string.

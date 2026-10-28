@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from pydantic import AliasPath, BaseModel, Field
+from pydantic import AliasPath, BaseModel, ConfigDict, Field
 from strenum import StrEnum
 
 
@@ -17,6 +17,8 @@ class EarningsCall(BaseModel):
 
 
 class EarningsCallResp(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     earnings_calls: list[EarningsCall] = Field(validation_alias=AliasPath("earnings"))
 
     @property
