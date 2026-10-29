@@ -4,9 +4,11 @@ import httpx2
 import pytest
 import time_machine
 
+from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_ID_TRIPLE, optional_route
-from kfinance.domains.earnings.earning_models import EarningsCallResp
+from kfinance.domains.earnings.earning_models import EarningsCall, EarningsCallResp
 from kfinance.domains.earnings.earning_tools import (
+    GetEarningsFromIdentifiers,
     GetEarningsFromIdentifiersResp,
     GetTranscriptFromKeyDevIdResp,
     fetch_earnings_from_company_id,
@@ -168,6 +170,76 @@ class TestEarnings:
         assert next_earnings is not None
         assert next_earnings.name == "SPGI Q1 2025 Earnings Call"
         assert next_earnings.key_dev_id == 12346
+
+    @time_machine.travel(datetime(2025, 4, 1))
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "earnings_timeframe, expected_key_dev_ids",
+        [
+            pytest.param("all", [12345, 12346], id="all"),
+            pytest.param("latest", [12345], id="latest"),
+            pytest.param("next", [12346], id="next"),
+        ],
+    )
+    async def test_earnings_timeframe_picks_which_calls_the_tool_returns(
+        self,
+        mock_client: Client,
+        httpx_client: httpx2.AsyncClient,
+        add_spgi_earnings_mock_resp: None,
+        earnings_timeframe: str,
+        expected_key_dev_ids: list[int],
+    ) -> None:
+        """
+        GIVEN SPGI's Q4 2024 call (past) and Q1 2025 call (upcoming) on 2025-04-01
+        WHEN the tool runs with each earnings_timeframe
+        THEN all returns both calls, latest only the past one, and next only the upcoming one,
+             each under the same earnings_calls list
+        """
+        tool = GetEarningsFromIdentifiers(kfinance_client=mock_client)
+
+        resp = await tool.arun_without_langchain(
+            identifiers=["SPGI"], earnings_timeframe=earnings_timeframe
+        )
+
+        calls = resp["results"]["SPGI"]["data"]["earnings_calls"]
+        assert sorted(call["key_dev_id"] for call in calls) == expected_key_dev_ids
+
+    @time_machine.travel(datetime(2025, 5, 1))
+    @pytest.mark.asyncio
+    async def test_next_earnings_reports_an_error_when_none_is_scheduled(
+        self,
+        mock_client: Client,
+        httpx_client: httpx2.AsyncClient,
+        add_spgi_earnings_mock_resp: None,
+    ) -> None:
+        """
+        GIVEN SPGI's calls are both in the past on 2025-05-01
+        WHEN the tool runs with earnings_timeframe next
+        THEN there is no result for SPGI, and an error says so
+        """
+        tool = GetEarningsFromIdentifiers(kfinance_client=mock_client)
+
+        resp = await tool.arun_without_langchain(identifiers=["SPGI"], earnings_timeframe="next")
+
+        assert resp["results"] == {}
+        assert "No next earnings available for SPGI." in resp["errors"]
+
+    def test_earnings_call_resp_accepts_field_name_and_api_alias(self) -> None:
+        """
+        GIVEN an earnings call
+        WHEN EarningsCallResp is built by field name and validated from the API-shaped payload
+        THEN both produce equal models
+        """
+        call_dict = {
+            "name": "SPGI Q1 2025 Earnings Call",
+            "datetime": "2025-04-29T12:30:00Z",
+            "key_dev_id": 12346,
+        }
+
+        by_name = EarningsCallResp(earnings_calls=[EarningsCall.model_validate(call_dict)])
+        by_alias = EarningsCallResp.model_validate({"earnings": [call_dict]})
+
+        assert by_name == by_alias
 
 
 class TestTranscript:

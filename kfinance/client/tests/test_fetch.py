@@ -32,7 +32,7 @@ from kfinance.domains.estimates.estimates_models import (
     ConsensusTargetPrice,
     ConsensusTargetPriceItem,
 )
-from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType
+from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType, KeyDevEventType
 from kfinance.domains.ratings.ratings_models import IssuerRatingsResp, SecurityRatingsResp
 from kfinance.domains.segments.segment_models import SegmentType
 
@@ -560,6 +560,22 @@ class TestFetchItem(TestCase):
         )
         # verify the result is a KeyDevsResp
         assert "results" in result.model_dump()
+
+        # test the event type and transcripts_only filters
+        expected_request_body = {
+            "company_id": company_id,
+            "event_type": "mna_call",
+            "transcripts_only": True,
+        }
+        self.kfinance_api_client.fetch.return_value = {"results": {}, "next_time_band": None}
+        self.kfinance_api_client.fetch_key_devs(
+            company_id=company_id,
+            event_type=KeyDevEventType.MNA_CALL,
+            transcripts_only=True,
+        )
+        self.kfinance_api_client.fetch.assert_called_with(
+            expected_url, method="POST", request_body=expected_request_body
+        )
 
 
 class TestMarketCap:

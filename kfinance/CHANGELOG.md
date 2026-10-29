@@ -1,7 +1,25 @@
 # Changelog
 
-## v9.1.0
+## v11.0.0
 - Visible Alpha surprise tool is now available.
+
+## v10.2.0
+- Expand line items to support current metrics in CIQ Performance analysis.
+
+## v10.1.1
+- Update `get_issuer_ratings_from_identifiers` to explicitly state ISO alpha-3 codes for Germany
+
+## v10.1.0
+- `get_earnings_from_identifiers` with `earnings_timeframe` `latest` or `next` now returns the same `earnings_calls` list as `all`, holding the one matching call.
+
+## v10.0.0
+- **Breaking:** `Company.key_developments` takes `key_dev_category` as a `KeyDevCategoryType` instead of a string.
+- **Breaking:** Replace `get_latest_earnings_from_identifiers` and `get_next_earnings_from_identifiers` with `get_earnings_from_identifiers(earnings_timeframe=all|latest|next)`.
+- Add `event_type`, `transcripts_only` and `has_transcript` to `get_key_devs_from_identifier` and `Company.key_developments` to find and fetch transcripts of non-earnings events. `event_type` overrides `key_dev_category`. Needs the matching server release.
+- Describe each `key_dev_category` and `event_type` value in the tool schema, and shorten the key devs and transcript tool descriptions.
+
+## v9.0.3
+- Update `total_debt_to_capital` dataitemid to align with CIQ Pro (4186).
 
 ## v9.0.2
 - Improve tools descriptions of `get_consensus_estimates_from_identifiers`, `get_guidance_from_identifiers`, `get_consensus_target_price_from_identifiers`, and  `get_analyst_recommendations_from_identifiers` tools.
