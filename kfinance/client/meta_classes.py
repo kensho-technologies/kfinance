@@ -821,6 +821,59 @@ class CompanyFunctionsMetaClass:
 
         return pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
 
+    def surprise_va(
+        self,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_backward: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+        estimate_search: str | None = None,
+        calendar_type: CalendarType | None = None,
+    ) -> pd.DataFrame:
+        """Get surprise from Visible Alpha for the time range and period type."""
+        try:
+            self.validate_inputs(
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+            )
+        except ValueError:
+            return pd.DataFrame()
+
+        surprise_response = self.kfinance_api_client.fetch_visible_alpha_surprises(
+            company_ids=[self.company_id],
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            num_periods_backward=num_periods_backward,
+            estimate_search=estimate_search,
+            calendar_type=calendar_type,
+        )
+
+        if not surprise_response.results:
+            return pd.DataFrame()
+
+        periods = next(iter(surprise_response.results.values())).periods
+
+        surprises_data = {}
+        for period_key, period_data in periods.items():
+            period_surprises = {}
+            for surprise in period_data.surprises:
+                period_surprises[f"{surprise.name} - Estimate"] = surprise.estimate_value
+                period_surprises[f"{surprise.name} - Actual"] = surprise.actual_value
+                if surprise.pct_changed:
+                    period_surprises[f"{surprise.name} - % Changed"] = surprise.pct_changed
+                if surprise.bps_changed:
+                    period_surprises[f"{surprise.name} - BPS Difference"] = surprise.bps_changed
+            surprises_data[period_key] = period_surprises
+
+        return pd.DataFrame(surprises_data).apply(pd.to_numeric).replace(np.nan, None)
+
     def guidance(
         self,
         start_year: int | None = None,

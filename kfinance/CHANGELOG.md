@@ -1,5 +1,8 @@
 # Changelog
 
+## v11.0.0
+- Visible Alpha surprise tool is now available.
+
 ## v10.2.0
 - Expand line items to support current metrics in CIQ Performance analysis.
 
