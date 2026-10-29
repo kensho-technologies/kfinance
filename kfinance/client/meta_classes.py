@@ -866,7 +866,10 @@ class CompanyFunctionsMetaClass:
             for surprise in period_data.surprises:
                 period_surprises[f"{surprise.name} - Estimate"] = surprise.estimate_value
                 period_surprises[f"{surprise.name} - Actual"] = surprise.actual_value
-                period_surprises[f"{surprise.name} - % Changed"] = surprise.pct_changed
+                if surprise.pct_changed:
+                    period_surprises[f"{surprise.name} - % Changed"] = surprise.pct_changed
+                if surprise.bps_changed:
+                    period_surprises[f"{surprise.name} - BPS Difference"] = surprise.bps_changed
             surprises_data[period_key] = period_surprises
 
         return pd.DataFrame(surprises_data).apply(pd.to_numeric).replace(np.nan, None)
