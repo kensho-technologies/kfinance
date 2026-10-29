@@ -13,6 +13,7 @@ from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
 from kfinance.domains.ownership.ownership_models import (
     CompanyOwners,
+    Holding,
     Holdings,
     HoldingsResp,
     InsiderTrade,
@@ -37,7 +38,11 @@ DEFAULT_OWNERS_AND_HOLDINGS_LIMIT = 300
 class GetOwnersFromIdentifiersArgs(ToolArgsWithIdentifiers):
     min_pct_shares_outstanding: float | None = Field(
         default=None,
-        description="Only return owners holding at least this percent of the company (e.g. 5 for 5%). Owners with a position are compared on its percent_shares_outstanding and dropped when it is null. Owners with only a relationship are compared on its estimated_percent_ownership and kept when it is null. Use null for no threshold.",
+        description="Only return owners holding at least this percent of the company (e.g. 5 for 5%). Owners with a position are compared on its percent_shares_outstanding and dropped when it is null. Owners with only a relationship are compared on its estimated_percent_ownership and kept when it is null, unless exclude_unknown_pct is set. Use null for no threshold.",
+    )
+    exclude_unknown_pct: bool = Field(
+        default=False,
+        description="With min_pct_shares_outstanding, also drop owners whose percent of the company is unknown (relationships with a null estimated_percent_ownership). Has no effect without a threshold.",
     )
     include_summary: bool = Field(
         default=False,
@@ -71,6 +76,7 @@ class GetOwnersFromIdentifiers(KfinanceTool):
         - Funds run by an investment manager are not listed separately; their shares are generally reported under the manager.
         - Set include_summary=True for aggregate ownership questions: institutional ownership percentage, number of institutional holders, number of buyers/sellers/new buyers/closed positions, shares bought/sold, or the breakdown of shares held by owner type (e.g. institutions, individuals/insiders, public and other).
         - Use limit to return only the top N owners, and min_pct_shares_outstanding to return only owners above a percent ownership threshold.
+        - Many relationships have no estimated_percent_ownership, and min_pct_shares_outstanding keeps them by default. Set exclude_unknown_pct=True to return only owners known to be above the threshold.
         - Only the top 300 owners are returned by default. Set limit to null to look up a specific owner that may be outside the top 300.
         - To find what a company or fund owns (its portfolio), use get_holdings_from_identifiers instead.
 
@@ -79,7 +85,7 @@ class GetOwnersFromIdentifiers(KfinanceTool):
         Function: get_owners_from_identifiers(identifiers=["Apple Inc."], limit=10)
 
         Query: "Which institutions own more than 5% of SPGI and MSFT?"
-        Function: get_owners_from_identifiers(identifiers=["SPGI", "MSFT"], min_pct_shares_outstanding=5)
+        Function: get_owners_from_identifiers(identifiers=["SPGI", "MSFT"], min_pct_shares_outstanding=5, exclude_unknown_pct=True)
 
         Query: "What percent of Tesla is owned by institutions?"
         Function: get_owners_from_identifiers(identifiers=["Tesla, Inc."], include_summary=True, limit=10)
@@ -104,6 +110,7 @@ class GetOwnersFromIdentifiers(KfinanceTool):
         self,
         identifiers: list[str],
         min_pct_shares_outstanding: float | None = None,
+        exclude_unknown_pct: bool = False,
         include_summary: bool = False,
         limit: int | None = DEFAULT_OWNERS_AND_HOLDINGS_LIMIT,
     ) -> GetOwnersFromIdentifiersResp:
@@ -112,12 +119,21 @@ class GetOwnersFromIdentifiers(KfinanceTool):
             identifiers=identifiers,
             httpx_client=self.kfinance_client.httpx_client,
             min_pct_shares_outstanding=min_pct_shares_outstanding,
+            exclude_unknown_pct=exclude_unknown_pct,
             include_summary=include_summary,
             limit=limit,
         )
 
 
 class GetHoldingsFromIdentifiersArgs(ToolArgsWithIdentifiers):
+    min_pct_of_portfolio: float | None = Field(
+        default=None,
+        description="Only return holdings that make up at least this percent of the owner's portfolio (e.g. 5 for 5%), summed across the held company's securities. Holdings with no percent of portfolio are kept unless exclude_unknown_pct is set. Use null for no threshold.",
+    )
+    exclude_unknown_pct: bool = Field(
+        default=False,
+        description="With min_pct_of_portfolio, also drop holdings with no percent of portfolio. Has no effect without a threshold.",
+    )
     limit: int | None = Field(
         default=DEFAULT_OWNERS_AND_HOLDINGS_LIMIT,
         description=f"Limit to the top N held companies (controlling interests first, then by percent of portfolio). Defaults to {DEFAULT_OWNERS_AND_HOLDINGS_LIMIT}. Use null for no limit.",
@@ -141,7 +157,8 @@ class GetHoldingsFromIdentifiers(KfinanceTool):
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - Pass a ticker as given. Otherwise pass the owner's full name with its legal suffix (e.g. "The Vanguard Group, Inc." rather than "Vanguard"). Short or informal names of asset managers can resolve to the wrong entity.
         - When a holding has both, prefer a position's percent_shares_outstanding over relationship.estimated_percent_ownership: the estimate isn't derived from share counts and can differ significantly.
-        - Use limit to return only the top N held companies.
+        - Use limit to return only the top N held companies, and min_pct_of_portfolio to return only holdings above a percent of portfolio threshold.
+        - Holdings with only a relationship have no percent of portfolio, and min_pct_of_portfolio keeps them by default. Set exclude_unknown_pct=True to return only holdings known to be above the threshold.
         - Only the top 300 held companies are returned by default. Set limit to null to check whether an owner holds a specific company that may be outside the top 300.
         - To find who owns a company, use get_owners_from_identifiers instead.
 
@@ -154,6 +171,9 @@ class GetHoldingsFromIdentifiers(KfinanceTool):
 
         Query: "What share of Berkshire Hathaway's portfolio is in Apple?"
         Function: get_holdings_from_identifiers(identifiers=["Berkshire Hathaway Inc."], limit=10)
+
+        Query: "Which positions make up more than 5% of Pershing Square's portfolio?"
+        Function: get_holdings_from_identifiers(identifiers=["Pershing Square Capital Management, L.P."], min_pct_of_portfolio=5, exclude_unknown_pct=True)
 
         Query: "Compare the top 5 holdings of BlackRock and Vanguard"
         Function: get_holdings_from_identifiers(identifiers=["BlackRock, Inc.", "The Vanguard Group, Inc."], limit=5)
@@ -168,12 +188,16 @@ class GetHoldingsFromIdentifiers(KfinanceTool):
     async def _arun(
         self,
         identifiers: list[str],
+        min_pct_of_portfolio: float | None = None,
+        exclude_unknown_pct: bool = False,
         limit: int | None = DEFAULT_OWNERS_AND_HOLDINGS_LIMIT,
     ) -> GetHoldingsFromIdentifiersResp:
         """"""
         return await get_holdings_from_identifiers(
             identifiers=identifiers,
             httpx_client=self.kfinance_client.httpx_client,
+            min_pct_of_portfolio=min_pct_of_portfolio,
+            exclude_unknown_pct=exclude_unknown_pct,
             limit=limit,
         )
 
@@ -309,28 +333,36 @@ def owner_percent_ownership(owner: Owner) -> Decimal | None:
 
 
 def filter_owners_by_min_pct(
-    owners: list[Owner], min_pct_shares_outstanding: float | None
+    owners: list[Owner],
+    min_pct_shares_outstanding: float | None,
+    exclude_unknown_pct: bool = False,
 ) -> list[Owner]:
     """Drop owners known to hold less than min_pct_shares_outstanding percent of the company.
 
     The server applies the threshold to positions, dropping owners whose position has no percent
     of shares outstanding, but returns owners with only a relationship unfiltered. This applies it
-    to their estimated percent ownership instead, and keeps the ones without an estimate.
+    to their estimated percent ownership instead, and keeps the ones without an estimate unless
+    exclude_unknown_pct is set.
     """
     if min_pct_shares_outstanding is None:
         return owners
     min_pct = Decimal(str(min_pct_shares_outstanding))
-    return [
-        owner
-        for owner in owners
-        if (percent := owner_percent_ownership(owner)) is None or percent >= min_pct
-    ]
+    filtered_owners: list[Owner] = []
+    for owner in owners:
+        percent = owner_percent_ownership(owner)
+        if percent is None:
+            if not exclude_unknown_pct:
+                filtered_owners.append(owner)
+        elif percent >= min_pct:
+            filtered_owners.append(owner)
+    return filtered_owners
 
 
 async def get_owners_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx2.AsyncClient,
     min_pct_shares_outstanding: float | None = None,
+    exclude_unknown_pct: bool = False,
     include_summary: bool = False,
     limit: int | None = DEFAULT_OWNERS_AND_HOLDINGS_LIMIT,
 ) -> GetOwnersFromIdentifiersResp:
@@ -375,7 +407,9 @@ async def get_owners_from_identifiers(
             continue
         owners_resp: OwnersResp = owners_task.result
         errors.extend(f"{owners_task.result_key}: {error}" for error in owners_resp.errors.values())
-        owners = filter_owners_by_min_pct(owners_resp.results.ownership, min_pct_shares_outstanding)
+        owners = filter_owners_by_min_pct(
+            owners_resp.results.ownership, min_pct_shares_outstanding, exclude_unknown_pct
+        )
         if owners:
             results[owners_task.result_key] = CompanyOwners(owners=owners[:limit])
         elif owners_resp.results.ownership:
@@ -409,9 +443,47 @@ async def get_owners_from_identifiers(
     )
 
 
+def holding_percent_of_portfolio(holding: Holding) -> Decimal | None:
+    """Return the percent of the owner's portfolio in the held company, summed across positions.
+
+    Returns None when no position has a percent of portfolio.
+    """
+    percents = [
+        position.percent_of_portfolio
+        for position in holding.positions
+        if position.percent_of_portfolio is not None
+    ]
+    return sum(percents, Decimal(0)) if percents else None
+
+
+def filter_holdings_by_min_pct(
+    holdings: list[Holding],
+    min_pct_of_portfolio: float | None,
+    exclude_unknown_pct: bool = False,
+) -> list[Holding]:
+    """Drop holdings known to make up less than min_pct_of_portfolio percent of the portfolio.
+
+    Holdings without a percent of portfolio are kept unless exclude_unknown_pct is set.
+    """
+    if min_pct_of_portfolio is None:
+        return holdings
+    min_pct = Decimal(str(min_pct_of_portfolio))
+    filtered_holdings: list[Holding] = []
+    for holding in holdings:
+        percent = holding_percent_of_portfolio(holding)
+        if percent is None:
+            if not exclude_unknown_pct:
+                filtered_holdings.append(holding)
+        elif percent >= min_pct:
+            filtered_holdings.append(holding)
+    return filtered_holdings
+
+
 async def get_holdings_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx2.AsyncClient,
+    min_pct_of_portfolio: float | None = None,
+    exclude_unknown_pct: bool = False,
     limit: int | None = DEFAULT_OWNERS_AND_HOLDINGS_LIMIT,
 ) -> GetHoldingsFromIdentifiersResp:
     """Fetch portfolio holdings for all identifiers."""
@@ -439,8 +511,14 @@ async def get_holdings_from_identifiers(
             continue
         resp: HoldingsResp = task.result
         errors.extend(f"{task.result_key}: {error}" for error in resp.errors.values())
-        if resp.results.holdings:
-            results[task.result_key] = Holdings(holdings=resp.results.holdings[:limit])
+        holdings = filter_holdings_by_min_pct(
+            resp.results.holdings, min_pct_of_portfolio, exclude_unknown_pct
+        )
+        if holdings:
+            results[task.result_key] = Holdings(holdings=holdings[:limit])
+        elif resp.results.holdings:
+            # Match the server's error when it finds no holdings.
+            errors.append(f"{task.result_key}: No holdings found.")
 
     return GetHoldingsFromIdentifiersResp(
         identifier_results=results,
