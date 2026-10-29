@@ -1,8 +1,8 @@
 from datetime import date
 from decimal import Decimal
-from typing import Self
 
 from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 from kfinance.client.models.date_and_period_models import EstimatePeriodType, EstimateType
 from kfinance.client.models.type_aliases import Source
