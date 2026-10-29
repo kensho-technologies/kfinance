@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import httpx2
 from pydantic import ValidationError
 import pytest
@@ -242,6 +244,43 @@ SAMPLE_NESTED_PRIOR_TREE_RESPONSE = {
         },
     ],
     "summary": {"max_depth": 2, "total_companies": 3, "total_edges": 2},
+}
+
+# Kensho moved from directly under S&P Global to under SNL, the way YouTube moved from Alphabet to
+# Google: a prior row for the old parent and a current row for the new one, both in the same tree.
+SAMPLE_REPARENTED_TREE_RESPONSE = {
+    "root": SPGI_ROOT,
+    "nodes": [
+        {
+            "company": {"company_id": SNL, "company_name": "SNL Financial LC", **_USA},
+            "level": 1,
+            "parent_company_id": SPGI_COMPANY_ID,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {"company_id": KENSHO, "company_name": "Kensho Technologies, LLC", **_USA},
+            "level": 1,
+            "parent_company_id": SPGI_COMPANY_ID,
+            "relationship_status": "prior",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {"company_id": KENSHO, "company_name": "Kensho Technologies, LLC", **_USA},
+            "level": 2,
+            "parent_company_id": SNL,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+        {
+            "company": {"company_id": OSTTRA, "company_name": "Osttra Group Ltd.", **_GBR},
+            "level": 3,
+            "parent_company_id": KENSHO,
+            "relationship_status": "current",
+            "relationship_type": "subsidiary_or_operating_unit",
+        },
+    ],
+    "summary": {"max_depth": 3, "total_companies": 4, "total_edges": 4},
 }
 
 # A tree reaching level 10, used to check that level keys are ordered numerically rather than
@@ -1060,6 +1099,78 @@ class TestSearchCorporateTree:
             match.relationship_status_to_queried_company is TreeRelationshipStatus.prior
             for match in result.matches
         )
+
+    @pytest.mark.asyncio
+    async def test_a_reparented_company_is_still_under_the_queried_company(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN a company moved to another parent inside the tree THEN every row for it, including
+        the prior row for its old parent, reports it as still under the queried company."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true").respond(
+            json=SAMPLE_REPARENTED_TREE_RESPONSE
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_status=[TreeRelationshipStatus.current, TreeRelationshipStatus.prior],
+        )
+
+        assert [
+            (
+                match.company_id,
+                match.parent_company_id,
+                match.relationship_status_to_direct_parent,
+                match.relationship_status_to_queried_company,
+            )
+            for match in result.matches
+        ] == [
+            (SNL, SPGI_COMPANY_ID, TreeRelationshipStatus.current, TreeRelationshipStatus.current),
+            # The old edge ended, but Kensho is still under S&P Global through SNL.
+            (KENSHO, SPGI_COMPANY_ID, TreeRelationshipStatus.prior, TreeRelationshipStatus.current),
+            (KENSHO, SNL, TreeRelationshipStatus.current, TreeRelationshipStatus.current),
+            (OSTTRA, KENSHO, TreeRelationshipStatus.current, TreeRelationshipStatus.current),
+        ]
+
+    @pytest.mark.asyncio
+    async def test_a_prior_only_search_skips_a_reparented_company(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN only prior is requested THEN a company that was merely re-parented is not returned,
+        since it was never divested."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true").respond(
+            json=SAMPLE_REPARENTED_TREE_RESPONSE
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_status=[TreeRelationshipStatus.prior],
+        )
+
+        assert result.matches == []
+        assert result.summary.total_matches == 0
+
+    @pytest.mark.asyncio
+    async def test_relationship_status_to_queried_company_never_disagrees_for_one_company(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """WHEN a company appears on several rows THEN they all agree on whether it is still under
+        the queried company: it is a fact about the company, not the row."""
+        httpx2_mock.get(f"{CORPORATE_TREE_URL}?include_prior=true").respond(
+            json=SAMPLE_REPARENTED_TREE_RESPONSE
+        )
+
+        result = await fetch_and_search_corporate_tree(
+            company_id=SPGI_COMPANY_ID,
+            httpx_client=httpx_client,
+            relationship_status=[TreeRelationshipStatus.current, TreeRelationshipStatus.prior],
+        )
+
+        statuses_by_company: dict[int, set[TreeRelationshipStatus]] = defaultdict(set)
+        for match in result.matches:
+            statuses_by_company[match.company_id].add(match.relationship_status_to_queried_company)
+        assert all(len(statuses) == 1 for statuses in statuses_by_company.values())
 
     @pytest.mark.asyncio
     async def test_search_reports_company_type_where_the_api_supplies_one(

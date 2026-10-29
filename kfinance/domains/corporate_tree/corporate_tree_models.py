@@ -159,7 +159,7 @@ class SearchMatch(BaseModel):
         description="The relationship status of this company in relation to its direct parent"
     )
     relationship_status_to_queried_company: TreeRelationshipStatus = Field(
-        description="The relationship status of this company in relation to the queried company. 'current' when every relationship in the chain from the queried company to this company is 'current'; 'prior' otherwise."
+        description="The relationship status of this company in relation to the queried company. 'current' when at least one chain of current relationships still connects the queried company to this company; 'prior' otherwise. Derived from the rows returned, so when the search was depth-limited a company whose current chain runs deeper than max_depth can show as 'prior'."
     )
 
 
