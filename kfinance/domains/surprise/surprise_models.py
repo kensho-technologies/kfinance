@@ -23,6 +23,7 @@ class SurpriseLineItem(BaseModel):
 
     @model_validator(mode="after")
     def check_exclusive_or_neither(self) -> Self:
+        """Check that both pct_changed and bps_changed are not present in the server response."""
         if self.pct_changed is not None and self.bps_changed is not None:
             raise ValueError("surprise item should have pct_changed or bps_changed but not both")
 
