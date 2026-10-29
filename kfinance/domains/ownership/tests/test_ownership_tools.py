@@ -377,6 +377,41 @@ class TestGetOwners:
         assert [owner.owner_id for owner in owners] == expected_owner_ids
         assert resp.errors == []
 
+    @pytest.mark.parametrize(
+        "min_pct_shares_outstanding, expected_owner_ids",
+        [
+            # BlackRock, which has no percent, is dropped along with owners below the threshold.
+            pytest.param(3, [265933, 32011], id="drops unknown percent"),
+            pytest.param(5, [265933], id="drops unknown percent and below threshold"),
+            pytest.param(None, [265933, 12345, 32011], id="no effect without threshold"),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_get_owners_from_identifiers_exclude_unknown_pct(
+        self,
+        httpx_client: httpx2.AsyncClient,
+        httpx2_mock: Router,
+        min_pct_shares_outstanding: float | None,
+        expected_owner_ids: list[int],
+    ) -> None:
+        """
+        GIVEN the server returns an owner with no known percent of the company
+        WHEN we fetch owners for SPGI with exclude_unknown_pct=True
+        THEN owners with no known percent are dropped when a threshold is set, and kept otherwise
+        """
+        httpx2_mock.post(OWNERS_URL).respond(json=self.spgi_owners_api_resp)
+
+        resp = await get_owners_from_identifiers(
+            identifiers=["SPGI"],
+            httpx_client=httpx_client,
+            min_pct_shares_outstanding=min_pct_shares_outstanding,
+            exclude_unknown_pct=True,
+        )
+
+        owners = resp.identifier_results["SPGI"].owners
+        assert [owner.owner_id for owner in owners] == expected_owner_ids
+        assert resp.errors == []
+
     @pytest.mark.asyncio
     async def test_get_owners_from_identifiers_min_pct_filters_all_owners(
         self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
@@ -629,6 +664,92 @@ class TestGetHoldings:
         )
 
         resp = await get_holdings_from_identifiers(identifiers=["SPGI"], httpx_client=httpx_client)
+
+        assert resp.identifier_results == {}
+        assert resp.errors == ["SPGI: No holdings found."]
+
+    @pytest.mark.parametrize(
+        "min_pct_of_portfolio, exclude_unknown_pct, expected_held_company_ids",
+        [
+            pytest.param(None, True, [24937, 32012, None], id="no effect without threshold"),
+            # The private company and the unmapped holding have no percent, so they're kept.
+            pytest.param(5, False, [24937, 32012, None], id="keeps unknown percent"),
+            pytest.param(6, False, [32012, None], id="drops below threshold"),
+            pytest.param(5, True, [24937], id="drops unknown percent"),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_get_holdings_from_identifiers_filters_by_min_pct(
+        self,
+        httpx_client: httpx2.AsyncClient,
+        httpx2_mock: Router,
+        min_pct_of_portfolio: float | None,
+        exclude_unknown_pct: bool,
+        expected_held_company_ids: list[int | None],
+    ) -> None:
+        """
+        WHEN we fetch holdings for SPGI with a min_pct_of_portfolio threshold
+        THEN holdings below the threshold are dropped, and holdings with no percent of portfolio
+            are dropped only when exclude_unknown_pct is set
+        """
+        httpx2_mock.post(HOLDINGS_URL).respond(json=self.spgi_holdings_api_resp)
+
+        resp = await get_holdings_from_identifiers(
+            identifiers=["SPGI"],
+            httpx_client=httpx_client,
+            min_pct_of_portfolio=min_pct_of_portfolio,
+            exclude_unknown_pct=exclude_unknown_pct,
+        )
+
+        holdings = resp.identifier_results["SPGI"].holdings
+        assert [holding.held_company_id for holding in holdings] == expected_held_company_ids
+        assert resp.errors == []
+
+    @pytest.mark.asyncio
+    async def test_get_holdings_from_identifiers_min_pct_sums_positions(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """
+        GIVEN a holding with two positions that are each below the threshold
+        WHEN we fetch holdings for SPGI with a min_pct_of_portfolio threshold
+        THEN the holding is kept because its positions together are above the threshold
+        """
+        apple = self.spgi_holdings_api_resp["results"]["holdings"][0]
+        position = apple["positions"][0]
+        two_class_holding = {
+            **apple,
+            "positions": [
+                {**position, "percent_of_portfolio": 3.0},
+                {**position, "security_id": 2535, "percent_of_portfolio": 2.5},
+            ],
+        }
+        httpx2_mock.post(HOLDINGS_URL).respond(
+            json={"results": {"holdings": [two_class_holding]}, "errors": {}}
+        )
+
+        resp = await get_holdings_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client, min_pct_of_portfolio=5
+        )
+
+        assert len(resp.identifier_results["SPGI"].holdings) == 1
+
+    @pytest.mark.asyncio
+    async def test_get_holdings_from_identifiers_min_pct_filters_all_holdings(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """
+        GIVEN the server only returns a holding below the threshold
+        WHEN we fetch holdings for SPGI with a min_pct_of_portfolio threshold
+        THEN we get back no results and the same error the server gives when it finds no holdings
+        """
+        apple = self.spgi_holdings_api_resp["results"]["holdings"][0]
+        httpx2_mock.post(HOLDINGS_URL).respond(
+            json={"results": {"holdings": [apple]}, "errors": {}}
+        )
+
+        resp = await get_holdings_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client, min_pct_of_portfolio=10
+        )
 
         assert resp.identifier_results == {}
         assert resp.errors == ["SPGI: No holdings found."]
