@@ -67,7 +67,8 @@ class GetVisibleAlphaSurprisesFromIdentifiers(KfinanceTool):
     description: str = dedent("""
         Get surprises for a list of identifiers. Returns Visible Alpha data. The surprise is the difference between the estimate just before the reporting date, and the actual reported value.
 
-        Returns the estimated value, the actual, and the percentage difference between them for each matched metric per period. Surprise data is only available for periods where financials have been reported.
+        Returns the estimated value, the actual, and the difference between them for each matched metric per period. Surprise data is only available for periods where financials have been reported.
+        The difference between the estimated value and the actual value can be expressed as a percentage difference (pct_changed) or a basis point difference (bps_changed).
 
         - For a ratio, percentage, or proportion, prefer a pre-computed ratio metric from the results or `top_ranked_alternatives`, if available, over fetching a single raw component.
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
