@@ -1,6 +1,6 @@
 # Changelog
 
-## v11.0.0
+## v12.0.0
 - **Breaking:** Unify "business relationships" into "relationships". The tool
   `get_business_relationship_from_identifiers` is now `get_relationship_from_identifiers`, and its
   `business_relationship` parameter is now `relationship_type`. The `RelationshipPermission` entitlement
@@ -10,6 +10,9 @@
   response statuses: `pending` and `cancelled`.
 - Add corporate tree tools: `get_ultimate_parent_paths_from_identifiers` and `search_corporate_tree_from_identifiers`.
 - Add ownership tools: GetOwnersFromIdentifiers, GetHoldingsFromIdentifiers, and GetInsiderTradesFromIdentifiers
+
+## v11.0.0
+- Visible Alpha surprise tool is now available.
 
 ## v10.2.0
 - Expand line items to support current metrics in CIQ Performance analysis.
