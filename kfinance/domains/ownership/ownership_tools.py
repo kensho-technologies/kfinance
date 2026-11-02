@@ -30,8 +30,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
-# The default number of owners or holdings returned per identifier, so that a widely held company
-# or a large asset manager doesn't fill the context.
+# The default number of owners or holdings returned per identifier.
 DEFAULT_OWNERS_AND_HOLDINGS_LIMIT = 300
 
 
@@ -63,7 +62,7 @@ class GetOwnersFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CompanyOwners]):
 
 class GetOwnersFromIdentifiers(KfinanceTool):
     name: str = "get_owners_from_identifiers"
-    description: str = dedent("""
+    description: str = dedent(f"""
         Get the owners of a list of companies: institutions and individuals with a position from public filings, plus current investors, parent companies, and fund investors from company relationships (which also cover private companies). Each owner includes the owner name and id, the institution type, and, when available:
         - position: shares held, percent of shares outstanding, the change in shares since the prior period, and the holding date.
         - relationship: the relationship type (e.g. "Current Investment", "Current Subsidiary/Operating Unit", "Current Fund Investor"), the estimated percent ownership, and whether the owner has a controlling interest.
@@ -77,7 +76,7 @@ class GetOwnersFromIdentifiers(KfinanceTool):
         - Set include_summary=True for aggregate ownership questions: institutional ownership percentage, number of institutional holders, number of buyers/sellers/new buyers/closed positions, shares bought/sold, or the breakdown of shares held by owner type (e.g. institutions, individuals/insiders, public and other).
         - Use limit to return only the top N owners, and min_pct_shares_outstanding to return only owners above a percent ownership threshold.
         - Many relationships have no estimated_percent_ownership, and min_pct_shares_outstanding keeps them by default. Set exclude_unknown_pct=True to return only owners known to be above the threshold.
-        - Only the top 300 owners are returned by default. Set limit to null to look up a specific owner that may be outside the top 300.
+        - Only the top {DEFAULT_OWNERS_AND_HOLDINGS_LIMIT} owners are returned by default. Set limit to null to fetch all owners.
         - To find what a company or fund owns (its portfolio), use get_holdings_from_identifiers instead.
 
         Examples:
@@ -142,12 +141,12 @@ class GetHoldingsFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 
 class GetHoldingsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[Holdings]):
-    pass
+    notes: list[str] | None = None
 
 
 class GetHoldingsFromIdentifiers(KfinanceTool):
     name: str = "get_holdings_from_identifiers"
-    description: str = dedent("""
+    description: str = dedent(f"""
         Get the holdings of a list of owners (e.g. asset managers, funds, or other companies): portfolio positions from public filings, plus current investments and fund investments from company relationships (which also cover stakes in private companies). The identifiers are the owners, not the companies being held. Each holding lists the held company and, when available:
         - positions: the owner's positions in the held company's securities, including ticker, shares held, percent of the owner's portfolio, percent of shares outstanding, and the holding date. Empty for holdings that only have a relationship.
         - relationship: the relationship type (e.g. "Current Investment", "Current Fund Investor"), the estimated percent ownership, and whether the owner has a controlling interest.
@@ -159,7 +158,7 @@ class GetHoldingsFromIdentifiers(KfinanceTool):
         - When a holding has both, prefer a position's percent_shares_outstanding over relationship.estimated_percent_ownership: the estimate isn't derived from share counts and can differ significantly.
         - Use limit to return only the top N held companies, and min_pct_of_portfolio to return only holdings above a percent of portfolio threshold.
         - Holdings with only a relationship have no percent of portfolio, and min_pct_of_portfolio keeps them by default. Set exclude_unknown_pct=True to return only holdings known to be above the threshold.
-        - Only the top 300 held companies are returned by default. Set limit to null to check whether an owner holds a specific company that may be outside the top 300.
+        - Only the top {DEFAULT_OWNERS_AND_HOLDINGS_LIMIT} held companies are returned by default. Set limit to null to fetch all holdings.
         - To find who owns a company, use get_owners_from_identifiers instead.
 
         Examples:
@@ -202,8 +201,7 @@ class GetHoldingsFromIdentifiers(KfinanceTool):
         )
 
 
-# The limit applied when no date range is given, so that a company's full trade history doesn't
-# fill the context. With a date range, all trades in it are returned.
+# The default number of trades returned per company.
 DEFAULT_INSIDER_TRADES_LIMIT = 200
 
 
@@ -217,8 +215,8 @@ class GetInsiderTradesFromIdentifiersArgs(ToolArgsWithIdentifiers):
         description="Filter trades to those made on or before this date (YYYY-MM-DD format)",
     )
     limit: int | None = Field(
-        default=None,
-        description="Limit to the N most recent trades per company. Defaults to 200 when neither start_date nor end_date is set, and to no limit otherwise.",
+        default=DEFAULT_INSIDER_TRADES_LIMIT,
+        description=f"Limit to the N most recent trades per company. Defaults to {DEFAULT_INSIDER_TRADES_LIMIT}. Use null for no limit.",
         ge=1,
     )
 
@@ -233,19 +231,19 @@ class GetInsiderTradesFromIdentifiersArgs(ToolArgsWithIdentifiers):
 
 
 class GetInsiderTradesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[InsiderTrades]):
-    pass
+    notes: list[str] | None = None
 
 
 class GetInsiderTradesFromIdentifiers(KfinanceTool):
     name: str = "get_insider_trades_from_identifiers"
-    description: str = dedent("""
+    description: str = dedent(f"""
         Get the insider trades (trades by officers, directors, and other insiders filed with the SEC) for a list of companies, most recent first. Each trade includes the insider name and id, transaction type, security type, number of shares, min and max price per share, transaction value in USD, trade date, and filing date.
 
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - Pass a ticker as given. Otherwise pass the company's full name with its legal suffix (e.g. "NVIDIA Corporation" rather than "Nvidia").
         - shares is negative for dispositions (e.g. sales).
         - Use start_date and end_date to filter by trade date, and limit to return only the N most recent trades.
-        - Without start_date or end_date, only the 200 most recent trades per company are returned. Set a date range for questions about a period (e.g. net buying or selling in a year) so no trades in it are cut off.
+        - Only the {DEFAULT_INSIDER_TRADES_LIMIT} most recent trades per company are returned by default. Set limit to null to fetch all insider trades.
 
         Examples:
         Query: "Show me recent insider trades at Nvidia"
@@ -275,7 +273,7 @@ class GetInsiderTradesFromIdentifiers(KfinanceTool):
         identifiers: list[str],
         start_date: date | None = None,
         end_date: date | None = None,
-        limit: int | None = None,
+        limit: int | None = DEFAULT_INSIDER_TRADES_LIMIT,
     ) -> GetInsiderTradesFromIdentifiersResp:
         """"""
         return await get_insider_trades_from_identifiers(
@@ -297,6 +295,14 @@ OWNERSHIP_PCT_OUT_OF_RANGE_NOTE = (
     "institutional_ownership_pct is not clamped to 0-100, and by_owner_type shares_held can be "
     "negative: the source data has values above 100 and below 0 for a small number of companies."
 )
+
+
+def truncation_note(identifier: str, num_returned: int, num_total: int, items: str) -> str:
+    """Return a note saying that only num_returned of num_total items were returned for identifier."""
+    return (
+        f"{identifier}: returned {num_returned} of {num_total:,} {items}. "
+        "Set a higher limit, or null for no limit, to see more."
+    )
 
 
 def owners_notes(results: Iterable[CompanyOwners]) -> list[str]:
@@ -401,6 +407,7 @@ async def get_owners_from_identifiers(
     await batch_execute_async_tasks(tasks=owners_tasks + summary_tasks)
 
     results: dict[str, CompanyOwners] = dict()
+    truncation_notes: list[str] = []
     for owners_task in owners_tasks:
         if owners_task.error:
             errors.append(owners_task.error)
@@ -412,6 +419,10 @@ async def get_owners_from_identifiers(
         )
         if owners:
             results[owners_task.result_key] = CompanyOwners(owners=owners[:limit])
+            if limit is not None and len(owners) > limit:
+                truncation_notes.append(
+                    truncation_note(owners_task.result_key, limit, len(owners), "owners")
+                )
         elif owners_resp.results.ownership:
             # Match the server's error when its own filter leaves no owners.
             errors.append(f"{owners_task.result_key}: No owners found.")
@@ -438,7 +449,7 @@ async def get_owners_from_identifiers(
     return GetOwnersFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        notes=owners_notes(results.values()) or None,
+        notes=truncation_notes + owners_notes(results.values()) or None,
         errors=errors,
     )
 
@@ -505,6 +516,7 @@ async def get_holdings_from_identifiers(
     await batch_execute_async_tasks(tasks=tasks)
 
     results: dict[str, Holdings] = dict()
+    notes: list[str] = []
     for task in tasks:
         if task.error:
             errors.append(task.error)
@@ -516,6 +528,10 @@ async def get_holdings_from_identifiers(
         )
         if holdings:
             results[task.result_key] = Holdings(holdings=holdings[:limit])
+            if limit is not None and len(holdings) > limit:
+                notes.append(
+                    truncation_note(task.result_key, limit, len(holdings), "held companies")
+                )
         elif resp.results.holdings:
             # Match the server's error when it finds no holdings.
             errors.append(f"{task.result_key}: No holdings found.")
@@ -523,20 +539,17 @@ async def get_holdings_from_identifiers(
     return GetHoldingsFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
+        notes=notes or None,
         errors=errors,
     )
 
 
-def filter_insider_trades(
+def filter_insider_trades_by_date(
     trades: list[InsiderTrade],
     start_date: date | None = None,
     end_date: date | None = None,
-    limit: int | None = None,
 ) -> list[InsiderTrade]:
-    """Filter insider trades by trade date range and optionally limit results.
-
-    Trades are expected to be ordered most recent first, so limit keeps the most recent trades.
-    """
+    """Filter insider trades to those made in the trade date range."""
     if start_date or end_date:
         # Skip trades without a trade_date if filtering by date
         trades = [
@@ -546,7 +559,7 @@ def filter_insider_trades(
             and (start_date is None or trade.trade_date.date() >= start_date)
             and (end_date is None or trade.trade_date.date() <= end_date)
         ]
-    return trades[:limit]
+    return trades
 
 
 async def get_insider_trades_from_identifiers(
@@ -554,16 +567,12 @@ async def get_insider_trades_from_identifiers(
     httpx_client: httpx2.AsyncClient,
     start_date: date | None = None,
     end_date: date | None = None,
-    limit: int | None = None,
+    limit: int | None = DEFAULT_INSIDER_TRADES_LIMIT,
 ) -> GetInsiderTradesFromIdentifiersResp:
     """Fetch insider trades for all identifiers.
 
-    Without a limit or date range, only the DEFAULT_INSIDER_TRADES_LIMIT most recent trades per
-    company are returned.
+    Trades are ordered most recent first, so limit keeps the most recent trades.
     """
-    if limit is None and start_date is None and end_date is None:
-        limit = DEFAULT_INSIDER_TRADES_LIMIT
-
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
@@ -581,6 +590,7 @@ async def get_insider_trades_from_identifiers(
     await batch_execute_async_tasks(tasks=tasks)
 
     results: dict[str, InsiderTrades] = dict()
+    notes: list[str] = []
     for task in tasks:
         if task.error:
             errors.append(task.error)
@@ -588,18 +598,18 @@ async def get_insider_trades_from_identifiers(
         resp: InsiderTradesResp = task.result
         errors.extend(f"{task.result_key}: {error}" for error in resp.errors.values())
         if resp.results.trades:
-            results[task.result_key] = InsiderTrades(
-                trades=filter_insider_trades(
-                    trades=resp.results.trades,
-                    start_date=start_date,
-                    end_date=end_date,
-                    limit=limit,
-                )
+            trades = filter_insider_trades_by_date(
+                trades=resp.results.trades, start_date=start_date, end_date=end_date
             )
+            results[task.result_key] = InsiderTrades(trades=trades[:limit])
+            if limit is not None and len(trades) > limit:
+                items = "trades in the date range" if start_date or end_date else "trades"
+                notes.append(truncation_note(task.result_key, limit, len(trades), items))
 
     return GetInsiderTradesFromIdentifiersResp(
         identifier_results=results,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
+        notes=notes or None,
         errors=errors,
     )
 
