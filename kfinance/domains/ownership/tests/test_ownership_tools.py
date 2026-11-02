@@ -41,6 +41,7 @@ from kfinance.domains.ownership.ownership_tools import (
     get_insider_trades_from_identifiers,
     get_owners_from_identifiers,
     owners_notes,
+    truncation_note,
 )
 
 
@@ -81,24 +82,31 @@ class TestOwnershipToolArgs:
             pytest.param(
                 GetHoldingsFromIdentifiersArgs, DEFAULT_OWNERS_AND_HOLDINGS_LIMIT, id="holdings"
             ),
-            # The insider trades limit depends on the date range, so it is applied when fetching.
-            pytest.param(GetInsiderTradesFromIdentifiersArgs, None, id="insider trades"),
+            pytest.param(
+                GetInsiderTradesFromIdentifiersArgs,
+                DEFAULT_INSIDER_TRADES_LIMIT,
+                id="insider trades",
+            ),
         ],
     )
-    def test_limit_defaults(self, args_model: Any, expected_limit: int | None) -> None:
+    def test_limit_defaults(self, args_model: Any, expected_limit: int) -> None:
         """
         WHEN a tool is called without a limit
-        THEN the owners and holdings tools default to the owners and holdings limit, and the
-            insider trades tool leaves it unset
+        THEN it defaults to the tool's default limit
         """
         assert args_model(identifiers=["SPGI"]).limit == expected_limit
 
     @pytest.mark.parametrize(
-        "args_model", [GetOwnersFromIdentifiersArgs, GetHoldingsFromIdentifiersArgs]
+        "args_model",
+        [
+            GetOwnersFromIdentifiersArgs,
+            GetHoldingsFromIdentifiersArgs,
+            GetInsiderTradesFromIdentifiersArgs,
+        ],
     )
     def test_limit_accepts_null(self, args_model: Any) -> None:
         """
-        WHEN the owners or holdings tool is called with a null limit
+        WHEN a tool is called with a null limit
         THEN no limit is applied
         """
         assert args_model(identifiers=["SPGI"], limit=None).limit is None
@@ -326,7 +334,7 @@ class TestGetOwners:
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
             # No FIRST_APPEARANCE_NOTE: BlackRock, the owner without a prior period, is cut by limit.
-            notes=None,
+            notes=[truncation_note("SPGI", 1, 3, "owners")],
             errors=[],
         )
 
@@ -335,7 +343,26 @@ class TestGetOwners:
         )
 
         assert resp == expected_resp
-        # With no notes, the field is left out of the tool output, like an empty errors list.
+
+    @pytest.mark.asyncio
+    async def test_get_owners_from_identifiers_without_notes(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """
+        GIVEN the only owner returned has a prior period
+        WHEN we fetch owners for SPGI with a limit above the number of owners
+        THEN no notes apply, and the field is left out of the tool output like an empty errors list
+        """
+        vanguard = self.spgi_owners_api_resp["results"]["ownership"][0]
+        httpx2_mock.post(OWNERS_URL).respond(
+            json={"results": {"ownership": [vanguard]}, "errors": {}}
+        )
+
+        resp = await get_owners_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client, limit=1
+        )
+
+        assert resp.notes is None
         assert "notes" not in resp.model_dump(mode="json", exclude_none=True)
 
     @pytest.mark.parametrize(
@@ -504,11 +531,21 @@ class TestGetOwners:
         assert resp.errors == ["Invalid request."]
 
     @pytest.mark.parametrize(
-        "tool_args, expected_num_owners",
+        "tool_args, expected_num_owners, expected_notes",
         [
-            pytest.param({}, DEFAULT_OWNERS_AND_HOLDINGS_LIMIT, id="caps at the default"),
-            pytest.param({"limit": 10}, 10, id="explicit limit overrides the default"),
-            pytest.param({"limit": None}, 350, id="null limit removes the cap"),
+            pytest.param(
+                {},
+                DEFAULT_OWNERS_AND_HOLDINGS_LIMIT,
+                [truncation_note("SPGI", DEFAULT_OWNERS_AND_HOLDINGS_LIMIT, 350, "owners")],
+                id="caps at the default",
+            ),
+            pytest.param(
+                {"limit": 10},
+                10,
+                [truncation_note("SPGI", 10, 350, "owners")],
+                id="explicit limit overrides the default",
+            ),
+            pytest.param({"limit": None}, 350, None, id="null limit removes the cap"),
         ],
     )
     @pytest.mark.asyncio
@@ -518,11 +555,13 @@ class TestGetOwners:
         httpx2_mock: Router,
         tool_args: dict[str, Any],
         expected_num_owners: int,
+        expected_notes: list[str] | None,
     ) -> None:
         """
-        GIVEN SPGI has 350 owners
+        GIVEN SPGI has 350 owners, all with a prior period
         WHEN the owners tool runs with or without a limit
-        THEN it caps the owners at the default limit unless a limit or a null limit is given
+        THEN it caps the owners at the default limit unless a limit or a null limit is given, and
+            notes when owners were cut off
         """
         vanguard = self.spgi_owners_api_resp["results"]["ownership"][0]
         httpx2_mock.post(OWNERS_URL).respond(
@@ -533,6 +572,7 @@ class TestGetOwners:
         resp = await tool.arun_without_langchain(identifiers=["SPGI"], **tool_args)
 
         assert len(resp["results"]["SPGI"]["data"]["owners"]) == expected_num_owners
+        assert resp.get("notes") == expected_notes
 
 
 class TestGetHoldings:
@@ -638,6 +678,7 @@ class TestGetHoldings:
                 "SPGI": Holdings(holdings=self.spgi_holdings_resp.results.holdings[:1])
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
+            notes=[truncation_note("SPGI", 1, 3, "held companies")],
             errors=[NON_EXISTENT_ID_ERROR],
         )
 
@@ -755,11 +796,21 @@ class TestGetHoldings:
         assert resp.errors == ["SPGI: No holdings found."]
 
     @pytest.mark.parametrize(
-        "tool_args, expected_num_holdings",
+        "tool_args, expected_num_holdings, expected_notes",
         [
-            pytest.param({}, DEFAULT_OWNERS_AND_HOLDINGS_LIMIT, id="caps at the default"),
-            pytest.param({"limit": 10}, 10, id="explicit limit overrides the default"),
-            pytest.param({"limit": None}, 350, id="null limit removes the cap"),
+            pytest.param(
+                {},
+                DEFAULT_OWNERS_AND_HOLDINGS_LIMIT,
+                [truncation_note("SPGI", DEFAULT_OWNERS_AND_HOLDINGS_LIMIT, 350, "held companies")],
+                id="caps at the default",
+            ),
+            pytest.param(
+                {"limit": 10},
+                10,
+                [truncation_note("SPGI", 10, 350, "held companies")],
+                id="explicit limit overrides the default",
+            ),
+            pytest.param({"limit": None}, 350, None, id="null limit removes the cap"),
         ],
     )
     @pytest.mark.asyncio
@@ -769,11 +820,13 @@ class TestGetHoldings:
         httpx2_mock: Router,
         tool_args: dict[str, Any],
         expected_num_holdings: int,
+        expected_notes: list[str] | None,
     ) -> None:
         """
         GIVEN SPGI has 350 holdings
         WHEN the holdings tool runs with or without a limit
-        THEN it caps the holdings at the default limit unless a limit or a null limit is given
+        THEN it caps the holdings at the default limit unless a limit or a null limit is given,
+            and notes when holdings were cut off
         """
         apple = self.spgi_holdings_api_resp["results"]["holdings"][0]
         httpx2_mock.post(HOLDINGS_URL).respond(
@@ -784,6 +837,7 @@ class TestGetHoldings:
         resp = await tool.arun_without_langchain(identifiers=["SPGI"], **tool_args)
 
         assert len(resp["results"]["SPGI"]["data"]["holdings"]) == expected_num_holdings
+        assert resp.get("notes") == expected_notes
 
 
 class TestGetInsiderTrades:
@@ -940,12 +994,32 @@ class TestGetInsiderTrades:
         assert resp == expected_resp
 
     @pytest.mark.parametrize(
-        "tool_args, expected_num_trades",
+        "tool_args, expected_num_trades, expected_notes",
         [
-            pytest.param({}, DEFAULT_INSIDER_TRADES_LIMIT, id="no dates caps at the default"),
-            pytest.param({"limit": 150}, 150, id="explicit limit overrides the default"),
-            pytest.param({"start_date": "2000-01-01"}, 250, id="start_date removes the cap"),
-            pytest.param({"end_date": "2030-01-01"}, 250, id="end_date removes the cap"),
+            pytest.param(
+                {},
+                DEFAULT_INSIDER_TRADES_LIMIT,
+                [truncation_note("SPGI", DEFAULT_INSIDER_TRADES_LIMIT, 250, "trades")],
+                id="caps at the default",
+            ),
+            pytest.param(
+                {"limit": 150},
+                150,
+                [truncation_note("SPGI", 150, 250, "trades")],
+                id="explicit limit overrides the default",
+            ),
+            pytest.param(
+                {"start_date": "2000-01-01"},
+                DEFAULT_INSIDER_TRADES_LIMIT,
+                [
+                    truncation_note(
+                        "SPGI", DEFAULT_INSIDER_TRADES_LIMIT, 250, "trades in the date range"
+                    )
+                ],
+                id="date range still caps at the default",
+            ),
+            pytest.param({"limit": None}, 250, None, id="null limit removes the cap"),
+            pytest.param({"limit": 250}, 250, None, id="no note when nothing is cut off"),
         ],
     )
     @pytest.mark.asyncio
@@ -955,11 +1029,13 @@ class TestGetInsiderTrades:
         httpx2_mock: Router,
         tool_args: dict[str, Any],
         expected_num_trades: int,
+        expected_notes: list[str] | None,
     ) -> None:
         """
         GIVEN SPGI has 250 insider trades
         WHEN the insider trades tool runs with or without a date range or limit
-        THEN it caps the trades at the default limit only when no date range or limit is given
+        THEN it caps the trades at the default limit unless a limit or a null limit is given,
+            with or without a date range, and notes when trades were cut off
         """
         trade = self.spgi_insider_trades_api_resp["results"]["trades"][0]
         httpx2_mock.post(INSIDER_TRADES_URL).respond(
@@ -970,6 +1046,7 @@ class TestGetInsiderTrades:
         resp = await tool.arun_without_langchain(identifiers=["SPGI"], **tool_args)
 
         assert len(resp["results"]["SPGI"]["data"]["trades"]) == expected_num_trades
+        assert resp.get("notes") == expected_notes
 
 
 class TestOwnersNotes:
