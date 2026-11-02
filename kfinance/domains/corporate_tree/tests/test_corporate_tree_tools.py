@@ -501,9 +501,9 @@ class TestSearchCorporateTreeArgs:
         args = SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"], **{filter_name: []})
         assert getattr(args, filter_name) is None
 
-    def test_limit_defaults_to_50(self) -> None:
+    def test_limit_defaults_to_100(self) -> None:
         args = SearchCorporateTreeFromIdentifiersArgs(identifiers=["SPGI"])
-        assert args.limit == 50
+        assert args.limit == 100
 
     @pytest.mark.parametrize("limit", [1, 200, 1000, 100_000])
     def test_limit_has_no_upper_bound(self, limit: int) -> None:
