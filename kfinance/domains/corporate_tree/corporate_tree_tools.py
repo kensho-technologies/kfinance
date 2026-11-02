@@ -132,7 +132,7 @@ class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
         description="Whether a company is still under the queried company, matched against relationship_status_to_queried_company. Defaults to ['current']. Pass ['prior'] when former, previous, divested or sold entities are asked for, or ['current', 'prior'] for both.",
     )
     limit: int | None = Field(
-        default=50,
+        default=100,
         description="Maximum matches to return per identifier. Pass null for every match, which can be a very large response on a big tree.",
         ge=1,
     )
@@ -194,7 +194,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         country_iso_code: list[str] | None = None,
         max_depth: int | None = None,
         relationship_status: list[TreeRelationshipStatus] | None = None,
-        limit: int | None = 50,
+        limit: int | None = 100,
     ) -> SearchCorporateTreeFromIdentifiersResp:
         """"""
         return await search_corporate_tree_from_identifiers(
@@ -215,7 +215,7 @@ async def search_corporate_tree_from_identifiers(
     country_iso_code: list[str] | None = None,
     max_depth: int | None = None,
     relationship_status: list[TreeRelationshipStatus] | None = None,
-    limit: int | None = 50,
+    limit: int | None = 100,
 ) -> SearchCorporateTreeFromIdentifiersResp:
     """Search corporate trees for all identifiers."""
 
@@ -345,7 +345,7 @@ async def fetch_and_search_corporate_tree(
     country_iso_code: list[str] | None = None,
     max_depth: int | None = None,
     relationship_status: list[TreeRelationshipStatus] | None = None,
-    limit: int | None = 50,
+    limit: int | None = 100,
 ) -> CorporateTreeSearchResult:
     """Fetch the corporate tree for a single company and search it."""
     statuses = relationship_status or [TreeRelationshipStatus.current]
