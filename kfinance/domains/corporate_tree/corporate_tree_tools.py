@@ -133,7 +133,7 @@ class SearchCorporateTreeFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
     limit: int | None = Field(
         default=100,
-        description="Maximum matches to return per identifier. Pass null for every match, which can be a very large response on a big tree.",
+        description="Maximum matches returned per identifier; omit for the default 100. Set null only when the user explicitly requests an exhaustive answer. This also applies to explicitly exhaustive subsets. Do not set null merely because you need to inspect names, the tree is large/truncated, or the question asks which/what entities match a name or type. If unsure, omit limit; null can produce a very large response.",
         ge=1,
     )
 
@@ -166,7 +166,8 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         - Only controlling relationships are included; minority and other non-controlling stakes are absent.
         - Only companies and similar institutions can be queried; indexes, funds, commodities, yield curves and assets/products return an error.
         - The queried company is never a match. To look upward from it, use get_ultimate_parent_paths_from_identifiers.
-        - There is no name filter: pick matches by company_name. If summary.total_matches exceeds the matches returned, raise limit, pass limit=null for all of them, or narrow the filters.
+        - There is no name filter: choose matches by company_name in the results. summary.total_matches counts all filtered matches, even when the returned rows are capped.
+        - Omit limit (default 100 per identifier) unless the user explicitly asks for an exhaustive answer: "all", "every", "full", "complete", "entire", etc applied to the returned entities. This includes an explicit request for all of a subset (e.g., "all subsidiaries"). Do not add null based on your own desire to check every name or report a complete answer.
         - A company with several parents appears once per parent; summary.distinct_companies counts the companies.
         - relationship_status matches relationship_status_to_queried_company. A company moved from one parent to another within the tree stays current for every row, while a current unit under a divested company counts as prior. relationship_status_to_direct_parent reports each row's own edge to parent_company_id, so a re-parented company's row for its old parent shows prior there.
         - When summary.search_was_depth_limited is true, the summary's *_searched counts cover only the searched depth.
@@ -182,7 +183,16 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         Function: search_corporate_tree_from_identifiers(identifiers=["ORCL"], relationship_type=["merged_entity"], max_depth=1)
 
         Query: "Was Motorola Mobility ever part of Alphabet?"
-        Function: search_corporate_tree_from_identifiers(identifiers=["GOOGL"], relationship_status=["current", "prior"], limit=null)
+        Function: search_corporate_tree_from_identifiers(identifiers=["GOOGL"], relationship_status=["current", "prior"])
+
+        Query: "Which Goldman Sachs subsidiaries have 'capital' in their names?"
+        Function: search_corporate_tree_from_identifiers(identifiers=["Goldman Sachs Group"], relationship_type=["subsidiary_or_operating_unit"])
+
+        Query: "Return all Goldman Sachs subsidiaries with 'capital' in their names."
+        Function: search_corporate_tree_from_identifiers(identifiers=["Goldman Sachs Group"], relationship_type=["subsidiary_or_operating_unit"], limit=null)
+
+        Query: "What is Dell's complete corporate tree?"
+        Function: search_corporate_tree_from_identifiers(identifiers=["Dell Technologies"], limit=null)
     """).strip()
     args_schema: Type[BaseModel] = SearchCorporateTreeFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
