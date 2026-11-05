@@ -1,5 +1,8 @@
 # Changelog
 
+## v11.1.0
+- Add `CompanyRelationshipsPermission` and corporate tree tools: `get_ultimate_parent_paths_from_identifiers` and `search_corporate_tree_from_identifiers`.
+
 ## v11.0.0
 - Visible Alpha surprise tool is now available.
 
