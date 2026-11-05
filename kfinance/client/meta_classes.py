@@ -24,7 +24,7 @@ from kfinance.domains.companies.company_models import (
     NativeName,
 )
 from kfinance.domains.competitors.competitor_models import CompetitorSource
-from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType
+from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType, KeyDevEventType
 from kfinance.domains.line_items.line_item_models import LINE_ITEMS, CalendarType
 from kfinance.domains.professionals.professionals_models import (
     CompanyProfessional,
@@ -821,6 +821,59 @@ class CompanyFunctionsMetaClass:
 
         return pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
 
+    def surprise_va(
+        self,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_backward: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+        estimate_search: str | None = None,
+        calendar_type: CalendarType | None = None,
+    ) -> pd.DataFrame:
+        """Get surprise from Visible Alpha for the time range and period type."""
+        try:
+            self.validate_inputs(
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+            )
+        except ValueError:
+            return pd.DataFrame()
+
+        surprise_response = self.kfinance_api_client.fetch_visible_alpha_surprises(
+            company_ids=[self.company_id],
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            num_periods_backward=num_periods_backward,
+            estimate_search=estimate_search,
+            calendar_type=calendar_type,
+        )
+
+        if not surprise_response.results:
+            return pd.DataFrame()
+
+        periods = next(iter(surprise_response.results.values())).periods
+
+        surprises_data = {}
+        for period_key, period_data in periods.items():
+            period_surprises = {}
+            for surprise in period_data.surprises:
+                period_surprises[f"{surprise.name} - Estimate"] = surprise.estimate_value
+                period_surprises[f"{surprise.name} - Actual"] = surprise.actual_value
+                if surprise.pct_changed:
+                    period_surprises[f"{surprise.name} - % Changed"] = surprise.pct_changed
+                if surprise.bps_changed:
+                    period_surprises[f"{surprise.name} - BPS Difference"] = surprise.bps_changed
+            surprises_data[period_key] = period_surprises
+
+        return pd.DataFrame(surprises_data).apply(pd.to_numeric).replace(np.nan, None)
+
     def guidance(
         self,
         start_year: int | None = None,
@@ -893,7 +946,9 @@ class CompanyFunctionsMetaClass:
         self,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        key_dev_category: Optional[str] = None,
+        key_dev_category: Optional[KeyDevCategoryType] = None,
+        event_type: Optional[KeyDevEventType] = None,
+        transcripts_only: bool = False,
     ) -> pd.DataFrame:
         """Get key development events for the company within an optional date range.
 
@@ -902,20 +957,22 @@ class CompanyFunctionsMetaClass:
         :param end_date: The end date in format "YYYY-MM-DD", defaults to None
         :type end_date: str, optional
         :param key_dev_category: Optional category filter (see KeyDevCategoryType), defaults to None
-        :type key_dev_category: str, optional
-        :return: A DataFrame of key developments with columns: category, key_dev_id, situation, announced_date_utc, most_important_date_utc, source, and company_role
+        :type key_dev_category: KeyDevCategoryType, optional
+        :param event_type: Optional filter for one kind of call or presentation (see KeyDevEventType), defaults to None. Takes precedence over key_dev_category.
+        :type event_type: KeyDevEventType, optional
+        :param transcripts_only: If True, only return key developments that have a transcript, defaults to False. Needs transcripts access.
+        :type transcripts_only: bool, optional
+        :return: A DataFrame of key developments with columns: category, key_dev_id, situation, announced_date_utc, most_important_date_utc, source, company_role, and has_transcript (True when a transcript can be fetched with Client.transcript; False when there is none or the user has no transcripts access)
         :rtype: pd.DataFrame
         """
-
-        key_dev_category_enum = None
-        if key_dev_category is not None:
-            key_dev_category_enum = KeyDevCategoryType(key_dev_category)
 
         response = self.kfinance_api_client.fetch_key_devs(
             company_id=self.company_id,
             start_date=start_date,
             end_date=end_date,
-            key_dev_category=key_dev_category_enum,
+            key_dev_category=key_dev_category,
+            event_type=event_type,
+            transcripts_only=transcripts_only,
         )
 
         if not response.results:
@@ -933,6 +990,7 @@ class CompanyFunctionsMetaClass:
                     "most_important_date_utc": event.most_important_date_utc,
                     "source": event.source,
                     "company_role": event.company_role,
+                    "has_transcript": bool(event.has_transcript),
                 }
                 rows.append(row)
 

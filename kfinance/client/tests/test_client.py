@@ -9,8 +9,6 @@ from kfinance.domains.business_relationships.business_relationship_tools import 
 )
 from kfinance.domains.earnings.earning_tools import (
     GetEarningsFromIdentifiers,
-    GetLatestEarningsFromIdentifiers,
-    GetNextEarningsFromIdentifiers,
     GetTranscriptFromKeyDevId,
 )
 from kfinance.domains.statements.statement_tools import GetFinancialStatementFromIdentifiers
@@ -84,10 +82,8 @@ class TestLangchainTools:
         """
         mock_client.kfinance_api_client._user_permissions = {user_permission}  # noqa: SLF001
         tool_classes = [type(t) for t in mock_client.langchain_tools]
-        # User should have access to GetEarnings, GetNextEarnings, GetLatestEarnings, GetTranscript
+        # User should have access to GetEarnings and GetTranscript
         assert GetEarningsFromIdentifiers in tool_classes
-        assert GetNextEarningsFromIdentifiers in tool_classes
-        assert GetLatestEarningsFromIdentifiers in tool_classes
         assert expected_tool in tool_classes
         # User should have access to functions that don't require permissions
         assert GetLatest in tool_classes

@@ -20,8 +20,6 @@ from kfinance.domains.cusip_and_isin.cusip_and_isin_tools import (
 )
 from kfinance.domains.earnings.earning_tools import (
     GetEarningsFromIdentifiers,
-    GetLatestEarningsFromIdentifiers,
-    GetNextEarningsFromIdentifiers,
     GetTranscriptFromKeyDevId,
 )
 from kfinance.domains.estimates.estimates_tools import (
@@ -62,6 +60,7 @@ from kfinance.domains.rounds_of_funding.rounds_of_funding_tools import (
 from kfinance.domains.segments.segment_tools import GetSegmentsFromIdentifiers
 from kfinance.domains.segments.segment_tools_va import GetVisibleAlphaSegmentsFromIdentifiers
 from kfinance.domains.statements.statement_tools import GetFinancialStatementFromIdentifiers
+from kfinance.domains.surprise.surprise_tools_va import GetVisibleAlphaSurprisesFromIdentifiers
 from kfinance.integrations.tool_calling.static_tools.get_latest import GetLatest
 from kfinance.integrations.tool_calling.static_tools.get_n_quarters_ago import GetNQuartersAgo
 from kfinance.integrations.tool_calling.tool_calling_models import KfinanceTool
@@ -90,8 +89,6 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     GetIsinFromIdentifiers,
     # Earnings
     GetEarningsFromIdentifiers,
-    GetLatestEarningsFromIdentifiers,
-    GetNextEarningsFromIdentifiers,
     GetTranscriptFromKeyDevId,
     # Key Developments
     GetKeyDevsFromIdentifier,
@@ -128,4 +125,6 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     # Corporate Tree
     GetUltimateParentPathsFromIdentifiers,
     SearchCorporateTreeFromIdentifiers,
+    # Surprise
+    GetVisibleAlphaSurprisesFromIdentifiers,
 ]
