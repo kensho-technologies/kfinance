@@ -151,21 +151,22 @@ async def get_latest_earnings_from_identifiers(
         identifiers=identifiers,
         httpx_client=httpx_client,
     )
-    output_model = GetEarningsFromIdentifiersResp(
-        identifier_results=dict(),
-        identifier_info=earnings_responses.identifier_info,
-        identifier_errors=defaultdict(list, earnings_responses.identifier_errors),
-    )
+
+    results: dict[str, EarningsCallResp] = dict()
+    errors: dict[str, list[str]] = defaultdict(list, earnings_responses.identifier_errors)
+
     for identifier, earnings in earnings_responses.identifier_results.items():
         most_recent_earnings = earnings.most_recent_earnings
         if most_recent_earnings:
-            output_model.identifier_results[identifier] = EarningsCallResp(
-                earnings_calls=[most_recent_earnings]
-            )
+            results[identifier] = EarningsCallResp(earnings_calls=[most_recent_earnings])
         else:
-            output_model.identifier_errors[identifier].append("No latest earnings available.")
+            errors[identifier].append("No latest earnings available.")
 
-    return output_model
+    return GetEarningsFromIdentifiersResp(
+        identifier_results=results,
+        identifier_errors=errors,
+        identifier_info=earnings_responses.identifier_info,
+    )
 
 
 async def get_next_earnings_from_identifiers(
@@ -177,21 +178,22 @@ async def get_next_earnings_from_identifiers(
         identifiers=identifiers,
         httpx_client=httpx_client,
     )
-    output_model = GetEarningsFromIdentifiersResp(
-        identifier_results=dict(),
-        identifier_info=earnings_responses.identifier_info,
-        identifier_errors=defaultdict(list, earnings_responses.identifier_errors),
-    )
+
+    results: dict[str, EarningsCallResp] = dict()
+    errors: dict[str, list[str]] = defaultdict(list, earnings_responses.identifier_errors)
+
     for identifier, earnings in earnings_responses.identifier_results.items():
         next_earnings = earnings.next_earnings
         if next_earnings:
-            output_model.identifier_results[identifier] = EarningsCallResp(
-                earnings_calls=[next_earnings]
-            )
+            results[identifier] = EarningsCallResp(earnings_calls=[next_earnings])
         else:
-            output_model.identifier_errors[identifier].append("No next earnings available.")
+            errors[identifier].append("No next earnings available.")
 
-    return output_model
+    return GetEarningsFromIdentifiersResp(
+        identifier_results=results,
+        identifier_errors=errors,
+        identifier_info=earnings_responses.identifier_info,
+    )
 
 
 async def fetch_earnings_from_company_id(
