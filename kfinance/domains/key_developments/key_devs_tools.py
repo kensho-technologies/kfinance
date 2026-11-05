@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date
 from textwrap import dedent
 from typing import Any, Type
@@ -118,14 +119,16 @@ async def get_key_devs_from_identifier(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=[identifier], httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     # check if identifier was resolved
     if identifier not in id_triple_resp.identifiers_to_id_triples:
         return GetKeyDevsFromIdentifierResp(
             identifier_results={},
+            identifier_errors=errors,
             identifier_info={},
-            errors=errors,
         )
 
     id_triple = id_triple_resp.identifiers_to_id_triples[identifier]
@@ -142,14 +145,14 @@ async def get_key_devs_from_identifier(
 
     identifier_results = {}
     if result.errors:
-        errors.append(f"No result found for {identifier}")
+        errors[identifier].append("No result found")
     else:
         identifier_results[identifier] = result
 
     return GetKeyDevsFromIdentifierResp(
         identifier_results=identifier_results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
 
 

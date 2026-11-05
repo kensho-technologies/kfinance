@@ -4,6 +4,7 @@ from decimal import Decimal
 
 import httpx2
 import pytest
+from respx import Router
 
 from kfinance.client.models.decimal_with_unit import Money, Shares
 from kfinance.conftest import (
@@ -46,7 +47,7 @@ CAPITALIZATION_RESP = {
 
 
 @pytest.fixture
-def add_spgi_capitalizations_mock_resp(httpx2_mock) -> None:
+def add_spgi_capitalizations_mock_resp(httpx2_mock: Router) -> None:
     """Add mock response for SPGI capitalization data."""
     httpx2_mock.get(
         f"https://kfinance.kensho.com/api/v1/market_cap/{SPGI_COMPANY_ID}/none/none"
@@ -125,10 +126,12 @@ class TestCapitalizations:
         expected_resp = GetCapitalizationFromIdentifiersResp(
             capitalization=Capitalization.market_cap,
             identifier_results={"SPGI": expected_spgi_resp},
+            identifier_errors={
+                "non-existent": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
         resp = await get_capitalizations_from_identifiers(
             identifiers=["SPGI", "non-existent"],
@@ -141,7 +144,7 @@ class TestCapitalizations:
 
     @pytest.mark.asyncio
     async def test_get_capitalizations_from_identifiers_truncation(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """
         WHEN we fetch market caps for more than one company without start or end dates
@@ -164,6 +167,7 @@ class TestCapitalizations:
         expected_resp = GetCapitalizationFromIdentifiersResp(
             capitalization=Capitalization.market_cap,
             identifier_results={"C_1": expected_company_resp, "C_2": expected_company_resp},
+            identifier_errors={},
             identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
         )
         resp = await get_capitalizations_from_identifiers(

@@ -195,15 +195,7 @@ ValidQuarter = Annotated[
 ]
 
 
-class ToolRespWithErrors(BaseModel):
-    """A tool response with an `errors` field.
-
-    - `errors` is always the last field in the response.
-    - `errors` is only included if there is at least one error.
-    """
-
-    errors: list[str] = Field(default_factory=list)
-
+class _ToolRespWithErrorsBase(BaseModel):
     @model_serializer(mode="wrap")
     def serialize_model(self, handler: Callable) -> Dict[str, Any]:
         """Make `errors` the last response field and only include if there is at least one error."""
@@ -212,6 +204,16 @@ class ToolRespWithErrors(BaseModel):
         if errors:
             data["errors"] = errors
         return data
+
+
+class ToolRespWithErrors(_ToolRespWithErrorsBase):
+    """A tool response with an `errors` field.
+
+    - `errors` is always the last field in the response.
+    - `errors` is only included if there is at least one error.
+    """
+
+    errors: list[str] = Field(default_factory=list)
 
 
 T = TypeVar("T")
@@ -224,11 +226,14 @@ class IdentifierInfoWithResult(BaseModel, Generic[T]):
     data: T
 
 
-class ToolRespWithIdInfoAndErrors(ToolRespWithErrors, Generic[T]):
+class ToolRespWithIdInfoAndErrors(_ToolRespWithErrorsBase, Generic[T]):
     """A tool response with an `errors` field and a `results` dictionary."""
 
     identifier_results: dict[str, T] = Field(exclude=True)  # identifier -> response
-    identifier_info: dict[str, IdentificationTripleWithCompanyInfo] = Field(exclude=True)
+    identifier_errors: dict[str, list[str]] = Field(exclude=True)  # identifier -> error
+    identifier_info: dict[str, IdentificationTripleWithCompanyInfo] = Field(
+        exclude=True
+    )  # identifier -> identifier info
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -247,3 +252,28 @@ class ToolRespWithIdInfoAndErrors(ToolRespWithErrors, Generic[T]):
             )
 
         return output
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def errors(self) -> list[str]:
+        """The errorrs field is computed by adding identifier info to the error for each identifier."""
+        all_errors: list[str] = []
+
+        for identifier, id_errors in self.identifier_errors.items():
+            id_info_messages = [f"identifier: {identifier}"]
+            # The identifier might not have any id info if, for example, the identifier resolution
+            # failed and the error is the failure from that step.
+            if identifier in self.identifier_info:
+                id_triple = self.identifier_info[identifier]
+
+                id_info_messages.append(f"company: {id_triple.company_name}")
+                if id_triple.ticker:
+                    id_info_messages.append(f"ticker: {id_triple.ticker}")
+                if id_triple.country:
+                    id_info_messages.append(f"country: {id_triple.country}")
+
+            for error in id_errors:
+                error_message = f"({'; '.join(id_info_messages)}): {error}"
+                all_errors.append(error_message)
+
+        return all_errors

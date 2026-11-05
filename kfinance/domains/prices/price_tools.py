@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date
 from textwrap import dedent
 from typing import Type
@@ -121,7 +122,9 @@ async def get_prices_from_identifiers(
         identifiers=identifiers, httpx_client=httpx_client
     )
     id_triple_resp.filter_out_companies_without_trading_item_ids()
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -144,7 +147,7 @@ async def get_prices_from_identifiers(
     results: dict[str, PriceHistory] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             results[task.result_key] = task.result
 
@@ -156,8 +159,8 @@ async def get_prices_from_identifiers(
 
     return GetPricesFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
 
 
@@ -190,7 +193,9 @@ async def get_history_metadata_from_identifiers(
         identifiers=identifiers, httpx_client=httpx_client
     )
     id_triple_resp.filter_out_companies_without_trading_item_ids()
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -209,14 +214,14 @@ async def get_history_metadata_from_identifiers(
     results: dict[str, HistoryMetadataResp] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             results[task.result_key] = task.result
 
     return GetHistoryMetadataFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
 
 

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from textwrap import dedent
 from typing import Literal, Type, cast
 
@@ -252,7 +253,9 @@ async def get_estimates_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -279,19 +282,18 @@ async def get_estimates_from_identifiers(
     results: dict[str, CiqEstimates] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             resp: SingleResultResp[CiqEstimates] = task.result
             if resp.result is not None:
                 results[task.result_key] = resp.result
             if resp.error is not None:
-                error_msg = f"{task.result_key}: {resp.error}"
-                errors.append(error_msg)
+                errors[task.result_key].append(resp.error)
 
     resp_model = GetCiqEstimatesFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
         data_source="Capital IQ",
     )
 
@@ -353,7 +355,9 @@ async def get_consensus_target_price_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -372,19 +376,18 @@ async def get_consensus_target_price_from_identifiers(
     results: dict[str, ConsensusTargetPrice] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             resp: SingleResultResp[ConsensusTargetPrice] = task.result
             if resp.result is not None:
                 results[task.result_key] = resp.result
             if resp.error is not None:
-                error_msg = f"{task.result_key}: {resp.error}"
-                errors.append(error_msg)
+                errors[task.result_key].append(resp.error)
 
     return GetConsensusTargetPriceFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
 
 
@@ -407,7 +410,9 @@ async def get_analyst_recommendations_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -426,19 +431,18 @@ async def get_analyst_recommendations_from_identifiers(
     results: dict[str, AnalystRecommendations] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             resp: SingleResultResp[AnalystRecommendations] = task.result
             if resp.result is not None:
                 results[task.result_key] = resp.result
             if resp.error is not None:
-                error_msg = f"{task.result_key}: {resp.error}"
-                errors.append(error_msg)
+                errors[task.result_key].append(resp.error)
 
     return GetAnalystRecommendationsFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
 
 

@@ -3,6 +3,7 @@ import json
 
 import httpx2
 import pytest
+from respx import Router
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.key_developments.key_devs_models import (
@@ -20,7 +21,7 @@ from kfinance.domains.key_developments.key_devs_tools import (
 
 
 @pytest.fixture
-def add_spgi_key_devs_mock_resp(httpx2_mock) -> None:
+def add_spgi_key_devs_mock_resp(httpx2_mock: Router) -> None:
     """Add mock response for SPGI key developments."""
     httpx2_mock.post("https://kfinance.kensho.com/api/v1/key_devs/").respond(
         json={
@@ -137,7 +138,7 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_fetch_key_devs_with_date_range(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """
         WHEN we request key developments with a date range
@@ -165,7 +166,7 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_fetch_key_devs_with_category_filter(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """
         WHEN we request key developments with a category filter
@@ -192,7 +193,7 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_fetch_key_devs_with_event_type_and_transcripts_only(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """
         WHEN we request key developments with an event type and transcripts_only
@@ -239,10 +240,12 @@ class TestKeyDevs:
 
         expected_resp = GetKeyDevsFromIdentifierResp(
             identifier_results={"SPGI": self.expected_spgi_key_devs_response},
+            identifier_errors={
+                "non-existent": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
 
         resp = await get_key_devs_from_identifier(
@@ -259,15 +262,16 @@ class TestKeyDevs:
         # combine results for comparison
         combined_resp = GetKeyDevsFromIdentifierResp(
             identifier_results=resp.identifier_results,
+            # The dictionary merge only works correctly since identifiers are different.
+            identifier_errors=resp.identifier_errors | resp_with_error.identifier_errors,
             identifier_info=resp.identifier_info,
-            errors=resp.errors + resp_with_error.errors,
         )
 
         assert combined_resp == expected_resp
 
     @pytest.mark.asyncio
     async def test_get_key_devs_with_api_error(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """
         WHEN the key devs API returns an error (e.g. no data available)
@@ -284,8 +288,8 @@ class TestKeyDevs:
 
         expected_resp = GetKeyDevsFromIdentifierResp(
             identifier_results={},
+            identifier_errors={"SPGI": ["No result found"]},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=["No result found for SPGI"],
         )
 
         resp = await get_key_devs_from_identifier(
@@ -297,7 +301,7 @@ class TestKeyDevs:
 
     @pytest.mark.asyncio
     async def test_key_devs_with_optional_fields_none(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """
         WHEN the API returns key developments with optional fields as None
