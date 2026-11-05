@@ -195,18 +195,7 @@ ValidQuarter = Annotated[
 ]
 
 
-class _ToolRespWithErrorsBase(BaseModel, abc.ABC):
-    """A tool response with an `errors` field.
-
-    - `errors` is always the last field in the response.
-    - `errors` is only included if there is at least one error.
-    """
-
-    @property
-    @abc.abstractmethod
-    def errors(self) -> list[str]:
-        raise NotImplementedError()
-
+class _ToolRespWithErrorsBase(BaseModel):
     @model_serializer(mode="wrap")
     def serialize_model(self, handler: Callable) -> Dict[str, Any]:
         """Make `errors` the last response field and only include if there is at least one error."""
@@ -218,7 +207,11 @@ class _ToolRespWithErrorsBase(BaseModel, abc.ABC):
 
 
 class ToolRespWithErrors(_ToolRespWithErrorsBase):
-    """A tool response with a directly writable `errors` field."""
+    """A tool response with an `errors` field.
+
+    - `errors` is always the last field in the response.
+    - `errors` is only included if there is at least one error.
+    """
 
     errors: list[str] = Field(default_factory=list)
 

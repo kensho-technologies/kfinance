@@ -127,7 +127,7 @@ async def get_key_devs_from_identifier(
     if identifier not in id_triple_resp.identifiers_to_id_triples:
         return GetKeyDevsFromIdentifierResp(
             identifier_results={},
-            identifier_errors={},
+            identifier_errors=errors,
             identifier_info={},
         )
 

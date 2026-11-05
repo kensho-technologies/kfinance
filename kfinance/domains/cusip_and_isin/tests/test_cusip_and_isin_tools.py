@@ -69,8 +69,10 @@ class TestCusipAndIsin:
 
         expected_resp = GetCusipOrIsinFromIdentifiersResp(
             identifier_results={"SPGI": expected_response},
+            identifier_errors={
+                "private_company": ["private_company is a private company without a security_id."]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=["private_company is a private company without a security_id."],
         )
 
         resp = await get_cusip_or_isin_from_identifiers(
