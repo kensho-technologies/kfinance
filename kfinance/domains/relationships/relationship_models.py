@@ -83,7 +83,6 @@ AnyRelationshipType = RelationshipType | BusinessRelationshipType | CompanyRelat
 
 
 class RelationshipSubtype(StrEnum):
-
     # Creditor/borrower relationships related to bankruptcy and debt private placement transactions
     bankruptcy_and_debt_private_placement = "bankruptcy_and_debt_private_placement"
 
