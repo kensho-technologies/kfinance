@@ -55,7 +55,7 @@ class GetUltimateParentPathsFromIdentifiers(KfinanceTool):
         Function: get_ultimate_parent_paths_from_identifiers(identifiers=["Instagram"])
     """).strip()
     args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
-    accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
+    accepted_permissions: set[Permission] | None = {Permission.CompanyRelationshipsPermission}
 
     async def _arun(self, identifiers: list[str]) -> GetUltimateParentPathsFromIdentifiersResp:
         """"""
@@ -195,7 +195,7 @@ class SearchCorporateTreeFromIdentifiers(KfinanceTool):
         Function: search_corporate_tree_from_identifiers(identifiers=["Dell Technologies"], limit=null)
     """).strip()
     args_schema: Type[BaseModel] = SearchCorporateTreeFromIdentifiersArgs
-    accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
+    accepted_permissions: set[Permission] | None = {Permission.CompanyRelationshipsPermission}
 
     async def _arun(
         self,
