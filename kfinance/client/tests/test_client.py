@@ -6,10 +6,12 @@ from strenum import StrEnum
 
 from kfinance.client.kfinance import Client
 from kfinance.client.permission_models import Permission
+from kfinance.domains.corporate_tree.corporate_tree_tools import (
+    GetUltimateParentPathsFromIdentifiers,
+    SearchCorporateTreeFromIdentifiers,
+)
 from kfinance.domains.earnings.earning_tools import (
     GetEarningsFromIdentifiers,
-    GetLatestEarningsFromIdentifiers,
-    GetNextEarningsFromIdentifiers,
     GetTranscriptFromKeyDevId,
 )
 from kfinance.domains.relationships.relationship_models import (
@@ -71,6 +73,29 @@ class TestLangchainTools:
         assert GetFinancialStatementFromIdentifiers not in tool_classes
 
     @pytest.mark.parametrize(
+        "user_permission, has_access",
+        [
+            pytest.param(Permission.CompanyRelationshipsPermission, True, id="granted"),
+            # Business relationships use a similarly named but separate permission.
+            pytest.param(
+                Permission.BusinessRelationshipsPermission, False, id="business relationships"
+            ),
+        ],
+    )
+    def test_corporate_tree_tools_require_company_relationships_permission(
+        self, user_permission: Permission, has_access: bool, mock_client: Client
+    ) -> None:
+        """
+        GIVEN a user with a single permission
+        WHEN we filter tools by permissions
+        THEN both corporate tree tools are returned only for CompanyRelationshipsPermission.
+        """
+        mock_client.kfinance_api_client._user_permissions = {user_permission}  # noqa: SLF001
+        tool_classes = [type(t) for t in mock_client.langchain_tools]
+        assert (GetUltimateParentPathsFromIdentifiers in tool_classes) is has_access
+        assert (SearchCorporateTreeFromIdentifiers in tool_classes) is has_access
+
+    @pytest.mark.parametrize(
         "user_permission, expected_tool",
         [
             pytest.param(
@@ -94,10 +119,8 @@ class TestLangchainTools:
         """
         mock_client.kfinance_api_client._user_permissions = {user_permission}  # noqa: SLF001
         tool_classes = [type(t) for t in mock_client.langchain_tools]
-        # User should have access to GetEarnings, GetNextEarnings, GetLatestEarnings, GetTranscript
+        # User should have access to GetEarnings and GetTranscript
         assert GetEarningsFromIdentifiers in tool_classes
-        assert GetNextEarningsFromIdentifiers in tool_classes
-        assert GetLatestEarningsFromIdentifiers in tool_classes
         assert expected_tool in tool_classes
         # User should have access to functions that don't require permissions
         assert GetLatest in tool_classes
