@@ -267,16 +267,20 @@ class ToolRespWithIdInfoAndErrors(_ToolRespWithErrorsBase, Generic[T]):
         all_errors: list[str] = []
 
         for identifier, id_errors in self.identifier_errors.items():
-            id_triple = self.identifier_info[identifier]
+            id_info_messages = [f"identifier: {identifier}"]
+            # The identifier might not have any id info if, for example, the identifier resolution
+            # failed and the error is the failure from that step.
+            if identifier in self.identifier_info:
+                id_triple = self.identifier_info[identifier]
 
-            messages = [f"identifier: {identifier}", f"company: {id_triple.company_name}"]
-            if id_triple.ticker:
-                messages.append(f"ticker: {id_triple.ticker}")
-            if id_triple.country:
-                messages.append(f"country: {id_triple.country}")
+                id_info_messages.append(f"company: {id_triple.company_name}")
+                if id_triple.ticker:
+                    id_info_messages.append(f"ticker: {id_triple.ticker}")
+                if id_triple.country:
+                    id_info_messages.append(f"country: {id_triple.country}")
 
             for error in id_errors:
-                error_message = f"({';'.join(messages)}): {error}"
+                error_message = f"({'; '.join(id_info_messages)}): {error}"
                 all_errors.append(error_message)
 
         return all_errors
