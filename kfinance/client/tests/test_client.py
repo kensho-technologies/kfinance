@@ -33,6 +33,12 @@ class TestLangchainTools:
                 ["BusinessRelationshipsPermission"],
                 {Permission.BusinessRelationshipsPermission},
             ),
+            pytest.param(
+                # The API reports a renamed permission under both its current and former names.
+                ["BusinessRelationshipsPermission", "RelationshipPermission"],
+                {Permission.BusinessRelationshipsPermission, Permission.RelationshipPermission},
+                id="legacy permission names parse without a warning.",
+            ),
             pytest.param([], set(), id="empty permissions don't raise."),
             pytest.param(
                 ["InvalidPermission"], set(), id="invalid permissions get logged but don't raise."

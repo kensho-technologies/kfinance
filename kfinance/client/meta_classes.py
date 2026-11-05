@@ -17,7 +17,6 @@ from kfinance.domains.capitalizations.capitalization_models import Capitalizatio
 from kfinance.domains.companies.company_models import (
     Auditors,
     CompanyDescriptions,
-    CompanyIdAndName,
     CompanyOtherNames,
     NativeName,
 )
@@ -30,7 +29,10 @@ from kfinance.domains.professionals.professionals_models import (
     ProfessionalType,
     Timeframe,
 )
-from kfinance.domains.relationships.relationship_models import RelationshipType
+from kfinance.domains.relationships.relationship_models import (
+    RelatedCompany,
+    RelationshipType,
+)
 from kfinance.domains.segments.segment_models import SegmentType
 
 
@@ -329,7 +331,7 @@ class CompanyFunctionsMetaClass:
             relationship_type=relationship_type,
         )
 
-        def to_companies(companies: list[CompanyIdAndName] | None) -> "Companies":
+        def to_companies(companies: list[RelatedCompany] | None) -> "Companies":
             return Companies(
                 kfinance_api_client=self.kfinance_api_client,
                 company_ids=[c.company_id for c in (companies or [])],

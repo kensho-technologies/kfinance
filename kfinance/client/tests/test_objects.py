@@ -22,7 +22,7 @@ from kfinance.client.kfinance import (
 )
 from kfinance.client.models.response_models import PostResponse, SingleResultResp
 from kfinance.domains.capitalizations.capitalization_models import Capitalizations
-from kfinance.domains.companies.company_models import CompanyIdAndName, IdentificationTriple
+from kfinance.domains.companies.company_models import IdentificationTriple
 from kfinance.domains.earnings.earning_models import EarningsCallResp
 from kfinance.domains.estimates.estimates_models import (
     AnalystRecommendations,
@@ -40,6 +40,7 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_models imp
 )
 from kfinance.domains.prices.price_models import HistoryMetadataResp
 from kfinance.domains.relationships.relationship_models import (
+    RelatedCompany,
     RelationshipResponse,
     RelationshipType,
 )
@@ -318,19 +319,19 @@ MOCK_COMPANY_DB = {
             }
         },
         RelationshipType.supplier: RelationshipResponse(
-            current=[CompanyIdAndName(company_name="foo", company_id=883103)],
+            current=[RelatedCompany(company_name="foo", company_id=883103)],
             previous=[
-                CompanyIdAndName(company_name="bar", company_id=472898),
-                CompanyIdAndName(company_name="baz", company_id=8182358),
+                RelatedCompany(company_name="bar", company_id=472898),
+                RelatedCompany(company_name="baz", company_id=8182358),
             ],
         ),
         # sponsored_fund comes from the Company Relationships dataset, so it also has
         # pending and cancelled relationships.
         RelationshipType.sponsored_fund: RelationshipResponse(
-            current=[CompanyIdAndName(company_name="foo", company_id=883103)],
-            previous=[CompanyIdAndName(company_name="bar", company_id=472898)],
-            pending=[CompanyIdAndName(company_name="baz", company_id=8182358)],
-            cancelled=[CompanyIdAndName(company_name="qux", company_id=251994106)],
+            current=[RelatedCompany(company_name="foo", company_id=883103)],
+            previous=[RelatedCompany(company_name="bar", company_id=472898)],
+            pending=[RelatedCompany(company_name="baz", company_id=8182358)],
+            cancelled=[RelatedCompany(company_name="qux", company_id=251994106)],
         ),
     },
     31696: {"info": {"name": "MongoMusic, Inc."}},

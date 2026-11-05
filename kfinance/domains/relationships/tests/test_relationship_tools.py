@@ -4,11 +4,12 @@ import pytest
 from strenum import StrEnum
 
 from kfinance.conftest import SPGI_ID_TRIPLE
-from kfinance.domains.companies.company_models import CompanyIdAndName
 from kfinance.domains.relationships.relationship_models import (
     BusinessRelationshipType,
     CompanyRelationshipType,
+    RelatedCompany,
     RelationshipResponse,
+    RelationshipSubtype,
     RelationshipType,
 )
 from kfinance.domains.relationships.relationship_tools import (
@@ -22,10 +23,10 @@ from kfinance.domains.relationships.relationship_tools import (
 
 class TestRelationships:
     expected_spgi_relationship_response = RelationshipResponse(
-        current=[CompanyIdAndName(company_id=883103, company_name="CRISIL Limited")],
+        current=[RelatedCompany(company_id=883103, company_name="CRISIL Limited")],
         previous=[
-            CompanyIdAndName(company_id=472898, company_name="Morgan Stanley"),
-            CompanyIdAndName(company_id=8182358, company_name="Eloqua, Inc."),
+            RelatedCompany(company_id=472898, company_name="Morgan Stanley"),
+            RelatedCompany(company_id=8182358, company_name="Eloqua, Inc."),
         ],
     )
 
@@ -113,6 +114,41 @@ class TestRelationships:
             "pending": [{"company_id": "C_3", "company_name": "Company 3"}],
             "cancelled": [{"company_id": "C_4", "company_name": "Company 4"}],
         }
+
+    @pytest.mark.asyncio
+    async def test_get_relationship_surfaces_relationship_subtype(
+        self, httpx_client: httpx2.AsyncClient, add_spgi_creditor_mock_resp: None
+    ) -> None:
+        """
+        GIVEN a creditor response merged from both relationship datasets
+        WHEN we fetch that relationship
+        THEN the narrower Company Relationships rows keep their relationship_subtype and the
+            general Business Relationships rows omit it.
+        """
+
+        resp = await get_relationship_from_identifiers(
+            identifiers=["SPGI"],
+            relationship_type=RelationshipType.creditor,
+            httpx_client=httpx_client,
+        )
+
+        assert resp.identifier_results["SPGI"].current == [
+            RelatedCompany(company_id=1, company_name="General Lender"),
+            RelatedCompany(
+                company_id=2,
+                company_name="Private Placement Lender",
+                relationship_subtype=RelationshipSubtype.bankruptcy_and_debt_private_placement,
+            ),
+        ]
+        dumped = resp.model_dump(mode="json", exclude_none=True)
+        assert dumped["results"]["SPGI"]["data"]["current"] == [
+            {"company_id": "C_1", "company_name": "General Lender"},
+            {
+                "company_id": "C_2",
+                "company_name": "Private Placement Lender",
+                "relationship_subtype": "bankruptcy_and_debt_private_placement",
+            },
+        ]
 
 
 class TestRelationshipTypeEnums:

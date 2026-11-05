@@ -19,7 +19,6 @@ from kfinance.client.models.response_models import SingleResultResp
 from kfinance.conftest import SPGI_COMPANY_ID
 from kfinance.domains.companies.company_models import (
     CompanyDescriptions,
-    CompanyIdAndName,
     CompanyOtherNames,
 )
 from kfinance.domains.estimates.estimates_models import (
@@ -31,6 +30,7 @@ from kfinance.domains.estimates.estimates_models import (
 from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType, KeyDevEventType
 from kfinance.domains.ratings.ratings_models import IssuerRatingsResp, SecurityRatingsResp
 from kfinance.domains.relationships.relationship_models import (
+    RelatedCompany,
     RelationshipResponse,
     RelationshipType,
 )
@@ -625,10 +625,10 @@ class TestFetchCompaniesFromRelationship:
         }
 
         expected_result = RelationshipResponse(
-            current=[CompanyIdAndName(company_name="foo", company_id=883103)],
+            current=[RelatedCompany(company_name="foo", company_id=883103)],
             previous=[
-                CompanyIdAndName(company_name="bar", company_id=472898),
-                CompanyIdAndName(company_name="baz", company_id=8182358),
+                RelatedCompany(company_name="bar", company_id=472898),
+                RelatedCompany(company_name="baz", company_id=8182358),
             ],
         )
 
@@ -658,10 +658,10 @@ class TestFetchCompaniesFromRelationship:
         }
 
         expected_result = RelationshipResponse(
-            current=[CompanyIdAndName(company_name="foo", company_id=1)],
-            previous=[CompanyIdAndName(company_name="bar", company_id=2)],
-            pending=[CompanyIdAndName(company_name="baz", company_id=3)],
-            cancelled=[CompanyIdAndName(company_name="qux", company_id=4)],
+            current=[RelatedCompany(company_name="foo", company_id=1)],
+            previous=[RelatedCompany(company_name="bar", company_id=2)],
+            pending=[RelatedCompany(company_name="baz", company_id=3)],
+            cancelled=[RelatedCompany(company_name="qux", company_id=4)],
         )
 
         httpx2_mock.get(

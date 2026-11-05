@@ -82,11 +82,23 @@ class CompanyRelationshipType(StrEnum):
 AnyRelationshipType = RelationshipType | BusinessRelationshipType | CompanyRelationshipType
 
 
+class RelationshipSubtype(StrEnum):
+
+    # Creditor/borrower relationships related to bankruptcy and debt private placement transactions
+    bankruptcy_and_debt_private_placement = "bankruptcy_and_debt_private_placement"
+
+
+class RelatedCompany(CompanyIdAndName):
+    """A company on the other side of a relationship."""
+
+    relationship_subtype: RelationshipSubtype | None = None
+
+
 class RelationshipResponse(BaseModel):
     """A response from the relationship endpoint that includes both company_id and name."""
 
-    current: list[CompanyIdAndName]
-    previous: list[CompanyIdAndName]
+    current: list[RelatedCompany]
+    previous: list[RelatedCompany]
     # The API may omit these keys entirely depending on client entitlements
-    pending: list[CompanyIdAndName] | None = None
-    cancelled: list[CompanyIdAndName] | None = None
+    pending: list[RelatedCompany] | None = None
+    cancelled: list[RelatedCompany] | None = None

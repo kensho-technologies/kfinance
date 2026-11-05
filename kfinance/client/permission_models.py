@@ -23,6 +23,9 @@ class Permission(StrEnum):
     # These permissions are not used by the client, but some users may have these permissions
     # Having them listed here will prevent an avoidable KeyError exception being logged.
     OnlyStaffPermission = "OnlyStaffPermission"
+    # The former name of BusinessRelationshipsPermission. The API still reports it alongside the
+    # current name so that clients released before the rename keep working.
+    RelationshipPermission = "RelationshipPermission"
     PrivateCompanyFinancialsPermissionExcludeRedistribution = (
         "PrivateCompanyFinancialsPermissionExcludeRedistribution"
     )

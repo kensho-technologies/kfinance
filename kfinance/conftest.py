@@ -186,6 +186,33 @@ def add_spgi_supplier_mock_resp(httpx2_mock: Router) -> None:
 
 
 @pytest.fixture
+def add_spgi_creditor_mock_resp(httpx2_mock: Router) -> None:
+    """Add mock response for SPGI creditor relationship.
+
+    Served as it would be to a client entitled to both relationship datasets: the two datasets
+    are merged, and the Company Relationships rows carry a relationship_subtype because that
+    dataset defines the relationship more narrowly.
+    """
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/creditor"
+    ).respond(
+        json={
+            "current": [
+                {"company_id": 1, "company_name": "General Lender"},
+                {
+                    "company_id": 2,
+                    "company_name": "Private Placement Lender",
+                    "relationship_subtype": "bankruptcy_and_debt_private_placement",
+                },
+            ],
+            "previous": [],
+            "pending": [],
+            "cancelled": [],
+        }
+    )
+
+
+@pytest.fixture
 def add_spgi_sponsored_fund_mock_resp(httpx2_mock: Router) -> None:
     """Add mock response for SPGI sponsored_fund relationship."""
     httpx2_mock.get(
