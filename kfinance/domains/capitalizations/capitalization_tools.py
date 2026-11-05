@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date
 from textwrap import dedent
 from typing import Annotated, Type
@@ -111,7 +112,9 @@ async def get_capitalizations_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -132,7 +135,7 @@ async def get_capitalizations_from_identifiers(
     results: dict[str, Capitalizations] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             capitalization_response: Capitalizations = task.result
             # If we return results for more than one company and the start and end dates are unset,
@@ -160,8 +163,8 @@ async def get_capitalizations_from_identifiers(
     return GetCapitalizationFromIdentifiersResp(
         capitalization=capitalization,
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
 
 

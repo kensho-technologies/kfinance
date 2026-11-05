@@ -195,14 +195,17 @@ ValidQuarter = Annotated[
 ]
 
 
-class ToolRespWithErrors(BaseModel):
+class _ToolRespWithErrorsBase(BaseModel, abc.ABC):
     """A tool response with an `errors` field.
 
     - `errors` is always the last field in the response.
     - `errors` is only included if there is at least one error.
     """
 
-    errors: list[str] = Field(default_factory=list)
+    @property
+    @abc.abstractmethod
+    def errors(self) -> list[str]:
+        raise NotImplementedError()
 
     @model_serializer(mode="wrap")
     def serialize_model(self, handler: Callable) -> Dict[str, Any]:
@@ -212,6 +215,12 @@ class ToolRespWithErrors(BaseModel):
         if errors:
             data["errors"] = errors
         return data
+
+
+class ToolRespWithErrors(_ToolRespWithErrorsBase):
+    """A tool response with a directly writable `errors` field."""
+
+    errors: list[str] = Field(default_factory=list)
 
 
 T = TypeVar("T")
@@ -224,11 +233,14 @@ class IdentifierInfoWithResult(BaseModel, Generic[T]):
     data: T
 
 
-class ToolRespWithIdInfoAndErrors(ToolRespWithErrors, Generic[T]):
+class ToolRespWithIdInfoAndErrors(_ToolRespWithErrorsBase, Generic[T]):
     """A tool response with an `errors` field and a `results` dictionary."""
 
     identifier_results: dict[str, T] = Field(exclude=True)  # identifier -> response
-    identifier_info: dict[str, IdentificationTripleWithCompanyInfo] = Field(exclude=True)
+    identifier_errors: dict[str, list[str]] = Field(exclude=True)  # identifier -> error
+    identifier_info: dict[str, IdentificationTripleWithCompanyInfo] = Field(
+        exclude=True
+    )  # identifier -> identifier info
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -247,3 +259,24 @@ class ToolRespWithIdInfoAndErrors(ToolRespWithErrors, Generic[T]):
             )
 
         return output
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def errors(self) -> list[str]:
+        """The errorrs field is computed by adding identifier info to the error for each identifier."""
+        all_errors: list[str] = []
+
+        for identifier, id_errors in self.identifier_errors.items():
+            id_triple = self.identifier_info[identifier]
+
+            messages = [f"identifier: {identifier}", f"company: {id_triple.company_name}"]
+            if id_triple.ticker:
+                messages.append(f"ticker: {id_triple.ticker}")
+            if id_triple.country:
+                messages.append(f"country: {id_triple.country}")
+
+            for error in id_errors:
+                error_message = f"({';'.join(messages)}): {error}"
+                all_errors.append(error_message)
+
+        return all_errors
