@@ -1,3 +1,4 @@
+from collections import defaultdict
 from textwrap import dedent
 from typing import Any, Literal, Type, cast
 
@@ -182,7 +183,9 @@ async def get_visible_alpha_surprises_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     metadata: dict[str, AlternativeLineItemMetadata] = {}
     if id_triple_resp.company_ids:
@@ -201,7 +204,7 @@ async def get_visible_alpha_surprises_from_identifiers(
 
         for company_id_str, error in surprises_resp.errors.items():
             original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
-            errors.append(f"{original_identifier}: {error}")
+            errors[original_identifier].append(error)
 
         identifier_to_results = {}
         for company_id_str, estimates_data in surprises_resp.results.items():
@@ -218,8 +221,8 @@ async def get_visible_alpha_surprises_from_identifiers(
 
     resp_model = GetVaSurpriseFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
         metadata=metadata,
         data_source="Visible Alpha",
     )

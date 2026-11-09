@@ -1,6 +1,7 @@
 import httpx2
 from langchain_core.utils.function_calling import convert_to_openai_tool
 import pytest
+from respx import Router
 
 from kfinance.client.kfinance import Client
 from kfinance.client.models.response_models import PostResponseWithLineItemMetadata
@@ -45,7 +46,7 @@ class TestGetFinancialLineItemFromIdentifiers:
     }
 
     @pytest.fixture
-    def add_spgi_line_item_mock_resp(self, httpx2_mock) -> None:
+    def add_spgi_line_item_mock_resp(self, httpx2_mock: Router) -> None:
         """Add mock response for SPGI line items."""
         httpx2_mock.post("https://kfinance.kensho.com/api/v1/line_item/").respond(
             json={"results": {str(SPGI_ID_TRIPLE.company_id): self.line_item_resp}, "errors": {}}
@@ -111,17 +112,19 @@ class TestGetFinancialLineItemFromIdentifiers:
         expected_li = LineItemResp.model_validate(self.line_item_resp)
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             identifier_results={"SPGI": expected_li},
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
             notes=expected_notes,
             data_source="Capital IQ",
             requested_line_item="revenue",
         )
 
         resp = await get_financial_line_item_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             line_item="revenue",
             httpx_client=httpx_client,
             calendar_type=calendar_type,
@@ -132,7 +135,7 @@ class TestGetFinancialLineItemFromIdentifiers:
 
     @pytest.mark.asyncio
     async def test_api_returns_error_for_company(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """
         WHEN the API returns an error in the errors dict for a company_id
@@ -147,8 +150,8 @@ class TestGetFinancialLineItemFromIdentifiers:
 
         expected_resp = GetFinancialLineItemFromIdentifiersResp(
             identifier_results={},
+            identifier_errors={"SPGI": ["No results found."]},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=["SPGI: No results found."],
             notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
             data_source="Capital IQ",
             requested_line_item="revenue",
@@ -163,7 +166,9 @@ class TestGetFinancialLineItemFromIdentifiers:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(self, httpx_client: httpx2.AsyncClient, httpx2_mock) -> None:
+    async def test_most_recent_request(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
         """
         WHEN we request most recent line items for multiple companies
         THEN we only get back the most recent line item for each company
@@ -190,6 +195,7 @@ class TestGetFinancialLineItemFromIdentifiers:
         )
         expected_response = GetFinancialLineItemFromIdentifiersResp(
             identifier_results={"C_1": line_item_resp, "C_2": line_item_resp},
+            identifier_errors={},
             identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
             notes=[SOURCE_LINK_NOTE, FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
             data_source="Capital IQ",

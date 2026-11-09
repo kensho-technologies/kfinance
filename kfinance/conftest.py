@@ -44,8 +44,17 @@ FAKE_COMPANY_2_ID_TRIPLE = IdentificationTripleWithCompanyInfo(
     country="USA",
 )
 
+PRIVATE_COMPANY_ID_TRIPLE = IdentificationTripleWithCompanyInfo(
+    company_id=1,
+    security_id=None,
+    trading_item_id=None,
+    company_name="Private Company",
+    ticker=None,
+    country="USA",
+)
+
 NON_EXISTENT_ERROR = {
-    "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+    "error": "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
 }
 
 
@@ -102,18 +111,18 @@ def mock_client(httpx2_mock: Router) -> Client:
         # Fetch SPGI
         ("SPGI",): {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")},
         # Fetch a non-existent company (which will include an error)
-        ("non-existent",): {"non-existent": NON_EXISTENT_ERROR},
+        ("non-existent-company",): {"non-existent-company": NON_EXISTENT_ERROR},
         # Fetch a fake company
         ("C_1",): {"C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json")},
         # Fetch SPGI and a non-existent company (which will include an error)
-        ("SPGI", "non-existent"): {
+        ("SPGI", "non-existent-company"): {
             "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-            "non-existent": NON_EXISTENT_ERROR,
+            "non-existent-company": NON_EXISTENT_ERROR,
         },
         # Fetch SPGI and a private company (which will only have a company_id but no security or trading item id.)
         ("SPGI", "private_company"): {
             "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-            "private_company": {"company_id": 1, "security_id": None, "trading_item_id": None},
+            "private_company": PRIVATE_COMPANY_ID_TRIPLE.model_dump(mode="json"),
         },
         ("C_1", "C_2"): {
             "C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json"),
@@ -137,23 +146,16 @@ def httpx_client(httpx2_mock: Router) -> httpx2.AsyncClient:
         # Fetch SPGI
         ("SPGI",): {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")},
         # Fetch non-existent company (only includes an error)
-        ("non-existent",): {"non-existent": NON_EXISTENT_ERROR},
+        ("non-existent-company",): {"non-existent-company": NON_EXISTENT_ERROR},
         # Fetch SPGI and a non-existent company (which will include an error)
-        ("SPGI", "non-existent"): {
+        ("SPGI", "non-existent-company"): {
             "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-            "non-existent": NON_EXISTENT_ERROR,
+            "non-existent-company": NON_EXISTENT_ERROR,
         },
         # Fetch SPGI and a private company (which will only have a company_id but no security or trading item id.)
         ("SPGI", "private_company"): {
             "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-            "private_company": {
-                "company_id": 1,
-                "security_id": None,
-                "trading_item_id": None,
-                "company_name": "Private Company",
-                "ticker": None,
-                "country": "USA",
-            },
+            "private_company": PRIVATE_COMPANY_ID_TRIPLE.model_dump(mode="json"),
         },
         # Fetch C_1 and C_2 (for multi-company testing)
         ("C_1", "C_2"): {

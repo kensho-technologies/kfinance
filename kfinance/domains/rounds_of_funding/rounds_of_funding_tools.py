@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date
 from textwrap import dedent
 from typing import Literal, Type
@@ -332,7 +333,9 @@ async def get_rounds_of_funding_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -352,7 +355,7 @@ async def get_rounds_of_funding_from_identifiers(
     results: dict[str, RoundsOfFundingResp] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             results[task.result_key] = task.result
 
@@ -366,8 +369,8 @@ async def get_rounds_of_funding_from_identifiers(
 
     return GetRoundsOfFundingFromIdentifiersResp(
         identifier_results=sorted_responses,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
 
 
@@ -516,7 +519,9 @@ async def get_funding_summary_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks: list[AsyncTask[str]] = [
         AsyncTask(
@@ -536,7 +541,7 @@ async def get_funding_summary_from_identifiers(
     rounds_of_funding_responses: dict[str, RoundsOfFundingResp] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             rounds_of_funding_responses[task.result_key] = task.result
 
@@ -573,6 +578,6 @@ async def get_funding_summary_from_identifiers(
 
     return GetFundingSummaryFromIdentifiersResp(
         identifier_results=summaries,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )

@@ -74,7 +74,9 @@ async def get_ultimate_parent_paths_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -93,14 +95,14 @@ async def get_ultimate_parent_paths_from_identifiers(
     results: dict[str, UltimateParentPathsResponse] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             results[task.result_key] = task.result
 
     return GetUltimateParentPathsFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
 
 
@@ -232,7 +234,9 @@ async def search_corporate_tree_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -256,14 +260,14 @@ async def search_corporate_tree_from_identifiers(
     results: dict[str, CorporateTreeSearchResult] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             results[task.result_key] = task.result
 
     return SearchCorporateTreeFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
 
 

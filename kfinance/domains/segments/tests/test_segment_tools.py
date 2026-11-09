@@ -1,5 +1,8 @@
+from typing import Any
+
 import httpx2
 import pytest
+from respx import Router
 
 from kfinance.client.models.response_models import PostResponse
 from kfinance.conftest import FAKE_COMPANY_1_ID_TRIPLE, FAKE_COMPANY_2_ID_TRIPLE, SPGI_ID_TRIPLE
@@ -17,7 +20,7 @@ from kfinance.domains.segments.segment_tools import (
 
 
 class TestSegments:
-    segments_response = {
+    segments_response: dict[str, Any] = {
         "currency": "USD",
         "periods": {
             "CY2020": {
@@ -56,7 +59,7 @@ class TestSegments:
     }
 
     @pytest.fixture
-    def add_spgi_segments_mock_resp(self, httpx2_mock) -> None:
+    def add_spgi_segments_mock_resp(self, httpx2_mock: Router) -> None:
         """Add mock response for SPGI segments."""
         httpx2_mock.post("https://kfinance.kensho.com/api/v1/segments/").respond(
             json={
@@ -104,16 +107,18 @@ class TestSegments:
         expected_seg = SegmentsResp.model_validate(self.segments_response)
         expected_resp = GetSegmentsFromIdentifiersResp(
             identifier_results={"SPGI": expected_seg},
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
             data_source="Capital IQ",
         )
 
         resp = await get_segments_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             segment_type=SegmentType.business,
             httpx_client=httpx_client,
         )
@@ -122,7 +127,9 @@ class TestSegments:
         assert resp.data_source == "Capital IQ"
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(self, httpx_client: httpx2.AsyncClient, httpx2_mock) -> None:
+    async def test_most_recent_request(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
         """
         WHEN we request most recent segments for multiple companies
         THEN we only get back the most recent segment for each company
@@ -156,6 +163,7 @@ class TestSegments:
                 "C_1": expected_single_company_response,
                 "C_2": expected_single_company_response,
             },
+            identifier_errors={},
             identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
             data_source="Capital IQ",
@@ -181,17 +189,18 @@ class TestSegments:
 
         expected_resp = GetSegmentsFromIdentifiersResp(
             identifier_results={},
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={},
-            errors=[
-                "No identification triple found for the provided identifier:"
-                " NON-EXISTENT of type: ticker"
-            ],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
             data_source="Capital IQ",
         )
 
         resp = await get_segments_from_identifiers(
-            identifiers=["non-existent"],
+            identifiers=["non-existent-company"],
             segment_type=SegmentType.business,
             httpx_client=httpx_client,
         )
