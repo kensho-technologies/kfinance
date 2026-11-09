@@ -110,14 +110,16 @@ class TestEarnings:
                     }
                 )
             },
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
 
         resp = await get_earnings_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
@@ -222,7 +224,10 @@ class TestEarnings:
         resp = await tool.arun_without_langchain(identifiers=["SPGI"], earnings_timeframe="next")
 
         assert resp["results"] == {}
-        assert "No next earnings available for SPGI." in resp["errors"]
+        assert (
+            f"(identifier: SPGI; company: {SPGI_ID_TRIPLE.company_name}; ticker: {SPGI_ID_TRIPLE.ticker}; country: {SPGI_ID_TRIPLE.country}): No next earnings available."
+            in resp["errors"]
+        )
 
     def test_earnings_call_resp_accepts_field_name_and_api_alias(self) -> None:
         """

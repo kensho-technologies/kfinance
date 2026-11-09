@@ -60,12 +60,14 @@ class TestRelationships:
             relationship_type=RelationshipType.supplier,
             identifier_results={"SPGI": self.expected_spgi_relationship_response},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
         )
         resp = await get_relationship_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             relationship_type=RelationshipType.supplier,
             httpx_client=httpx_client,
         )

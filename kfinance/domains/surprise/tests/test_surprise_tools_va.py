@@ -186,13 +186,13 @@ class TestGetSurprisesFromIdentifiersVa:
         THEN it surfaces in errors and the valid result is still returned
         """
         resp = await get_visible_alpha_surprises_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
         assert "SPGI" in resp.identifier_results
         assert len(resp.errors) == 1
-        assert "NON-EXISTENT" in resp.errors[0]
+        assert "NON-EXISTENT-COMPANY" in resp.errors[0]
 
     @pytest.mark.asyncio
     async def test_api_error_mapped_back_to_identifier(

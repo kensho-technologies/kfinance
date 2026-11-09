@@ -45,7 +45,7 @@ class EntityIdResp(BaseModel):
         {
             'data': {
                 'USA': {'entity_id': 12425677, 'entity_name': 'United States', 'ticker': null, 'country': 'USA'},
-                'non-existent': {'error': 'No identification triple found for the provided identifier: NON-EXISTENT of type: ticker'}
+                'non-existent-company': {'error': 'No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker'}
             }
         }
 
@@ -55,7 +55,7 @@ class EntityIdResp(BaseModel):
                 'USA': {'entity_id': 12425677, 'entity_name': 'United States', 'ticker': null, 'country': 'USA'},
             },
             'errors': {
-                'non-existent': 'No identification triple found for the provided identifier: NON-EXISTENT of type: ticker'
+                'non-existent-company': 'No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker'
             }
         }
 

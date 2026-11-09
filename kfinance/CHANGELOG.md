@@ -10,6 +10,10 @@
   response statuses: `pending` and `cancelled`.
 - Relationship tools now surface a `relationship_subtype` for each relationship, where applicable.
 
+## v11.2.0
+- Update errors in tool call results to include company information - in particular,
+  company name, ticker, and country.
+
 ## v11.1.0
 - Add `CompanyRelationshipsPermission` and corporate tree tools: `get_ultimate_parent_paths_from_identifiers` and `search_corporate_tree_from_identifiers`.
 

@@ -1,5 +1,6 @@
 import httpx2
 import pytest
+from respx import Router
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE, SPGI_TICKER
 from kfinance.domains.companies.company_models import (
@@ -65,14 +66,14 @@ class TestGetCompanyInfo:
         expected_resp = GetInfoFromIdentifiersResp(
             results={"SPGI": self.spgi_info_resp},
             errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
             ],
         )
         expected_resp.results["SPGI"]["company_id"] = prefix_company_id(SPGI_ID_TRIPLE.company_id)
         expected_resp.results["SPGI"]["ticker"] = SPGI_TICKER
 
         resp = await get_info_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
@@ -138,14 +139,16 @@ class TestGetCompanyOtherNames:
 
         expected_resp = GetCompanyOtherNamesFromIdentifiersResp(
             identifier_results={"SPGI": self.spgi_other_names_model},
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
 
         resp = await get_company_other_names_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
@@ -196,14 +199,16 @@ class TestGetCompanySummaryAndDescription:
 
         expected_resp = GetCompanySummaryFromIdentifiersResp(
             identifier_results={"SPGI": self.spgi_descriptions_model.summary},
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
 
         resp = await get_company_summary_or_description_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
             summary_or_description="summary",
         )
@@ -221,14 +226,16 @@ class TestGetCompanySummaryAndDescription:
 
         expected_resp = GetCompanyDescriptionFromIdentifiersResp(
             identifier_results={"SPGI": self.spgi_descriptions_model.description},
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
 
         resp = await get_company_summary_or_description_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
             summary_or_description="description",
         )
@@ -314,14 +321,16 @@ class TestGetFinancialAuditors:
 
         expected_resp = GetFinancialAuditorsFromIdentifiersResp(
             identifier_results={"SPGI": self.spgi_auditors_model},
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
 
         resp = await get_financial_auditors_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
@@ -329,7 +338,7 @@ class TestGetFinancialAuditors:
 
     @pytest.mark.asyncio
     async def test_fetch_financial_auditors_empty_results(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """
         WHEN the API returns empty results for a company

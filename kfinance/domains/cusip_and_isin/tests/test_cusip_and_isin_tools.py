@@ -3,7 +3,12 @@ from typing import Literal
 import httpx2
 import pytest
 
-from kfinance.conftest import SPGI_ID_TRIPLE, SPGI_SECURITY_ID, optional_route
+from kfinance.conftest import (
+    PRIVATE_COMPANY_ID_TRIPLE,
+    SPGI_ID_TRIPLE,
+    SPGI_SECURITY_ID,
+    optional_route,
+)
 from kfinance.domains.cusip_and_isin.cusip_and_isin_tools import (
     GetCusipOrIsinFromIdentifiersResp,
     fetch_cusip_or_isin_from_security_id,
@@ -69,8 +74,10 @@ class TestCusipAndIsin:
 
         expected_resp = GetCusipOrIsinFromIdentifiersResp(
             identifier_results={"SPGI": expected_response},
-            identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=["private_company is a private company without a security_id."],
+            identifier_errors={
+                "private_company": ["private_company is a private company without a security_id."]
+            },
+            identifier_info={"SPGI": SPGI_ID_TRIPLE, "private_company": PRIVATE_COMPANY_ID_TRIPLE},
         )
 
         resp = await get_cusip_or_isin_from_identifiers(
