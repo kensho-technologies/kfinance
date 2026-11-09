@@ -132,8 +132,8 @@ class TestStatements:
         expected_resp = GetFinancialStatementFromIdentifiersResp(
             identifier_results={"SPGI": StatementsResp.model_validate(self.statement_resp)},
             identifier_errors={
-                "non-existent": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 ]
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
@@ -141,7 +141,7 @@ class TestStatements:
         )
 
         resp = await get_financial_statement_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             statement=StatementType.income_statement,
             httpx_client=httpx_client,
         )
@@ -238,8 +238,8 @@ class TestStatements:
         expected_resp = GetFinancialStatementFromIdentifiersResp(
             identifier_results={},
             identifier_errors={
-                "non-existent": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 ]
             },
             identifier_info={},
@@ -247,7 +247,7 @@ class TestStatements:
         )
 
         resp = await get_financial_statement_from_identifiers(
-            identifiers=["non-existent"],
+            identifiers=["non-existent-company"],
             statement=StatementType.income_statement,
             httpx_client=httpx_client,
         )

@@ -1,7 +1,7 @@
 # Changelog
 
 ## v11.2.0
-- Update errors in tool call results to include company information - in particular, 
+- Update errors in tool call results to include company information - in particular,
   company name, ticker, and country.
 
 ## v11.1.0

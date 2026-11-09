@@ -84,15 +84,15 @@ class TestPrices:
         expected_resp = GetPricesFromIdentifiersResp(
             identifier_results={"SPGI": PriceHistory.model_validate(self.prices_resp)},
             identifier_errors={
-                "non-existent": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 ]
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
         )
 
         resp = await get_prices_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
@@ -228,15 +228,15 @@ class TestHistoryMetadata:
         expected_resp = GetHistoryMetadataFromIdentifiersResp(
             identifier_results={"SPGI": HistoryMetadataResp.model_validate(self.metadata_resp)},
             identifier_errors={
-                "non-existent": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 ]
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
         )
 
         resp = await get_history_metadata_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 

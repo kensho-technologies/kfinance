@@ -120,8 +120,8 @@ async def get_key_devs_from_identifier(
         identifiers=[identifier], httpx_client=httpx_client
     )
     errors: dict[str, list[str]] = defaultdict(list)
-    for identifier, error in id_triple_resp.errors.items():
-        errors[identifier].append(error)
+    for unresolved_identifier, error in id_triple_resp.errors.items():
+        errors[unresolved_identifier].append(error)
 
     # check if identifier was resolved
     if identifier not in id_triple_resp.identifiers_to_id_triples:
@@ -145,7 +145,7 @@ async def get_key_devs_from_identifier(
 
     identifier_results = {}
     if result.errors:
-        errors[identifier].append("No result found")
+        errors[identifier].append("No result found.")
     else:
         identifier_results[identifier] = result
 

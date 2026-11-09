@@ -111,15 +111,15 @@ class TestEarnings:
                 )
             },
             identifier_errors={
-                "non-existent": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 ]
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
         )
 
         resp = await get_earnings_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 

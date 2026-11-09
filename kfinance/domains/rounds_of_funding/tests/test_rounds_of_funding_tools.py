@@ -180,15 +180,15 @@ class TestRoundsOfFunding:
                 "SPGI": RoundsOfFundingResp.model_validate(self.rounds_of_funding_response)
             },
             identifier_errors={
-                "non-existent": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 ]
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
         )
 
         resp = await get_rounds_of_funding_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             role=RoundsOfFundingRole.company_raising_funds,
             httpx_client=httpx_client,
         )

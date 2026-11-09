@@ -196,6 +196,8 @@ ValidQuarter = Annotated[
 
 
 class _ToolRespWithErrorsBase(BaseModel):
+    """A tool response with an errors field. Subclasses must provide the errors field."""
+
     @model_serializer(mode="wrap")
     def serialize_model(self, handler: Callable) -> Dict[str, Any]:
         """Make `errors` the last response field and only include if there is at least one error."""
@@ -230,7 +232,7 @@ class ToolRespWithIdInfoAndErrors(_ToolRespWithErrorsBase, Generic[T]):
     """A tool response with an `errors` field and a `results` dictionary."""
 
     identifier_results: dict[str, T] = Field(exclude=True)  # identifier -> response
-    identifier_errors: dict[str, list[str]] = Field(exclude=True)  # identifier -> error
+    identifier_errors: dict[str, list[str]] = Field(exclude=True)  # identifier -> errors
     identifier_info: dict[str, IdentificationTripleWithCompanyInfo] = Field(
         exclude=True
     )  # identifier -> identifier info
@@ -256,7 +258,7 @@ class ToolRespWithIdInfoAndErrors(_ToolRespWithErrorsBase, Generic[T]):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def errors(self) -> list[str]:
-        """The errorrs field is computed by adding identifier info to the error for each identifier."""
+        """The errors field is computed by adding identifier info to the error for each identifier."""
         all_errors: list[str] = []
 
         for identifier, id_errors in self.identifier_errors.items():

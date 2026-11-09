@@ -161,8 +161,8 @@ class TestEstimates:
         expected_resp = GetCiqEstimatesFromIdentifiersResp(
             identifier_results={"SPGI": expected_est},
             identifier_errors={
-                "non-existent": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 ]
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
@@ -171,7 +171,7 @@ class TestEstimates:
         )
 
         resp = await get_estimates_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
         )
@@ -430,7 +430,7 @@ class TestEstimates:
         )
 
         resp = await get_consensus_target_price_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
@@ -439,8 +439,8 @@ class TestEstimates:
                 "SPGI": ConsensusTargetPrice.model_validate(consensus_target_price_data)
             },
             identifier_errors={
-                "non-existent": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 ]
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
@@ -546,7 +546,7 @@ class TestEstimates:
         )
 
         resp = await get_analyst_recommendations_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
@@ -555,8 +555,8 @@ class TestEstimates:
                 "SPGI": AnalystRecommendations.model_validate(analyst_recommendations_data)
             },
             identifier_errors={
-                "non-existent": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 ]
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},

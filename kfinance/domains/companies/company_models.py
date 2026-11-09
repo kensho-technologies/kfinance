@@ -69,7 +69,7 @@ class UnifiedIdTripleResponse(BaseModel):
         {
             'data': {
                 'SPGI': {'trading_item_id': 2629108, 'security_id': 2629107, 'company_id': 21719},
-                'non-existent': {'error': 'No identification triple found for the provided identifier: NON-EXISTENT of type: ticker'}
+                'non-existent-company': {'error': 'No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker'}
             }
         }
 
@@ -79,7 +79,7 @@ class UnifiedIdTripleResponse(BaseModel):
                 'SPGI': {'trading_item_id': 2629108, 'security_id': 2629107, 'company_id': 21719},
             },
             'errors': {
-                'non-existent': 'No identification triple found for the provided identifier: NON-EXISTENT of type: ticker'
+                'non-existent-company': 'No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker'
             }
         }
 

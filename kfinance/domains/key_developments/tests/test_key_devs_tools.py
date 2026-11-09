@@ -241,8 +241,8 @@ class TestKeyDevs:
         expected_resp = GetKeyDevsFromIdentifierResp(
             identifier_results={"SPGI": self.expected_spgi_key_devs_response},
             identifier_errors={
-                "non-existent": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 ]
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
@@ -255,7 +255,7 @@ class TestKeyDevs:
 
         # test with non-existent identifier separately to capture error
         resp_with_error = await get_key_devs_from_identifier(
-            identifier="non-existent",
+            identifier="non-existent-company",
             httpx_client=httpx_client,
         )
 
@@ -288,7 +288,7 @@ class TestKeyDevs:
 
         expected_resp = GetKeyDevsFromIdentifierResp(
             identifier_results={},
-            identifier_errors={"SPGI": ["No result found"]},
+            identifier_errors={"SPGI": ["No result found."]},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
         )
 

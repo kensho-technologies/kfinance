@@ -86,7 +86,7 @@ async def get_business_relationship_from_identifiers(
                 }
             }
         },
-        'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']}
+        'errors': ['(identifier: NON-EXISTENT-COMPANY): No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker']}
     """
 
     id_triple_resp = await unified_fetch_id_triples(
@@ -114,7 +114,7 @@ async def get_business_relationship_from_identifiers(
     results: dict[str, RelationshipResponse] = dict()
     for task in tasks:
         if task.error:
-            errors[task.result_key].append(error)
+            errors[task.result_key].append(task.error)
         else:
             results[task.result_key] = task.result
 

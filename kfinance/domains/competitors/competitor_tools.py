@@ -78,7 +78,7 @@ async def get_competitors_from_identifiers(
                 }
             }
         },
-        'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
+        'errors': ['(identifier: NON-EXISTENT-COMPANY): No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker']
     }
     """
 

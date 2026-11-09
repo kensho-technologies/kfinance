@@ -42,8 +42,8 @@ def add_spgi_resolve_entities_mock_resp(httpx2_mock) -> None:
                     "ticker": "NYSE:SPGI",
                     "country": "USA",
                 },
-                "non-existent": {
-                    "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": {
+                    "error": "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 },
             }
         }
@@ -167,12 +167,12 @@ class TestRatings:
             identifier_results={"SPGI": self.expected_spgi_ratings_response},
             identifier_info={"SPGI": SPGI_ENTITY_INFO},
             errors=[
-                "non-existent: No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company: No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
             ],
         )
 
         resp = await get_issuer_ratings_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
@@ -239,8 +239,8 @@ class TestRatings:
         httpx2_mock.post("https://kfinance.kensho.com/api/v1/ratings/resolve_entities/").respond(
             json={
                 "data": {
-                    "non-existent": {
-                        "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                    "non-existent-company": {
+                        "error": "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                     }
                 }
             }
@@ -250,12 +250,12 @@ class TestRatings:
             identifier_results={},
             identifier_info={},
             errors=[
-                "non-existent: No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company: No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
             ],
         )
 
         resp = await get_issuer_ratings_from_identifiers(
-            identifiers=["non-existent"],
+            identifiers=["non-existent-company"],
             httpx_client=httpx_client,
         )
 

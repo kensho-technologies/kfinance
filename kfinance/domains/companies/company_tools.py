@@ -241,7 +241,7 @@ async def get_info_from_identifiers(
                     "ticker": "NYSE:SPGI"
                 }
             },
-            "errors": [['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
+            "errors": ['No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker']
         }
     """
 
@@ -271,7 +271,8 @@ async def get_info_from_identifiers(
         else:
             results[task.result_key] = task.result
 
-    for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items():
+    for identifier in results:
+        id_triple = id_triple_resp.identifiers_to_id_triples[identifier]
         results[identifier]["company_id"] = prefix_company_id(id_triple.company_id)
         if id_triple.ticker:
             results[identifier]["ticker"] = id_triple.ticker

@@ -108,8 +108,8 @@ class TestSegments:
         expected_resp = GetSegmentsFromIdentifiersResp(
             identifier_results={"SPGI": expected_seg},
             identifier_errors={
-                "non-existent": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 ]
             },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
@@ -118,7 +118,7 @@ class TestSegments:
         )
 
         resp = await get_segments_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             segment_type=SegmentType.business,
             httpx_client=httpx_client,
         )
@@ -190,8 +190,8 @@ class TestSegments:
         expected_resp = GetSegmentsFromIdentifiersResp(
             identifier_results={},
             identifier_errors={
-                "non-existent": [
-                    "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
                 ]
             },
             identifier_info={},
@@ -200,7 +200,7 @@ class TestSegments:
         )
 
         resp = await get_segments_from_identifiers(
-            identifiers=["non-existent"],
+            identifiers=["non-existent-company"],
             segment_type=SegmentType.business,
             httpx_client=httpx_client,
         )

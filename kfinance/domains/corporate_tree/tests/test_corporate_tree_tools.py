@@ -618,7 +618,7 @@ class TestGetUltimateParentPaths:
     ) -> None:
         """WHEN an identifier cannot be resolved THEN the error is reported and no call is made."""
         resp = await get_ultimate_parent_paths_from_identifiers(
-            identifiers=["non-existent"], httpx_client=httpx_client
+            identifiers=["non-existent-company"], httpx_client=httpx_client
         )
 
         assert resp.identifier_results == {}
@@ -1259,7 +1259,7 @@ class TestSearchCorporateTree:
     ) -> None:
         """WHEN an identifier cannot be resolved THEN the error is reported and no call is made."""
         resp = await search_corporate_tree_from_identifiers(
-            identifiers=["non-existent"], httpx_client=httpx_client
+            identifiers=["non-existent-company"], httpx_client=httpx_client
         )
 
         assert resp.identifier_results == {}

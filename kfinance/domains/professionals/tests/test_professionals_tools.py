@@ -371,7 +371,7 @@ class TestGetProfessionalsFromIdentifiers:
         THEN we get back SPGI's professionals and an error for the non-existent identifier.
         """
         resp = await get_professionals_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
             professional_type=ProfessionalType.board_members,
             timeframe=Timeframe.all,

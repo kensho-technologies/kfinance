@@ -121,7 +121,13 @@ async def get_prices_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
+
+    # We're making a copy of the original resolutions since the trading item ID
+    # filtering also removes identifier info that we want to add to the error
+    # strings.
+    all_id_triple_info = id_triple_resp.identifiers_to_id_triples.copy()
     id_triple_resp.filter_out_companies_without_trading_item_ids()
+
     errors: dict[str, list[str]] = defaultdict(list)
     for identifier, error in id_triple_resp.errors.items():
         errors[identifier].append(error)
@@ -158,9 +164,7 @@ async def get_prices_from_identifiers(
             price_response.prices = price_response.prices[-1:]
 
     return GetPricesFromIdentifiersResp(
-        identifier_results=results,
-        identifier_errors=errors,
-        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        identifier_results=results, identifier_errors=errors, identifier_info=all_id_triple_info
     )
 
 
@@ -192,7 +196,13 @@ async def get_history_metadata_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
+
+    # We're making a copy of the original resolutions since the trading item ID
+    # filtering also removes identifier info that we want to add to the error
+    # strings.
+    all_id_triple_info = id_triple_resp.identifiers_to_id_triples.copy()
     id_triple_resp.filter_out_companies_without_trading_item_ids()
+
     errors: dict[str, list[str]] = defaultdict(list)
     for identifier, error in id_triple_resp.errors.items():
         errors[identifier].append(error)
@@ -219,9 +229,7 @@ async def get_history_metadata_from_identifiers(
             results[task.result_key] = task.result
 
     return GetHistoryMetadataFromIdentifiersResp(
-        identifier_results=results,
-        identifier_errors=errors,
-        identifier_info=id_triple_resp.identifiers_to_id_triples,
+        identifier_results=results, identifier_errors=errors, identifier_info=all_id_triple_info
     )
 
 
