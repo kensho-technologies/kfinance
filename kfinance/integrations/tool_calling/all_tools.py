@@ -33,6 +33,9 @@ from kfinance.domains.estimates.estimates_tools_va import (
 )
 from kfinance.domains.key_developments.key_devs_tools import GetKeyDevsFromIdentifier
 from kfinance.domains.line_items.line_item_tools import GetFinancialLineItemFromIdentifiers
+from kfinance.domains.line_items.line_item_tools_snl import (
+    GetSnlBankRegFinancialLineItemFromIdentifiers,
+)
 from kfinance.domains.line_items.line_item_tools_va import (
     GetVisibleAlphaFinancialLineItemFromIdentifiers,
 )
@@ -95,6 +98,7 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     # Line Items
     GetFinancialLineItemFromIdentifiers,
     GetVisibleAlphaFinancialLineItemFromIdentifiers,
+    GetSnlBankRegFinancialLineItemFromIdentifiers,
     # Prices
     GetPricesFromIdentifiers,
     GetHistoryMetadataFromIdentifiers,
