@@ -6,7 +6,7 @@ import time_machine
 
 from kfinance.client.kfinance import Client
 from kfinance.conftest import SPGI_ID_TRIPLE, optional_route
-from kfinance.domains.earnings.earning_models import EarningsCallResp
+from kfinance.domains.earnings.earning_models import EarningsCall, EarningsCallResp
 from kfinance.domains.earnings.earning_tools import (
     GetEarningsFromIdentifiers,
     GetEarningsFromIdentifiersResp,
@@ -110,14 +110,16 @@ class TestEarnings:
                     }
                 )
             },
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
 
         resp = await get_earnings_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
@@ -192,7 +194,8 @@ class TestEarnings:
         """
         GIVEN SPGI's Q4 2024 call (past) and Q1 2025 call (upcoming) on 2025-04-01
         WHEN the tool runs with each earnings_timeframe
-        THEN all returns both calls, latest only the past one, and next only the upcoming one
+        THEN all returns both calls, latest only the past one, and next only the upcoming one,
+             each under the same earnings_calls list
         """
         tool = GetEarningsFromIdentifiers(kfinance_client=mock_client)
 
@@ -200,8 +203,7 @@ class TestEarnings:
             identifiers=["SPGI"], earnings_timeframe=earnings_timeframe
         )
 
-        result = resp["results"]["SPGI"]["data"]
-        calls = result["earnings_calls"] if earnings_timeframe == "all" else [result]
+        calls = resp["results"]["SPGI"]["data"]["earnings_calls"]
         assert sorted(call["key_dev_id"] for call in calls) == expected_key_dev_ids
 
     @time_machine.travel(datetime(2025, 5, 1))
@@ -222,7 +224,27 @@ class TestEarnings:
         resp = await tool.arun_without_langchain(identifiers=["SPGI"], earnings_timeframe="next")
 
         assert resp["results"] == {}
-        assert "No next earnings available for SPGI." in resp["errors"]
+        assert (
+            f"(identifier: SPGI; company: {SPGI_ID_TRIPLE.company_name}; ticker: {SPGI_ID_TRIPLE.ticker}; country: {SPGI_ID_TRIPLE.country}): No next earnings available."
+            in resp["errors"]
+        )
+
+    def test_earnings_call_resp_accepts_field_name_and_api_alias(self) -> None:
+        """
+        GIVEN an earnings call
+        WHEN EarningsCallResp is built by field name and validated from the API-shaped payload
+        THEN both produce equal models
+        """
+        call_dict = {
+            "name": "SPGI Q1 2025 Earnings Call",
+            "datetime": "2025-04-29T12:30:00Z",
+            "key_dev_id": 12346,
+        }
+
+        by_name = EarningsCallResp(earnings_calls=[EarningsCall.model_validate(call_dict)])
+        by_alias = EarningsCallResp.model_validate({"earnings": [call_dict]})
+
+        assert by_name == by_alias
 
 
 class TestTranscript:

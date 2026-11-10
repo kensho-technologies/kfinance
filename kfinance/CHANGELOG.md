@@ -1,7 +1,26 @@
 # Changelog
 
+## v12.0.0
+ - **Breaking:** Change `get_consensus_estimates_from_identifiers` and `get_guidance_from_identifiers` to work like the line items tool: each tool now requires a specific estimate line item to return data.
+
+## v11.2.0
+- Update errors in tool call results to include company information - in particular,
+  company name, ticker, and country.
+
+## v11.1.0
+- Add `CompanyRelationshipsPermission` and corporate tree tools: `get_ultimate_parent_paths_from_identifiers` and `search_corporate_tree_from_identifiers`.
+
+## v11.0.0
+- Visible Alpha surprise tool is now available.
+
+## v10.2.0
+- Expand line items to support current metrics in CIQ Performance analysis.
+
+## v10.1.1
+- Update `get_issuer_ratings_from_identifiers` to explicitly state ISO alpha-3 codes for Germany
+
 ## v10.1.0
- - Change `get_consensus_estimates_from_identifiers` and `get_guidance_from_identifiers` to work like the line items tool: each tool now requires a specific estimate line item to return data.
+- `get_earnings_from_identifiers` with `earnings_timeframe` `latest` or `next` now returns the same `earnings_calls` list as `all`, holding the one matching call.
 
 ## v10.0.0
 - **Breaking:** `Company.key_developments` takes `key_dev_category` as a `KeyDevCategoryType` instead of a string.

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from textwrap import dedent
 from typing import Type
 
@@ -77,14 +78,16 @@ async def get_competitors_from_identifiers(
                 }
             }
         },
-        'errors': ['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
+        'errors': ['(identifier: NON-EXISTENT-COMPANY): No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker']
     }
     """
 
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -104,14 +107,14 @@ async def get_competitors_from_identifiers(
     results: dict[str, CompetitorResponse] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             results[task.result_key] = task.result
 
     resp_model = GetCompetitorsFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
     return resp_model
 

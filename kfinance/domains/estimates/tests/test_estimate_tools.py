@@ -2,6 +2,7 @@ from decimal import Decimal
 
 import httpx2
 import pytest
+from respx import Router
 
 from kfinance.client.models.date_and_period_models import EstimateType
 from kfinance.client.models.response_models import (
@@ -117,7 +118,7 @@ class TestEstimates:
     }
 
     @pytest.fixture
-    def add_spgi_estimates_mock_resp(self, httpx2_mock) -> None:
+    def add_spgi_estimates_mock_resp(self, httpx2_mock: Router) -> None:
         """Add mock response for SPGI estimates."""
         httpx2_mock.post("https://kfinance.kensho.com/api/v1/estimates/").respond(
             json={
@@ -169,16 +170,18 @@ class TestEstimates:
         expected_est = CiqEstimates.model_validate(self.estimates_data)
         expected_resp = GetCiqEstimatesFromIdentifiersResp(
             identifier_results={"SPGI": expected_est},
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
             data_source="Capital IQ",
         )
 
         resp = await get_estimates_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             line_item="book_value_per_share",
             estimate_type=EstimateType.consensus,
             httpx_client=httpx_client,
@@ -191,7 +194,7 @@ class TestEstimates:
     async def test_fetch_estimates_api_returns_error(
         self,
         httpx_client: httpx2.AsyncClient,
-        httpx2_mock,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN the estimates API returns an error for a company (e.g. no data available)
@@ -203,8 +206,8 @@ class TestEstimates:
 
         expected_resp = GetCiqEstimatesFromIdentifiersResp(
             identifier_results={},
+            identifier_errors={"SPGI": ["No results found."]},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=["SPGI: No results found."],
             notes=[FISCAL_PERIOD_WARNING, FISCAL_YEAR_TERMINOLOGY_WARNING],
             data_source="Capital IQ",
         )
@@ -222,7 +225,7 @@ class TestEstimates:
     async def test_get_estimates_with_guidance_type(
         self,
         httpx_client: httpx2.AsyncClient,
-        httpx2_mock,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN we request guidance estimates
@@ -345,7 +348,7 @@ class TestEstimates:
     async def test_fetch_consensus_target_price_from_company_id(
         self,
         httpx_client: httpx2.AsyncClient,
-        httpx2_mock,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN we request SPGI's consensus target price
@@ -385,7 +388,7 @@ class TestEstimates:
     async def test_fetch_consensus_target_price_api_returns_error(
         self,
         httpx_client: httpx2.AsyncClient,
-        httpx2_mock,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN the consensus target price API returns an error (no data available)
@@ -402,8 +405,8 @@ class TestEstimates:
 
         expected_resp = GetConsensusTargetPriceFromIdentifiersResp(
             identifier_results={},
+            identifier_errors={"SPGI": ["No consensus target price found."]},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=["SPGI: No consensus target price found."],
         )
 
         resp = await get_consensus_target_price_from_identifiers(
@@ -417,7 +420,7 @@ class TestEstimates:
     async def test_get_consensus_target_price_from_identifiers(
         self,
         httpx_client: httpx2.AsyncClient,
-        httpx2_mock,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN we request consensus target price for SPGI and a non-existent company
@@ -444,7 +447,7 @@ class TestEstimates:
         )
 
         resp = await get_consensus_target_price_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
@@ -452,10 +455,12 @@ class TestEstimates:
             identifier_results={
                 "SPGI": ConsensusTargetPrice.model_validate(consensus_target_price_data)
             },
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
         assert resp == expected_resp
 
@@ -463,7 +468,7 @@ class TestEstimates:
     async def test_fetch_analyst_recommendations_from_company_id(
         self,
         httpx_client: httpx2.AsyncClient,
-        httpx2_mock,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN we request SPGI's analyst recommendations
@@ -501,7 +506,7 @@ class TestEstimates:
     async def test_fetch_analyst_recommendations_api_returns_error(
         self,
         httpx_client: httpx2.AsyncClient,
-        httpx2_mock,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN the analyst recommendations API returns an error (no data available)
@@ -518,8 +523,8 @@ class TestEstimates:
 
         expected_resp = GetAnalystRecommendationsFromIdentifiersResp(
             identifier_results={},
+            identifier_errors={"SPGI": ["No analyst recommendations found."]},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=["SPGI: No analyst recommendations found."],
         )
 
         resp = await get_analyst_recommendations_from_identifiers(
@@ -533,7 +538,7 @@ class TestEstimates:
     async def test_get_analyst_recommendations_from_identifiers(
         self,
         httpx_client: httpx2.AsyncClient,
-        httpx2_mock,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN we request analyst recommendations for SPGI and a non-existent company
@@ -558,7 +563,7 @@ class TestEstimates:
         )
 
         resp = await get_analyst_recommendations_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
@@ -566,9 +571,11 @@ class TestEstimates:
             identifier_results={
                 "SPGI": AnalystRecommendations.model_validate(analyst_recommendations_data)
             },
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
         assert resp == expected_resp

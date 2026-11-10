@@ -1,3 +1,4 @@
+from collections import defaultdict
 from textwrap import dedent
 from typing import Any, Literal, Type, overload
 
@@ -240,7 +241,7 @@ async def get_info_from_identifiers(
                     "ticker": "NYSE:SPGI"
                 }
             },
-            "errors": [['No identification triple found for the provided identifier: NON-EXISTENT of type: ticker']
+            "errors": ['No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker']
         }
     """
 
@@ -270,7 +271,8 @@ async def get_info_from_identifiers(
         else:
             results[task.result_key] = task.result
 
-    for identifier, id_triple in id_triple_resp.identifiers_to_id_triples.items():
+    for identifier in results:
+        id_triple = id_triple_resp.identifiers_to_id_triples[identifier]
         results[identifier]["company_id"] = prefix_company_id(id_triple.company_id)
         if id_triple.ticker:
             results[identifier]["ticker"] = id_triple.ticker
@@ -302,7 +304,9 @@ async def get_company_other_names_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -321,14 +325,14 @@ async def get_company_other_names_from_identifiers(
     results: dict[str, CompanyOtherNames] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             results[task.result_key] = task.result
 
     return GetCompanyOtherNamesFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
 
 
@@ -369,7 +373,9 @@ async def get_company_summary_or_description_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -388,28 +394,28 @@ async def get_company_summary_or_description_from_identifiers(
     results: dict[str, str] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             if summary_or_description == "summary":
                 result = task.result.summary
             else:
                 result = task.result.description
             if not result:
-                errors.append(f"No {summary_or_description} found for {task.result_key}.")
+                errors[task.result_key].append(f"No {summary_or_description} found.")
             else:
                 results[task.result_key] = result
 
     if summary_or_description == "summary":
         return GetCompanySummaryFromIdentifiersResp(
             identifier_results=results,
+            identifier_errors=errors,
             identifier_info=id_triple_resp.identifiers_to_id_triples,
-            errors=errors,
         )
     else:
         return GetCompanyDescriptionFromIdentifiersResp(
             identifier_results=results,
+            identifier_errors=errors,
             identifier_info=id_triple_resp.identifiers_to_id_triples,
-            errors=errors,
         )
 
 
@@ -436,7 +442,9 @@ async def get_financial_auditors_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -458,14 +466,14 @@ async def get_financial_auditors_from_identifiers(
     results: dict[str, Auditors] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             results[task.result_key] = task.result
 
     return GetFinancialAuditorsFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
 
 
