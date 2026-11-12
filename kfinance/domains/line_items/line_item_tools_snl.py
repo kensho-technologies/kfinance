@@ -51,17 +51,10 @@ class GetSnlBankRegFinancialLineItemFromIdentifiers(KfinanceTool):
         `get_visible_alpha_financial_line_item_from_identifiers` (Visible Alpha) or
         `get_financial_line_item_from_identifiers` (Capital IQ) instead.
 
-        IMPORTANT — bank identifier resolution:
-        - BankReg data is filed by bank *subsidiaries* (e.g. "JPMorgan Chase Bank, N.A."),
-          not holding companies (e.g. "JPMorgan Chase & Co.").
-        - Passing a holding company ticker like "JPM" will return data for the subsidiary
-          that files BankReg data under that parent, which is usually what you want.
-        - If a company returns an error, it may not be a BankReg filer. Only FDIC-insured
-          depository institutions file BankReg data.
         - `line_item_matches` in the response lists the top semantic matches with which
           companies report each. Check it to verify the selected metric is correct and to
           find alternatives if the top match is not what was intended.
-
+        - If a company returns an error, it may not be a BankReg filer.
         - Returns reported (actual, historical) regulatory filing figures only.
         - BankReg fiscal and calendar periods are always aligned: FY2026Q2 = the quarter
           ending 2026-06-30. `calendar_type` only changes the period key prefix (FY vs CY).
@@ -76,7 +69,7 @@ class GetSnlBankRegFinancialLineItemFromIdentifiers(KfinanceTool):
         Function: get_snl_bankreg_financial_line_item_from_identifiers(line_item_search="total revenue", identifiers=["JPMorgan Chase"], period_type="quarterly")
 
         Query: "Total deposits for JPM bank"
-        Note: "JPM bank" refers to the subsidiary JPMorgan Chase Bank, N.A. — use the full subsidiary name so identifier resolution finds the BankReg-filing entity, not the holding company.
+        Note: "JPM bank" likely refers to the subsidiary JPMorgan Chase Bank, N.A. — use the full name so identifier resolution finds the right entity.
         Function: get_snl_bankreg_financial_line_item_from_identifiers(line_item_search="total deposits", identifiers=["JPMorgan Chase Bank, N.A."])
 
         Query: "Tier 1 capital ratio for Wells Fargo and Bank of America for the last 5 years"
