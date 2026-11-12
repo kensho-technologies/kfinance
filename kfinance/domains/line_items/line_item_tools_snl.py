@@ -201,7 +201,18 @@ async def get_snl_bankreg_financial_line_item_from_identifiers(
 
         results = identifier_to_results
         requested_line_item = raw_resp.get("requested_line_item") or line_item_search
-        line_item_matches = raw_resp.get("line_item_matches") or []
+        line_item_matches = [
+            {
+                "dataitem_id": match["dataitem_id"],
+                "name": match["name"],
+                "description": match["description"],
+                "identifiers": [
+                    id_triple_resp.get_identifier_from_company_id(cid)
+                    for cid in match.get("company_ids", [])
+                ],
+            }
+            for match in (raw_resp.get("line_item_matches") or [])
+        ]
     else:
         results = {}
         requested_line_item = line_item_search
