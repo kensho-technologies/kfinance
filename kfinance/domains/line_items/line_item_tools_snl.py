@@ -47,9 +47,11 @@ class GetSnlBankRegFinancialLineItemFromIdentifiers(KfinanceTool):
         using semantic search. The freeform `line_item_search` query is matched against SNL's
         BankReg dataitem catalog. Returns S&P SNL data from Call Reports and FFIEC filings.
 
-        Use this tool for bank regulatory data. For general company financials, use
-        `get_visible_alpha_financial_line_item_from_identifiers` (Visible Alpha) or
-        `get_financial_line_item_from_identifiers` (Capital IQ) instead.
+        For banks and other financial institutions, prefer this tool over
+        `get_financial_line_item_from_identifiers` (Capital IQ) — BankReg has much deeper
+        coverage of regulatory metrics, capital ratios, and bank-specific line items.
+        For non-bank companies, use `get_visible_alpha_financial_line_item_from_identifiers`
+        (Visible Alpha) or `get_financial_line_item_from_identifiers` (Capital IQ) instead.
 
         - `line_item_matches` in the response lists the top semantic matches with which
           companies report each. Check it to verify the selected metric is correct and to
