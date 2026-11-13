@@ -59,6 +59,9 @@ class RoundOfFundingInfoTransaction(BaseModel):
 
     The transaction describes the financial terms, valuation metrics, and rights structure
     established during the round of funding agreement.
+
+    All financial values are listed in single units of the listed currency, except for aggregate_amount_raised,
+    which is always listed in USD.
     """
 
     funding_type: str | None = None
