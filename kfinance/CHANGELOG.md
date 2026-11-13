@@ -1,5 +1,8 @@
 # Changelog
 
+## v12.0.1
+ - Total capital raised in a round of funding is always USD, regardless of the round's normal currency.
+
 ## v12.0.0
  - **Breaking:** Change `get_consensus_estimates_from_identifiers` and `get_guidance_from_identifiers` to work like the line items tool: each tool now requires a specific estimate line item to return data.
 
