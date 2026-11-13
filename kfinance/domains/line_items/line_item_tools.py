@@ -166,6 +166,8 @@ class GetFinancialLineItemFromIdentifiers(KfinanceTool):
     description: str = dedent("""
         Get the financial line item associated with a list of identifiers. Returns Capital IQ data.
 
+        Prefer `get_visible_alpha_financial_line_item_from_identifiers` (Visible Alpha) for most companies, and `get_snl_bankreg_financial_line_item_from_identifiers` (SNL bank regulatory data) for banks, bank holding companies, savings institutions, and credit unions. Use this tool when the user asks for Capital IQ data or the other tools have no matching data.
+
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.
         - To fetch the most recent value, leave all time parameters as null.
         - Line item names are case-insensitive, use underscores, and support common aliases (e.g., 'revenue' and 'normal_revenue' return the same data).

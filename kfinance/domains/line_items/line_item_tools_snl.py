@@ -43,20 +43,37 @@ class GetSnlBankRegFinancialLineItemFromIdentifiersResp(ToolRespWithIdInfoAndErr
 class GetSnlBankRegFinancialLineItemFromIdentifiers(KfinanceTool):
     name: str = "get_snl_bankreg_financial_line_item_from_identifiers"
     description: str = dedent("""
-        Get any reported bank regulatory (BankReg) financial metric for a list of identifiers
-        using semantic search. The freeform `line_item_search` query is matched against SNL's
-        BankReg dataitem catalog. Returns S&P SNL data from Call Reports and FFIEC filings.
+        Get any reported financial metric for banks from their regulatory filings, using
+        semantic search. The freeform `line_item_search` query is matched against S&P SNL's
+        bank regulatory (BankReg) catalog, which covers bank Call Reports, credit union reports,
+        and holding company filings such as FR Y-9C and FR Y-15.
 
-        For banks and other financial institutions, prefer this tool over
-        `get_financial_line_item_from_identifiers` (Capital IQ) — BankReg has much deeper
-        coverage of regulatory metrics, capital ratios, and bank-specific line items.
-        For non-bank companies, use `get_visible_alpha_financial_line_item_from_identifiers`
-        (Visible Alpha) or `get_financial_line_item_from_identifiers` (Capital IQ) instead.
+        This is the default tool for any financial metric of a bank, bank holding company,
+        savings institution, or credit union: both regulatory metrics (capital ratios, deposits,
+        nonperforming loans, allowance for credit losses, loan composition) and general metrics
+        (total revenue, net income, net interest income, total assets). Use it instead of
+        `get_visible_alpha_financial_line_item_from_identifiers` (Visible Alpha) and
+        `get_financial_line_item_from_identifiers` (Capital IQ) for these companies.
+
+        Use Visible Alpha or Capital IQ instead for:
+        - Companies that are not depository institutions, including insurers, asset managers,
+          and broker-dealers.
+        - A bank metric when the user explicitly asks for Visible Alpha or Capital IQ data,
+          or for company-reported figures from earnings releases or 10-K/10-Q filings.
+        - A bank that returns an error here (it may not file regulatory reports) or whose
+          `line_item_matches` contain nothing close to what was asked. Only the most commonly
+          used BankReg metrics are searchable.
+
+        Holding company vs. bank subsidiary:
+        - A holding company (e.g. "JPMorgan Chase", "JPM") and its bank subsidiary
+          (e.g. "JPMorgan Chase Bank, N.A.") file separately and report different figures.
+        - Default to the identifier the user gave, which is usually the holding company.
+        - When the user refers to the bank itself ("JPM bank", "Chase Bank", a charter or
+          "N.A."), pass the subsidiary's full legal name as the identifier.
 
         - `line_item_matches` in the response lists the top semantic matches with which
           companies report each. Check it to verify the selected metric is correct and to
           find alternatives if the top match is not what was intended.
-        - If a company returns an error, it may not be a BankReg filer.
         - Returns reported (actual, historical) regulatory filing figures only.
         - BankReg fiscal and calendar periods are always aligned: FY2026Q2 = the quarter
           ending 2026-06-30. `calendar_type` only changes the period key prefix (FY vs CY).
@@ -71,7 +88,7 @@ class GetSnlBankRegFinancialLineItemFromIdentifiers(KfinanceTool):
         Function: get_snl_bankreg_financial_line_item_from_identifiers(line_item_search="total revenue", identifiers=["JPMorgan Chase"], period_type="quarterly")
 
         Query: "Total deposits for JPM bank"
-        Note: "JPM bank" likely refers to the subsidiary JPMorgan Chase Bank, N.A. — use the full name so identifier resolution finds the right entity.
+        Note: "JPM bank" refers to the subsidiary, so pass its full legal name rather than "JPM bank" or the holding company.
         Function: get_snl_bankreg_financial_line_item_from_identifiers(line_item_search="total deposits", identifiers=["JPMorgan Chase Bank, N.A."])
 
         Query: "Tier 1 capital ratio for Wells Fargo and Bank of America for the last 5 years"
