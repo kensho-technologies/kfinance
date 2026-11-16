@@ -1,5 +1,9 @@
 # Changelog
 
+## v13.1.0
+- Add `CompanyScreenerPermission` and the beta `screen_companies_with_natural_query` tool,
+  which screens companies with a natural language query.
+
 ## v13.0.0
 - **Breaking:** Unify "business relationships" into "relationships". The tool
   `get_business_relationship_from_identifiers` is now `get_relationship_from_identifiers`, and its
