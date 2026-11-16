@@ -9,6 +9,9 @@ from kfinance.domains.companies.company_tools import (
     GetFinancialAuditorsFromIdentifiers,
     GetInfoFromIdentifiers,
 )
+from kfinance.domains.company_screener.company_screener_tools import (
+    ScreenCompaniesWithNaturalQuery,
+)
 from kfinance.domains.competitors.competitor_tools import GetCompetitorsFromIdentifiers
 from kfinance.domains.corporate_tree.corporate_tree_tools import (
     GetUltimateParentPathsFromIdentifiers,
@@ -127,4 +130,6 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     SearchCorporateTreeFromIdentifiers,
     # Surprise
     GetVisibleAlphaSurprisesFromIdentifiers,
+    # Company Screener (beta)
+    ScreenCompaniesWithNaturalQuery,
 ]

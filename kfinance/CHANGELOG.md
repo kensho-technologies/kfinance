@@ -1,5 +1,9 @@
 # Changelog
 
+## v12.1.0
+- Add `CompanyScreenerPermission` and the beta `screen_companies_with_natural_query` tool,
+  which screens companies with a natural language query.
+
 ## v12.0.1
  - Total capital raised in a round of funding is always USD, regardless of the round's normal currency.
 
