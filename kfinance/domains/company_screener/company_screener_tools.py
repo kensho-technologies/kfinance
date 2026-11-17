@@ -31,8 +31,6 @@ class ScreenCompaniesWithNaturalQueryResp(BaseModel):
 class ScreenCompaniesWithNaturalQuery(KfinanceTool):
     name: str = "screen_companies_with_natural_query"
     description: str = dedent("""
-        Beta: find the companies that match a screening criteria written in natural language.
-
         Use this tool if the user is asking an open ended company screening question that can't be answered with the other tools. All other tools require the companies to be known in advance. This tool can be used when the user is asking for a list of companies that satisfy a criteria.
 
         - Write a short natural language screening query. Do not copy the user's full prompt.
