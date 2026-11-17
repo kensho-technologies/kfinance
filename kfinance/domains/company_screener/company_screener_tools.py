@@ -8,7 +8,7 @@ from kfinance.client.permission_models import Permission
 from kfinance.integrations.tool_calling.tool_calling_models import KfinanceTool
 
 
-# The screener runs a Text2SQL agent, which takes ~20 seconds on average and up to a minute.
+# Company screener takes longer than a typical API request, so we set a higher timeout.
 COMPANY_SCREENER_TIMEOUT_SECONDS = 60
 
 
