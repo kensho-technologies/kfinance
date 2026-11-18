@@ -9,20 +9,24 @@ class Permission(StrEnum):
     ISCRSPermission = "ISCRSPermission"
     MergersPermission = "MergersPermission"
     PricingPermission = "PricingPermission"
-    RelationshipPermission = "RelationshipPermission"
+    BusinessRelationshipsPermission = "BusinessRelationshipsPermission"
+    CompanyRelationshipsPermission = "CompanyRelationshipsPermission"
     SegmentsPermission = "SegmentsPermission"
     StatementsPermission = "StatementsPermission"
     TranscriptsPermission = "TranscriptsPermission"
     PrivateCompanyFinancialsPermission = "PrivateCompanyFinancialsPermission"
     CompanyIntelligencePermission = "CompanyIntelligencePermission"
+    CompanyScreenerPermission = "CompanyScreenerPermission"
     EstimatesPermission = "EstimatesPermission"
     ProfessionalsPermission = "ProfessionalsPermission"
     VisibleAlphaPermission = "VisibleAlphaPermission"
     VisibleAlphaPremiumPermission = "VisibleAlphaPremiumPermission"
-    CompanyRelationshipsPermission = "CompanyRelationshipsPermission"
     # These permissions are not used by the client, but some users may have these permissions
     # Having them listed here will prevent an avoidable KeyError exception being logged.
     OnlyStaffPermission = "OnlyStaffPermission"
+    # The former name of BusinessRelationshipsPermission. The API still reports it alongside the
+    # current name so that clients released before the rename keep working.
+    RelationshipPermission = "RelationshipPermission"
     PrivateCompanyFinancialsPermissionExcludeRedistribution = (
         "PrivateCompanyFinancialsPermissionExcludeRedistribution"
     )
