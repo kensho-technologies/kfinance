@@ -1,3 +1,4 @@
+from collections import defaultdict
 from textwrap import dedent
 from typing import Type
 
@@ -7,7 +8,7 @@ from pydantic import BaseModel, Field
 from kfinance.async_batch_execution import AsyncTask, batch_execute_async_tasks
 from kfinance.client.id_resolution import unified_fetch_id_triples
 from kfinance.client.permission_models import Permission
-from kfinance.domains.earnings.earning_models import EarningsCall, EarningsCallResp
+from kfinance.domains.earnings.earning_models import EarningsCallResp, EarningsTimeframe
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
     ToolArgsWithIdentifiers,
@@ -18,7 +19,7 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 class GetTranscriptFromKeyDevIdArgs(BaseModel):
     """Tool argument with a key_dev_id."""
 
-    key_dev_id: int = Field(description="The key_dev_id for the earnings call")
+    key_dev_id: int = Field(description="The key_dev_id of the event")
 
 
 class GetTranscriptFromKeyDevIdResp(BaseModel):
@@ -28,13 +29,7 @@ class GetTranscriptFromKeyDevIdResp(BaseModel):
 class GetTranscriptFromKeyDevId(KfinanceTool):
     name: str = "get_transcript_from_key_dev_id"
     description: str = dedent("""
-        Get the raw transcript text for an earnings call by key_dev_id.
-
-        The key_dev_id is obtained from earnings tools (get_earnings_from_identifiers, get_latest_earnings_from_identifiers, or get_next_earnings_from_identifiers).
-
-        Example:
-        Query: "Get the transcript for earnings call 12346"
-        Function: get_transcript_from_key_dev_id(key_dev_id=12346)
+        Get the transcript text of a company event by key_dev_id, such as an earnings call, M&A call, investor day or conference presentation (not an exhaustive list). Earnings call ids come from get_earnings_from_identifiers; all other ids come from get_key_devs_from_identifier (has_transcript is true).
     """).strip()
     args_schema: Type[BaseModel] = GetTranscriptFromKeyDevIdArgs
     accepted_permissions: set[Permission] | None = {Permission.TranscriptsPermission}
@@ -51,103 +46,58 @@ class GetEarningsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[EarningsCallRes
     pass
 
 
-class GetNextOrLatestEarningsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[EarningsCall]):
-    pass
+class GetEarningsFromIdentifiersArgs(ToolArgsWithIdentifiers):
+    earnings_timeframe: EarningsTimeframe = Field(
+        default=EarningsTimeframe.all,
+        description="Which earnings calls to return: 'all' for every historical and upcoming call, 'latest' for only the most recent completed call, or 'next' for only the next scheduled call.",
+    )
 
 
 class GetEarningsFromIdentifiers(KfinanceTool):
     name: str = "get_earnings_from_identifiers"
     description: str = dedent("""
-        Get all earnings calls for a list of identifiers.
+        Get earnings calls for a list of identifiers.
 
-        Returns a list of dictionaries with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier.
+        Returns, per identifier, an 'earnings_calls' list of dictionaries with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone). Use the earnings_timeframe argument to control which calls are returned:
+        - 'all' (default): every historical and upcoming earnings call
+        - 'latest': only the most recent completed earnings call
+        - 'next': only the next scheduled earnings call
 
-        - Use get_latest_earnings_from_identifiers to get only the most recent earnings
-        - Use get_next_earnings_from_identifiers to get only the next upcoming earnings
-        - To fetch the full transcript, call get_transcript_from_key_dev_id with the key_dev_id
+        To fetch the full transcript, call get_transcript_from_key_dev_id with the key_dev_id.
 
         Examples:
         Query: "Get all earnings calls for Microsoft"
         Function: get_earnings_from_identifiers(identifiers=["Microsoft"])
 
-        Query: "Get earnings for CRM and ORCL"
-        Function: get_earnings_from_identifiers(identifiers=["CRM", "ORCL"])
-    """).strip()
-    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
-    accepted_permissions: set[Permission] | None = {
-        Permission.EarningsPermission,
-        Permission.TranscriptsPermission,
-    }
-
-    async def _arun(self, identifiers: list[str]) -> GetEarningsFromIdentifiersResp:
-        """"""
-        return await get_earnings_from_identifiers(
-            identifiers=identifiers,
-            httpx_client=self.kfinance_client.httpx_client,
-        )
-
-
-class GetLatestEarningsFromIdentifiers(KfinanceTool):
-    name: str = "get_latest_earnings_from_identifiers"
-    description: str = dedent("""
-        Get the latest (most recent) earnings call for a list of identifiers.
-
-        Returns a dictionary with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier.
-
-        - Use get_earnings_from_identifiers for all historical earnings
-        - Use get_next_earnings_from_identifiers for upcoming earnings
-        - To fetch the full transcript, call get_transcript_from_key_dev_id with the key_dev_id
-
-        Examples:
         Query: "What was Microsoft's latest earnings call?"
-        Function: get_latest_earnings_from_identifiers(identifiers=["Microsoft"])
+        Function: get_earnings_from_identifiers(identifiers=["Microsoft"], earnings_timeframe="latest")
 
-        Query: "Get latest earnings for JPM and GS"
-        Function: get_latest_earnings_from_identifiers(identifiers=["JPM", "GS"])
-    """).strip()
-    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
-    accepted_permissions: set[Permission] | None = {
-        Permission.EarningsPermission,
-        Permission.TranscriptsPermission,
-    }
-
-    async def _arun(self, identifiers: list[str]) -> GetNextOrLatestEarningsFromIdentifiersResp:
-        """"""
-        return await get_latest_earnings_from_identifiers(
-            identifiers=identifiers,
-            httpx_client=self.kfinance_client.httpx_client,
-        )
-
-
-class GetNextEarningsFromIdentifiers(KfinanceTool):
-    name: str = "get_next_earnings_from_identifiers"
-    description: str = dedent("""
-        Get the next scheduled earnings call for a list of identifiers.
-
-        Returns a dictionary with 'name' (str), 'key_dev_id' (int), and 'datetime' (str in ISO 8601 format with UTC timezone) attributes for each identifier.
-
-        - Use get_latest_earnings_from_identifiers for the most recent completed earnings
-        - Use get_earnings_from_identifiers for all historical earnings
-        - To fetch the full transcript (once available), call get_transcript_from_key_dev_id with the key_dev_id
-
-        Examples:
         Query: "When is Waste Management's next earnings call?"
-        Function: get_next_earnings_from_identifiers(identifiers=["Waste Management"])
-
-        Query: "Get next earnings for FDX and UPS"
-        Function: get_next_earnings_from_identifiers(identifiers=["FDX", "UPS"])
+        Function: get_earnings_from_identifiers(identifiers=["Waste Management"], earnings_timeframe="next")
     """).strip()
-    args_schema: Type[BaseModel] = ToolArgsWithIdentifiers
+    args_schema: Type[BaseModel] = GetEarningsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {
         Permission.EarningsPermission,
         Permission.TranscriptsPermission,
     }
 
-    async def _arun(self, identifiers: list[str]) -> GetNextOrLatestEarningsFromIdentifiersResp:
+    async def _arun(
+        self,
+        identifiers: list[str],
+        earnings_timeframe: EarningsTimeframe = EarningsTimeframe.all,
+    ) -> GetEarningsFromIdentifiersResp:
         """"""
-        return await get_next_earnings_from_identifiers(
-            identifiers=identifiers,
-            httpx_client=self.kfinance_client.httpx_client,
+        httpx_client = self.kfinance_client.httpx_client
+        if earnings_timeframe == EarningsTimeframe.latest:
+            return await get_latest_earnings_from_identifiers(
+                identifiers=identifiers, httpx_client=httpx_client
+            )
+        if earnings_timeframe == EarningsTimeframe.next:
+            return await get_next_earnings_from_identifiers(
+                identifiers=identifiers, httpx_client=httpx_client
+            )
+        return await get_earnings_from_identifiers(
+            identifiers=identifiers, httpx_client=httpx_client
         )
 
 
@@ -160,7 +110,9 @@ async def get_earnings_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -179,61 +131,69 @@ async def get_earnings_from_identifiers(
     results: dict[str, EarningsCallResp] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             results[task.result_key] = task.result
 
     return GetEarningsFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
     )
 
 
 async def get_latest_earnings_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx2.AsyncClient,
-) -> GetNextOrLatestEarningsFromIdentifiersResp:
-    """Fetch the latest (most recent) earnings call for all identifiers."""
+) -> GetEarningsFromIdentifiersResp:
+    """Fetch the latest (most recent) earnings call for all identifiers, as a list of one."""
     earnings_responses = await get_earnings_from_identifiers(
         identifiers=identifiers,
         httpx_client=httpx_client,
     )
-    output_model = GetNextOrLatestEarningsFromIdentifiersResp(
-        identifier_results=dict(), identifier_info=earnings_responses.identifier_info, errors=list()
-    )
+
+    results: dict[str, EarningsCallResp] = dict()
+    errors: dict[str, list[str]] = defaultdict(list, earnings_responses.identifier_errors)
+
     for identifier, earnings in earnings_responses.identifier_results.items():
         most_recent_earnings = earnings.most_recent_earnings
         if most_recent_earnings:
-            output_model.identifier_results[identifier] = most_recent_earnings
+            results[identifier] = EarningsCallResp(earnings_calls=[most_recent_earnings])
         else:
-            output_model.errors.append(f"No latest earnings available for {identifier}.")
-    # Add errors from the earnings fetch
-    output_model.errors.extend(earnings_responses.errors)
-    return output_model
+            errors[identifier].append("No latest earnings available.")
+
+    return GetEarningsFromIdentifiersResp(
+        identifier_results=results,
+        identifier_errors=errors,
+        identifier_info=earnings_responses.identifier_info,
+    )
 
 
 async def get_next_earnings_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx2.AsyncClient,
-) -> GetNextOrLatestEarningsFromIdentifiersResp:
-    """Fetch the next scheduled earnings call for all identifiers."""
+) -> GetEarningsFromIdentifiersResp:
+    """Fetch the next scheduled earnings call for all identifiers, as a list of one."""
     earnings_responses = await get_earnings_from_identifiers(
         identifiers=identifiers,
         httpx_client=httpx_client,
     )
-    output_model = GetNextOrLatestEarningsFromIdentifiersResp(
-        identifier_results=dict(), identifier_info=earnings_responses.identifier_info, errors=list()
-    )
+
+    results: dict[str, EarningsCallResp] = dict()
+    errors: dict[str, list[str]] = defaultdict(list, earnings_responses.identifier_errors)
+
     for identifier, earnings in earnings_responses.identifier_results.items():
         next_earnings = earnings.next_earnings
         if next_earnings:
-            output_model.identifier_results[identifier] = next_earnings
+            results[identifier] = EarningsCallResp(earnings_calls=[next_earnings])
         else:
-            output_model.errors.append(f"No next earnings available for {identifier}.")
-    # Add errors from the earnings fetch
-    output_model.errors.extend(earnings_responses.errors)
-    return output_model
+            errors[identifier].append("No next earnings available.")
+
+    return GetEarningsFromIdentifiersResp(
+        identifier_results=results,
+        identifier_errors=errors,
+        identifier_info=earnings_responses.identifier_info,
+    )
 
 
 async def fetch_earnings_from_company_id(

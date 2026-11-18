@@ -2,6 +2,7 @@ from datetime import date
 
 import httpx2
 import pytest
+from respx import Router
 
 from kfinance.client.tests.test_objects import (
     MERGERS_RESP,
@@ -22,7 +23,7 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools impo
 
 class TestMergersAndAcquisitions:
     @pytest.fixture
-    def add_spgi_mergers_mock_resp(self, httpx2_mock) -> None:
+    def add_spgi_mergers_mock_resp(self, httpx2_mock: Router) -> None:
         """Add mock response for SPGI mergers."""
         merger_data = MERGERS_RESP.model_dump(mode="json")
         httpx2_mock.get(
@@ -50,7 +51,7 @@ class TestMergersAndAcquisitions:
 
     @pytest.mark.asyncio
     async def test_fetch_mergers_from_company_id_with_date_range(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """
         WHEN we request SPGI's mergers for a specific date range,
@@ -92,14 +93,16 @@ class TestMergersAndAcquisitions:
 
         expected_resp = GetMergersFromIdentifiersResp(
             identifier_results={"SPGI": MERGERS_RESP},
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
 
         resp = await get_mergers_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
@@ -109,7 +112,7 @@ class TestMergersAndAcquisitions:
     async def test_get_mergers_info_from_transaction_ids(
         self,
         httpx_client: httpx2.AsyncClient,
-        httpx2_mock,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN we request merger info for multiple transactions

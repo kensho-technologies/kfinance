@@ -1,5 +1,6 @@
 import httpx2
 import pytest
+from respx import Router
 
 from kfinance.conftest import SPGI_COMPANY_ID, SPGI_ID_TRIPLE
 from kfinance.domains.professionals.professionals_models import (
@@ -310,8 +311,8 @@ class TestGetProfessionalsFromIdentifiers:
         """
         expected_resp = GetProfessionalsFromIdentifiersResp(
             identifier_results={"SPGI": {"Independent Director": [SPGI_BOARD_MEMBER]}},
+            identifier_errors={},
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[],
         )
         resp = await get_professionals_from_identifiers(
             identifiers=["SPGI"],
@@ -370,7 +371,7 @@ class TestGetProfessionalsFromIdentifiers:
         THEN we get back SPGI's professionals and an error for the non-existent identifier.
         """
         resp = await get_professionals_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
             professional_type=ProfessionalType.board_members,
             timeframe=Timeframe.all,
@@ -400,7 +401,7 @@ class TestGetProfessionalsFromPersonIds:
     async def test_get_multiple_persons(
         self,
         httpx_client: httpx2.AsyncClient,
-        httpx2_mock,
+        httpx2_mock: Router,
         add_spgi_person_mock_resp: None,
     ) -> None:
         """

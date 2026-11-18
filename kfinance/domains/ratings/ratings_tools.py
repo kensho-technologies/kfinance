@@ -103,7 +103,7 @@ class GetIssuerRatingsFromIdentifiers(KfinanceTool):
 
         - Supports multiple identifiers in a single call (tickers, company IDs, company names, ISO alpha-3 codes, ISINs, CUSIPs).
         - For country input, default to ISO alpha-3 codes.
-        - Works with both corporate entities (e.g., "AAPL", "Microsoft") and sovereign entities (e.g., "USA", "Germany").
+        - Works with both corporate entities (e.g., "AAPL", "Microsoft") and sovereign entities (e.g., "USA", "DEU").
         - Returns the latest rating along with full rating history for each entity.
         - Includes outlook (Stable, Positive, Negative) and credit watch information when available.
 

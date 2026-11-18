@@ -19,8 +19,8 @@ class Segment(BaseModel):
 
 
 class SegmentPeriodData(BaseModel):
-    period_end_date: date
-    num_months: int
+    period_end_date: date | None
+    num_months: int | None
     segments: list[Segment]
 
 

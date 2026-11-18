@@ -1,5 +1,6 @@
 import httpx2
 import pytest
+from respx import Router
 
 from kfinance.client.models.date_and_period_models import Periodicity
 from kfinance.conftest import (
@@ -44,7 +45,7 @@ class TestPrices:
     }
 
     @pytest.fixture
-    def add_spgi_prices_mock_resp(self, httpx2_mock) -> None:
+    def add_spgi_prices_mock_resp(self, httpx2_mock: Router) -> None:
         """Add mock response for SPGI prices."""
         httpx2_mock.get(
             f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/none/none/day/adjusted"
@@ -82,21 +83,25 @@ class TestPrices:
 
         expected_resp = GetPricesFromIdentifiersResp(
             identifier_results={"SPGI": PriceHistory.model_validate(self.prices_resp)},
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
 
         resp = await get_prices_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 
         assert resp == expected_resp
 
     @pytest.mark.asyncio
-    async def test_most_recent_request(self, httpx_client: httpx2.AsyncClient, httpx2_mock) -> None:
+    async def test_most_recent_request(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
         """
         WHEN we request most recent prices for multiple companies
         THEN we only get back the most recent prices for each company
@@ -130,6 +135,7 @@ class TestPrices:
                 "C_1": expected_single_company_response,
                 "C_2": expected_single_company_response,
             },
+            identifier_errors={},
             identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
         )
 
@@ -144,7 +150,7 @@ class TestPrices:
     async def test_get_prices_with_date_range(
         self,
         httpx_client: httpx2.AsyncClient,
-        httpx2_mock,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN we request prices with a specific date range and periodicity
@@ -183,7 +189,7 @@ class TestHistoryMetadata:
     }
 
     @pytest.fixture
-    def add_spgi_metadata_mock_resp(self, httpx2_mock) -> None:
+    def add_spgi_metadata_mock_resp(self, httpx2_mock: Router) -> None:
         """Add mock response for SPGI history metadata."""
         httpx2_mock.get(
             f"https://kfinance.kensho.com/api/v1/pricing/{SPGI_TRADING_ITEM_ID}/metadata"
@@ -221,14 +227,16 @@ class TestHistoryMetadata:
 
         expected_resp = GetHistoryMetadataFromIdentifiersResp(
             identifier_results={"SPGI": HistoryMetadataResp.model_validate(self.metadata_resp)},
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
 
         resp = await get_history_metadata_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             httpx_client=httpx_client,
         )
 

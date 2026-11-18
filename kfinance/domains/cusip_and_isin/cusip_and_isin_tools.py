@@ -1,3 +1,4 @@
+from collections import defaultdict
 from textwrap import dedent
 from typing import Literal, Type
 
@@ -90,15 +91,23 @@ async def get_cusip_or_isin_from_identifiers(
                     'data': '78409V104'
                 }
             },
-            'errors': ['Kensho is a private company without a security_id.']
+            'errors': ['(identifier: Kensho; company: Kensho Technologies, Inc.; country: United States): Kensho is a private company without a security_id.']
         }
     """
 
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
+
+    # We're making a copy of the original resolutions since the security ID
+    # filtering also removes identifier info that we want to add to the error
+    # strings.
+    all_id_triple_info = id_triple_resp.identifiers_to_id_triples.copy()
     id_triple_resp.filter_out_companies_without_security_ids()
-    errors: list[str] = list(id_triple_resp.errors.values())
+
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     tasks = [
         AsyncTask(
@@ -118,14 +127,14 @@ async def get_cusip_or_isin_from_identifiers(
     results: dict[str, str] = dict()
     for task in tasks:
         if task.error:
-            errors.append(task.error)
+            errors[task.result_key].append(task.error)
         else:
             results[task.result_key] = task.result
 
     return GetCusipOrIsinFromIdentifiersResp(
         identifier_results=results,
-        identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
+        identifier_errors=errors,
+        identifier_info=all_id_triple_info,
     )
 
 

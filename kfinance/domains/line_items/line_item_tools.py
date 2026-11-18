@@ -1,3 +1,4 @@
+from collections import defaultdict
 from difflib import SequenceMatcher
 from textwrap import dedent
 from typing import Any, Literal, Type, cast
@@ -79,11 +80,13 @@ def _find_similar_line_items(
     return [item for item in scores[:max_suggestions] if item.score > 0.1]
 
 
-def _smart_line_item_validator(v: str) -> str:
+def smart_line_item_validator(
+    v: str, names_and_aliases: list[str], items_to_descriptions: dict[str, str]
+) -> str:
     """Custom validator that provides intelligent suggestions for invalid line items."""
-    if v not in LINE_ITEM_NAMES_AND_ALIASES:
+    if v not in names_and_aliases:
         # Find similar items using pre-computed descriptors
-        suggestions = _find_similar_line_items(v, LINE_ITEM_TO_DESCRIPTIONS_MAP)
+        suggestions = _find_similar_line_items(v, items_to_descriptions)
 
         if suggestions:
             suggestion_text = "\n\nDid you mean one of these?\n"
@@ -149,7 +152,11 @@ class GetFinancialLineItemFromIdentifiersArgs(BaseFinancialLineItemFromIdentifie
             if not isinstance(line_item, str):
                 raise ValueError(f"line_item must be a string, got {type(line_item).__name__}")
             # Use the helper function to validate and provide suggestions
-            _smart_line_item_validator(line_item)
+            smart_line_item_validator(
+                v=line_item,
+                names_and_aliases=LINE_ITEM_NAMES_AND_ALIASES,
+                items_to_descriptions=LINE_ITEM_TO_DESCRIPTIONS_MAP,
+            )
         return values
 
 
@@ -246,7 +253,9 @@ async def get_financial_line_item_from_identifiers(
     id_triple_resp = await unified_fetch_id_triples(
         identifiers=identifiers, httpx_client=httpx_client
     )
-    errors: list[str] = list(id_triple_resp.errors.values())
+    errors: dict[str, list[str]] = defaultdict(list)
+    for identifier, error in id_triple_resp.errors.items():
+        errors[identifier].append(error)
 
     # Fetch line items for all resolved company IDs
     if id_triple_resp.company_ids:
@@ -267,7 +276,7 @@ async def get_financial_line_item_from_identifiers(
         # Add any errors from the line item API, mapping company_id keys back to identifiers
         for company_id_str, error in line_item_resp.errors.items():
             original_identifier = id_triple_resp.get_identifier_from_company_id(int(company_id_str))
-            errors.append(f"{original_identifier}: {error}")
+            errors[original_identifier].append(error)
 
         # Map results back to original identifiers
         identifier_to_results = {}
@@ -296,8 +305,8 @@ async def get_financial_line_item_from_identifiers(
 
     resp_model = GetFinancialLineItemFromIdentifiersResp(
         identifier_results=results,
+        identifier_errors=errors,
         identifier_info=id_triple_resp.identifiers_to_id_triples,
-        errors=errors,
         data_source="Capital IQ",
         requested_line_item=requested_line_item,
     )

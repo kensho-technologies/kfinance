@@ -1,7 +1,9 @@
+from datetime import date
 from decimal import Decimal
 
 import httpx2
 import pytest
+from respx import Router
 
 from kfinance.conftest import FAKE_COMPANY_1_ID_TRIPLE, FAKE_COMPANY_2_ID_TRIPLE, SPGI_ID_TRIPLE
 from kfinance.domains.companies.company_models import COMPANY_ID_PREFIX
@@ -136,7 +138,7 @@ class TestRoundsOfFunding:
     }
 
     @pytest.fixture
-    def add_spgi_rounds_mock_resp(self, httpx2_mock) -> None:
+    def add_spgi_rounds_mock_resp(self, httpx2_mock: Router) -> None:
         """Add mock response for SPGI rounds of funding."""
         httpx2_mock.get(
             f"https://kfinance.kensho.com/api/v1/fundingrounds/target/{SPGI_ID_TRIPLE.company_id}"
@@ -177,14 +179,16 @@ class TestRoundsOfFunding:
             identifier_results={
                 "SPGI": RoundsOfFundingResp.model_validate(self.rounds_of_funding_response)
             },
+            identifier_errors={
+                "non-existent-company": [
+                    "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
+                ]
+            },
             identifier_info={"SPGI": SPGI_ID_TRIPLE},
-            errors=[
-                "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
-            ],
         )
 
         resp = await get_rounds_of_funding_from_identifiers(
-            identifiers=["SPGI", "non-existent"],
+            identifiers=["SPGI", "non-existent-company"],
             role=RoundsOfFundingRole.company_raising_funds,
             httpx_client=httpx_client,
         )
@@ -193,7 +197,7 @@ class TestRoundsOfFunding:
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_from_transaction_ids_complete_data(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         """
         WHEN we request funding round info for a transaction with complete advisor data
@@ -205,8 +209,8 @@ class TestRoundsOfFunding:
             results={
                 123456: RoundOfFundingInfoWithAdvisors(
                     timeline=RoundOfFundingInfoTimeline(
-                        announced_date="2023-01-15",
-                        closed_date="2023-02-15",
+                        announced_date=date.fromisoformat("2023-01-15"),
+                        closed_date=date.fromisoformat("2023-02-15"),
                     ),
                     participants=RoundOfFundingParticipantsWithAdvisors(
                         target=CompanyIdAndNameWithAdvisors(
@@ -308,7 +312,9 @@ class TestRoundsOfFunding:
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_with_mixed_advisor_data(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self,
+        httpx_client: httpx2.AsyncClient,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN some advisor API calls return data and others return empty lists
@@ -320,8 +326,8 @@ class TestRoundsOfFunding:
             results={
                 345678: RoundOfFundingInfoWithAdvisors(
                     timeline=RoundOfFundingInfoTimeline(
-                        announced_date="2023-01-15",
-                        closed_date="2023-02-15",
+                        announced_date=date.fromisoformat("2023-01-15"),
+                        closed_date=date.fromisoformat("2023-02-15"),
                     ),
                     participants=RoundOfFundingParticipantsWithAdvisors(
                         target=CompanyIdAndNameWithAdvisors(
@@ -408,7 +414,7 @@ class TestRoundsOfFunding:
     async def test_get_funding_summary_from_identifiers(
         self,
         httpx_client: httpx2.AsyncClient,
-        httpx2_mock,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN we request funding summary for multiple companies
@@ -434,8 +440,8 @@ class TestRoundsOfFunding:
             total_capital_raised=5000000.0,
             total_capital_raised_currency="USD",
             total_rounds=1,
-            first_funding_date="2023-02-15",
-            most_recent_funding_date="2023-02-15",
+            first_funding_date=date.fromisoformat("2023-02-15"),
+            most_recent_funding_date=date.fromisoformat("2023-02-15"),
             rounds_by_type={"Series A": 1},
             sources=[
                 {
@@ -449,6 +455,7 @@ class TestRoundsOfFunding:
                 "C_1": expected_summary,
                 "C_2": expected_summary.model_copy(update={"company_id": "C_2"}),
             },
+            identifier_errors={},
             identifier_info={"C_1": FAKE_COMPANY_1_ID_TRIPLE, "C_2": FAKE_COMPANY_2_ID_TRIPLE},
         )
 
@@ -461,7 +468,9 @@ class TestRoundsOfFunding:
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_http_404(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self,
+        httpx_client: httpx2.AsyncClient,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN the server returns a 404 for a non-existent transaction_id
@@ -487,7 +496,9 @@ class TestRoundsOfFunding:
 
     @pytest.mark.asyncio
     async def test_get_rounds_of_funding_info_advisor_endpoints_404(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock
+        self,
+        httpx_client: httpx2.AsyncClient,
+        httpx2_mock: Router,
     ) -> None:
         """
         WHEN the advisor endpoints return 404
@@ -514,8 +525,8 @@ class TestRoundsOfFunding:
             results={
                 111111: RoundOfFundingInfoWithAdvisors(
                     timeline=RoundOfFundingInfoTimeline(
-                        announced_date="2023-01-15",
-                        closed_date="2023-02-15",
+                        announced_date=date.fromisoformat("2023-01-15"),
+                        closed_date=date.fromisoformat("2023-02-15"),
                     ),
                     participants=RoundOfFundingParticipantsWithAdvisors(
                         target=CompanyIdAndNameWithAdvisors(

@@ -13,9 +13,6 @@ from kfinance.client.models.date_and_period_models import (
     EstimateType,
     PeriodType,
 )
-from kfinance.domains.business_relationships.business_relationship_models import (
-    BusinessRelationshipType,
-)
 from kfinance.domains.capitalizations.capitalization_models import Capitalization
 from kfinance.domains.companies.company_models import (
     Auditors,
@@ -24,7 +21,7 @@ from kfinance.domains.companies.company_models import (
     NativeName,
 )
 from kfinance.domains.competitors.competitor_models import CompetitorSource
-from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType
+from kfinance.domains.key_developments.key_devs_models import KeyDevCategoryType, KeyDevEventType
 from kfinance.domains.line_items.line_item_models import LINE_ITEMS, CalendarType
 from kfinance.domains.professionals.professionals_models import (
     CompanyProfessional,
@@ -32,11 +29,15 @@ from kfinance.domains.professionals.professionals_models import (
     ProfessionalType,
     Timeframe,
 )
+from kfinance.domains.relationships.relationship_models import (
+    RelatedCompany,
+    RelationshipType,
+)
 from kfinance.domains.segments.segment_models import SegmentType
 
 
 if TYPE_CHECKING:
-    from .kfinance import BusinessRelationships, Companies
+    from .kfinance import Companies, Relationships
 
 logger = logging.getLogger(__name__)
 
@@ -315,29 +316,32 @@ class CompanyFunctionsMetaClass:
         )
 
     @cached(cache=LRUCache(maxsize=100))
-    def relationships(self, relationship_type: BusinessRelationshipType) -> "BusinessRelationships":
-        """Returns a BusinessRelationships object that includes the current and previous Companies associated with company_id and filtered by relationship_type. The function calls fetch_companies_from_business_relationship.
+    def relationships(self, relationship_type: RelationshipType) -> "Relationships":
+        """Returns a Relationships object that includes the Companies associated with company_id and filtered by relationship_type. The function calls fetch_companies_from_relationship.
 
-        :param relationship_type: The type of relationship to filter by. Valid relationship types are defined in the BusinessRelationshipType class.
-        :type relationship_type: BusinessRelationshipType
-        :return: A BusinessRelationships object containing a tuple of Companies objects that lists current and previous company IDs that have the specified relationship with the given company_id.
-        :rtype: BusinessRelationships
+        :param relationship_type: The type of relationship to filter by. Valid relationship types are defined in the RelationshipType class.
+        :type relationship_type: RelationshipType
+        :return: A Relationships object containing a tuple of Companies objects that lists the current, previous, pending, and cancelled company IDs that have the specified relationship with the given company_id.
+        :rtype: Relationships
         """
-        from .kfinance import BusinessRelationships, Companies
+        from .kfinance import Companies, Relationships
 
-        relationship_resp = self.kfinance_api_client.fetch_companies_from_business_relationship(
+        relationship_resp = self.kfinance_api_client.fetch_companies_from_relationship(
             company_id=self.company_id,
             relationship_type=relationship_type,
         )
-        return BusinessRelationships(
-            current=Companies(
+
+        def to_companies(companies: list[RelatedCompany] | None) -> "Companies":
+            return Companies(
                 kfinance_api_client=self.kfinance_api_client,
-                company_ids=[c.company_id for c in relationship_resp.current],
-            ),
-            previous=Companies(
-                kfinance_api_client=self.kfinance_api_client,
-                company_ids=[c.company_id for c in relationship_resp.previous],
-            ),
+                company_ids=[c.company_id for c in (companies or [])],
+            )
+
+        return Relationships(
+            current=to_companies(relationship_resp.current),
+            previous=to_companies(relationship_resp.previous),
+            pending=to_companies(relationship_resp.pending),
+            cancelled=to_companies(relationship_resp.cancelled),
         )
 
     def market_cap(
@@ -821,6 +825,59 @@ class CompanyFunctionsMetaClass:
 
         return pd.DataFrame(estimates_data).apply(pd.to_numeric).replace(np.nan, None)
 
+    def surprise_va(
+        self,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        start_quarter: int | None = None,
+        end_quarter: int | None = None,
+        num_periods_backward: int | None = None,
+        period_type: EstimatePeriodType | None = None,
+        estimate_search: str | None = None,
+        calendar_type: CalendarType | None = None,
+    ) -> pd.DataFrame:
+        """Get surprise from Visible Alpha for the time range and period type."""
+        try:
+            self.validate_inputs(
+                start_year=start_year,
+                end_year=end_year,
+                start_quarter=start_quarter,
+                end_quarter=end_quarter,
+            )
+        except ValueError:
+            return pd.DataFrame()
+
+        surprise_response = self.kfinance_api_client.fetch_visible_alpha_surprises(
+            company_ids=[self.company_id],
+            period_type=period_type,
+            start_year=start_year,
+            end_year=end_year,
+            start_quarter=start_quarter,
+            end_quarter=end_quarter,
+            num_periods_backward=num_periods_backward,
+            estimate_search=estimate_search,
+            calendar_type=calendar_type,
+        )
+
+        if not surprise_response.results:
+            return pd.DataFrame()
+
+        periods = next(iter(surprise_response.results.values())).periods
+
+        surprises_data = {}
+        for period_key, period_data in periods.items():
+            period_surprises = {}
+            for surprise in period_data.surprises:
+                period_surprises[f"{surprise.name} - Estimate"] = surprise.estimate_value
+                period_surprises[f"{surprise.name} - Actual"] = surprise.actual_value
+                if surprise.pct_changed:
+                    period_surprises[f"{surprise.name} - % Changed"] = surprise.pct_changed
+                if surprise.bps_changed:
+                    period_surprises[f"{surprise.name} - BPS Difference"] = surprise.bps_changed
+            surprises_data[period_key] = period_surprises
+
+        return pd.DataFrame(surprises_data).apply(pd.to_numeric).replace(np.nan, None)
+
     def guidance(
         self,
         start_year: int | None = None,
@@ -893,7 +950,9 @@ class CompanyFunctionsMetaClass:
         self,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        key_dev_category: Optional[str] = None,
+        key_dev_category: Optional[KeyDevCategoryType] = None,
+        event_type: Optional[KeyDevEventType] = None,
+        transcripts_only: bool = False,
     ) -> pd.DataFrame:
         """Get key development events for the company within an optional date range.
 
@@ -902,20 +961,22 @@ class CompanyFunctionsMetaClass:
         :param end_date: The end date in format "YYYY-MM-DD", defaults to None
         :type end_date: str, optional
         :param key_dev_category: Optional category filter (see KeyDevCategoryType), defaults to None
-        :type key_dev_category: str, optional
-        :return: A DataFrame of key developments with columns: category, key_dev_id, situation, announced_date_utc, most_important_date_utc, source, and company_role
+        :type key_dev_category: KeyDevCategoryType, optional
+        :param event_type: Optional filter for one kind of call or presentation (see KeyDevEventType), defaults to None. Takes precedence over key_dev_category.
+        :type event_type: KeyDevEventType, optional
+        :param transcripts_only: If True, only return key developments that have a transcript, defaults to False. Needs transcripts access.
+        :type transcripts_only: bool, optional
+        :return: A DataFrame of key developments with columns: category, key_dev_id, situation, announced_date_utc, most_important_date_utc, source, company_role, and has_transcript (True when a transcript can be fetched with Client.transcript; False when there is none or the user has no transcripts access)
         :rtype: pd.DataFrame
         """
-
-        key_dev_category_enum = None
-        if key_dev_category is not None:
-            key_dev_category_enum = KeyDevCategoryType(key_dev_category)
 
         response = self.kfinance_api_client.fetch_key_devs(
             company_id=self.company_id,
             start_date=start_date,
             end_date=end_date,
-            key_dev_category=key_dev_category_enum,
+            key_dev_category=key_dev_category,
+            event_type=event_type,
+            transcripts_only=transcripts_only,
         )
 
         if not response.results:
@@ -933,6 +994,7 @@ class CompanyFunctionsMetaClass:
                     "most_important_date_utc": event.most_important_date_utc,
                     "source": event.source,
                     "company_role": event.company_role,
+                    "has_transcript": bool(event.has_transcript),
                 }
                 rows.append(row)
 
@@ -1043,16 +1105,16 @@ class DelegatedCompanyFunctionsMetaClass(CompanyFunctionsMetaClass):
         raise NotImplementedError("child classes must implement company property")
 
 
-for relationship in BusinessRelationshipType:
+for relationship in RelationshipType:
 
-    def _relationship_outer_wrapper(relationship_type: BusinessRelationshipType) -> property:
+    def _relationship_outer_wrapper(relationship_type: RelationshipType) -> property:
         """Creates a property for a relationship type.
 
-        This function returns a property that retrieves the associated company's current and previous
+        This function returns a property that retrieves the associated company's
         relationships of the specified type.
 
         Args:
-            relationship_type (BusinessRelationshipType): The type of relationship to be wrapped.
+            relationship_type (RelationshipType): The type of relationship to be wrapped.
 
         Returns:
             property: A property that calls the inner wrapper to retrieve the relationship data.
@@ -1060,19 +1122,18 @@ for relationship in BusinessRelationshipType:
 
         def relationship_inner_wrapper(
             self: Any,
-        ) -> "BusinessRelationships":
+        ) -> "Relationships":
             """Inner wrapper function for the relationship type.
 
-            This function retrieves the associated company's current and previous relationships
-            of the specified type.
+            This function retrieves the associated company's relationships of the specified type.
 
             Returns:
-                BusinessRelationships: A BusinessRelationships object containing the current and previous companies
-                associated with the relationship type.
+                Relationships: A Relationships object containing the companies associated with
+                the relationship type.
             """
             return self.relationships(relationship_type)
 
-        doc = f"Returns the associated company's current and previous {relationship_type}s"
+        doc = f"Returns the associated company's current, previous, pending and cancelled {relationship_type}s"
         relationship_inner_wrapper.__doc__ = doc
         relationship_inner_wrapper.__name__ = relationship
 

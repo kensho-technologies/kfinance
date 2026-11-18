@@ -44,8 +44,17 @@ FAKE_COMPANY_2_ID_TRIPLE = IdentificationTripleWithCompanyInfo(
     country="USA",
 )
 
+PRIVATE_COMPANY_ID_TRIPLE = IdentificationTripleWithCompanyInfo(
+    company_id=1,
+    security_id=None,
+    trading_item_id=None,
+    company_name="Private Company",
+    ticker=None,
+    country="USA",
+)
+
 NON_EXISTENT_ERROR = {
-    "error": "No identification triple found for the provided identifier: NON-EXISTENT of type: ticker"
+    "error": "No identification triple found for the provided identifier: NON-EXISTENT-COMPANY of type: ticker"
 }
 
 
@@ -102,18 +111,18 @@ def mock_client(httpx2_mock: Router) -> Client:
         # Fetch SPGI
         ("SPGI",): {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")},
         # Fetch a non-existent company (which will include an error)
-        ("non-existent",): {"non-existent": NON_EXISTENT_ERROR},
+        ("non-existent-company",): {"non-existent-company": NON_EXISTENT_ERROR},
         # Fetch a fake company
         ("C_1",): {"C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json")},
         # Fetch SPGI and a non-existent company (which will include an error)
-        ("SPGI", "non-existent"): {
+        ("SPGI", "non-existent-company"): {
             "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-            "non-existent": NON_EXISTENT_ERROR,
+            "non-existent-company": NON_EXISTENT_ERROR,
         },
         # Fetch SPGI and a private company (which will only have a company_id but no security or trading item id.)
         ("SPGI", "private_company"): {
             "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-            "private_company": {"company_id": 1, "security_id": None, "trading_item_id": None},
+            "private_company": PRIVATE_COMPANY_ID_TRIPLE.model_dump(mode="json"),
         },
         ("C_1", "C_2"): {
             "C_1": FAKE_COMPANY_1_ID_TRIPLE.model_dump(mode="json"),
@@ -137,23 +146,16 @@ def httpx_client(httpx2_mock: Router) -> httpx2.AsyncClient:
         # Fetch SPGI
         ("SPGI",): {"SPGI": SPGI_ID_TRIPLE.model_dump(mode="json")},
         # Fetch non-existent company (only includes an error)
-        ("non-existent",): {"non-existent": NON_EXISTENT_ERROR},
+        ("non-existent-company",): {"non-existent-company": NON_EXISTENT_ERROR},
         # Fetch SPGI and a non-existent company (which will include an error)
-        ("SPGI", "non-existent"): {
+        ("SPGI", "non-existent-company"): {
             "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-            "non-existent": NON_EXISTENT_ERROR,
+            "non-existent-company": NON_EXISTENT_ERROR,
         },
         # Fetch SPGI and a private company (which will only have a company_id but no security or trading item id.)
         ("SPGI", "private_company"): {
             "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-            "private_company": {
-                "company_id": 1,
-                "security_id": None,
-                "trading_item_id": None,
-                "company_name": "Private Company",
-                "ticker": None,
-                "country": "USA",
-            },
+            "private_company": PRIVATE_COMPANY_ID_TRIPLE.model_dump(mode="json"),
         },
         # Fetch C_1 and C_2 (for multi-company testing)
         ("C_1", "C_2"): {
@@ -181,5 +183,47 @@ def add_spgi_supplier_mock_resp(httpx2_mock: Router) -> None:
                 {"company_name": "Morgan Stanley", "company_id": 472898},
                 {"company_name": "Eloqua, Inc.", "company_id": 8182358},
             ],
+        }
+    )
+
+
+@pytest.fixture
+def add_spgi_creditor_mock_resp(httpx2_mock: Router) -> None:
+    """Add mock response for SPGI creditor relationship.
+
+    Served as it would be to a client entitled to both relationship datasets: the two datasets
+    are merged, and the Company Relationships rows carry a relationship_subtype because that
+    dataset defines the relationship more narrowly.
+    """
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/creditor"
+    ).respond(
+        json={
+            "current": [
+                {"company_id": 1, "company_name": "General Lender"},
+                {
+                    "company_id": 2,
+                    "company_name": "Private Placement Lender",
+                    "relationship_subtype": "bankruptcy_and_debt_private_placement",
+                },
+            ],
+            "previous": [],
+            "pending": [],
+            "cancelled": [],
+        }
+    )
+
+
+@pytest.fixture
+def add_spgi_sponsored_fund_mock_resp(httpx2_mock: Router) -> None:
+    """Add mock response for SPGI sponsored_fund relationship."""
+    httpx2_mock.get(
+        f"https://kfinance.kensho.com/api/v1/relationship/{SPGI_COMPANY_ID}/sponsored_fund"
+    ).respond(
+        json={
+            "current": [{"company_id": 1, "company_name": "Company 1"}],
+            "previous": [{"company_id": 2, "company_name": "Company 2"}],
+            "pending": [{"company_id": 3, "company_name": "Company 3"}],
+            "cancelled": [{"company_id": 4, "company_name": "Company 4"}],
         }
     )
