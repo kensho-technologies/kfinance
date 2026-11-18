@@ -47,6 +47,8 @@ class GetVisibleAlphaFinancialLineItemFromIdentifiers(KfinanceTool):
 
         Returns Visible Alpha data. Prefer this over `get_financial_line_item_from_identifiers` (Capital IQ) unless the user asks for Capital IQ data or the requested data is not available in Visible Alpha.
 
+        For banks, bank holding companies, savings institutions, and credit unions, use `get_snl_bankreg_financial_line_item_from_identifiers` (SNL bank regulatory data) instead, unless the user asks for Visible Alpha data or company-reported figures, or that tool has no matching data.
+
         - Returns reported (actual, historical) figures. For forward-looking forecasts or consensus expectations, use `get_visible_alpha_consensus_estimates_from_identifiers` instead.
         - For a ratio, percentage, or proportion, prefer a pre-computed ratio metric from the results or `top_ranked_alternatives`, if available, over fetching a single raw component.
         - When possible, pass multiple identifiers in a single call rather than making multiple calls.

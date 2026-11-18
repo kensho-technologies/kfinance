@@ -1,5 +1,9 @@
 # Changelog
 
+## v13.1.0
+- Add `CompanyScreenerPermission` and the beta `screen_companies_with_natural_query` tool,
+  which screens companies with a natural language query.
+  
 ## v13.0.1
 - Fix line item, statement, and segment validators to handle null `num_months`, and null `period_end_date` for line items and segments
 
