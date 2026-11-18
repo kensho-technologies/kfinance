@@ -51,8 +51,8 @@ class ScreenCompaniesWithNaturalQuery(KfinanceTool):
         - `max_rows` defaults to 100. Raise it (at most 1000) only when the user needs a long list. If the result has more rows than `max_rows`, the tool returns an error with the row count; narrow the query or raise `max_rows`.
 
         Examples:
-        Query: "What are the companies in the US with more than $500M revenue and with margins over 20%"
-        Function: screen_companies_with_natural_query(natural_language_query="US software companies with over $500M revenue and margins above 20%")
+        Query: "What are the companies in the US with more than $5B revenue and with margins over 20%"
+        Function: screen_companies_with_natural_query(natural_language_query="US software companies with over $5B revenue and margins above 20%")
 
         Query: "Give me European banks bigger than $50B in total assets"
         Function: screen_companies_with_natural_query(natural_language_query="European banks with total assets over $50B USD")
