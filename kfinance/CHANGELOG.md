@@ -1,5 +1,8 @@
 # Changelog
 
+## v13.0.1
+- Fix line item validator to handle null `period_end_date`
+
 ## v13.0.0
 - **Breaking:** Unify "business relationships" into "relationships". The tool
   `get_business_relationship_from_identifiers` is now `get_relationship_from_identifiers`, and its
