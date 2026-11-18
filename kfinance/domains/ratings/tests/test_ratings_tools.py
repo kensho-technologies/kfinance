@@ -179,14 +179,26 @@ class TestRatings:
         assert resp == expected_resp
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "api_error",
+        [
+            pytest.param("No results found.", id="no results"),
+            pytest.param(
+                "You do not have permission to perform this action",
+                id="entity outside ratings trial",
+            ),
+        ],
+    )
     async def test_get_issuer_ratings_with_api_error(
         self,
+        api_error: str,
         httpx_client: httpx2.AsyncClient,
         httpx2_mock,
     ) -> None:
         """
         WHEN the ratings API returns an error
-        THEN the error identifies what the original identifier resolved to.
+        THEN the error keeps the API's message and identifies what the original identifier
+            resolved to.
         """
         # Mock entity resolution
         httpx2_mock.post("https://kfinance.kensho.com/api/v1/ratings/resolve_entities/").respond(
@@ -206,17 +218,14 @@ class TestRatings:
         httpx2_mock.post("https://kfinance.kensho.com/api/v1/ratings/issuer_ratings/").respond(
             json={
                 "results": {},
-                "errors": {"4217533": "No results found."},
+                "errors": {"4217533": api_error},
             }
         )
 
         expected_resp = GetIssuerRatingsFromIdentifiersResp.create(
             identifier_results={},
             identifier_info={},
-            errors=[
-                "USA: No ratings data found for entity which resolved to United States "
-                "(entity ID 4217533)."
-            ],
+            errors=[f"USA (resolved to United States, entity ID 4217533): {api_error}"],
         )
 
         resp = await get_issuer_ratings_from_identifiers(

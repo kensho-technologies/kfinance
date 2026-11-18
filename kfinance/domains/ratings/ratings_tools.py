@@ -123,6 +123,7 @@ class GetIssuerRatingsFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = GetIssuerRatingsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {
         Permission.RatingsPermission,
+        Permission.RatingsTrialPermission,
         Permission.GI10YearHistoryPermission,
         Permission.GICurrentPermission,
         Permission.GIFullHistoryPermission,
@@ -164,6 +165,7 @@ class GetSecurityRatingsFromIdentifiers(KfinanceTool):
     args_schema: Type[BaseModel] = GetSecurityRatingsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {
         Permission.RatingsPermission,
+        Permission.RatingsTrialPermission,
         Permission.GI10YearHistoryPermission,
         Permission.GICurrentPermission,
         Permission.GIFullHistoryPermission,
@@ -237,8 +239,8 @@ async def get_issuer_ratings_from_identifiers(
 
         if entity_info:
             errors.append(
-                f"{original_identifier}: No ratings data found for entity which resolved to "
-                f"{entity_info.entity_name} (entity ID {entity_id})."
+                f"{original_identifier} (resolved to {entity_info.entity_name}, "
+                f"entity ID {entity_id}): {error}"
             )
         else:
             errors.append(f"{original_identifier}: {error}")

@@ -13,6 +13,10 @@ from kfinance.domains.earnings.earning_tools import (
     GetNextEarningsFromIdentifiers,
     GetTranscriptFromKeyDevId,
 )
+from kfinance.domains.ratings.ratings_tools import (
+    GetIssuerRatingsFromIdentifiers,
+    GetSecurityRatingsFromIdentifiers,
+)
 from kfinance.domains.statements.statement_tools import GetFinancialStatementFromIdentifiers
 from kfinance.integrations.tool_calling.static_tools.get_latest import GetLatest
 from kfinance.integrations.tool_calling.tool_calling_models import KfinanceTool
@@ -92,4 +96,18 @@ class TestLangchainTools:
         # User should have access to functions that don't require permissions
         assert GetLatest in tool_classes
         # User should not have access to functions that require statement permissions
+        assert GetFinancialStatementFromIdentifiers not in tool_classes
+
+    def test_ratings_trial_permission(self, mock_client: Client):
+        """
+        GIVEN a user with only the ratings trial permission
+        WHEN we filter tools by permissions
+        THEN we return the issuer and security ratings tools but not tools that need other
+            permissions.
+        """
+        mock_client.kfinance_api_client._user_permissions = {Permission.RatingsTrialPermission}  # noqa: SLF001
+        tool_classes = [type(t) for t in mock_client.langchain_tools]
+        assert GetIssuerRatingsFromIdentifiers in tool_classes
+        assert GetSecurityRatingsFromIdentifiers in tool_classes
+        assert GetEarningsFromIdentifiers not in tool_classes
         assert GetFinancialStatementFromIdentifiers not in tool_classes
