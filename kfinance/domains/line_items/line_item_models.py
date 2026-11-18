@@ -22,8 +22,8 @@ class LineItem(BaseModel):
 
 
 class LineItemPeriodData(BaseModel):
-    period_end_date: date
-    num_months: int
+    period_end_date: date | None
+    num_months: int | None
     line_item: LineItem
 
 
