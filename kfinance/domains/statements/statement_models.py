@@ -33,7 +33,7 @@ class Statement(BaseModel):
 
 class StatementPeriodData(BaseModel):
     period_end_date: date
-    num_months: int
+    num_months: int | None
     statements: list[Statement]
 
 
