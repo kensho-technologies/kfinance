@@ -1,5 +1,9 @@
 # Changelog
 
+## v13.1.0
+- Add `CompanyScreenerPermission` and the beta `screen_companies_with_natural_query` tool,
+  which screens companies with a natural language query.
+
 ## v13.0.0
 - **Breaking:** Unify "business relationships" into "relationships". The tool
   `get_business_relationship_from_identifiers` is now `get_relationship_from_identifiers`, and its
@@ -9,10 +13,6 @@
   `fund_distributor`, `distributed_fund`, `fund_investment_advisor`, `advised_fund`; and two new
   response statuses: `pending` and `cancelled`.
 - Relationship tools now surface a `relationship_subtype` for each relationship, where applicable.
-
-## v12.1.0
-- Add `CompanyScreenerPermission` and the beta `screen_companies_with_natural_query` tool,
-  which screens companies with a natural language query.
 
 ## v12.0.1
  - Total capital raised in a round of funding is always USD, regardless of the round's normal currency.
