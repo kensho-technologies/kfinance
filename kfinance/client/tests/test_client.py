@@ -14,6 +14,10 @@ from kfinance.domains.earnings.earning_tools import (
     GetEarningsFromIdentifiers,
     GetTranscriptFromKeyDevId,
 )
+from kfinance.domains.ratings.ratings_tools import (
+    GetIssuerRatingsFromIdentifiers,
+    GetSecurityRatingsFromIdentifiers,
+)
 from kfinance.domains.relationships.relationship_models import (
     BusinessRelationshipType,
     CompanyRelationshipType,
@@ -225,3 +229,17 @@ class TestApplyUserPermissions:
 
         assert tool.name == GetLatest.model_fields["name"].default
         assert tool.description == GetLatest.model_fields["description"].default
+
+    def test_ratings_trial_permission(self, mock_client: Client):
+        """
+        GIVEN a user with only the ratings trial permission
+        WHEN we filter tools by permissions
+        THEN we return the issuer and security ratings tools but not tools that need other
+            permissions.
+        """
+        mock_client.kfinance_api_client._user_permissions = {Permission.RatingsTrialPermission}  # noqa: SLF001
+        tool_classes = [type(t) for t in mock_client.langchain_tools]
+        assert GetIssuerRatingsFromIdentifiers in tool_classes
+        assert GetSecurityRatingsFromIdentifiers in tool_classes
+        assert GetEarningsFromIdentifiers not in tool_classes
+        assert GetFinancialStatementFromIdentifiers not in tool_classes
