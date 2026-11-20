@@ -36,3 +36,4 @@ class Permission(StrEnum):
     SF10YearHistoryPermission = "SF10YearHistoryPermission"
     SFCurrentPermission = "SFCurrentPermission"
     SFFullHistoryPermission = "SFFullHistoryPermission"
+    CompanyScreenerPermission = "CompanyScreenerPermission"
