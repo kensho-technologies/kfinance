@@ -251,7 +251,6 @@ def build_funding_summaries_from_rof_responses(
             rounds_by_type[funding_type] = rounds_by_type.get(funding_type, 0) + 1
 
         total_capital_raised = None
-        currency = None
         round_info_responses_with_aggregate_amount_raised = [
             detailed_round_info_responses[transaction_id]
             for transaction_id in company_transaction_ids
@@ -269,12 +268,11 @@ def build_funding_summaries_from_rof_responses(
                 )
                 amount = most_recent_round.transaction.aggregate_amount_raised
                 total_capital_raised = float(amount) if amount is not None else None
-                currency = most_recent_round.transaction.currency
 
         summaries[identifier] = FundingSummary(
             company_id=identifier,
             total_capital_raised=total_capital_raised,
-            total_capital_raised_currency=currency,
+            total_capital_raised_currency="USD",  # aggregate amount raised is always USD, regardless of the currency of the round.
             total_rounds=total_rounds,
             first_funding_date=first_funding_date,
             most_recent_funding_date=most_recent_funding_date,

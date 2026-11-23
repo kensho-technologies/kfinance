@@ -1,5 +1,24 @@
 # Changelog
 
+## v13.1.0
+- Add RatingsTrialPermission to limit rated universe for trial users.
+
+## v13.0.1
+- Fix line item, statement, and segment validators to handle null `num_months`, and null `period_end_date` for line items and segments
+
+## v13.0.0
+- **Breaking:** Unify "business relationships" into "relationships". The tool
+  `get_business_relationship_from_identifiers` is now `get_relationship_from_identifiers`, and its
+  `business_relationship` parameter is now `relationship_type`. The `RelationshipPermission` entitlement
+  has been split into `BusinessRelationshipsPermission` and `CompanyRelationshipsPermission`.
+- Adds new relationships types to the relationship tools: `fund_sponsor`, `sponsored_fund`, `fund_family`, `fund_family_member`,
+  `fund_distributor`, `distributed_fund`, `fund_investment_advisor`, `advised_fund`; and two new
+  response statuses: `pending` and `cancelled`.
+- Relationship tools now surface a `relationship_subtype` for each relationship, where applicable.
+
+## v12.0.1
+ - Total capital raised in a round of funding is always USD, regardless of the round's normal currency.
+
 ## v12.0.0
  - **Breaking:** Change `get_consensus_estimates_from_identifiers` and `get_guidance_from_identifiers` to work like the line items tool: each tool now requires a specific estimate line item to return data.
 
