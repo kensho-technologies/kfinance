@@ -1,7 +1,10 @@
 # Changelog
 
+## v13.2.0
+- Add `CompanyScreenerPermission` for company screener beta users.
+
 ## v13.1.0
-- Add `CompanyScreenerPermission` to the `Permission` enum.
+- Add RatingsTrialPermission to limit rated universe for trial users.
 
 ## v13.0.1
 - Fix line item, statement, and segment validators to handle null `num_months`, and null `period_end_date` for line items and segments
