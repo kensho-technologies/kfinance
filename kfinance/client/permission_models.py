@@ -18,6 +18,7 @@ class Permission(StrEnum):
     CompanyIntelligencePermission = "CompanyIntelligencePermission"
     EstimatesPermission = "EstimatesPermission"
     ProfessionalsPermission = "ProfessionalsPermission"
+    OwnershipPermission = "OwnershipPermission"
     VisibleAlphaPermission = "VisibleAlphaPermission"
     VisibleAlphaPremiumPermission = "VisibleAlphaPremiumPermission"
     # These permissions are not used by the client, but some users may have these permissions

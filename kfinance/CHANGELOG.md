@@ -1,5 +1,8 @@
 # Changelog
 
+## v13.1.0
+- Add ownership tools: `get_owners_from_identifiers`, `get_holdings_from_identifiers`, and `get_insider_trades_from_identifiers`.
+
 ## v13.0.1
 - Fix line item, statement, and segment validators to handle null `num_months`, and null `period_end_date` for line items and segments
 
