@@ -1,5 +1,8 @@
 # Changelog
 
+## v13.1.0
+- Add RatingsTrialPermission to limit rated universe for trial users.
+
 ## v13.0.1
 - Fix line item, statement, and segment validators to handle null `num_months`, and null `period_end_date` for line items and segments
 
