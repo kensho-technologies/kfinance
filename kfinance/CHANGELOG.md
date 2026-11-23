@@ -1,5 +1,8 @@
 # Changelog
 
+## v13.2.0
+- Add `CompanyScreenerPermission` for company screener beta users.
+
 ## v13.1.0
 - Add RatingsTrialPermission to limit rated universe for trial users.
 
