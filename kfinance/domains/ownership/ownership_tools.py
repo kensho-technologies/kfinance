@@ -55,9 +55,11 @@ LIMIT_DESCRIPTION = (
     '("all", "every", "full", "complete"); null can produce a very large response.'
 )
 
-OWNER_PERSON_IDS_DESCRIPTION = (
-    "Only return {items} made by these people, by person_id. Get person_ids from "
-    "get_professionals_from_identifiers (e.g. for a company's CEO or directors)."
+PERSON_IDS_DESCRIPTION = (
+    "Only return {items} these people, by person_id. Get person_ids from "
+    "get_professionals_from_identifiers on the company where the person works, which may not be "
+    "the company in identifiers (timeframe='all' includes former roles), or from an owner_id in an "
+    "earlier response."
 )
 
 FIRST_APPEARANCE_NOTE = (
@@ -208,42 +210,42 @@ def add_unique_error(errors: dict[str, list[str]], identifier: str, error: str) 
 class GetOwnersFromIdentifiersArgs(ToolArgsWithIdentifiers):
     owner_type: OwnerTypeCategory = Field(
         default=OwnerTypeCategory.all,
-        description="Only return owners of this type: 'institutions' (asset managers, banks, hedge funds, VC/PE firms, sovereign wealth funds), 'individuals' (insiders and other people), 'corporations' (public and private companies), 'other' (company-controlled foundations, ESOPs, state-owned entities), or 'all'. Only allowed with funds_view='exclude_funds'.",
+        description="Only return owners of this type: 'institutions' (asset managers, banks, hedge funds, VC/PE, sovereign wealth funds), 'individuals', 'corporations', 'other' (foundations, ESOPs, state-owned), or 'all'. Requires funds_view='exclude_funds'.",
     )
     position_changes: list[PositionChange] | None = Field(
         default=None,
         min_length=1,
-        description="Only return owners whose position changed in any of these ways during the latest reporting period, relative to the one before it: 'bought' (increased), 'sold' (decreased), 'new' (newly appears in the data), or 'closed' (fully exited). The changes overlap: a new position also counts as bought, and a closed one as sold. Omit for all owners.",
+        description="Owners whose position changed in any of these ways from the prior period: 'bought', 'sold', 'new' (newly appears in the data), 'closed' (fully exited). They overlap: new positions also count as bought, closed ones as sold.",
     )
     owner_company_identifiers: list[str] | None = Field(
         default=None,
         min_length=1,
-        description="Only return these owners that are companies, as tickers, company names, or company_ids (e.g. 'C_12345'). Use to check how much of a company a specific investor owns.",
+        description="Only return these owner companies, as tickers, names or company_ids.",
     )
     owner_person_ids: list[int] | None = Field(
         default=None,
         min_length=1,
-        description="Only return these owners that are people, by person_id. Get person_ids from get_professionals_from_identifiers.",
+        description=PERSON_IDS_DESCRIPTION.format(items="owners that are"),
     )
     min_pct_shares_outstanding: float | None = Field(
         default=None,
         ge=0,
-        description="Only return owners holding at least this percent of the company's shares outstanding (e.g. 5 for 5%). Owners with an unknown percent are dropped.",
+        description="Minimum percent of shares outstanding held (e.g. 5 for 5%).",
     )
     funds_view: FundsView = Field(
         default=FundsView.exclude_funds,
-        description="'exclude_funds' (default) to leave out funds whose shares are already counted in their sponsor's or advisor's position, 'include_funds' to also return them, or 'funds_only' to only return them.",
+        description="'exclude_funds' (default), 'include_funds' or 'funds_only'.",
     )
     sort_by: OwnersSortBy = Field(
         default=OwnersSortBy.shares_held,
-        description="'shares_held' (default) for the largest owners first, or 'absolute_shares_changed' for the largest purchases and sales during the latest reporting period first.",
+        description="'shares_held' (default) or 'absolute_shares_changed' (largest purchases and sales first).",
     )
     limit: int | None = Field(
         default=DEFAULT_LIMIT, ge=1, description=LIMIT_DESCRIPTION.format(items="owners")
     )
     include_summary: bool = Field(
         default=False,
-        description="Also return the company's aggregate ownership summary (institutional ownership %, number of holders, buyers/sellers, and shares held by owner type).",
+        description="Also return the company's ownership summary (institutional ownership %, holder and buyer/seller counts, shares held by owner type), for aggregate questions.",
     )
 
     @model_validator(mode="after")
@@ -266,44 +268,27 @@ class GetOwnersFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CompanyOwners]):
 class GetOwnersFromIdentifiers(KfinanceTool):
     name: str = "get_owners_from_identifiers"
     description: str = dedent("""
-        Get the owners (shareholders) of a list of companies from public ownership filings. Each owner includes the owner name and id, owner type, institution type, shares held, percent of shares outstanding, holding date, reporting period, and period_change (shares bought or sold during the latest reporting period). Results include total_matching, the number of owners matching the filters before the limit.
+        Get the owners (shareholders) of a list of companies from public ownership filings, with each owner's position and period_change, the change from the prior reporting period. Only the latest reporting period is available, and its end_date can be in the future.
 
-        - Only the latest reporting period is returned: each owner's current position, and period_change relative to the reporting period before it. Ownership as of earlier periods, or changes over longer spans, isn't available. The latest period can still be open, so its end_date can be in the future.
-        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - Pass a ticker as given. Otherwise pass the company's full name with its legal suffix (e.g. "Apple Inc." rather than "Apple").
-        - The identifiers are the companies being owned. To find what a company or fund owns (its portfolio), use get_holdings_from_identifiers instead.
-        - Funds are excluded by default because their shares are usually also counted in the position of their sponsor or investment advisor (e.g. BlackRock, Inc.). Fund rows have a fund_parent; don't add them to other owners' totals.
+        - When possible, pass multiple identifiers in a single call. Pass a ticker as given, or the company's full name with its legal suffix (e.g. "Apple Inc.").
+        - The identifiers are the owned companies. For what a company or fund owns, use get_holdings_from_identifiers.
+        - Funds are excluded by default, since their shares are usually counted in their sponsor's or advisor's position. Don't add fund rows to other owners' totals.
         - A null percent_shares_changed means the owner newly appears in the data.
-        - position_changes keeps owners matching any of the given changes, and the changes overlap: a new position also counts as bought, and a closed one as sold. Use ["new"] for only new positions, not ["bought"].
-        - To filter to specific owners, pass owner_company_identifiers for companies, and owner_person_ids (from get_professionals_from_identifiers) for people.
-        - Set include_summary=True for aggregate ownership questions: institutional ownership percentage, number of institutional holders, number of buyers/sellers/new buyers/closed positions, shares bought/sold, or shares held by owner type.
 
         Examples:
-        Query: "Who are the largest shareholders of Apple?"
-        Function: get_owners_from_identifiers(identifiers=["Apple Inc."], limit=10)
-
-        Query: "Which institutions own more than 5% of SPGI and MSFT?"
-        Function: get_owners_from_identifiers(identifiers=["SPGI", "MSFT"], owner_type="institutions", min_pct_shares_outstanding=5)
-
-        Query: "Which institutions sold the most AAPL most recently?"
+        Query: "Which institutions sold the most AAPL recently?"
         Function: get_owners_from_identifiers(identifiers=["AAPL"], owner_type="institutions", position_changes=["sold"], sort_by="absolute_shares_changed", limit=10)
-
-        Query: "Who initiated new positions in NVDA?"
-        Function: get_owners_from_identifiers(identifiers=["NVDA"], position_changes=["new"])
-
-        Query: "Which institutions opened or exited positions in MSFT?"
-        Function: get_owners_from_identifiers(identifiers=["MSFT"], owner_type="institutions", position_changes=["new", "closed"])
 
         Query: "How much NVIDIA does BlackRock own?"
         Function: get_owners_from_identifiers(identifiers=["NVDA"], owner_company_identifiers=["BlackRock, Inc."])
 
         Query: "What percent of Tesla is owned by institutions?"
-        Function: get_owners_from_identifiers(identifiers=["Tesla, Inc."], include_summary=True, limit=10)
+        Function: get_owners_from_identifiers(identifiers=["TSLA"], include_summary=True, limit=10)
 
-        Query: "How much Tesla stock does its CEO own?"
-        Function 1: get_professionals_from_identifiers(identifiers=["Tesla, Inc."], professional_type="employees", timeframe="current")
-        # Function 1 returns Tesla's current employees. Extract the <person_id> for the CEO.
-        Function 2: get_owners_from_identifiers(identifiers=["Tesla, Inc."], owner_person_ids=[<person_id>])
+        Query: "How much Apple stock does Warren Buffett personally own?"
+        Function 1: get_professionals_from_identifiers(identifiers=["Berkshire Hathaway Inc."], professional_type="employees", timeframe="current")
+        # Extract the <person_id> for Warren Buffett.
+        Function 2: get_owners_from_identifiers(identifiers=["AAPL"], owner_person_ids=[<person_id>])
     """).strip()
     args_schema: Type[BaseModel] = GetOwnersFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.OwnershipPermission}
@@ -340,22 +325,22 @@ class GetOwnersFromIdentifiers(KfinanceTool):
 class GetHoldingsFromIdentifiersArgs(ToolArgsWithIdentifiers):
     held_company_type: HeldCompanyTypeCategory = Field(
         default=HeldCompanyTypeCategory.all,
-        description="Only return holdings of companies of this type: 'public_companies', 'private_companies', 'funds' (public and private funds, fund families), 'investment_firms' (investment firms and investment arms), 'other' (e.g. government and educational institutions, indexes), or 'all'. Securities not mapped to a company are only returned with 'all'.",
+        description="'public_companies', 'private_companies', 'funds', 'investment_firms', 'other', or 'all'.",
     )
     held_company_identifiers: list[str] | None = Field(
         default=None,
         min_length=1,
-        description="Only return holdings of these companies, as tickers, company names, or company_ids. Use to check whether, or how much, an owner holds of specific companies.",
+        description="Only return holdings of these companies, as tickers, names or company_ids.",
     )
     min_pct_portfolio: float | None = Field(
         default=None,
         ge=0,
-        description="Only return holdings that make up at least this percent of the owner's portfolio (e.g. 5 for 5%), summed across the held company's securities. Holdings with an unknown percent are dropped.",
+        description="Minimum percent of the owner's portfolio (e.g. 5 for 5%).",
     )
     min_pct_shares_outstanding: float | None = Field(
         default=None,
         ge=0,
-        description="Only return holdings where the owner holds at least this percent of the held company's shares outstanding (e.g. 5 for 5%) in at least one security. Holdings with an unknown percent are dropped.",
+        description="Minimum percent of the held company's shares outstanding held (e.g. 5 for 5%).",
     )
     limit: int | None = Field(
         default=DEFAULT_LIMIT, ge=1, description=LIMIT_DESCRIPTION.format(items="held companies")
@@ -369,28 +354,17 @@ class GetHoldingsFromIdentifiersResp(ToolRespWithIdInfoAndErrors[OwnerHoldings])
 class GetHoldingsFromIdentifiers(KfinanceTool):
     name: str = "get_holdings_from_identifiers"
     description: str = dedent("""
-        Get the holdings (portfolio) of a list of owners (e.g. asset managers, funds, or other companies) from public ownership filings. The identifiers are the owners, not the companies being held. Each holding lists the held company id, name and type, its total percent of the owner's portfolio, and the owner's positions in the held company's securities (ticker, shares held, percent of portfolio, percent of shares outstanding, and holding date). Holdings are ordered by total percent of portfolio, largest first. Results include total_matching, the number of holdings matching the filters before the limit.
+        Get the holdings (portfolio) of a list of owners, such as asset managers, funds or companies, from public ownership filings. The identifiers are the owners. Holdings are ordered by total percent of portfolio, and only the latest reported holdings are available.
 
-        - Only the owner's latest reported holdings are returned; holdings as of earlier periods aren't available.
-        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - Pass a ticker as given. Otherwise pass the owner's full name with its legal suffix (e.g. "The Vanguard Group, Inc." rather than "Vanguard"). Short or informal names of asset managers can resolve to the wrong entity.
-        - To find who owns a company, use get_owners_from_identifiers instead.
+        - When possible, pass multiple identifiers in a single call. Pass a ticker as given, or the owner's full name with its legal suffix (e.g. "The Vanguard Group, Inc."); short names of asset managers can resolve to the wrong entity.
+        - For who owns a company, use get_owners_from_identifiers.
 
         Examples:
-        Query: "What are Berkshire Hathaway's largest holdings?"
-        Function: get_holdings_from_identifiers(identifiers=["Berkshire Hathaway Inc."], limit=10)
-
         Query: "What share of Berkshire Hathaway's portfolio is in Apple?"
         Function: get_holdings_from_identifiers(identifiers=["Berkshire Hathaway Inc."], held_company_identifiers=["AAPL"])
 
-        Query: "Which positions make up more than 5% of Pershing Square's portfolio?"
-        Function: get_holdings_from_identifiers(identifiers=["Pershing Square Capital Management, L.P."], min_pct_portfolio=5)
-
         Query: "Which public companies does BlackRock own more than 10% of?"
         Function: get_holdings_from_identifiers(identifiers=["BlackRock, Inc."], held_company_type="public_companies", min_pct_shares_outstanding=10)
-
-        Query: "Compare the top 5 holdings of BlackRock and Vanguard"
-        Function: get_holdings_from_identifiers(identifiers=["BlackRock, Inc.", "The Vanguard Group, Inc."], limit=5)
     """).strip()
     args_schema: Type[BaseModel] = GetHoldingsFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.OwnershipPermission}
@@ -419,34 +393,34 @@ class GetHoldingsFromIdentifiers(KfinanceTool):
 class GetInsiderTradesFromIdentifiersArgs(ToolArgsWithIdentifiers):
     start_date: date | None = Field(
         default=None,
-        description="Only return trades made on or after this date (YYYY-MM-DD format).",
+        description="Earliest trade date (YYYY-MM-DD).",
     )
     end_date: date | None = Field(
         default=None,
-        description="Only return trades made on or before this date (YYYY-MM-DD format).",
+        description="Latest trade date (YYYY-MM-DD).",
     )
     transaction_type: InsiderTransactionCategory = Field(
         default=InsiderTransactionCategory.all,
-        description="'acquisition' for purchases and other acquisitions (including option exercises and awards), 'disposition' for sales and other dispositions, or 'all'. Form 3 holdings statements and Form 144 intents to sell are only returned with 'all'.",
+        description="'acquisition' (incl. option exercises and awards), 'disposition', or 'all'. Form 3 and Form 144 filings are only returned with 'all'.",
     )
     owner_company_identifiers: list[str] | None = Field(
         default=None,
         min_length=1,
-        description="Only return trades made by these insiders that are companies, as tickers, company names, or company_ids.",
+        description="Only return trades by these insider companies, as tickers, names or company_ids.",
     )
     insider_person_ids: list[int] | None = Field(
         default=None,
         min_length=1,
-        description="Only return trades made by these insiders that are people, by person_id. Get person_ids from get_professionals_from_identifiers (e.g. for a company's CEO or directors).",
+        description=PERSON_IDS_DESCRIPTION.format(items="trades made by"),
     )
     min_absolute_transaction_value_usd: float | None = Field(
         default=None,
         ge=0,
-        description="Only return trades with an absolute transaction value of at least this many USD, so large sales pass as well as large purchases. Trades with an unknown value are dropped.",
+        description="Minimum absolute transaction value in USD.",
     )
     sort_by: InsiderTradesSortBy = Field(
         default=InsiderTradesSortBy.date,
-        description="'date' (default) for the most recent trades first, 'absolute_transaction_value_usd' for the largest trades by value first, or 'absolute_shares' for the largest trades by shares first.",
+        description="'date' (default), 'absolute_transaction_value_usd' or 'absolute_shares', all descending.",
     )
     limit: int | None = Field(
         default=DEFAULT_LIMIT, ge=1, description=LIMIT_DESCRIPTION.format(items="trades")
@@ -469,30 +443,21 @@ class GetInsiderTradesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CompanyIns
 class GetInsiderTradesFromIdentifiers(KfinanceTool):
     name: str = "get_insider_trades_from_identifiers"
     description: str = dedent("""
-        Get the insider trades (trades by officers, directors, and other insiders filed with the SEC) for a list of companies. Each trade includes the insider name and owner_id, transaction type, security type, number of shares, min and max price per share, transaction value in USD, trade date, and filing date. Results include total_matching, the number of trades matching the filters before the limit.
+        Get the insider trades (by officers, directors and other insiders, filed with the SEC) of a list of companies. shares is negative for dispositions.
 
-        - When possible, pass multiple identifiers in a single call rather than making multiple calls.
-        - Pass a ticker as given. Otherwise pass the company's full name with its legal suffix (e.g. "NVIDIA Corporation" rather than "Nvidia").
-        - shares is negative for dispositions (e.g. sales).
-        - To filter to specific insiders, pass insider_person_ids for people, using the person_ids from get_professionals_from_identifiers, and owner_company_identifiers for companies.
+        - When possible, pass multiple identifiers in a single call. Pass a ticker as given, or the company's full name with its legal suffix (e.g. "NVIDIA Corporation").
 
         Examples:
-        Query: "Show me recent insider trades at Nvidia"
-        Function: get_insider_trades_from_identifiers(identifiers=["NVIDIA Corporation"], limit=20)
-
         Query: "Did insiders at AAPL or MSFT sell stock in 2024?"
         Function: get_insider_trades_from_identifiers(identifiers=["AAPL", "MSFT"], start_date="2024-01-01", end_date="2024-12-31", transaction_type="disposition")
 
         Query: "What were the largest insider purchases at Meta since January 2025?"
         Function: get_insider_trades_from_identifiers(identifiers=["META"], start_date="2025-01-01", transaction_type="acquisition", sort_by="absolute_transaction_value_usd", limit=10)
 
-        Query: "Which insider trades at Tesla were worth more than $10M?"
-        Function: get_insider_trades_from_identifiers(identifiers=["TSLA"], min_absolute_transaction_value_usd=10000000)
-
-        Query: "What were the insider trades of Microsoft's CEO in 2024?"
-        Function 1: get_professionals_from_identifiers(identifiers=["MSFT"], professional_type="employees", timeframe="current")
-        # Function 1 returns Microsoft's current employees. Extract the <person_id> for the CEO.
-        Function 2: get_insider_trades_from_identifiers(identifiers=["MSFT"], insider_person_ids=[<person_id>], start_date="2024-01-01", end_date="2024-12-31")
+        Query: "Did Disney's former CEO Bob Chapek sell Disney stock?"
+        Function 1: get_professionals_from_identifiers(identifiers=["DIS"], professional_type="employees", timeframe="all")
+        # Extract the <person_id> for Bob Chapek.
+        Function 2: get_insider_trades_from_identifiers(identifiers=["DIS"], insider_person_ids=[<person_id>], transaction_type="disposition")
     """).strip()
     args_schema: Type[BaseModel] = GetInsiderTradesFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.OwnershipPermission}
