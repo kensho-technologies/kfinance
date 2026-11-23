@@ -1,6 +1,6 @@
 # Changelog
 
-## v13.1.2
+## v13.1.0
 - Add RatingsTrialPermission to limit rated universe for trial users.
 
 ## v13.0.1
