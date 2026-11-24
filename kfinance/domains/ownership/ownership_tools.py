@@ -215,7 +215,7 @@ class GetOwnersFromIdentifiersArgs(ToolArgsWithIdentifiers):
     position_changes: list[PositionChange] | None = Field(
         default=None,
         min_length=1,
-        description="Owners whose position changed in any of these ways from the prior period: 'bought', 'sold', 'new' (newly appears in the data), 'closed' (fully exited). They overlap: new positions also count as bought, closed ones as sold.",
+        description="Owners whose position changed in any of these ways from the prior period: 'bought', 'sold', 'new' (newly appears in the data), 'closed' (fully exited). They overlap: new positions usually also count as bought, closed ones as sold.",
     )
     owner_company_identifiers: list[str] | None = Field(
         default=None,

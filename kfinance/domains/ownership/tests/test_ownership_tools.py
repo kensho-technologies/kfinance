@@ -196,7 +196,12 @@ SUMMARY_RESPONSE = {
         "number_of_closed_positions": 40,
         "institutional_ownership_pct": 85.0,
         "reporting_period": {"start_date": "2026-04-01", "end_date": "2026-06-30"},
-        "by_owner_type": [{"owner_type": "Institutions", "shares_held": 250000000}],
+        "by_owner_type": [
+            {"owner_type": "institution", "shares_held": 250000000},
+            {"owner_type": "public_and_other", "shares_held": 30000000},
+            # An owner type the API doesn't know.
+            {"owner_type": None, "shares_held": 1000},
+        ],
     },
     "errors": {},
 }
@@ -494,6 +499,11 @@ class TestGetOwners:
         result = resp.identifier_results["SPGI"]
         assert result.summary is not None
         assert result.summary.number_of_holders == 2000
+        assert [t.owner_type for t in result.summary.by_owner_type] == [
+            "institution",
+            "public_and_other",
+            None,
+        ]
         assert len(result.owners) == 1
 
     @pytest.mark.asyncio

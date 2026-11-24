@@ -321,9 +321,17 @@ class OwnersResp(RespWithErrors):
 
 
 class OwnerTypeSummary(BaseModel):
-    """Shares of a company held by one owner type (e.g. "Institutions", "Individuals/Insiders")."""
+    """Shares of a company held by one owner type.
 
-    owner_type: str
+    Attributes:
+        owner_type: An owner type as returned on each owner (e.g. "institution",
+            "individual_insider"), or "public_and_other" for the shares not held by an identified
+            owner. Null when the source data has an owner type the API doesn't know.
+        shares_held: Total shares held by this owner type. Can be negative for a small number of
+            companies in the source data.
+    """
+
+    owner_type: str | None = None
     shares_held: int
 
 
