@@ -335,6 +335,43 @@ class OwnerTypeSummary(BaseModel):
     shares_held: int
 
 
+# The API's summary owner type for the shares not held by an identified owner (CIQ's "Public and
+# Other"). No single owner has it.
+API_PUBLIC_AND_OTHER = "public_and_other"
+# What the tool calls those shares, so they aren't confused with the owner_type category "other".
+UNATTRIBUTED = "unattributed"
+
+_CATEGORY_BY_API_OWNER_TYPE: dict[str, OwnerTypeCategory] = {
+    str(api_type): category
+    for category, api_types in OWNER_TYPES_BY_CATEGORY.items()
+    for api_type in api_types
+}
+
+
+def sum_by_owner_type_category(by_owner_type: list[OwnerTypeSummary]) -> list[OwnerTypeSummary]:
+    """Sum the summary's shares held into the owner_type categories of the owners tool.
+
+    The summary reports the API's owner types (e.g. institution, strategic_vc_pe_firm), while the
+    tool filters on broader categories (e.g. institutions), so this makes both use one vocabulary.
+    The shares not held by an identified owner (the API's public_and_other) are kept as their own
+    entry, unattributed. Owner types the client doesn't know, including null, count as other.
+    Entries are ordered by shares held, largest first.
+    """
+    totals: dict[str, int] = {}
+    for entry in by_owner_type:
+        if entry.owner_type == API_PUBLIC_AND_OTHER:
+            key = UNATTRIBUTED
+        else:
+            key = str(
+                _CATEGORY_BY_API_OWNER_TYPE.get(entry.owner_type or "", OwnerTypeCategory.other)
+            )
+        totals[key] = totals.get(key, 0) + entry.shares_held
+    return sorted(
+        (OwnerTypeSummary(owner_type=key, shares_held=shares) for key, shares in totals.items()),
+        key=lambda entry: (-entry.shares_held, entry.owner_type or ""),
+    )
+
+
 class OwnersSummary(BaseModel):
     """The latest-period institutional ownership summary of a company.
 
@@ -375,7 +412,8 @@ class CompanyOwners(BaseModel):
     """The per-identifier result of the get_owners_from_identifiers tool.
 
     Attributes:
-        summary: The company's ownership summary, when requested.
+        summary: The company's ownership summary, when requested. Its by_owner_type is summed into
+            the tool's owner_type categories, plus unattributed.
         owners: The owners matching the filters, up to the limit.
         total_matching: The number of owners matching the filters, before the limit.
     """

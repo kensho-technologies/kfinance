@@ -26,7 +26,9 @@ from kfinance.domains.ownership.ownership_models import (
     InsiderTransactionCategory,
     OwnersSortBy,
     OwnerTypeCategory,
+    OwnerTypeSummary,
     PositionChange,
+    sum_by_owner_type_category,
 )
 from kfinance.domains.ownership.ownership_tools import (
     DEFAULT_LIMIT,
@@ -235,6 +237,35 @@ class TestCategoryMappings:
             ApiInsiderTransactionType
         )
         assert InsiderTransactionCategory.all not in INSIDER_TRANSACTION_TYPES_BY_CATEGORY
+
+
+class TestSumByOwnerTypeCategory:
+    def test_sums_api_owner_types_into_categories(self) -> None:
+        by_owner_type = [
+            OwnerTypeSummary(owner_type="institution", shares_held=100),
+            OwnerTypeSummary(owner_type="public_and_other", shares_held=500),
+            OwnerTypeSummary(owner_type="strategic_vc_pe_firm", shares_held=50),
+            OwnerTypeSummary(owner_type="individual_insider", shares_held=30),
+            OwnerTypeSummary(owner_type="public_corporation", shares_held=20),
+            OwnerTypeSummary(owner_type="private_corporation", shares_held=5),
+            OwnerTypeSummary(owner_type="state_owned", shares_held=7),
+            OwnerTypeSummary(owner_type="esop", shares_held=3),
+            OwnerTypeSummary(owner_type="a_type_added_later", shares_held=2),
+            OwnerTypeSummary(owner_type=None, shares_held=1),
+        ]
+
+        assert [
+            (t.owner_type, t.shares_held) for t in sum_by_owner_type_category(by_owner_type)
+        ] == [
+            ("unattributed", 500),
+            ("institutions", 150),
+            ("individuals", 30),
+            ("corporations", 25),
+            ("other", 13),
+        ]
+
+    def test_empty(self) -> None:
+        assert sum_by_owner_type_category([]) == []
 
 
 class TestGetOwnersArgs:
@@ -499,10 +530,11 @@ class TestGetOwners:
         result = resp.identifier_results["SPGI"]
         assert result.summary is not None
         assert result.summary.number_of_holders == 2000
-        assert [t.owner_type for t in result.summary.by_owner_type] == [
-            "institution",
-            "public_and_other",
-            None,
+        # Summed into the tool's owner_type categories; the unknown type counts as other.
+        assert [(t.owner_type, t.shares_held) for t in result.summary.by_owner_type] == [
+            ("institutions", 250000000),
+            ("unattributed", 30000000),
+            ("other", 1000),
         ]
         assert len(result.owners) == 1
 

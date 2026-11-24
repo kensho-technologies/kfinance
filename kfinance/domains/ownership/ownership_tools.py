@@ -33,6 +33,7 @@ from kfinance.domains.ownership.ownership_models import (
     OwnersSummaryResp,
     OwnerTypeCategory,
     PositionChange,
+    sum_by_owner_type_category,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
     KfinanceTool,
@@ -245,7 +246,7 @@ class GetOwnersFromIdentifiersArgs(ToolArgsWithIdentifiers):
     )
     include_summary: bool = Field(
         default=False,
-        description="Also return the company's ownership summary (institutional ownership %, holder and buyer/seller counts, shares held by owner type), for aggregate questions.",
+        description="Also return the company's ownership summary (institutional ownership %, holder and buyer/seller counts, shares held by owner_type category, plus unattributed for shares not held by any identified owner), for aggregate questions.",
     )
 
     @model_validator(mode="after")
@@ -594,7 +595,10 @@ async def get_owners_from_identifiers(
         for error in summary_resp.errors.values():
             add_unique_error(errors, identifier, error)
         if summary_resp.results is not None:
-            results.setdefault(identifier, CompanyOwners()).summary = summary_resp.results
+            summary = summary_resp.results
+            results.setdefault(identifier, CompanyOwners()).summary = summary.model_copy(
+                update={"by_owner_type": sum_by_owner_type_category(summary.by_owner_type)}
+            )
 
     notes = list(truncation_notes)
     if any(
