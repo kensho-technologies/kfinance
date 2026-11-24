@@ -6,6 +6,7 @@ from pydantic import ValidationError
 import pytest
 from respx import Router
 
+from kfinance.client.kfinance import Client
 from kfinance.conftest import (
     FAKE_COMPANY_1_ID_TRIPLE,
     NON_EXISTENT_ERROR,
@@ -31,10 +32,11 @@ from kfinance.domains.ownership.ownership_models import (
     sum_by_owner_type_category,
 )
 from kfinance.domains.ownership.ownership_tools import (
-    DEFAULT_LIMIT,
     FIRST_APPEARANCE_NOTE,
     OWNERSHIP_PCT_OUT_OF_RANGE_NOTE,
+    GetHoldingsFromIdentifiersArgs,
     GetInsiderTradesFromIdentifiersArgs,
+    GetOwnersFromIdentifiers,
     GetOwnersFromIdentifiersArgs,
     get_holdings_from_identifiers,
     get_insider_trades_from_identifiers,
@@ -52,17 +54,16 @@ INSIDER_TRADES_URL = f"{BASE_URL}/ownership/insider_trades/"
 OWNER_COMPANY_ID = FAKE_COMPANY_1_ID_TRIPLE.company_id
 PERSON_ID = 555
 
+# No limit is sent by default, so the API applies its own default.
 DEFAULT_OWNERS_PAYLOAD = {
     "company_id": SPGI_COMPANY_ID,
     "funds_view": "exclude_funds",
     "sort_by": "shares_held",
-    "limit": DEFAULT_LIMIT,
 }
-DEFAULT_HOLDINGS_PAYLOAD = {"company_id": SPGI_COMPANY_ID, "limit": DEFAULT_LIMIT}
+DEFAULT_HOLDINGS_PAYLOAD = {"company_id": SPGI_COMPANY_ID}
 DEFAULT_INSIDER_TRADES_PAYLOAD = {
     "company_id": SPGI_COMPANY_ID,
     "sort_by": "date",
-    "limit": DEFAULT_LIMIT,
 }
 
 HIGH_OWNERS_COVERAGE = {
@@ -288,8 +289,39 @@ class TestGetOwnersArgs:
         with pytest.raises(ValidationError):
             GetOwnersFromIdentifiersArgs(identifiers=["SPGI"], limit=limit)
 
-    def test_limit_accepts_none(self) -> None:
-        assert GetOwnersFromIdentifiersArgs(identifiers=["SPGI"], limit=None).limit is None
+    @pytest.mark.parametrize(
+        "args_model",
+        [
+            GetOwnersFromIdentifiersArgs,
+            GetHoldingsFromIdentifiersArgs,
+            GetInsiderTradesFromIdentifiersArgs,
+        ],
+    )
+    @pytest.mark.parametrize("limit", [None, "all", 25])
+    def test_limit_accepts_null_all_and_positive_ints(self, args_model: Any, limit: Any) -> None:
+        assert args_model(identifiers=["SPGI"], limit=limit).limit == limit
+
+    def test_limit_is_unset_when_omitted(self) -> None:
+        assert GetOwnersFromIdentifiersArgs(identifiers=["SPGI"]).limit is None
+
+    @pytest.mark.parametrize("limit", ["ALL", "none", "unlimited", 1.5])
+    def test_limit_rejects_other_values(self, limit: Any) -> None:
+        """The API only accepts "all" in lowercase, so anything else fails before a request."""
+        with pytest.raises(ValidationError):
+            GetOwnersFromIdentifiersArgs(identifiers=["SPGI"], limit=limit)
+
+    @pytest.mark.asyncio
+    async def test_explicit_null_limit_through_the_tool_sends_no_limit(
+        self, mock_client: Client, httpx2_mock: Router
+    ) -> None:
+        """WHEN a model sends limit=null THEN no limit is sent, so the API applies its default."""
+        httpx2_mock.post(OWNERS_URL, json=DEFAULT_OWNERS_PAYLOAD).respond(json=owners_response())
+
+        resp = await GetOwnersFromIdentifiers(kfinance_client=mock_client).arun_without_langchain(
+            identifiers=["SPGI"], limit=None
+        )
+
+        assert "SPGI" in resp["results"]
 
 
 class TestGetOwners:
@@ -313,7 +345,7 @@ class TestGetOwners:
     async def test_filters_are_expanded_into_the_request(
         self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
-        """WHEN filters are given THEN categories are expanded and limit=None is sent as all."""
+        """WHEN filters are given THEN categories are expanded and limit="all" is sent as is."""
         httpx2_mock.post(
             OWNERS_URL,
             json={
@@ -334,7 +366,7 @@ class TestGetOwners:
             position_changes=[PositionChange.new, PositionChange.closed],
             min_pct_shares_outstanding=5.0,
             sort_by=OwnersSortBy.absolute_shares_changed,
-            limit=None,
+            limit="all",
         )
 
         assert "SPGI" in resp.identifier_results
@@ -450,7 +482,7 @@ class TestGetOwners:
         assert resp.notes is not None
         assert resp.notes[0] == (
             "SPGI: returned 1 of 2,500 matching owners. "
-            "Set a higher limit, or null for no limit, to see more."
+            "Set a higher limit, or 'all' for no limit, to see more."
         )
         assert FIRST_APPEARANCE_NOTE in resp.notes
 
@@ -698,7 +730,7 @@ class TestGetHoldings:
 
         assert resp.notes == [
             "SPGI: returned 1 of 14,257 matching held companies. "
-            "Set a higher limit, or null for no limit, to see more."
+            "Set a higher limit, or 'all' for no limit, to see more."
         ]
 
 
@@ -758,7 +790,7 @@ class TestGetInsiderTrades:
             insider_person_ids=[PERSON_ID],
             min_absolute_transaction_value_usd=1000000.0,
             sort_by=InsiderTradesSortBy.absolute_transaction_value_usd,
-            limit=None,
+            limit="all",
         )
 
         assert "SPGI" in resp.identifier_results
@@ -813,7 +845,7 @@ class TestGetInsiderTrades:
 
         assert resp.notes == [
             "SPGI: returned 1 of 1,976 matching trades. "
-            "Set a higher limit, or null for no limit, to see more."
+            "Set a higher limit, or 'all' for no limit, to see more."
         ]
 
     @pytest.mark.asyncio

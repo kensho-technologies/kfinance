@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date
 from textwrap import dedent
-from typing import Any, Type
+from typing import Annotated, Any, Literal, Type
 
 import httpx2
 from pydantic import BaseModel, Field, model_validator
@@ -42,7 +42,8 @@ from kfinance.integrations.tool_calling.tool_calling_models import (
 )
 
 
-# The default number of owners, holdings or trades returned per identifier.
+# The API's default number of owners, holdings or trades returned per identifier, when limit is
+# omitted or null. Only used to describe the default to the model.
 DEFAULT_LIMIT = 100
 
 # Below these, the Ownership dataset's coverage of a company is considered low, and the tool
@@ -50,11 +51,17 @@ DEFAULT_LIMIT = 100
 LOW_OWNERS_COVERAGE_PCT = 50
 LOW_HOLDINGS_COVERAGE_COUNT = 5
 
+# A positive number of results per identifier, or "all" for every match, as the API takes it.
+# Omitted and null both mean the API's default, so a null that a model or framework sends for an
+# unset param can't turn into an unbounded response: "all" is the only way to remove the cap.
+Limit = Annotated[int, Field(ge=1)] | Literal["all"]
+
 LIMIT_DESCRIPTION = (
     "Maximum {items} returned per identifier; omit for the default "
-    f"{DEFAULT_LIMIT}. Set null only when the user explicitly requests an exhaustive answer "
-    '("all", "every", "full", "complete"); null can produce a very large response.'
+    f"{DEFAULT_LIMIT}. Use 'all' only when the user explicitly requests an exhaustive answer "
+    '("all", "every", "full", "complete"); it can produce a very large response.'
 )
+
 
 PERSON_IDS_DESCRIPTION = (
     "Only return {items} these people, by person_id. Get person_ids from "
@@ -125,7 +132,7 @@ def truncation_note(identifier: str, num_returned: int, num_total: int, items: s
     """Return a note saying that only num_returned of num_total items were returned."""
     return (
         f"{identifier}: returned {num_returned} of {num_total:,} matching {items}. "
-        "Set a higher limit, or null for no limit, to see more."
+        "Set a higher limit, or 'all' for no limit, to see more."
     )
 
 
@@ -241,9 +248,7 @@ class GetOwnersFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=OwnersSortBy.shares_held,
         description="'shares_held' (default) or 'absolute_shares_changed' (largest purchases and sales first).",
     )
-    limit: int | None = Field(
-        default=DEFAULT_LIMIT, ge=1, description=LIMIT_DESCRIPTION.format(items="owners")
-    )
+    limit: Limit | None = Field(default=None, description=LIMIT_DESCRIPTION.format(items="owners"))
     include_summary: bool = Field(
         default=False,
         description="Also return the company's ownership summary (institutional ownership %, holder and buyer/seller counts, shares held by owner_type category, plus unattributed for shares not held by any identified owner), for aggregate questions.",
@@ -304,7 +309,7 @@ class GetOwnersFromIdentifiers(KfinanceTool):
         min_pct_shares_outstanding: float | None = None,
         funds_view: FundsView = FundsView.exclude_funds,
         sort_by: OwnersSortBy = OwnersSortBy.shares_held,
-        limit: int | None = DEFAULT_LIMIT,
+        limit: Limit | None = None,
         include_summary: bool = False,
     ) -> GetOwnersFromIdentifiersResp:
         """"""
@@ -343,8 +348,8 @@ class GetHoldingsFromIdentifiersArgs(ToolArgsWithIdentifiers):
         ge=0,
         description="Minimum percent of the held company's shares outstanding held (e.g. 5 for 5%).",
     )
-    limit: int | None = Field(
-        default=DEFAULT_LIMIT, ge=1, description=LIMIT_DESCRIPTION.format(items="held companies")
+    limit: Limit | None = Field(
+        default=None, description=LIMIT_DESCRIPTION.format(items="held companies")
     )
 
 
@@ -377,7 +382,7 @@ class GetHoldingsFromIdentifiers(KfinanceTool):
         held_company_identifiers: list[str] | None = None,
         min_pct_portfolio: float | None = None,
         min_pct_shares_outstanding: float | None = None,
-        limit: int | None = DEFAULT_LIMIT,
+        limit: Limit | None = None,
     ) -> GetHoldingsFromIdentifiersResp:
         """"""
         return await get_holdings_from_identifiers(
@@ -423,9 +428,7 @@ class GetInsiderTradesFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=InsiderTradesSortBy.date,
         description="'date' (default), 'absolute_transaction_value_usd' or 'absolute_shares', all descending.",
     )
-    limit: int | None = Field(
-        default=DEFAULT_LIMIT, ge=1, description=LIMIT_DESCRIPTION.format(items="trades")
-    )
+    limit: Limit | None = Field(default=None, description=LIMIT_DESCRIPTION.format(items="trades"))
 
     @model_validator(mode="after")
     def validate_date_range(self) -> Self:
@@ -473,7 +476,7 @@ class GetInsiderTradesFromIdentifiers(KfinanceTool):
         insider_person_ids: list[int] | None = None,
         min_absolute_transaction_value_usd: float | None = None,
         sort_by: InsiderTradesSortBy = InsiderTradesSortBy.date,
-        limit: int | None = DEFAULT_LIMIT,
+        limit: Limit | None = None,
     ) -> GetInsiderTradesFromIdentifiersResp:
         """"""
         return await get_insider_trades_from_identifiers(
@@ -500,7 +503,7 @@ async def get_owners_from_identifiers(
     min_pct_shares_outstanding: float | None = None,
     funds_view: FundsView = FundsView.exclude_funds,
     sort_by: OwnersSortBy = OwnersSortBy.shares_held,
-    limit: int | None = DEFAULT_LIMIT,
+    limit: Limit | None = None,
     include_summary: bool = False,
 ) -> GetOwnersFromIdentifiersResp:
     """Fetch owners (and optionally the ownership summary) for all identifiers."""
@@ -629,7 +632,7 @@ async def get_holdings_from_identifiers(
     held_company_identifiers: list[str] | None = None,
     min_pct_portfolio: float | None = None,
     min_pct_shares_outstanding: float | None = None,
-    limit: int | None = DEFAULT_LIMIT,
+    limit: Limit | None = None,
 ) -> GetHoldingsFromIdentifiersResp:
     """Fetch portfolio holdings for all identifiers."""
     resolved = await resolve_identifiers_and_filter_identifiers(
@@ -715,7 +718,7 @@ async def get_insider_trades_from_identifiers(
     insider_person_ids: list[int] | None = None,
     min_absolute_transaction_value_usd: float | None = None,
     sort_by: InsiderTradesSortBy = InsiderTradesSortBy.date,
-    limit: int | None = DEFAULT_LIMIT,
+    limit: Limit | None = None,
 ) -> GetInsiderTradesFromIdentifiersResp:
     """Fetch insider trades for all identifiers."""
     resolved = await resolve_identifiers_and_filter_identifiers(
@@ -789,11 +792,6 @@ async def get_insider_trades_from_identifiers(
     )
 
 
-def api_limit(limit: int | None) -> int | str:
-    """Convert a tool limit to the API's limit, where null means every match."""
-    return "all" if limit is None else limit
-
-
 async def fetch_owners_from_company_id(
     company_id: int,
     httpx_client: httpx2.AsyncClient,
@@ -803,15 +801,16 @@ async def fetch_owners_from_company_id(
     min_pct_shares_outstanding: float | None = None,
     funds_view: FundsView = FundsView.exclude_funds,
     sort_by: OwnersSortBy = OwnersSortBy.shares_held,
-    limit: int | None = DEFAULT_LIMIT,
+    limit: Limit | None = None,
 ) -> OwnersResp:
     """Fetch owners for one company_id."""
     payload: dict[str, Any] = {
         "company_id": company_id,
         "funds_view": funds_view,
         "sort_by": sort_by,
-        "limit": api_limit(limit),
     }
+    if limit is not None:
+        payload["limit"] = limit
     if owner_type != OwnerTypeCategory.all:
         payload["owner_types"] = OWNER_TYPES_BY_CATEGORY[owner_type]
     if position_changes is not None:
@@ -845,10 +844,12 @@ async def fetch_holdings_from_company_id(
     held_company_ids: list[int] | None = None,
     min_pct_portfolio: float | None = None,
     min_pct_shares_outstanding: float | None = None,
-    limit: int | None = DEFAULT_LIMIT,
+    limit: Limit | None = None,
 ) -> HoldingsResp:
     """Fetch portfolio holdings for one owner company_id."""
-    payload: dict[str, Any] = {"company_id": company_id, "limit": api_limit(limit)}
+    payload: dict[str, Any] = {"company_id": company_id}
+    if limit is not None:
+        payload["limit"] = limit
     if held_company_type != HeldCompanyTypeCategory.all:
         payload["held_company_types"] = HELD_COMPANY_TYPES_BY_CATEGORY[held_company_type]
     if held_company_ids is not None:
@@ -872,14 +873,15 @@ async def fetch_insider_trades_from_company_id(
     owner_ids: list[int] | None = None,
     min_absolute_transaction_value_usd: float | None = None,
     sort_by: InsiderTradesSortBy = InsiderTradesSortBy.date,
-    limit: int | None = DEFAULT_LIMIT,
+    limit: Limit | None = None,
 ) -> InsiderTradesResp:
     """Fetch insider trades for one company_id."""
     payload: dict[str, Any] = {
         "company_id": company_id,
         "sort_by": sort_by,
-        "limit": api_limit(limit),
     }
+    if limit is not None:
+        payload["limit"] = limit
     if start_date is not None:
         payload["start_date"] = start_date.isoformat()
     if end_date is not None:
