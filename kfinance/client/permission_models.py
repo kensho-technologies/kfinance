@@ -21,6 +21,7 @@ class Permission(StrEnum):
     OwnershipPermission = "OwnershipPermission"
     VisibleAlphaPermission = "VisibleAlphaPermission"
     VisibleAlphaPremiumPermission = "VisibleAlphaPremiumPermission"
+    RatingsTrialPermission = "RatingsTrialPermission"
     # These permissions are not used by the client, but some users may have these permissions
     # Having them listed here will prevent an avoidable KeyError exception being logged.
     OnlyStaffPermission = "OnlyStaffPermission"
@@ -40,3 +41,4 @@ class Permission(StrEnum):
     SF10YearHistoryPermission = "SF10YearHistoryPermission"
     SFCurrentPermission = "SFCurrentPermission"
     SFFullHistoryPermission = "SFFullHistoryPermission"
+    CompanyScreenerPermission = "CompanyScreenerPermission"

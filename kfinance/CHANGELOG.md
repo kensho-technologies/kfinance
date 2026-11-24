@@ -1,7 +1,13 @@
 # Changelog
 
-## v13.1.0
+## v13.3.0
 - Add ownership tools: `get_owners_from_identifiers`, `get_holdings_from_identifiers`, and `get_insider_trades_from_identifiers`.
+
+## v13.2.0
+- Add `CompanyScreenerPermission` for company screener beta users.
+
+## v13.1.0
+- Add RatingsTrialPermission to limit rated universe for trial users.
 
 ## v13.0.1
 - Fix line item, statement, and segment validators to handle null `num_months`, and null `period_end_date` for line items and segments
