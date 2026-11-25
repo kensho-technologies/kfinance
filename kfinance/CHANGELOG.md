@@ -1,5 +1,8 @@
 # Changelog
 
+## v13.3.0
+- Add ownership tools: `get_owners_from_identifiers`, `get_holdings_from_identifiers`, and `get_insider_activity_from_identifiers`.
+
 ## v13.2.0
 - Add `CompanyScreenerPermission` for company screener beta users.
 
