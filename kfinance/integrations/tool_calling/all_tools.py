@@ -39,7 +39,7 @@ from kfinance.domains.mergers_and_acquisitions.merger_and_acquisition_tools impo
 )
 from kfinance.domains.ownership.ownership_tools import (
     GetHoldingsFromIdentifiers,
-    GetInsiderTradesFromIdentifiers,
+    GetInsiderActivityFromIdentifiers,
     GetOwnersFromIdentifiers,
 )
 from kfinance.domains.prices.price_tools import (
@@ -133,5 +133,5 @@ ALL_TOOLS: list[type[KfinanceTool]] = [
     # Ownership
     GetOwnersFromIdentifiers,
     GetHoldingsFromIdentifiers,
-    GetInsiderTradesFromIdentifiers,
+    GetInsiderActivityFromIdentifiers,
 ]

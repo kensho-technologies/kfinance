@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import NamedTuple
 
 from pydantic import BaseModel, Field
 from strenum import StrEnum
@@ -165,52 +166,116 @@ class ApiInsiderTransactionType(StrEnum):
     intent_to_sell_form_144 = "intent_to_sell_form_144"
 
 
-class InsiderTransactionCategory(StrEnum):
-    """The transaction types exposed by the insider trades tool."""
+class InsiderActivityType(StrEnum):
+    """A group of insider activity. Every API transaction type is in exactly one group.
 
-    all = "all"
-    acquisition = "acquisition"
-    disposition = "disposition"
+    - open_market: Open market purchases and sales, including of derivatives.
+    - automatic: Automatic transactions under a trading plan (e.g. Rule 10b5-1).
+    - derivatives: Option grants and exercises, and other derivative transactions that aren't on
+      the open market.
+    - other: The other transactions: awards and employee benefit plan transactions, private
+      transactions, gifts, sales to the issuer (mostly tax withholding) and other sales.
+    - disclosures: Filings that aren't transactions: Form 144 notices of a planned sale, and
+      Form 3 initial statements of holdings.
+    """
+
+    open_market = "open_market"
+    automatic = "automatic"
+    derivatives = "derivatives"
+    other = "other"
+    disclosures = "disclosures"
 
 
-# The API transaction types of each category. `all` sends no filter.
-INSIDER_TRANSACTION_TYPES_BY_CATEGORY: dict[
-    InsiderTransactionCategory, list[ApiInsiderTransactionType]
+# The groups returned when no activity_types are given: every transaction, but no disclosures.
+DEFAULT_INSIDER_ACTIVITY_TYPES: list[InsiderActivityType] = [
+    InsiderActivityType.open_market,
+    InsiderActivityType.automatic,
+    InsiderActivityType.derivatives,
+    InsiderActivityType.other,
+]
+
+
+class TransactionDirection(StrEnum):
+    """Whether to return acquisitions, dispositions, or both."""
+
+    acquisitions = "acquisitions"
+    dispositions = "dispositions"
+    both = "both"
+
+
+class InsiderTransactionTypeAttributes(NamedTuple):
+    """How an API insider transaction type is selected by the insider activity tool.
+
+    Attributes:
+        group: The activity group the type is in.
+        direction: Whether it's an acquisition or a disposition, or None for neither.
+    """
+
+    group: InsiderActivityType
+    direction: TransactionDirection | None
+
+
+_OPEN_MARKET, _AUTOMATIC, _DERIVATIVES, _OTHER, _DISCLOSURES = (
+    InsiderActivityType.open_market,
+    InsiderActivityType.automatic,
+    InsiderActivityType.derivatives,
+    InsiderActivityType.other,
+    InsiderActivityType.disclosures,
+)
+_ACQ, _DISP = TransactionDirection.acquisitions, TransactionDirection.dispositions
+_A = InsiderTransactionTypeAttributes
+_T = ApiInsiderTransactionType
+
+INSIDER_TRANSACTION_TYPE_ATTRIBUTES: dict[
+    ApiInsiderTransactionType, InsiderTransactionTypeAttributes
 ] = {
-    InsiderTransactionCategory.acquisition: [
-        ApiInsiderTransactionType.open_market_acquisition,
-        ApiInsiderTransactionType.open_market_derivative_acquisition,
-        ApiInsiderTransactionType.private_acquisition,
-        ApiInsiderTransactionType.acquisition_under_employee_benefit_plan,
-        ApiInsiderTransactionType.derivative_acquisition_under_employee_benefit_plan,
-        ApiInsiderTransactionType.automatic_acquisition,
-        ApiInsiderTransactionType.other_acquisition,
-        ApiInsiderTransactionType.other_derivative_acquisition,
-        ApiInsiderTransactionType.derivative_exercise,
-        ApiInsiderTransactionType.derivative_exercise_and_retained_stock,
-    ],
-    InsiderTransactionCategory.disposition: [
-        ApiInsiderTransactionType.open_market_disposition,
-        ApiInsiderTransactionType.open_market_derivative_disposition,
-        ApiInsiderTransactionType.private_disposition,
-        ApiInsiderTransactionType.disposition_under_employee_benefit_plan,
-        ApiInsiderTransactionType.derivative_disposition_under_employee_benefit_plan,
-        ApiInsiderTransactionType.automatic_disposition,
-        ApiInsiderTransactionType.sale_to_issuer,
-        ApiInsiderTransactionType.derivative_sale_to_issuer,
-        ApiInsiderTransactionType.other_disposition,
-        ApiInsiderTransactionType.other_derivative_disposition,
-        ApiInsiderTransactionType.sale,
-        ApiInsiderTransactionType.derivative_exercise_and_sale,
-    ],
+    _T.open_market_acquisition: _A(_OPEN_MARKET, _ACQ),
+    _T.open_market_disposition: _A(_OPEN_MARKET, _DISP),
+    # Open market trades in derivatives are rare, so they stay with the other open market trades.
+    _T.open_market_derivative_acquisition: _A(_OPEN_MARKET, _ACQ),
+    _T.open_market_derivative_disposition: _A(_OPEN_MARKET, _DISP),
+    _T.automatic_acquisition: _A(_AUTOMATIC, _ACQ),
+    _T.automatic_disposition: _A(_AUTOMATIC, _DISP),
+    _T.derivative_acquisition_under_employee_benefit_plan: _A(_DERIVATIVES, _ACQ),
+    _T.derivative_disposition_under_employee_benefit_plan: _A(_DERIVATIVES, _DISP),
+    _T.other_derivative_acquisition: _A(_DERIVATIVES, _ACQ),
+    _T.other_derivative_disposition: _A(_DERIVATIVES, _DISP),
+    _T.derivative_sale_to_issuer: _A(_DERIVATIVES, _DISP),
+    # Exercising an option acquires the underlying shares; with a same-day sale of the shares, the
+    # net effect is a disposition.
+    _T.derivative_exercise: _A(_DERIVATIVES, _ACQ),
+    _T.derivative_exercise_and_retained_stock: _A(_DERIVATIVES, _ACQ),
+    _T.derivative_exercise_and_sale: _A(_DERIVATIVES, _DISP),
+    _T.acquisition_under_employee_benefit_plan: _A(_OTHER, _ACQ),
+    _T.disposition_under_employee_benefit_plan: _A(_OTHER, _DISP),
+    _T.private_acquisition: _A(_OTHER, _ACQ),
+    _T.private_disposition: _A(_OTHER, _DISP),
+    _T.other_acquisition: _A(_OTHER, _ACQ),
+    _T.other_disposition: _A(_OTHER, _DISP),
+    _T.sale_to_issuer: _A(_OTHER, _DISP),
+    _T.sale: _A(_OTHER, _DISP),
+    # A Form 144 notice announces a planned sale; a Form 3 states initial holdings, with no direction.
+    _T.intent_to_sell_form_144: _A(_DISCLOSURES, _DISP),
+    _T.initial_statement_of_beneficial_ownership_form_3: _A(_DISCLOSURES, None),
 }
 
-# Transaction types that are neither an acquisition nor a disposition, so they're only returned
-# with `all`: a Form 3 is a statement of holdings, and a Form 144 is an intent to sell, not a sale.
-UNCATEGORIZED_INSIDER_TRANSACTION_TYPES: list[ApiInsiderTransactionType] = [
-    ApiInsiderTransactionType.initial_statement_of_beneficial_ownership_form_3,
-    ApiInsiderTransactionType.intent_to_sell_form_144,
-]
+
+def select_insider_transaction_types(
+    activity_types: list[InsiderActivityType] | None,
+    direction: TransactionDirection,
+) -> list[ApiInsiderTransactionType]:
+    """Return the API transaction types in the activity groups, in the direction.
+
+    No activity_types means every transaction group, without disclosures. A direction other than
+    both drops types with no direction.
+    """
+    groups = set(activity_types or DEFAULT_INSIDER_ACTIVITY_TYPES)
+    return [
+        transaction_type
+        for transaction_type, attributes in INSIDER_TRANSACTION_TYPE_ATTRIBUTES.items()
+        if attributes.group in groups
+        and (direction == TransactionDirection.both or attributes.direction == direction)
+    ]
 
 
 class InsiderTradesSortBy(StrEnum):
@@ -540,13 +605,13 @@ class InsiderTradesResp(RespWithErrors):
     results: InsiderTradesResult = Field(default_factory=InsiderTradesResult)
 
 
-class CompanyInsiderTrades(BaseModel):
-    """The per-identifier result of the get_insider_trades_from_identifiers tool.
+class CompanyInsiderActivity(BaseModel):
+    """The per-identifier result of the get_insider_activity_from_identifiers tool.
 
     Attributes:
-        trades: The trades matching the filters, up to the limit.
-        total_matching: The number of trades matching the filters, before the limit.
+        activity: The insider transactions or disclosures matching the filters, up to the limit.
+        total_matching: The number of records matching the filters, before the limit.
     """
 
-    trades: list[InsiderTrade] = Field(default_factory=list)
+    activity: list[InsiderTrade] = Field(default_factory=list)
     total_matching: int

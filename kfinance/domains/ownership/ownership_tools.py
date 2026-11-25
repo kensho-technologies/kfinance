@@ -14,17 +14,17 @@ from kfinance.client.permission_models import Permission
 from kfinance.domains.companies.company_models import IdentificationTripleWithCompanyInfo
 from kfinance.domains.ownership.ownership_models import (
     HELD_COMPANY_TYPES_BY_CATEGORY,
-    INSIDER_TRANSACTION_TYPES_BY_CATEGORY,
     OWNER_TYPES_BY_CATEGORY,
-    CompanyInsiderTrades,
+    ApiInsiderTransactionType,
+    CompanyInsiderActivity,
     CompanyOwners,
     FundsView,
     HeldCompanyTypeCategory,
     HoldingsCoverage,
     HoldingsResp,
+    InsiderActivityType,
     InsiderTradesResp,
     InsiderTradesSortBy,
-    InsiderTransactionCategory,
     OwnerHoldings,
     OwnersCoverage,
     OwnersResp,
@@ -33,6 +33,8 @@ from kfinance.domains.ownership.ownership_models import (
     OwnersSummaryResp,
     OwnerTypeCategory,
     PositionChange,
+    TransactionDirection,
+    select_insider_transaction_types,
     sum_by_owner_type_category,
 )
 from kfinance.integrations.tool_calling.tool_calling_models import (
@@ -133,6 +135,18 @@ def truncation_note(identifier: str, num_returned: int, num_total: int, items: s
     return (
         f"{identifier}: returned {num_returned} of {num_total:,} matching {items}. "
         "Set a higher limit, or 'all' for no limit, to see more."
+    )
+
+
+def no_matching_activity_note(
+    activity_types: list[InsiderActivityType] | None, direction: TransactionDirection
+) -> str:
+    """Return a note saying that no insider activity can match the activity types and direction."""
+    return (
+        f"No insider activity can match activity_types={[str(t) for t in activity_types or []]} "
+        f"with transaction_direction='{direction}', so none was fetched. Disclosures are Form 144 "
+        "notices of planned sales, which are dispositions, and Form 3 statements, which have no "
+        "direction."
     )
 
 
@@ -396,7 +410,7 @@ class GetHoldingsFromIdentifiers(KfinanceTool):
         )
 
 
-class GetInsiderTradesFromIdentifiersArgs(ToolArgsWithIdentifiers):
+class GetInsiderActivityFromIdentifiersArgs(ToolArgsWithIdentifiers):
     start_date: date | None = Field(
         default=None,
         description="Earliest trade date (YYYY-MM-DD).",
@@ -405,19 +419,19 @@ class GetInsiderTradesFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=None,
         description="Latest trade date (YYYY-MM-DD).",
     )
-    transaction_type: InsiderTransactionCategory = Field(
-        default=InsiderTransactionCategory.all,
-        description="'acquisition' (incl. option exercises and awards), 'disposition', or 'all'. Form 3 and Form 144 filings are only returned with 'all'.",
-    )
-    owner_company_identifiers: list[str] | None = Field(
+    activity_types: list[InsiderActivityType] | None = Field(
         default=None,
         min_length=1,
-        description="Only return trades by these insider companies, as tickers, names or company_ids.",
+        description="Groups of activity to return; omit for every transaction ('open_market', 'automatic', 'derivatives' and 'other'). 'open_market': open market purchases and sales. 'automatic': trades under a trading plan (e.g. Rule 10b5-1). 'derivatives': option grants and exercises and other derivative transactions. 'other': awards, employee benefit plan and private transactions, gifts, and sales to the issuer (mostly tax withholding). 'disclosures': Form 144 notices of planned sales and Form 3 initial statements, which aren't transactions. To leave out a group, list the others.",
     )
-    insider_person_ids: list[int] | None = Field(
+    transaction_direction: TransactionDirection = Field(
+        default=TransactionDirection.both,
+        description="'acquisitions', 'dispositions' or 'both' (default). Outside open_market, acquisitions include awards and exercises and dispositions include gifts and tax withholding; open market acquisitions are the actual purchases. Form 144 notices are dispositions.",
+    )
+    insider_ids: list[int] | None = Field(
         default=None,
         min_length=1,
-        description=PERSON_IDS_DESCRIPTION.format(items="trades made by"),
+        description="Only return activity by these insiders, people or entities, by id. Get a person's id from the person_id of get_professionals_from_identifiers on the company where they work (timeframe='all' includes former roles), or use an owner_id from an earlier response, e.g. for a trust or fund.",
     )
     min_absolute_transaction_value_usd: float | None = Field(
         default=None,
@@ -428,11 +442,11 @@ class GetInsiderTradesFromIdentifiersArgs(ToolArgsWithIdentifiers):
         default=InsiderTradesSortBy.date,
         description="'date' (default), 'absolute_transaction_value_usd' or 'absolute_shares', all descending.",
     )
-    limit: Limit | None = Field(default=None, description=LIMIT_DESCRIPTION.format(items="trades"))
+    limit: Limit | None = Field(default=None, description=LIMIT_DESCRIPTION.format(items="records"))
 
     @model_validator(mode="after")
     def validate_date_range(self) -> Self:
-        """Reject a start_date after the end_date, which would match no trades."""
+        """Reject a start_date after the end_date, which would match no activity."""
         if self.start_date and self.end_date and self.start_date > self.end_date:
             raise ValueError(
                 f"start_date ({self.start_date}) must be on or before end_date ({self.end_date})."
@@ -440,30 +454,37 @@ class GetInsiderTradesFromIdentifiersArgs(ToolArgsWithIdentifiers):
         return self
 
 
-class GetInsiderTradesFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CompanyInsiderTrades]):
+class GetInsiderActivityFromIdentifiersResp(ToolRespWithIdInfoAndErrors[CompanyInsiderActivity]):
     notes: list[str] | None = None
 
 
-class GetInsiderTradesFromIdentifiers(KfinanceTool):
-    name: str = "get_insider_trades_from_identifiers"
+class GetInsiderActivityFromIdentifiers(KfinanceTool):
+    name: str = "get_insider_activity_from_identifiers"
     description: str = dedent("""
-        Get the insider trades (by officers, directors and other insiders, filed with the SEC) of a list of companies. shares is negative for dispositions.
+        Get the insider trades and disclosures (filed with the SEC by officers, directors and other insiders) of a list of companies. By default, returns executed transactions only. shares is negative for dispositions.
 
         - When possible, pass multiple identifiers in a single call. Pass a ticker as given, or the company's full name with its legal suffix (e.g. "NVIDIA Corporation").
+        - A Form 144 notice of a planned sale (activity_types=['disclosures']) is often filed by a trust or other seller of record, and the sale itself is then reported as a transaction by the insider. Don't add notices to transactions.
 
         Examples:
-        Query: "Did insiders at AAPL or MSFT sell stock in 2024?"
-        Function: get_insider_trades_from_identifiers(identifiers=["AAPL", "MSFT"], start_date="2024-01-01", end_date="2024-12-31", transaction_type="disposition")
+        Query: "Did insiders at AAPL or MSFT sell stock on the open market in 2024?"
+        Function: get_insider_activity_from_identifiers(identifiers=["AAPL", "MSFT"], start_date="2024-01-01", end_date="2024-12-31", activity_types=["open_market"], transaction_direction="dispositions")
 
         Query: "What were the largest insider purchases at Meta since January 2025?"
-        Function: get_insider_trades_from_identifiers(identifiers=["META"], start_date="2025-01-01", transaction_type="acquisition", sort_by="absolute_transaction_value_usd", limit=10)
+        Function: get_insider_activity_from_identifiers(identifiers=["META"], start_date="2025-01-01", activity_types=["open_market"], transaction_direction="acquisitions", sort_by="absolute_transaction_value_usd", limit=10)
+
+        Query: "Which Apple insiders filed to sell shares recently?"
+        Function: get_insider_activity_from_identifiers(identifiers=["AAPL"], activity_types=["disclosures"], transaction_direction="dispositions", limit=20)
+
+        Query: "Which Tesla insider sales in 2025 weren't under a trading plan?"
+        Function: get_insider_activity_from_identifiers(identifiers=["TSLA"], start_date="2025-01-01", end_date="2025-12-31", activity_types=["open_market", "derivatives", "other"], transaction_direction="dispositions")
 
         Query: "Did Disney's former CEO Bob Chapek sell Disney stock?"
         Function 1: get_professionals_from_identifiers(identifiers=["DIS"], professional_type="employees", timeframe="all")
         # Extract the <person_id> for Bob Chapek.
-        Function 2: get_insider_trades_from_identifiers(identifiers=["DIS"], insider_person_ids=[<person_id>], transaction_type="disposition")
+        Function 2: get_insider_activity_from_identifiers(identifiers=["DIS"], insider_ids=[<person_id>], transaction_direction="dispositions")
     """).strip()
-    args_schema: Type[BaseModel] = GetInsiderTradesFromIdentifiersArgs
+    args_schema: Type[BaseModel] = GetInsiderActivityFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.OwnershipPermission}
 
     async def _arun(
@@ -471,22 +492,22 @@ class GetInsiderTradesFromIdentifiers(KfinanceTool):
         identifiers: list[str],
         start_date: date | None = None,
         end_date: date | None = None,
-        transaction_type: InsiderTransactionCategory = InsiderTransactionCategory.all,
-        owner_company_identifiers: list[str] | None = None,
-        insider_person_ids: list[int] | None = None,
+        activity_types: list[InsiderActivityType] | None = None,
+        transaction_direction: TransactionDirection = TransactionDirection.both,
+        insider_ids: list[int] | None = None,
         min_absolute_transaction_value_usd: float | None = None,
         sort_by: InsiderTradesSortBy = InsiderTradesSortBy.date,
         limit: Limit | None = None,
-    ) -> GetInsiderTradesFromIdentifiersResp:
+    ) -> GetInsiderActivityFromIdentifiersResp:
         """"""
-        return await get_insider_trades_from_identifiers(
+        return await get_insider_activity_from_identifiers(
             identifiers=identifiers,
             httpx_client=self.kfinance_client.httpx_client,
             start_date=start_date,
             end_date=end_date,
-            transaction_type=transaction_type,
-            owner_company_identifiers=owner_company_identifiers,
-            insider_person_ids=insider_person_ids,
+            activity_types=activity_types,
+            transaction_direction=transaction_direction,
+            insider_ids=insider_ids,
             min_absolute_transaction_value_usd=min_absolute_transaction_value_usd,
             sort_by=sort_by,
             limit=limit,
@@ -708,36 +729,27 @@ async def get_holdings_from_identifiers(
     )
 
 
-async def get_insider_trades_from_identifiers(
+async def get_insider_activity_from_identifiers(
     identifiers: list[str],
     httpx_client: httpx2.AsyncClient,
     start_date: date | None = None,
     end_date: date | None = None,
-    transaction_type: InsiderTransactionCategory = InsiderTransactionCategory.all,
-    owner_company_identifiers: list[str] | None = None,
-    insider_person_ids: list[int] | None = None,
+    activity_types: list[InsiderActivityType] | None = None,
+    transaction_direction: TransactionDirection = TransactionDirection.both,
+    insider_ids: list[int] | None = None,
     min_absolute_transaction_value_usd: float | None = None,
     sort_by: InsiderTradesSortBy = InsiderTradesSortBy.date,
     limit: Limit | None = None,
-) -> GetInsiderTradesFromIdentifiersResp:
-    """Fetch insider trades for all identifiers."""
+) -> GetInsiderActivityFromIdentifiersResp:
+    """Fetch insider transactions or disclosures for all identifiers."""
     resolved = await resolve_identifiers_and_filter_identifiers(
-        identifiers=identifiers,
-        filter_identifiers=owner_company_identifiers,
-        httpx_client=httpx_client,
+        identifiers=identifiers, filter_identifiers=None, httpx_client=httpx_client
     )
     errors = resolved.errors
-    owner_ids = combine_owner_ids(resolved.filter_company_ids, insider_person_ids)
-
-    if owner_ids == []:
-        # Without this, the API would get no owner_ids filter and return every trade.
-        for identifier in resolved.id_triples:
-            errors[identifier].append(unresolved_filter_error("owner_company_identifiers"))
-        return GetInsiderTradesFromIdentifiersResp(
-            identifier_results={},
-            identifier_errors=errors,
-            identifier_info=resolved.id_triples,
-        )
+    transaction_types = select_insider_transaction_types(
+        activity_types=activity_types,
+        direction=transaction_direction,
+    )
 
     tasks = [
         AsyncTask(
@@ -745,10 +757,10 @@ async def get_insider_trades_from_identifiers(
             kwargs=dict(
                 company_id=id_triple.company_id,
                 httpx_client=httpx_client,
+                transaction_types=transaction_types,
                 start_date=start_date,
                 end_date=end_date,
-                transaction_type=transaction_type,
-                owner_ids=owner_ids,
+                owner_ids=insider_ids,
                 min_absolute_transaction_value_usd=min_absolute_transaction_value_usd,
                 sort_by=sort_by,
                 limit=limit,
@@ -756,12 +768,16 @@ async def get_insider_trades_from_identifiers(
             result_key=identifier,
         )
         for identifier, id_triple in resolved.id_triples.items()
+        # The API rejects an empty transaction_types, and no activity can match it anyway.
+        if transaction_types
     ]
 
     await batch_execute_async_tasks(tasks=tasks)
 
-    results: dict[str, CompanyInsiderTrades] = {}
+    results: dict[str, CompanyInsiderActivity] = {}
     notes: list[str] = []
+    if not transaction_types:
+        notes.append(no_matching_activity_note(activity_types, transaction_direction))
     for task in tasks:
         identifier = task.result_key
         if task.error:
@@ -771,8 +787,8 @@ async def get_insider_trades_from_identifiers(
         errors[identifier].extend(resp.errors.values())
         trades_result = resp.results
         if trades_result.trades:
-            results[identifier] = CompanyInsiderTrades(
-                trades=trades_result.trades, total_matching=trades_result.total_matching
+            results[identifier] = CompanyInsiderActivity(
+                activity=trades_result.trades, total_matching=trades_result.total_matching
             )
             if trades_result.total_matching > len(trades_result.trades):
                 notes.append(
@@ -780,11 +796,11 @@ async def get_insider_trades_from_identifiers(
                         identifier,
                         len(trades_result.trades),
                         trades_result.total_matching,
-                        "trades",
+                        "records",
                     )
                 )
 
-    return GetInsiderTradesFromIdentifiersResp(
+    return GetInsiderActivityFromIdentifiersResp(
         identifier_results=results,
         identifier_errors=errors,
         identifier_info=resolved.id_triples,
@@ -867,18 +883,20 @@ async def fetch_holdings_from_company_id(
 async def fetch_insider_trades_from_company_id(
     company_id: int,
     httpx_client: httpx2.AsyncClient,
+    transaction_types: list[ApiInsiderTransactionType],
     start_date: date | None = None,
     end_date: date | None = None,
-    transaction_type: InsiderTransactionCategory = InsiderTransactionCategory.all,
     owner_ids: list[int] | None = None,
     min_absolute_transaction_value_usd: float | None = None,
     sort_by: InsiderTradesSortBy = InsiderTradesSortBy.date,
     limit: Limit | None = None,
 ) -> InsiderTradesResp:
-    """Fetch insider trades for one company_id."""
+    """Fetch the insider records of the given transaction types for one company_id."""
     payload: dict[str, Any] = {
         "company_id": company_id,
         "sort_by": sort_by,
+        # Always sent: even the default groups leave out disclosures.
+        "transaction_types": transaction_types,
     }
     if limit is not None:
         payload["limit"] = limit
@@ -886,8 +904,6 @@ async def fetch_insider_trades_from_company_id(
         payload["start_date"] = start_date.isoformat()
     if end_date is not None:
         payload["end_date"] = end_date.isoformat()
-    if transaction_type != InsiderTransactionCategory.all:
-        payload["transaction_types"] = INSIDER_TRANSACTION_TYPES_BY_CATEGORY[transaction_type]
     if owner_ids is not None:
         payload["owner_ids"] = owner_ids
     if min_absolute_transaction_value_usd is not None:

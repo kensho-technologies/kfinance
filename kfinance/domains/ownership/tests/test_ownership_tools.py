@@ -16,30 +16,31 @@ from kfinance.conftest import (
 from kfinance.domains.corporate_tree.corporate_tree_models import CompanyType
 from kfinance.domains.ownership.ownership_models import (
     HELD_COMPANY_TYPES_BY_CATEGORY,
-    INSIDER_TRANSACTION_TYPES_BY_CATEGORY,
+    INSIDER_TRANSACTION_TYPE_ATTRIBUTES,
     OWNER_TYPES_BY_CATEGORY,
-    UNCATEGORIZED_INSIDER_TRANSACTION_TYPES,
     ApiInsiderTransactionType,
     ApiOwnerType,
     FundsView,
     HeldCompanyTypeCategory,
+    InsiderActivityType,
     InsiderTradesSortBy,
-    InsiderTransactionCategory,
     OwnersSortBy,
     OwnerTypeCategory,
     OwnerTypeSummary,
     PositionChange,
+    TransactionDirection,
+    select_insider_transaction_types,
     sum_by_owner_type_category,
 )
 from kfinance.domains.ownership.ownership_tools import (
     FIRST_APPEARANCE_NOTE,
     OWNERSHIP_PCT_OUT_OF_RANGE_NOTE,
     GetHoldingsFromIdentifiersArgs,
-    GetInsiderTradesFromIdentifiersArgs,
+    GetInsiderActivityFromIdentifiersArgs,
     GetOwnersFromIdentifiers,
     GetOwnersFromIdentifiersArgs,
     get_holdings_from_identifiers,
-    get_insider_trades_from_identifiers,
+    get_insider_activity_from_identifiers,
     get_owners_from_identifiers,
 )
 
@@ -64,6 +65,16 @@ DEFAULT_HOLDINGS_PAYLOAD = {"company_id": SPGI_COMPANY_ID}
 DEFAULT_INSIDER_TRADES_PAYLOAD = {
     "company_id": SPGI_COMPANY_ID,
     "sort_by": "date",
+    # The default activity_types, every transaction group, leave out disclosures.
+    "transaction_types": [
+        str(t)
+        for t in INSIDER_TRANSACTION_TYPE_ATTRIBUTES
+        if t
+        not in (
+            ApiInsiderTransactionType.intent_to_sell_form_144,
+            ApiInsiderTransactionType.initial_statement_of_beneficial_ownership_form_3,
+        )
+    ],
 }
 
 HIGH_OWNERS_COVERAGE = {
@@ -232,12 +243,112 @@ class TestCategoryMappings:
         assert sorted(mapped) == sorted(CompanyType)
         assert HeldCompanyTypeCategory.all not in HELD_COMPANY_TYPES_BY_CATEGORY
 
-    def test_every_transaction_type_is_in_one_category_or_explicitly_uncategorized(self) -> None:
-        mapped = [t for types in INSIDER_TRANSACTION_TYPES_BY_CATEGORY.values() for t in types]
-        assert sorted(mapped + UNCATEGORIZED_INSIDER_TRANSACTION_TYPES) == sorted(
-            ApiInsiderTransactionType
+    def test_every_transaction_type_has_attributes(self) -> None:
+        assert sorted(INSIDER_TRANSACTION_TYPE_ATTRIBUTES) == sorted(ApiInsiderTransactionType)
+
+
+T = ApiInsiderTransactionType
+DISCLOSURES = {T.intent_to_sell_form_144, T.initial_statement_of_beneficial_ownership_form_3}
+AUTOMATIC = {T.automatic_acquisition, T.automatic_disposition}
+
+
+def selected(
+    activity_types: list[str] | None = None, direction: str = "both"
+) -> set[ApiInsiderTransactionType]:
+    return set(
+        select_insider_transaction_types(
+            activity_types=(
+                None if activity_types is None else [InsiderActivityType(t) for t in activity_types]
+            ),
+            direction=TransactionDirection(direction),
         )
-        assert InsiderTransactionCategory.all not in INSIDER_TRANSACTION_TYPES_BY_CATEGORY
+    )
+
+
+class TestSelectInsiderTransactionTypes:
+    def test_groups_partition_the_transaction_types(self) -> None:
+        """Every API type is in exactly one group, so a list of groups never double counts."""
+        by_group = [selected([group]) for group in InsiderActivityType]
+        assert sum(len(types) for types in by_group) == len(ApiInsiderTransactionType)
+        assert set().union(*by_group) == set(ApiInsiderTransactionType)
+
+    def test_default_is_every_transaction_but_no_disclosures(self) -> None:
+        assert selected() == set(ApiInsiderTransactionType) - DISCLOSURES
+        assert selected() == selected(["open_market", "automatic", "derivatives", "other"])
+
+    def test_open_market(self) -> None:
+        assert selected(["open_market"]) == {
+            T.open_market_acquisition,
+            T.open_market_disposition,
+            T.open_market_derivative_acquisition,
+            T.open_market_derivative_disposition,
+        }
+
+    def test_only_plan_sales(self) -> None:
+        assert selected(["automatic"], "dispositions") == {T.automatic_disposition}
+
+    def test_sales_outside_a_trading_plan(self) -> None:
+        assert selected(["open_market", "derivatives", "other"], "dispositions") == {
+            T.open_market_disposition,
+            T.open_market_derivative_disposition,
+            T.derivative_disposition_under_employee_benefit_plan,
+            T.other_derivative_disposition,
+            T.derivative_sale_to_issuer,
+            T.derivative_exercise_and_sale,
+            T.disposition_under_employee_benefit_plan,
+            T.private_disposition,
+            T.other_disposition,
+            T.sale_to_issuer,
+            T.sale,
+        }
+
+    def test_derivatives(self) -> None:
+        assert selected(["derivatives"]) == {
+            T.derivative_acquisition_under_employee_benefit_plan,
+            T.derivative_disposition_under_employee_benefit_plan,
+            T.other_derivative_acquisition,
+            T.other_derivative_disposition,
+            T.derivative_sale_to_issuer,
+            T.derivative_exercise,
+            T.derivative_exercise_and_retained_stock,
+            T.derivative_exercise_and_sale,
+        }
+
+    def test_option_exercises_follow_their_net_direction(self) -> None:
+        assert {T.derivative_exercise, T.derivative_exercise_and_retained_stock} <= selected(
+            direction="acquisitions"
+        )
+        assert T.derivative_exercise_and_sale in selected(direction="dispositions")
+
+    @pytest.mark.parametrize(
+        "direction, expected",
+        [
+            ("both", DISCLOSURES),
+            ("dispositions", {T.intent_to_sell_form_144}),
+            ("acquisitions", set()),
+        ],
+    )
+    def test_disclosures(self, direction: str, expected: set) -> None:
+        assert selected(["disclosures"], direction) == expected
+
+    def test_transactions_and_disclosures_together(self) -> None:
+        assert selected(["automatic", "disclosures"], "dispositions") == {
+            T.automatic_disposition,
+            T.intent_to_sell_form_144,
+        }
+
+    def test_duplicate_groups_are_ignored(self) -> None:
+        assert selected(["automatic", "automatic"]) == AUTOMATIC
+
+    def test_only_disclosed_acquisitions_are_empty(self) -> None:
+        """Of the single groups, only disclosures with acquisitions selects nothing."""
+        empty = {
+            (group, direction)
+            for group in InsiderActivityType
+            for direction in TransactionDirection
+            if not selected([group], direction)
+        }
+        assert empty == {("disclosures", "acquisitions")}
 
 
 class TestSumByOwnerTypeCategory:
@@ -294,7 +405,7 @@ class TestGetOwnersArgs:
         [
             GetOwnersFromIdentifiersArgs,
             GetHoldingsFromIdentifiersArgs,
-            GetInsiderTradesFromIdentifiersArgs,
+            GetInsiderActivityFromIdentifiersArgs,
         ],
     )
     @pytest.mark.parametrize("limit", [None, "all", 25])
@@ -734,60 +845,93 @@ class TestGetHoldings:
         ]
 
 
-class TestGetInsiderTradesArgs:
+class TestGetInsiderActivityArgs:
     def test_start_date_must_not_be_after_end_date(self) -> None:
         with pytest.raises(ValidationError, match="must be on or before"):
-            GetInsiderTradesFromIdentifiersArgs(
+            GetInsiderActivityFromIdentifiersArgs(
                 identifiers=["SPGI"], start_date="2025-01-02", end_date="2025-01-01"
             )
 
+    def test_defaults(self) -> None:
+        args = GetInsiderActivityFromIdentifiersArgs(identifiers=["SPGI"])
+        assert args.activity_types is None
+        assert args.transaction_direction == TransactionDirection.both
 
-class TestGetInsiderTrades:
+    @pytest.mark.parametrize("activity_types", [["disclosures"], ["disclosures", "open_market"]])
+    def test_disclosures_with_acquisitions_are_accepted(self, activity_types: list[str]) -> None:
+        """Even the combination that matches nothing is accepted; the tool says so in a note."""
+        GetInsiderActivityFromIdentifiersArgs(
+            identifiers=["SPGI"],
+            activity_types=activity_types,
+            transaction_direction="acquisitions",
+        )
+
+    @pytest.mark.parametrize("activity_types", [[], ["all"], ["open_market_transactions"]])
+    def test_rejects_invalid_activity_types(self, activity_types: list[str]) -> None:
+        with pytest.raises(ValidationError):
+            GetInsiderActivityFromIdentifiersArgs(
+                identifiers=["SPGI"], activity_types=activity_types
+            )
+
+    def test_removed_params_are_gone(self) -> None:
+        fields = GetInsiderActivityFromIdentifiersArgs.model_fields
+        for removed in (
+            "owner_company_identifiers",
+            "activity_type",
+            "include_derivatives",
+            "include_automatic",
+        ):
+            assert removed not in fields
+
+
+class TestGetInsiderActivity:
     @pytest.mark.asyncio
-    async def test_default_request(
+    async def test_default_request_leaves_out_disclosures(
         self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         httpx2_mock.post(INSIDER_TRADES_URL, json=DEFAULT_INSIDER_TRADES_PAYLOAD).respond(
             json=insider_trades_response()
         )
 
-        resp = await get_insider_trades_from_identifiers(
+        resp = await get_insider_activity_from_identifiers(
             identifiers=["SPGI"], httpx_client=httpx_client
         )
 
         result = resp.identifier_results["SPGI"]
-        assert result.trades[0].trade_date == date(2026, 5, 1)
+        assert result.activity[0].trade_date == date(2026, 5, 1)
         assert resp.notes is None
+        output = resp.model_dump(mode="json", exclude_none=True)
+        assert set(output["results"]["SPGI"]["data"]) == {"activity", "total_matching"}
 
     @pytest.mark.asyncio
-    async def test_filters_are_expanded_into_the_request(
+    async def test_filters_are_sent_in_the_request(
         self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
-        mock_ids(httpx2_mock, ["SPGI", "C_1"], SPGI_AND_OWNER_IDS)
         httpx2_mock.post(
             INSIDER_TRADES_URL,
             json={
                 "company_id": SPGI_COMPANY_ID,
                 "sort_by": "absolute_transaction_value_usd",
+                "transaction_types": [
+                    "open_market_disposition",
+                    "open_market_derivative_disposition",
+                ],
                 "limit": "all",
                 "start_date": "2024-01-01",
                 "end_date": "2024-12-31",
-                "transaction_types": INSIDER_TRANSACTION_TYPES_BY_CATEGORY[
-                    InsiderTransactionCategory.disposition
-                ],
                 "owner_ids": [OWNER_COMPANY_ID, PERSON_ID],
                 "min_absolute_transaction_value_usd": 1000000.0,
             },
         ).respond(json=insider_trades_response())
 
-        resp = await get_insider_trades_from_identifiers(
+        resp = await get_insider_activity_from_identifiers(
             identifiers=["SPGI"],
             httpx_client=httpx_client,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
-            transaction_type=InsiderTransactionCategory.disposition,
-            owner_company_identifiers=["C_1"],
-            insider_person_ids=[PERSON_ID],
+            activity_types=[InsiderActivityType.open_market],
+            transaction_direction=TransactionDirection.dispositions,
+            insider_ids=[OWNER_COMPANY_ID, PERSON_ID],
             min_absolute_transaction_value_usd=1000000.0,
             sort_by=InsiderTradesSortBy.absolute_transaction_value_usd,
             limit="all",
@@ -796,40 +940,61 @@ class TestGetInsiderTrades:
         assert "SPGI" in resp.identifier_results
 
     @pytest.mark.asyncio
-    async def test_person_ids_alone_need_no_extra_resolution(
+    async def test_disclosures_request(
         self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
     ) -> None:
         httpx2_mock.post(
-            INSIDER_TRADES_URL, json={**DEFAULT_INSIDER_TRADES_PAYLOAD, "owner_ids": [PERSON_ID]}
+            INSIDER_TRADES_URL,
+            json={
+                **DEFAULT_INSIDER_TRADES_PAYLOAD,
+                "transaction_types": ["intent_to_sell_form_144"],
+            },
         ).respond(json=insider_trades_response())
 
-        resp = await get_insider_trades_from_identifiers(
-            identifiers=["SPGI"], httpx_client=httpx_client, insider_person_ids=[PERSON_ID]
+        resp = await get_insider_activity_from_identifiers(
+            identifiers=["SPGI"],
+            httpx_client=httpx_client,
+            activity_types=[InsiderActivityType.disclosures],
+            transaction_direction=TransactionDirection.dispositions,
         )
 
         assert "SPGI" in resp.identifier_results
 
     @pytest.mark.asyncio
-    async def test_unresolved_owner_identifiers_skip_the_data_call(
-        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    async def test_disclosed_acquisitions_skip_the_request(
+        self, httpx_client: httpx2.AsyncClient
     ) -> None:
-        mock_ids(
-            httpx2_mock,
-            ["SPGI", "non-existent-company"],
-            {
-                "SPGI": SPGI_ID_TRIPLE.model_dump(mode="json"),
-                "non-existent-company": NON_EXISTENT_ERROR,
-            },
-        )
-
-        resp = await get_insider_trades_from_identifiers(
+        """WHEN nothing can match THEN no request is made (the API rejects an empty
+        transaction_types) and a note explains why there are no results."""
+        resp = await get_insider_activity_from_identifiers(
             identifiers=["SPGI"],
             httpx_client=httpx_client,
-            owner_company_identifiers=["non-existent-company"],
+            activity_types=[InsiderActivityType.disclosures],
+            transaction_direction=TransactionDirection.acquisitions,
         )
 
         assert resp.identifier_results == {}
-        assert any("None of the owner_company_identifiers" in e for e in resp.errors)
+        assert resp.errors == []
+        assert resp.notes is not None
+        assert resp.notes[0].startswith(
+            "No insider activity can match activity_types=['disclosures'] with "
+            "transaction_direction='acquisitions'"
+        )
+
+    @pytest.mark.asyncio
+    async def test_insider_ids_need_no_resolution(
+        self, httpx_client: httpx2.AsyncClient, httpx2_mock: Router
+    ) -> None:
+        """insider_ids are sent as owner_ids as given; only identifiers go through /ids."""
+        httpx2_mock.post(
+            INSIDER_TRADES_URL, json={**DEFAULT_INSIDER_TRADES_PAYLOAD, "owner_ids": [PERSON_ID]}
+        ).respond(json=insider_trades_response())
+
+        resp = await get_insider_activity_from_identifiers(
+            identifiers=["SPGI"], httpx_client=httpx_client, insider_ids=[PERSON_ID]
+        )
+
+        assert "SPGI" in resp.identifier_results
 
     @pytest.mark.asyncio
     async def test_truncation_note(
@@ -839,18 +1004,18 @@ class TestGetInsiderTrades:
             json=insider_trades_response(total_matching=1976)
         )
 
-        resp = await get_insider_trades_from_identifiers(
+        resp = await get_insider_activity_from_identifiers(
             identifiers=["SPGI"], httpx_client=httpx_client
         )
 
         assert resp.notes == [
-            "SPGI: returned 1 of 1,976 matching trades. "
+            "SPGI: returned 1 of 1,976 matching records. "
             "Set a higher limit, or 'all' for no limit, to see more."
         ]
 
     @pytest.mark.asyncio
     async def test_unresolvable_identifier(self, httpx_client: httpx2.AsyncClient) -> None:
-        resp = await get_insider_trades_from_identifiers(
+        resp = await get_insider_activity_from_identifiers(
             identifiers=["non-existent-company"], httpx_client=httpx_client
         )
 
