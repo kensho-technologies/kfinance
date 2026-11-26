@@ -45,10 +45,11 @@ class GetSnlBankRegFinancialLineItemFromIdentifiers(KfinanceTool):
     description: str = dedent("""
         Get any reported financial metric for banks from their regulatory filings, using
         semantic search. The freeform `line_item_search` query is matched against S&P SNL's
-        bank regulatory (BankReg) catalog, which covers bank Call Reports, credit union reports,
-        and holding company filings such as FR Y-9C and FR Y-15.
+        bank regulatory (BankReg) catalog, which covers Call Report Financials - 031, 041, 051, 
+        Holding Companies Financials - Y-9C, Large/Small Parent Financials - Y-9LP and Y-9SP, 
+        Credit Union and Corporate Credit Union Financials - 5300, 5310.
 
-        This is the default tool for any financial metric of a bank, bank holding company,
+        This is the default tool for any financial metric of a commercial bank, bank holding company,
         savings institution, or credit union: both regulatory metrics (capital ratios, deposits,
         nonperforming loans, allowance for credit losses, loan composition) and general metrics
         (total revenue, net income, net interest income, total assets). Use it instead of
@@ -82,6 +83,12 @@ class GetSnlBankRegFinancialLineItemFromIdentifiers(KfinanceTool):
         - To fetch the most recent value, leave all time parameters as null.
         - To filter by time, use either absolute time (start_year, end_year, start_quarter,
           end_quarter) OR relative time (num_periods, num_periods_back)—but not both.
+        - For time spans like "ltm 2024 q2" or "ytd 2024 q2", use the following syntax:
+          - "ltm 2024 Q2" -> "period_type": "ltm", "start_year": 2024, "start_quarter": 2, "end_year": 2024, "end_quarter": 2
+          - "ytd 2025 Q3" -> "period_type": "ytd", "start_year": 2025, "start_quarter": 3, "end_year": 2025, "end_quarter": 3
+          - "ltm 2025 Q2 and Q3" -> "period_type": "ltm", "start_year": 2025, "start_quarter": 2, "end_year": 2025, "end_quarter": 3
+        - For questions with financial terms include "shares", "to", or "over", search for ratios instead of absolute values.
+            - For example, if the query is "nontransaction vs transaction deposits share", search for the "nontransaction deposits share" and "transaction deposits share" rather than their absolute values.
 
         Examples:
         Query: "Total revenue for JPMorgan Chase quarterly"
@@ -96,6 +103,21 @@ class GetSnlBankRegFinancialLineItemFromIdentifiers(KfinanceTool):
 
         Query: "Net interest income for Citibank annual FY2025"
         Function: get_snl_bankreg_financial_line_item_from_identifiers(line_item_search="net interest income", identifiers=["Citibank"], period_type="annual", calendar_type="fiscal", start_year=2025, end_year=2025)
+
+        Query: "Citibank nontransaction vs transaction deposits share 2024 quarterly"
+        Function: 
+            get_snl_bankreg_financial_line_item_from_identifiers(line_item_search="nontransaction deposits share", identifiers=["Citibank"], period_type="quarterly", start_year=2024, end_year=2024)
+            get_snl_bankreg_financial_line_item_from_identifiers(line_item_search="transaction deposits share", identifiers=["Citibank"], period_type="quarterly", start_year=2024, end_year=2024)
+
+        Query: "Goldman Sachs fiduciary activities fees and total noninterest income ytd q1 2024"
+        Function: 
+            get_snl_bankreg_financial_line_item_from_identifiers(line_item_search="fiduciary activities fees", identifiers=["Goldman Sachs"], period_type="ytd", start_year=2024, start_quarter="1", end_year=2024, end_quarter="1")
+            get_snl_bankreg_financial_line_item_from_identifiers(line_item_search="total noninterest income", identifiers=["Goldman Sachs"], period_type="ytd", start_year=2024, start_quarter="1", end_year=2024, end_quarter="1")
+
+        Query: "Company A insurance underwriting income vs other insurance income share ltm q2 and q3 2025"
+        Function: 
+            get_snl_bankreg_financial_line_item_from_identifiers(line_item_search="insurance underwriting income share", identifiers=["Company A"], period_type="ltm", start_year=2025, start_quarter="2", end_year=2025, end_quarter="3")
+            get_snl_bankreg_financial_line_item_from_identifiers(line_item_search="other insurance income share", identifiers=["Company A"], period_type="ltm", start_year=2025, start_quarter="2", end_year=2025, end_quarter="3")
     """).strip()
     args_schema: Type[BaseModel] = GetSnlBankRegFinancialLineItemFromIdentifiersArgs
     accepted_permissions: set[Permission] | None = {Permission.OnlyStaffPermission}
